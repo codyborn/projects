@@ -30,10 +30,18 @@ class SublimeFlash {
         this.elements.exportBtn.addEventListener('click', () => this.exportWords());
         this.elements.importFile.addEventListener('change', (e) => this.importWords(e));
         this.elements.wordList.addEventListener('input', () => this.saveWords());
+        this.elements.speedInput.addEventListener('input', () => this.saveSpeed());
     }
 
     async loadSavedWords() {
         const saved = localStorage.getItem('sublimeWords');
+        const savedSpeed = localStorage.getItem('sublimeSpeed');
+        
+        // Load saved speed if it exists
+        if (savedSpeed) {
+            this.elements.speedInput.value = savedSpeed;
+        }
+
         if (saved) {
             this.elements.wordList.value = saved;
         } else {
@@ -51,6 +59,10 @@ class SublimeFlash {
 
     saveWords() {
         localStorage.setItem('sublimeWords', this.elements.wordList.value);
+    }
+
+    saveSpeed() {
+        localStorage.setItem('sublimeSpeed', this.elements.speedInput.value);
     }
 
     startFlashing() {
