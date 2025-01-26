@@ -19,7 +19,7 @@ body {
     justify-content: center;
     margin-bottom: 20px;
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.0);
 }
 
 #flash-text {
@@ -77,4 +77,33 @@ input[type="number"] {
     width: 100px;
     padding: 5px;
     margin-left: 10px;
+}
+
+.logo {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    font-size: 24px;
+    font-weight: bold;
+    color: rgba(0, 0, 0, 0.7);
+    text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.5);
+    z-index: 1000;
+    font-family: 'Arial', sans-serif;
+    letter-spacing: 1px;
+    cursor: default;
+    user-select: none;
+}
+
+.logo-icon {
+    font-size: 32px;
+}
+
+.logo:hover {
+    animation: logoHover 3s ease;
+}
+
+@keyframes logoHover {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
 } 
