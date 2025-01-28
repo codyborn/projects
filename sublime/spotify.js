@@ -41,10 +41,33 @@ async function initializePlayer() {
         getOAuthToken: cb => { cb(accessToken); }
     });
 
+    // Hide both buttons initially
+    const playButton = document.getElementById('play-spotify');
+    const pauseButton = document.getElementById('pause-spotify');
+    playButton.style.display = 'none';
+    pauseButton.style.display = 'none';
+
     player.addListener('ready', ({ device_id }) => {
         console.log('Ready with Device ID', device_id);
-        document.getElementById('play-spotify').disabled = false;
-        document.getElementById('pause-spotify').disabled = false;
+        // Don't enable buttons here anymore - wait for playlist selection
+    });
+
+    // Add player state listener
+    player.addListener('player_state_changed', state => {
+        if (!state) {
+            // No track playing
+            playButton.style.display = 'none';
+            pauseButton.style.display = 'none';
+            return;
+        }
+
+        if (state.paused) {
+            playButton.style.display = 'block';
+            pauseButton.style.display = 'none';
+        } else {
+            playButton.style.display = 'none';
+            pauseButton.style.display = 'block';
+        }
     });
 
     player.connect();
@@ -76,6 +99,16 @@ async function loadPlaylists() {
         });
 
         playlistSelect.addEventListener('change', async (e) => {
+            const playButton = document.getElementById('play-spotify');
+            const pauseButton = document.getElementById('pause-spotify');
+
+            if (!e.target.value) {
+                // No playlist selected
+                playButton.style.display = 'none';
+                pauseButton.style.display = 'none';
+                return;
+            }
+
             if (e.target.value && deviceId) {
                 await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
                     method: 'PUT',
