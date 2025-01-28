@@ -23,8 +23,22 @@
                 <input type="file" id="import-file" accept=".json" style="display: none">
                 <button id="import-btn">Import</button>
                 <button id="export-btn">Export</button>
+                <button id="spotify-connect" class="spotify-btn">
+                    <img src="https://storage.googleapis.com/pr-newsroom-wp/1/2018/11/Spotify_Logo_RGB_White.png" alt="Connect Spotify" height="20">
+                    Connect Spotify
+                </button>
             </div>
             
+            <div id="spotify-container" class="spotify-container" style="display: none;">
+                <select id="playlist-select" class="playlist-select">
+                    <option value="">Select a playlist...</option>
+                </select>
+                <div class="spotify-controls">
+                    <button id="play-spotify" disabled>Play</button>
+                    <button id="pause-spotify" disabled>Pause</button>
+                </div>
+            </div>
+
             <div class="settings">
                 <label>Flash Speed (ms):
                     <input type="number" id="speed" value="80" min="50" max="1000">
@@ -32,6 +46,14 @@
             </div>
         </div>
     </div>
+    <script>
+        window.onSpotifyWebPlaybackSDKReady = () => {
+            const connectButton = document.getElementById('spotify-connect');
+            connectButton?.addEventListener('click', window.connectToSpotify);
+        };
+    </script>
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
+    <script src="spotify.js"></script>
     <script src="script.js"></script>
 </body>
 </html> 
