@@ -31,7 +31,11 @@ window.addEventListener('load', () => {
     if (accessToken) {
         initializePlayer();
         loadPlaylists();
-        document.getElementById('spotify-container').style.display = 'block';
+        document.getElementById('spotify-controls').style.display = 'block';
+        document.getElementById('spotify-connect').style.display = 'none';
+    } else {
+        document.getElementById('spotify-controls').style.display = 'none';
+        document.getElementById('spotify-connect').style.display = 'block';
     }
 });
 
