@@ -70,9 +70,14 @@ async function loadPlaylists() {
             playlistSelect.appendChild(option);
         });
 
+        let deviceId = null;
+        player.addListener('ready', ({ device_id }) => {
+            deviceId = device_id;
+        });
+
         playlistSelect.addEventListener('change', async (e) => {
-            if (e.target.value) {
-                await fetch(`https://api.spotify.com/v1/me/player/play`, {
+            if (e.target.value && deviceId) {
+                await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${accessToken}`
