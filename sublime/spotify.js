@@ -31,7 +31,7 @@ window.addEventListener('load', () => {
     if (accessToken) {
         initializePlayer();
         loadPlaylists();
-        document.getElementById('spotify-controls').style.display = 'block';
+        document.getElementById('spotify-controls').style.display = 'flex';
         document.getElementById('spotify-connect').style.display = 'none';
     } else {
         document.getElementById('spotify-controls').style.display = 'none';
@@ -98,8 +98,22 @@ async function loadPlaylists() {
         });
 
         let deviceId = null;
-        player.addListener('ready', ({ device_id }) => {
+        player.addListener('ready', async ({ device_id }) => {
             deviceId = device_id;
+            
+            // Auto-play the first playlist if one exists
+            const selectedPlaylist = playlistSelect.value;
+            if (selectedPlaylist) {
+                await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    },
+                    body: JSON.stringify({
+                        context_uri: selectedPlaylist
+                    })
+                });
+            }
         });
 
         playlistSelect.addEventListener('change', async (e) => {
