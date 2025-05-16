@@ -32,6 +32,72 @@ body {
     background: rgba(255, 255, 255, 0.8);
     padding: 20px;
     border-radius: 10px;
+    position: relative;
+}
+
+.controls-header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+}
+
+.toggle-btn {
+    background: transparent;
+    color: #333;
+    padding: 5px 10px;
+    font-size: 16px;
+    transition: transform 0.3s ease;
+}
+
+.toggle-btn:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.controls.collapsed .toggle-btn {
+    transform: rotate(-90deg);
+}
+
+.controls-content {
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+    max-height: 1000px;
+    opacity: 1;
+    overflow: hidden;
+}
+
+.controls.collapsed .controls-content {
+    max-height: 0;
+    opacity: 0;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+/* Move Start/Stop buttons outside of expandable area */
+.main-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.expandable-controls {
+    display: flex;
+    gap: 10px;
+    transition: opacity 0.3s ease-out;
+}
+
+.controls.collapsed .expandable-controls {
+    display: none;
+}
+
+.controls.collapsed .settings {
+    display: none;
+}
+
+.controls.collapsed .button-group {
+    margin-bottom: 0;
 }
 
 #word-list {
@@ -42,13 +108,6 @@ body {
     border: 1px solid #ccc;
     border-radius: 5px;
     resize: vertical;
-}
-
-.button-group {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-    align-items: center;
 }
 
 button {

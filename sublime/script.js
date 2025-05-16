@@ -15,7 +15,7 @@ class SublimeFlash {
             exportBtn: document.getElementById('export-btn'),
             importFile: document.getElementById('import-file'),
             flashText: document.getElementById('flash-text'),
-            speedInput: document.getElementById('speed')
+            speedInput: document.getElementById('speed'),
         };
 
         this.initializeEventListeners();
@@ -79,6 +79,7 @@ class SublimeFlash {
             this.elements.flashText.textContent = this.words[this.currentIndex];
             this.currentIndex = (this.currentIndex + 1) % this.words.length;
         }, speed);
+        this.toggleControls();
     }
 
     stopFlashing() {
@@ -87,6 +88,7 @@ class SublimeFlash {
         this.elements.flashText.textContent = '';
         this.elements.startBtn.disabled = false;
         this.elements.stopBtn.disabled = true;
+        this.toggleControls();
     }
 
     startColorCycle() {
@@ -133,6 +135,11 @@ class SublimeFlash {
         };
         reader.readAsText(file);
         event.target.value = ''; // Reset file input
+    }
+
+    toggleControls() {
+        const controls = document.querySelector('.controls');
+        controls.classList.toggle('collapsed');
     }
 }
 

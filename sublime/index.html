@@ -15,39 +15,31 @@
         </div>
         
         <div class="controls">
-            <textarea id="word-list" placeholder="Enter words, one per line"></textarea>
-            
             <div class="button-group">
-                <button id="start-btn">Start</button>
-                <button id="stop-btn" disabled>Stop</button>
-                <input type="file" id="import-file" accept=".json" style="display: none">
-                <button id="import-btn">Import</button>
-                <button id="export-btn">Export</button>
-                <button id="spotify-connect" class="spotify-btn">
-                    <img src="https://storage.googleapis.com/pr-newsroom-wp/1/2018/11/Spotify_Logo_RGB_White.png" alt="Connect Spotify" height="20">
-                </button>
-                <span id="spotify-controls" style="display: none;">
-                    <select id="playlist-select" class="playlist-select"></select>
-                    <button id="play-spotify" class="spotify-btn">Play</button>
-                    <button id="pause-spotify" class="spotify-btn">Pause</button>
-                </span>
+                <div class="main-controls">
+                    <button id="start-btn">Start</button>
+                    <button id="stop-btn" disabled>Stop</button>
+                </div>
             </div>
+            <div class="controls-content">
+                <textarea id="word-list" placeholder="Enter words, one per line"></textarea>
+                
+                <div class="button-group">
+                    <div class="expandable-controls">
+                        <input type="file" id="import-file" accept=".json" style="display: none">
+                        <button id="import-btn">Import</button>
+                        <button id="export-btn">Export</button>
+                    </div>
+                </div>
 
-            <div class="settings">
-                <label>Flash Speed (ms):
-                    <input type="number" id="speed" value="80" min="50" max="1000">
-                </label>
+                <div class="settings">
+                    <label>Flash Speed (ms):
+                        <input type="number" id="speed" value="80" min="50" max="1000">
+                    </label>
+                </div>
             </div>
         </div>
     </div>
-    <script>
-        window.onSpotifyWebPlaybackSDKReady = () => {
-            const connectButton = document.getElementById('spotify-connect');
-            connectButton?.addEventListener('click', window.connectToSpotify);
-        };
-    </script>
-    <script src="https://sdk.scdn.co/spotify-player.js"></script>
-    <script src="spotify.js"></script>
     <script src="script.js"></script>
 </body>
 </html> 
