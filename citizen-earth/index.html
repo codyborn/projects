@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Citizen Earth</title>
+  <style>
+    body {
+      background: #fff;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    #water-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+      display: block;
+    }
+    #wave-foreground-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 3;
+      pointer-events: none;
+      display: block;
+    }
+    h1 {
+      text-align: center;
+      margin-top: 32px;
+      font-size: 2.5rem;
+      color: #222;
+    }
+    .island-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 40px;
+      max-width: 1200px;
+      margin: 40px auto;
+      direction: ltr;
+    }
+    .island-row {
+      display: contents;
+    }
+    .island {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border-radius: 18px;
+      padding: 16px 8px 8px 8px;
+      transition: transform 0.2s;
+      cursor: pointer;
+    }
+
+    .island img {
+      width: 120px;
+      height: auto;
+      margin-bottom: 12px;
+      border-radius: 12px;
+    }
+    .city-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #2a4d69;
+      text-align: center;
+    }
+    @media (max-width: 900px) {
+      .island-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 600px) {
+      .island-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .island-tooltip {
+      background: rgba(44, 62, 80, 0.97);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 5px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 10;
+      font-size: 1rem;
+      margin-top: 1.5em;
+    }
+    .island {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .island-tooltip a {
+      color: #ffd700;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="water-canvas"></canvas>
+  <canvas id="wave-foreground-canvas"></canvas>
+  <h1>Citizen Earth</h1>
+  <div class="island-grid" style="position:relative; z-index:2;">
+    <!-- Islands will be inserted here by JS -->
+  </div>
+  <svg id="island-lines" style="position:absolute; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:1;"></svg>
+  <script>
+    // Water effect
+    const waveHeight = 10;
+    const waveLength = 200;
+    const speed = 0.0002;
+    const canvas = document.getElementById('water-canvas');
+    const ctx = canvas.getContext('2d');
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    function drawWater(time) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#39c4ce';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.globalAlpha = 0.25;
+      for (let y = 0; y < canvas.height; y += 8) {
+        ctx.beginPath();
+        for (let x = 0; x <= canvas.width; x += 4) {
+          const angle = (x / waveLength) * Math.PI * 2 + (y / 80) + time * speed * 2;
+          const dy = Math.sin(angle + y * 0.03 + time * speed) * waveHeight * Math.sin(y * 0.01 + time * speed * 0.5);
+          if (x === 0) ctx.moveTo(x, y + dy);
+          else ctx.lineTo(x, y + dy);
+        }
+        ctx.strokeStyle = '#FFF';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1.0;
+      requestAnimationFrame(drawWater);
+    }
+    requestAnimationFrame(drawWater);
+
+    // Foreground waves over islands
+    const fgCanvas = document.getElementById('wave-foreground-canvas');
+    const fgCtx = fgCanvas.getContext('2d');
+    function resizeFgCanvas() {
+      fgCanvas.width = window.innerWidth;
+      fgCanvas.height = window.innerHeight;
+    }
+    resizeFgCanvas();
+    window.addEventListener('resize', resizeFgCanvas);
+    function drawForegroundWaves(time) {
+      const waveHeight = 10;
+      fgCtx.clearRect(0, 0, fgCanvas.width, fgCanvas.height);
+      const islands = document.querySelectorAll('.island img');
+      islands.forEach(img => {
+        const rect = img.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          const x0 = rect.left + window.scrollX;
+          const y0 = rect.top + window.scrollY + rect.height - waveHeight; // base of island
+          const width = rect.width;
+          // For each y in the base region (e.g., 10px tall)
+          for (let y = 0; y <= waveHeight; y += 4) {
+            fgCtx.save();
+            fgCtx.beginPath();
+            for (let x = 0; x <= width; x += 2) {
+              const globalX = x0 + x;
+              const globalY = y0 + y;
+              const angle = (globalX / waveLength) * Math.PI * 2 + (globalY / 80) + time * speed * 2;
+              const dy = Math.sin(angle + globalY * 0.03 + time * speed) * waveHeight * Math.sin(globalY * 0.01 + time * speed * 0.5);
+              if (x === 0) fgCtx.moveTo(globalX, globalY + dy);
+              else fgCtx.lineTo(globalX, globalY + dy);
+            }
+            fgCtx.strokeStyle = '#FFF';
+            fgCtx.lineWidth = 3;
+            fgCtx.globalAlpha = 1.0;
+            fgCtx.stroke();
+            fgCtx.globalAlpha = 1.0;
+            fgCtx.restore();
+          }
+        }
+      });
+      requestAnimationFrame(drawForegroundWaves);
+    }
+    requestAnimationFrame(drawForegroundWaves);
+    fgCanvas.style.position = 'fixed';
+    fgCanvas.style.top = '0';
+    fgCanvas.style.left = '0';
+    fgCanvas.style.width = '100vw';
+    fgCanvas.style.height = '100vh';
+    fgCanvas.style.zIndex = '3';
+    fgCanvas.style.pointerEvents = 'none';
+    fgCanvas.style.display = 'block';
+    // Placeholder cities with metadata
+    const cities = [
+      { 
+        name: 'Miami',
+        dates: 'Jan - Apr',
+        link: 'https://en.wikipedia.org/wiki/Lisbon',
+        islandImg: './images/miami.png'
+      },
+      { 
+        name: 'New York', 
+        dates: 'Apr', 
+        link: 'https://en.wikipedia.org/wiki/New_York_City', 
+        islandImg: './images/NY.png',
+        size: 200
+      },
+      { 
+        name: 'Madrid', 
+        dates: 'Apr - May', 
+        link: 'https://en.wikipedia.org/wiki/Bangkok', 
+        islandImg: 'https://simplefi.s3.us-east-2.amazonaws.com/isla_edge.png' 
+      },
+      { 
+        name: 'Granada', 
+        dates: 'May', 
+        islandImg: './images/granada.png' 
+      },
+      { 
+        name: 'Marseille', 
+        dates: 'May', 
+        link: 'https://en.wikipedia.org/wiki/Cape_Town', 
+        islandImg: 'https://simplefi.s3.us-east-2.amazonaws.com/isla_edge.png' 
+      },
+      { 
+        name: 'Hyeres', 
+        dates: 'May - Jun', 
+        islandImg: './images/hyeres.png' 
+      },
+    ];
+    // Provided image (base64 or external link)
+    const islandImg = 'https://simplefi.s3.us-east-2.amazonaws.com/isla_edge.png';
+
+    // Responsive grid: let CSS handle columns, JS figures out columns dynamically
+    const grid = document.querySelector('.island-grid');
+    const svg = document.getElementById('island-lines');
+    function getColumnCount() {
+      const style = window.getComputedStyle(grid);
+      const templateColumns = style.getPropertyValue('grid-template-columns');
+      return templateColumns.split(' ').length;
+    }
+    function renderIslands() {
+      grid.innerHTML = '';
+      const cols = getColumnCount();
+      const rows = Math.ceil(cities.length / cols);
+      const positions = [];
+      cities.forEach((cityObj, i) => {
+        const row = Math.floor(i / cols);
+        let col = i % cols;
+        if (row % 2 === 1) col = cols - 1 - col;
+        const div = document.createElement('div');
+        div.className = 'island';
+        div.style.gridRow = (row + 1).toString();
+        div.style.gridColumn = (col + 1).toString();
+        div.innerHTML = `
+          <img src="${cityObj.islandImg}" alt="Floating Island for ${cityObj.name}" style="width: ${cityObj.size ? cityObj.size + 'px' : '120px'}; height: auto;">
+          <div class="city-name">${cityObj.name}</div>
+          <div class="island-tooltip">
+            <div><strong>${cityObj.name}</strong></div>
+            <div>${cityObj.dates}</div>
+            ${cityObj.link ? `<div><a href="${cityObj.link}" target="_blank">Learn more</a></div>` : ''}
+          </div>
+        `;
+        positions.push({row, col, div});
+        // Tooltip show/hide
+        div.addEventListener('mouseenter', () => {
+          div.querySelector('.island-tooltip').style.opacity = 1;
+        });
+        div.addEventListener('mouseleave', () => {
+          div.querySelector('.island-tooltip').style.opacity = 0;
+        });
+        grid.appendChild(div);
+      });
+      setTimeout(drawLines, 50, positions, cols, rows); // Wait for layout
+    }
+    function drawLines(positions, cols, rows) {
+      svg.innerHTML = '';
+      svg.setAttribute('width', document.body.scrollWidth);
+      svg.setAttribute('height', document.body.scrollHeight);
+      // Get center positions of each island image
+      const centers = positions.map(({div}) => {
+        const img = div.querySelector('img');
+        const rect = img.getBoundingClientRect();
+        return {
+          x: rect.left + rect.width/2 + window.scrollX,
+          y: rect.top + rect.height/2 + window.scrollY
+        };
+      });
+      for (let i = 0; i < centers.length - 1; i++) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', centers[i].x);
+        line.setAttribute('y1', centers[i].y);
+        line.setAttribute('x2', centers[i+1].x);
+        line.setAttribute('y2', centers[i+1].y);
+        line.setAttribute('stroke', '#2a4d69');
+        line.setAttribute('stroke-width', '4');
+        line.setAttribute('stroke-linecap', 'round');
+        svg.appendChild(line);
+      }
+    }
+    // Set grid-template-columns to be responsive
+    grid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(180px, 1fr))';
+    window.addEventListener('resize', renderIslands);
+    renderIslands();
+  </script>
+</body>
+</html> 
