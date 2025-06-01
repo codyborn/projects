@@ -165,30 +165,56 @@
       islands.forEach(img => {
         const rect = img.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) {
-          const x0 = rect.left + window.scrollX;
+          // Draw image to offscreen canvas to read alpha
+          const offCanvas = document.createElement('canvas');
+          offCanvas.width = rect.width;
+          offCanvas.height = rect.height;
+          const offCtx = offCanvas.getContext('2d');
+          offCtx.drawImage(img, 0, 0, rect.width, rect.height);
           const y0 = rect.top + window.scrollY + rect.height - waveHeight; // base of island
           const width = rect.width;
-          // For each y in the base region (e.g., 10px tall)
           for (let y = 0; y <= waveHeight; y += 4) {
             fgCtx.save();
             fgCtx.beginPath();
+            let drawing = false;
             for (let x = 0; x <= width; x += 2) {
-              const globalX = x0 + x;
-              const globalY = y0 + y;
-              const angle = (globalX / waveLength) * Math.PI * 2 + (globalY / 80) + time * speed * 2;
-              const dy = Math.sin(angle + globalY * 0.03 + time * speed) * waveHeight * Math.sin(globalY * 0.01 + time * speed * 0.5);
-              if (x === 0) fgCtx.moveTo(globalX, globalY + dy);
-              else fgCtx.lineTo(globalX, globalY + dy);
+              // Check alpha at (x, rect.height-1)
+              const imgData = offCtx.getImageData(x, rect.height-1, 1, 1).data;
+              if (imgData[3] > 32) { // alpha > ~0.1
+                const globalX = rect.left + window.scrollX + x;
+                const globalY = y0 + y;
+                const angle = (globalX / waveLength) * Math.PI * 2 + (globalY / 80) + time * speed * 2;
+                const dy = Math.sin(angle + globalY * 0.03 + time * speed) * waveHeight * Math.sin(globalY * 0.01 + time * speed * 0.5);
+                if (!drawing) {
+                  fgCtx.moveTo(globalX, globalY + dy);
+                  drawing = true;
+                } else {
+                  fgCtx.lineTo(globalX, globalY + dy);
+                }
+              } else {
+                if (drawing) {
+                  fgCtx.strokeStyle = '#FFF';
+                  fgCtx.lineWidth = 3;
+                  fgCtx.globalAlpha = 1.0;
+                  fgCtx.stroke();
+                  fgCtx.beginPath();
+                  drawing = false;
+                }
+              }
             }
-            fgCtx.strokeStyle = '#FFF';
-            fgCtx.lineWidth = 3;
-            fgCtx.globalAlpha = 1.0;
-            fgCtx.stroke();
-            fgCtx.globalAlpha = 1.0;
+            if (drawing) {
+              fgCtx.strokeStyle = '#FFF';
+              fgCtx.lineWidth = 3;
+              fgCtx.globalAlpha = 1.0;
+              fgCtx.stroke();
+            }
             fgCtx.restore();
           }
         }
       });
+      console.log("drawing red rect")
+      fgCtx.strokeStyle = 'red';
+      fgCtx.strokeRect(10, 10, 100, 100);
       requestAnimationFrame(drawForegroundWaves);
     }
     requestAnimationFrame(drawForegroundWaves);
@@ -205,32 +231,31 @@
       { 
         name: 'Miami',
         dates: 'Jan - Apr',
-        link: 'https://en.wikipedia.org/wiki/Lisbon',
         islandImg: './images/miami.png'
       },
       { 
         name: 'New York', 
         dates: 'Apr', 
-        link: 'https://en.wikipedia.org/wiki/New_York_City', 
         islandImg: './images/NY.png',
         size: 200
       },
       { 
         name: 'Madrid', 
         dates: 'Apr - May', 
-        link: 'https://en.wikipedia.org/wiki/Bangkok', 
-        islandImg: 'https://simplefi.s3.us-east-2.amazonaws.com/isla_edge.png' 
+        islandImg: './images/madrid.png' ,
+        size: 150
       },
       { 
         name: 'Granada', 
         dates: 'May', 
-        islandImg: './images/granada.png' 
+        islandImg: './images/granada.png' ,
+        size: 200
       },
       { 
         name: 'Marseille', 
-        dates: 'May', 
-        link: 'https://en.wikipedia.org/wiki/Cape_Town', 
-        islandImg: 'https://simplefi.s3.us-east-2.amazonaws.com/isla_edge.png' 
+        dates: 'May',
+        islandImg: './images/marseille.png' ,
+        size: 160
       },
       { 
         name: 'Hyeres', 
@@ -238,8 +263,6 @@
         islandImg: './images/hyeres.png' 
       },
     ];
-    // Provided image (base64 or external link)
-    const islandImg = 'https://simplefi.s3.us-east-2.amazonaws.com/isla_edge.png';
 
     // Responsive grid: let CSS handle columns, JS figures out columns dynamically
     const grid = document.querySelector('.island-grid');
