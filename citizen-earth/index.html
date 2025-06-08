@@ -427,7 +427,9 @@
       { 
         name: 'Miami',
         dates: 'Jan - Apr',
-        islandImg: './images/miami.png'
+        islandImg: './images/miami.png',
+        link: 'https://mirror.xyz/citizenearth.eth/mdQHEpgT3U0ZLge1NOm4xoMebfHwoaREPSYK3GIOdSc',
+        linkText: 'Tied down'
       },
       { 
         name: 'New York', 
@@ -493,7 +495,7 @@
           <div class="island-tooltip">
             <div><strong>${cityObj.name}</strong></div>
             <div>${cityObj.dates}</div>
-            ${cityObj.link ? `<div><a href="${cityObj.link}" target="_blank">Learn more</a></div>` : ''}
+            ${cityObj.link ? `<div><a href="${cityObj.link}" target="_blank">${cityObj.linkText}</a></div>` : ''}
           </div>
         `;
         positions.push({row, col, div});
