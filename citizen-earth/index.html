@@ -582,9 +582,9 @@
             sailboat.stopTimer = 0;
             const direction = Math.random() > 0.5 ? 1 : -1;
             if (direction === 1) {
-              sailboat.x = -boatImage.width;
+              sailboat.x = -sailboatImage.width;
             } else {
-              sailboat.x = boatCanvas.width + boatImage.width;
+              sailboat.x = boatCanvas.width + sailboatImage.width;
             }
             sailboat.y = newPosition.y;
             sailboat.speedX = (0.1 + Math.random() * 0.1) * direction;
