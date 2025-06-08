@@ -13,7 +13,7 @@
       overflow-x: hidden;
     }
     #water-canvas {
-      position: fixed;
+      position: absolute;
       top: 0;
       left: 0;
       width: 100vw;
@@ -23,7 +23,7 @@
       display: block;
     }
     #cloud-canvas {
-      position: fixed;
+      position: absolute;
       top: 0;
       left: 0;
       width: 100vw;
@@ -33,7 +33,7 @@
       display: block;
     }
     #boat-canvas {
-      position: fixed;
+      position: absolute;
       top: 0;
       left: 0;
       width: 100vw;
@@ -51,9 +51,13 @@
     .island-grid {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
-      gap: 40px;
+      padding: 0px;
       max-width: 1200px;
-      margin: 40px auto;
+      margin-top: 40px;
+      margin-bottom: 0px;
+      margin-left: auto;
+      margin-right: auto;
+
       direction: ltr;
     }
     .island-row {
