@@ -6,7 +6,7 @@
   <title>Citizen Earth</title>
   <style>
     body {
-      background: #fff;
+      background: #4DD0E1;
       font-family: 'Segoe UI', Arial, sans-serif;
       margin: 0;
       padding: 0;
@@ -41,6 +41,8 @@
       margin-top: 32px;
       font-size: 2.5rem;
       color: #222;
+      z-index: 5;
+      position: relative;
     }
     .island-grid {
       display: grid;
@@ -157,8 +159,8 @@
     const waveHeight = 10;
     const waveLength = 200;
     const speed = 0.0002;
-    const canvas = document.getElementById('water-canvas');
-    const ctx = canvas.getContext('2d');
+    const waterCanvas = document.getElementById('water-canvas');
+    const ctx = waterCanvas.getContext('2d');
     
     // Pre-calculate random values for consistent wave colors
     let randomValues = [];
@@ -257,10 +259,7 @@
     const cloudCanvas = document.getElementById('cloud-canvas');
     const cloudCtx = cloudCanvas.getContext('2d');
     
-    function resizeCloudCanvas() {
-      // Skip resizing on mobile devices to improve performance
-      if (window.innerWidth <= 600) return;
-      
+    function resizeCloudCanvas() {      
       cloudCanvas.width = Math.max(document.documentElement.scrollWidth, window.innerWidth);
       cloudCanvas.height = Math.max(document.documentElement.scrollHeight, window.innerHeight, document.body.offsetHeight);
     }
@@ -271,10 +270,7 @@
     const boatCanvas = document.getElementById('boat-canvas');
     const boatCtx = boatCanvas.getContext('2d');
     
-    function resizeBoatCanvas() {
-      // Skip resizing on mobile devices to improve performance
-      if (window.innerWidth <= 600) return;
-      
+    function resizeBoatCanvas() {      
       boatCanvas.width = Math.max(document.documentElement.scrollWidth, window.innerWidth);
       boatCanvas.height = Math.max(document.documentElement.scrollHeight, window.innerHeight, document.body.offsetHeight);
     }
@@ -360,33 +356,35 @@
     
     function generateRandomValues() {
       randomValues = [];
-      for (let y = 0; y < canvas.height; y += 20) {
+      for (let y = 0; y < waterCanvas.height; y += 20) {
         randomValues.push((Math.random() - 0.5) * 0.2); // ±20% variance
       }
     }
     
-    function resizeCanvas() {
-      // Skip resizing on mobile devices to improve performance
-      if (window.innerWidth <= 600) return;
-      
-      canvas.width = Math.max(document.documentElement.scrollWidth, window.innerWidth);
-      canvas.height = Math.max(document.documentElement.scrollHeight, window.innerHeight, document.body.offsetHeight);
+    function resizeCanvas() {      
+      waterCanvas.width = Math.max(document.documentElement.scrollWidth, window.innerWidth);
+      waterCanvas.height = Math.max(document.documentElement.scrollHeight, window.innerHeight, document.body.offsetHeight);
       generateRandomValues(); // Regenerate random values when canvas size changes
     }
     resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('resize', updateAllCanvasSizes);
     
+    let resized = false;
     function updateAllCanvasSizes() {
+      // Skip resizing on mobile devices to improve performance
+      if (window.innerWidth <= 600 && resized) return;
+
       resizeCanvas();
       resizeCloudCanvas(); 
       resizeBoatCanvas();
+      resized = true;
     }
     
     function drawWater(time) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, waterCanvas.width, waterCanvas.height);
       // Base water color - teal/turquoise
       ctx.fillStyle = '#4DD0E1';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(0, 0, waterCanvas.width, waterCanvas.height);
       
       // Draw subtle crescent wave lines
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
@@ -401,7 +399,7 @@
         const rockingSpeed = 0.0003 + (i * 0.0001); // Each crescent has different rocking speed
         const rockingAmplitude = 5 + (i * 10); // Different rocking distances
         // Distribute crescents across the full width with some randomness
-        const baseX = (i / 15) * canvas.width + Math.sin(i * 1.7) * (canvas.width * 0.2);
+        const baseX = (i / 15) * waterCanvas.width + Math.sin(i * 1.7) * (waterCanvas.width * 0.2);
         const xCenter = baseX + Math.sin(time * rockingSpeed) * rockingAmplitude;
         const crescentWidth = 20 + Math.sin(i * 0.3) * 2;
         const crescentHeight = 3 + Math.sin(i * 0.7) * .7;
