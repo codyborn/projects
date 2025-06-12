@@ -16,8 +16,6 @@
       position: absolute;
       top: 0;
       left: 0;
-      width: 100vw;
-      height: 100vh;
       z-index: 0;
       pointer-events: none;
       display: block;
@@ -26,8 +24,6 @@
       position: absolute;
       top: 0;
       left: 0;
-      width: 100vw;
-      height: 100vh;
       z-index: 4;
       pointer-events: none;
       display: block;
@@ -36,8 +32,6 @@
       position: absolute;
       top: 0;
       left: 0;
-      width: 100vw;
-      height: 100vh;
       z-index: 3;
       pointer-events: none;
       display: block;
@@ -51,7 +45,6 @@
     .island-grid {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
-      padding: 0px;
       max-width: 1200px;
       margin-top: 40px;
       margin-bottom: 0px;
@@ -84,6 +77,8 @@
       font-weight: 600;
       color: #2a4d69;
       text-align: center;
+      position: relative;
+      z-index: 5;
     }
     @media (max-width: 900px) {
       .island-grid {
@@ -91,8 +86,20 @@
       }
     }
     @media (max-width: 600px) {
+      body {
+        scroll-snap-type: y mandatory;
+        scroll-behavior: smooth;
+      }
       .island-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
+        justify-items: center;
+        gap: 20px;
+        padding: 0 20px;
+      }
+      .island {
+        grid-area: auto !important;
+        scroll-snap-align: center;
+        scroll-snap-stop: always;
       }
     }
     .island-tooltip {
@@ -103,7 +110,7 @@
       box-shadow: 0 2px 12px rgba(0,0,0,0.18);
       white-space: nowrap;
       opacity: 0;
-      transition: opacity 0.2s;
+      transition: opacity 0.2s, transform 0.2s;
       z-index: 10;
       font-size: 1rem;
       margin-top: 1.5em;
@@ -128,7 +135,7 @@
   <div class="island-grid" style="position:relative; z-index:2;">
     <!-- Islands will be inserted here by JS -->
   </div>
-  <svg id="island-lines" style="position:absolute; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:1;"></svg>
+  <svg id="island-lines" style="position:absolute; top:0; left:0; pointer-events:none; z-index:1;"></svg>
   <script>
     // Water effect
     const waveHeight = 10;
@@ -248,8 +255,8 @@
     const cloudCtx = cloudCanvas.getContext('2d');
     
     function resizeCloudCanvas() {
-      cloudCanvas.width = window.innerWidth;
-      cloudCanvas.height = window.innerHeight;
+      cloudCanvas.width = Math.max(document.documentElement.scrollWidth, window.innerWidth);
+      cloudCanvas.height = Math.max(document.documentElement.scrollHeight, window.innerHeight, document.body.offsetHeight);
     }
     resizeCloudCanvas();
     window.addEventListener('resize', resizeCloudCanvas);
@@ -259,8 +266,8 @@
     const boatCtx = boatCanvas.getContext('2d');
     
     function resizeBoatCanvas() {
-      boatCanvas.width = window.innerWidth;
-      boatCanvas.height = window.innerHeight;
+      boatCanvas.width = Math.max(document.documentElement.scrollWidth, window.innerWidth);
+      boatCanvas.height = Math.max(document.documentElement.scrollHeight, window.innerHeight, document.body.offsetHeight);
     }
     resizeBoatCanvas();
     window.addEventListener('resize', resizeBoatCanvas);
@@ -350,12 +357,16 @@
     }
     
     function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      canvas.width = Math.max(document.documentElement.scrollWidth, window.innerWidth);
+      canvas.height = Math.max(document.documentElement.scrollHeight, window.innerHeight, document.body.offsetHeight);
       generateRandomValues(); // Regenerate random values when canvas size changes
     }
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('scroll', () => {
+      // Update canvas sizes on scroll in case content has changed
+      setTimeout(updateAllCanvasSizes, 100);
+    });
     
     function drawWater(time) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -480,6 +491,12 @@
       const templateColumns = style.getPropertyValue('grid-template-columns');
       return templateColumns.split(' ').length;
     }
+    function updateAllCanvasSizes() {
+      resizeCanvas();
+      resizeCloudCanvas(); 
+      resizeBoatCanvas();
+    }
+    
     function renderIslands() {
       grid.innerHTML = '';
       const cols = getColumnCount();
@@ -514,10 +531,12 @@
       });
       setTimeout(updateIslandBounds, 100); // Update island bounds after layout is complete
       setTimeout(() => {
+        updateAllCanvasSizes(); // Update canvas sizes after content is rendered
         initializeClouds();
         initializeSailboats();
         drawLines(positions, cols, rows);
-      }, 150); // Initialize both clouds and sailboats after island bounds are ready
+        setupMobileTooltips(); // Setup mobile tooltip auto-display
+      }, 300); // Increased delay to ensure content is fully rendered
     }
     function drawLines(positions, cols, rows) {
       svg.innerHTML = '';
@@ -538,9 +557,10 @@
         line.setAttribute('y1', centers[i].y);
         line.setAttribute('x2', centers[i+1].x);
         line.setAttribute('y2', centers[i+1].y);
-        line.setAttribute('stroke', '#2a4d69');
+        line.setAttribute('stroke', 'rgba(255, 255, 255, 0.5)');
         line.setAttribute('stroke-width', '4');
         line.setAttribute('stroke-linecap', 'round');
+        line.setAttribute('stroke-dasharray', '8,8');
         svg.appendChild(line);
       }
     }
@@ -548,6 +568,71 @@
     grid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(180px, 1fr))';
     window.addEventListener('resize', renderIslands);
     renderIslands();
+
+    // Mobile tooltip auto-display functionality
+    function setupMobileTooltips() {
+      // Check if device is mobile
+      const isMobile = window.innerWidth <= 600;
+      if (!isMobile) return;
+
+      const islands = document.querySelectorAll('.island');
+      const firstIsland = islands[0];
+      const lastIsland = islands[islands.length - 1];
+
+      // Create intersection observer for center screen detection
+      const observerOptions = {
+        root: null,
+        rootMargin: '-40% 0px -40% 0px', // Only trigger when in center 20% of screen
+        threshold: 0.5
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          const tooltip = entry.target.querySelector('.island-tooltip');
+          if (entry.isIntersecting) {
+            // Island is in center area - show tooltip
+            tooltip.style.opacity = '1';
+            tooltip.style.transform = 'translateY(-10px)';
+          } else {
+            // Island is outside center area - hide tooltip
+            tooltip.style.opacity = '0';
+            tooltip.style.transform = 'translateY(0)';
+          }
+        });
+      }, observerOptions);
+
+      // Observe all islands
+      islands.forEach(island => {
+        observer.observe(island);
+      });
+
+      // Handle scroll for first/last island edge cases
+      function handleScroll() {
+        const scrollY = window.scrollY;
+        const windowHeight = window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight;
+        
+        // Show first island tooltip when at top of page
+        if (scrollY <= 50) { // Within 50px of top
+          const firstTooltip = firstIsland.querySelector('.island-tooltip');
+          firstTooltip.style.opacity = '1';
+          firstTooltip.style.transform = 'translateY(-10px)';
+        }
+        
+        // Show last island tooltip when at bottom of page
+        if (scrollY + windowHeight >= documentHeight - 50) { // Within 50px of bottom
+          const lastTooltip = lastIsland.querySelector('.island-tooltip');
+          lastTooltip.style.opacity = '1';
+          lastTooltip.style.transform = 'translateY(-10px)';
+        }
+      }
+
+      // Add scroll listener
+      window.addEventListener('scroll', handleScroll);
+      
+      // Initial check
+      handleScroll();
+    }
 
     function updateSailboats() {
       // Safety check: ensure we always have the right number of boats
