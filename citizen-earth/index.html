@@ -150,7 +150,7 @@
   </div>
   <svg id="island-lines" style="position:absolute; top:0; left:0; pointer-events:none; z-index:1;"></svg>
   <footer style="position: fixed; bottom: 2px; width: 100%; text-align: center; opacity: 0.2; font-size: 0.8rem; color: #222;">
-    Version 1.0.3
+    Version 1.0.4
   </footer>
   <script>
     // Lock orientation to portrait on mobile devices
@@ -534,9 +534,9 @@
       });
       setTimeout(updateIslandBounds, 100); // Update island bounds after layout is complete
       setTimeout(() => {
-        drawLines(positions, cols, rows);
-        setupMobileTooltips(); // Setup mobile tooltip auto-display
         if (!canvasesInitialized) {
+          drawLines(positions, cols, rows);
+          setupMobileTooltips(); // Setup mobile tooltip auto-display
           canvasesInitialized = true;
           updateAllCanvasSizes();
           initializeClouds();
