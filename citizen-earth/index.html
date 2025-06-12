@@ -150,7 +150,7 @@
   </div>
   <svg id="island-lines" style="position:absolute; top:0; left:0; pointer-events:none; z-index:1;"></svg>
   <footer style="position: fixed; bottom: 2px; width: 100%; text-align: center; opacity: 0.2; font-size: 0.8rem; color: #222;">
-    Version 1.0.0
+    Version 1.0.1
   </footer>
   <script>
     // Lock orientation to portrait on mobile devices
@@ -533,9 +533,6 @@
       });
       setTimeout(updateIslandBounds, 100); // Update island bounds after layout is complete
       setTimeout(() => {
-        updateAllCanvasSizes(); // Update canvas sizes after content is rendered
-        initializeClouds();
-        initializeSailboats();
         drawLines(positions, cols, rows);
         setupMobileTooltips(); // Setup mobile tooltip auto-display
       }, 300); // Increased delay to ensure content is fully rendered
@@ -568,7 +565,13 @@
     }
     // Set grid-template-columns to be responsive
     grid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(180px, 1fr))';
+    window.addEventListener('resize', renderIslands);
     renderIslands();
+      setTimeout(() => {
+        updateAllCanvasSizes(); // Update canvas sizes after content is rendered
+        initializeClouds();
+        initializeSailboats();
+      }, 300); // Increased delay to ensure content is fully rendered
 
     // Mobile tooltip auto-display functionality
     function setupMobileTooltips() {
