@@ -150,7 +150,7 @@
   </div>
   <svg id="island-lines" style="position:absolute; top:0; left:0; pointer-events:none; z-index:1;"></svg>
   <footer style="position: fixed; bottom: 2px; width: 100%; text-align: center; opacity: 0.2; font-size: 0.8rem; color: #222;">
-    Version 1.0.1
+    Version 1.0.2
   </footer>
   <script>
     // Lock orientation to portrait on mobile devices
@@ -733,7 +733,7 @@
       const x = cloudCanvas.width + 50; // Start off-screen to the right
       clouds.push({
         x: x,
-        y: Math.random() * cloudCanvas.height,
+        y: Math.random() * document.documentElement.scrollHeight,
         size: size,
       });
     }
@@ -749,7 +749,7 @@
       
       sailboats.push({
         x: x,
-        y: Math.random() * boatCanvas.height,
+        y: Math.random() * document.documentElement.scrollHeight,
         size: size,
         speedX: (0.1 + Math.random() * 0.1) * direction,
         speedY: (Math.random() - 0.5) * 0.05,
