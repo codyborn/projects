@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, orientation=portrait">
   <title>Citizen Earth</title>
   <style>
     body {
@@ -145,6 +145,14 @@
   </div>
   <svg id="island-lines" style="position:absolute; top:0; left:0; pointer-events:none; z-index:1;"></svg>
   <script>
+    // Lock orientation to portrait on mobile devices
+    if (window.innerWidth <= 600 && screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('portrait').catch(() => {
+        // Orientation lock not supported or failed
+        console.log('Orientation lock not supported');
+      });
+    }
+
     // Water effect
     const waveHeight = 10;
     const waveLength = 200;
@@ -250,6 +258,9 @@
     const cloudCtx = cloudCanvas.getContext('2d');
     
     function resizeCloudCanvas() {
+      // Skip resizing on mobile devices to improve performance
+      if (window.innerWidth <= 600) return;
+      
       cloudCanvas.width = Math.max(document.documentElement.scrollWidth, window.innerWidth);
       cloudCanvas.height = Math.max(document.documentElement.scrollHeight, window.innerHeight, document.body.offsetHeight);
     }
@@ -261,6 +272,9 @@
     const boatCtx = boatCanvas.getContext('2d');
     
     function resizeBoatCanvas() {
+      // Skip resizing on mobile devices to improve performance
+      if (window.innerWidth <= 600) return;
+      
       boatCanvas.width = Math.max(document.documentElement.scrollWidth, window.innerWidth);
       boatCanvas.height = Math.max(document.documentElement.scrollHeight, window.innerHeight, document.body.offsetHeight);
     }
@@ -352,6 +366,9 @@
     }
     
     function resizeCanvas() {
+      // Skip resizing on mobile devices to improve performance
+      if (window.innerWidth <= 600) return;
+      
       canvas.width = Math.max(document.documentElement.scrollWidth, window.innerWidth);
       canvas.height = Math.max(document.documentElement.scrollHeight, window.innerHeight, document.body.offsetHeight);
       generateRandomValues(); // Regenerate random values when canvas size changes
