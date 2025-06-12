@@ -149,6 +149,9 @@
     <!-- Islands will be inserted here by JS -->
   </div>
   <svg id="island-lines" style="position:absolute; top:0; left:0; pointer-events:none; z-index:1;"></svg>
+  <footer style="position: fixed; bottom: 2px; width: 100%; text-align: center; opacity: 0.2; font-size: 0.8rem; color: #222;">
+    Version 1.0.0
+  </footer>
   <script>
     // Lock orientation to portrait on mobile devices
     if (window.innerWidth <= 600 && screen.orientation && screen.orientation.lock) {
@@ -371,7 +374,6 @@
       resizeCloudCanvas(); 
       resizeBoatCanvas();
     }
-    updateAllCanvasSizes();
     
     function drawWater(time) {
       ctx.clearRect(0, 0, waterCanvas.width, waterCanvas.height);
@@ -566,7 +568,6 @@
     }
     // Set grid-template-columns to be responsive
     grid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(180px, 1fr))';
-    window.addEventListener('resize', renderIslands);
     renderIslands();
 
     // Mobile tooltip auto-display functionality
