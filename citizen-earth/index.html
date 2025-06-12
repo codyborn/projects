@@ -86,20 +86,28 @@
       }
     }
     @media (max-width: 600px) {
-      body {
+      html {
         scroll-snap-type: y mandatory;
         scroll-behavior: smooth;
+      }
+      body {
+        scroll-snap-type: y mandatory;
       }
       .island-grid {
         grid-template-columns: 1fr !important;
         justify-items: center;
-        gap: 20px;
+        gap: 10vh;
         padding: 0 20px;
       }
       .island {
         grid-area: auto !important;
         scroll-snap-align: center;
         scroll-snap-stop: always;
+        
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
       }
     }
     .island-tooltip {
@@ -159,19 +167,7 @@
     const sailboatImage = new Image();
     sailboatImage.src = './images/sailboat.png';
     let sailboats = [];
-    
-    function checkCloudOverlap(cloudY, cloudSize) {
-      // const islandBuffer = 10;
-      // const cloudBottom = cloudY + (cloudImage.height * cloudSize);
-      // // Check if cloud overlaps with any island
-      // for (let island of islandBounds) {
-      //   // Proper collision detection: cloud overlaps if it starts before island ends AND ends after island starts
-      //   if (cloudY < island.bottom + islandBuffer && cloudBottom > island.top - islandBuffer) {
-      //     return true; // Overlap detected
-      //   }
-      // }
-      return false; // No overlap
-    }
+    const sailboatSpawnProbability = 0.002; // Reasonable spawn rate
 
     function checkSailboatOverlap(sailboatX, sailboatY, sailboatSize) {
       if (!sailboatImage.complete) return false;
@@ -197,7 +193,7 @@
       
       while (attempts < maxAttempts) {
         const randomX = Math.random() * boatCanvas.width;
-        const randomY = Math.random() * (boatCanvas.height * 0.6) + (boatCanvas.height * 0.3); // Middle 60% of lower screen
+        const randomY = Math.random() * boatCanvas.height; // Use full canvas height
         
         if (!checkSailboatOverlap(randomX, randomY, sailboatSize)) {
           return { x: randomX, y: randomY };
@@ -207,11 +203,11 @@
       
       // If no valid position found, place at edge of screen
       const fallbackPositions = [
-        { x: 50, y: boatCanvas.height * 0.8 },
-        { x: boatCanvas.width - 100, y: boatCanvas.height * 0.8 },
-        { x: boatCanvas.width * 0.5, y: boatCanvas.height * 0.9 },
-        { x: 100, y: boatCanvas.height * 0.7 },
-        { x: boatCanvas.width - 150, y: boatCanvas.height * 0.7 }
+        { x: 50, y: boatCanvas.height * 0.2 },
+        { x: boatCanvas.width - 100, y: boatCanvas.height * 0.4 },
+        { x: boatCanvas.width * 0.5, y: boatCanvas.height * 0.6 },
+        { x: 100, y: boatCanvas.height * 0.8 },
+        { x: boatCanvas.width - 150, y: boatCanvas.height * 0.9 }
       ];
       
       // Try each fallback position
@@ -224,28 +220,27 @@
       // Last resort: place at safe edge position
       return { 
         x: Math.random() > 0.5 ? 50 : boatCanvas.width - 100, 
-        y: boatCanvas.height * 0.8 
+        y: Math.random() * boatCanvas.height // Use full canvas height
       };
     }
     
     function initializeSailboats() {
       sailboats = [];
-      const sailboatCount = 4;
-      for (let i = 0; i < sailboatCount; i++) {
-        const size = .4; // Smaller than clouds
-        const position = getValidSailboatPosition(size);
-        const direction = Math.random() > 0.5 ? 1 : -1; // Random left or right
+      
+      // Start with 2 sailboats on the page
+      for (let i = 0; i < 2; i++) {
+        const size = 0.4;
+        const direction = Math.random() > 0.5 ? 1 : -1;
         sailboats.push({
-          x: position.x,
-          y: position.y,
+          x: Math.random() * boatCanvas.width,
+          y: Math.random() * boatCanvas.height,
           size: size,
-          speedX: (0.1 + Math.random() * 0.1) * direction, // 0.3-0.7 speed left or right
-          speedY: (Math.random() - 0.5) * 0.05, // Small vertical drift
+          speedX: (0.1 + Math.random() * 0.1) * direction,
+          speedY: (Math.random() - 0.5) * 0.05,
           stopped: false,
           stopTimer: 0,
-          originalSpeedX: (0.1 + Math.random() * 0.1) * direction, // Store original speed
-          bobbingPhase: Math.random() * Math.PI * 2, // Random bobbing phase
-          offscreenTimer: 0 // Track how long boat has been offscreen
+          originalSpeedX: (0.1 + Math.random() * 0.1) * direction,
+          bobbingPhase: Math.random() * Math.PI * 2
         });
       }
     }
@@ -294,7 +289,7 @@
         const x = Math.random() * cloudCanvas.width;
         clouds.push({
           x: x,
-          y: Math.random() * (cloudCanvas.height * 0.7),
+          y: Math.random() * cloudCanvas.height, // Use full canvas height
           size: size,
         });
       }
@@ -363,10 +358,12 @@
     }
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
-    window.addEventListener('scroll', () => {
-      // Update canvas sizes on scroll in case content has changed
-      setTimeout(updateAllCanvasSizes, 100);
-    });
+    
+    function updateAllCanvasSizes() {
+      resizeCanvas();
+      resizeCloudCanvas(); 
+      resizeBoatCanvas();
+    }
     
     function drawWater(time) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -490,11 +487,6 @@
       const style = window.getComputedStyle(grid);
       const templateColumns = style.getPropertyValue('grid-template-columns');
       return templateColumns.split(' ').length;
-    }
-    function updateAllCanvasSizes() {
-      resizeCanvas();
-      resizeCloudCanvas(); 
-      resizeBoatCanvas();
     }
     
     function renderIslands() {
@@ -635,87 +627,29 @@
     }
 
     function updateSailboats() {
-      // Safety check: ensure we always have the right number of boats
-      while (sailboats.length < 4) {
-        const size = 0.4;
-        const position = getValidSailboatPosition(size);
-        const direction = Math.random() > 0.5 ? 1 : -1;
-        sailboats.push({
-          x: position.x,
-          y: position.y,
-          size: size,
-          speedX: (0.1 + Math.random() * 0.1) * direction,
-          speedY: (Math.random() - 0.5) * 0.05,
-          stopped: false,
-          stopTimer: 0,
-          originalSpeedX: (0.1 + Math.random() * 0.1) * direction,
-          bobbingPhase: Math.random() * Math.PI * 2,
-          offscreenTimer: 0
-        });
+      // Random chance to spawn a new sailboat each frame
+      if (Math.random() < sailboatSpawnProbability) {
+        spawnNewSailboat();
       }
       
-      sailboats.forEach(sailboat => {
-        // Check if boat is offscreen (completely outside canvas bounds)
-        const isOffscreen = (sailboat.x + sailboatImage.width * sailboat.size < 0) || 
-                           (sailboat.x > boatCanvas.width) ||
-                           (sailboat.y + sailboatImage.height * sailboat.size < 0) ||
-                           (sailboat.y > boatCanvas.height);
-        
-        if (isOffscreen) {
-          sailboat.offscreenTimer++;
-          // If offscreen for more than 1 second (60 frames), respawn
-          if (sailboat.offscreenTimer > 60) {
-            const newPosition = getValidSailboatPosition(sailboat.size);
-            sailboat.offscreenTimer = 0;
-            sailboat.stopped = false;
-            sailboat.stopTimer = 0;
-            const direction = Math.random() > 0.5 ? 1 : -1;
-            if (direction === 1) {
-              sailboat.x = -sailboatImage.width;
-            } else {
-              sailboat.x = boatCanvas.width + sailboatImage.width;
-            }
-            sailboat.y = newPosition.y;
-            sailboat.speedX = (0.1 + Math.random() * 0.1) * direction;
-            sailboat.speedY = (Math.random() - 0.5) * 0.05;
-            sailboat.originalSpeedX = sailboat.speedX;
-          }
-        } else {
-          sailboat.offscreenTimer = 0; // Reset timer when boat is onscreen
-        }
+      // Update existing sailboats and remove those that have exited
+      for (let i = sailboats.length - 1; i >= 0; i--) {
+        const sailboat = sailboats[i];
         
         if (sailboat.stopped) {
           // Boat is stopped at island - only bob up and down
           sailboat.stopTimer++;
-          sailboat.y += Math.sin(sailboat.stopTimer * 0.03 + sailboat.bobbingPhase) * 0.02; // Gentle bobbing
+          sailboat.y += Math.sin(sailboat.stopTimer * 0.03 + sailboat.bobbingPhase) * 0.02;
           
-          // After 10 seconds (600 frames at 60fps), resume sailing
-          if (sailboat.stopTimer >= 600) {
+          // After 5 seconds, resume sailing
+          if (sailboat.stopTimer >= 300) {
             sailboat.stopped = false;
             sailboat.stopTimer = 0;
             sailboat.speedX = -sailboat.originalSpeedX; // Reverse direction
-            sailboat.speedY = (Math.random() - 0.5) * 0.05; // New drift
-            sailboat.originalSpeedX = sailboat.speedX; // Update stored speed
-            
-            // Move to a safe position away from islands
-            let attempts = 0;
-            while (attempts < 20 && checkSailboatOverlap(sailboat.x, sailboat.y, sailboat.size)) {
-              // Move away from the collision
-              sailboat.x += sailboat.speedX * 10; // Move further in the new direction
-              sailboat.y += (Math.random() - 0.5) * 20; // Add some random vertical offset
-              attempts++;
-            }
-            
-            // If still stuck after attempts, respawn at a completely new location
-            if (checkSailboatOverlap(sailboat.x, sailboat.y, sailboat.size)) {
-              const newPosition = getValidSailboatPosition(sailboat.size);
-              sailboat.x = newPosition.x;
-              sailboat.y = newPosition.y;
-            }
+            sailboat.speedY = (Math.random() - 0.5) * 0.05;
           }
         } else {
           // Normal sailing behavior
-          // Store previous position
           const prevX = sailboat.x;
           const prevY = sailboat.y;
           
@@ -725,27 +659,28 @@
           
           // Check for collision with islands and stop if needed
           if (checkSailboatOverlap(sailboat.x, sailboat.y, sailboat.size)) {
-            // Revert to previous position and stop
             sailboat.x = prevX;
             sailboat.y = prevY;
             sailboat.stopped = true;
             sailboat.stopTimer = 0;
           }
-        }
-        
-        // Wrap around screen edges (only if not stopped)
-        if (!sailboat.stopped) {          
-          // Keep sailboats in lower portion of screen
-          if (sailboat.y < boatCanvas.height * 0.2) {
-            sailboat.y = boatCanvas.height * 0.2;
-            sailboat.speedY = Math.abs(sailboat.speedY); // Move down
+          
+          // Bounce off top and bottom edges
+          if (sailboat.y < 0) {
+            sailboat.y = 0;
+            sailboat.speedY = Math.abs(sailboat.speedY);
           }
           if (sailboat.y + sailboatImage.height * sailboat.size > boatCanvas.height) {
             sailboat.y = boatCanvas.height - sailboatImage.height * sailboat.size;
-            sailboat.speedY = -Math.abs(sailboat.speedY); // Move up
+            sailboat.speedY = -Math.abs(sailboat.speedY);
           }
         }
-      });
+        
+        // Remove sailboat if it has completely exited the screen
+        if (sailboat.x + sailboatImage.width * sailboat.size < 0 || sailboat.x > boatCanvas.width) {
+          sailboats.splice(i, 1);
+        }
+      }
     }
     
     function drawSailboats() {
@@ -786,8 +721,30 @@
       const x = cloudCanvas.width + 50; // Start off-screen to the right
       clouds.push({
         x: x,
-        y: Math.random() * (cloudCanvas.height * 0.7),
+        y: Math.random() * cloudCanvas.height,
         size: size,
+      });
+    }
+
+    function spawnNewSailboat() {
+      // Only spawn if image is loaded
+      if (!sailboatImage.complete) return;
+      
+      const size = 0.4;
+      const direction = Math.random() > 0.5 ? 1 : -1; // Random left or right
+      const boatWidth = sailboatImage.width * size;
+      const x = direction === 1 ? -boatWidth : boatCanvas.width + boatWidth;
+      
+      sailboats.push({
+        x: x,
+        y: Math.random() * boatCanvas.height,
+        size: size,
+        speedX: (0.1 + Math.random() * 0.1) * direction,
+        speedY: (Math.random() - 0.5) * 0.05,
+        stopped: false,
+        stopTimer: 0,
+        originalSpeedX: (0.1 + Math.random() * 0.1) * direction,
+        bobbingPhase: Math.random() * Math.PI * 2
       });
     }
   </script>
