@@ -150,7 +150,7 @@
   </div>
   <svg id="island-lines" style="position:absolute; top:0; left:0; pointer-events:none; z-index:1;"></svg>
   <footer style="position: fixed; bottom: 2px; width: 100%; text-align: center; opacity: 0.2; font-size: 0.8rem; color: #222;">
-    Version 1.0.3
+    Version 1.0.5
   </footer>
   <script>
     // Lock orientation to portrait on mobile devices
@@ -588,7 +588,7 @@
       // Create intersection observer for center screen detection
       const observerOptions = {
         root: null,
-        rootMargin: '-40% 0px -40% 0px', // Only trigger when in center 20% of screen
+        rootMargin: '-30% 0px -30% 0px', // Only trigger when in center 40% of screen
         threshold: 0.5
       };
 
