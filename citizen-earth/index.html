@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, orientation=portrait">
   <title>Citizen Earth</title>
   <style>
+    html, body {
+      height: 100%;
+    }
     body {
       background: #4DD0E1;
       font-family: 'Segoe UI', Arial, sans-serif;
@@ -263,8 +266,6 @@
       cloudCanvas.width = Math.max(document.documentElement.scrollWidth, window.innerWidth);
       cloudCanvas.height = Math.max(document.documentElement.scrollHeight, window.innerHeight, document.body.offsetHeight);
     }
-    resizeCloudCanvas();
-    window.addEventListener('resize', resizeCloudCanvas);
     
     // Boat canvas setup
     const boatCanvas = document.getElementById('boat-canvas');
@@ -274,8 +275,6 @@
       boatCanvas.width = Math.max(document.documentElement.scrollWidth, window.innerWidth);
       boatCanvas.height = Math.max(document.documentElement.scrollHeight, window.innerHeight, document.body.offsetHeight);
     }
-    resizeBoatCanvas();
-    window.addEventListener('resize', resizeBoatCanvas);
     
     function updateIslandBounds() {
       islandBounds = [];
@@ -361,24 +360,18 @@
       }
     }
     
-    function resizeCanvas() {      
+    function resizeWaterCanvas() {      
       waterCanvas.width = Math.max(document.documentElement.scrollWidth, window.innerWidth);
       waterCanvas.height = Math.max(document.documentElement.scrollHeight, window.innerHeight, document.body.offsetHeight);
       generateRandomValues(); // Regenerate random values when canvas size changes
     }
-    resizeCanvas();
-    window.addEventListener('resize', updateAllCanvasSizes);
     
-    let resized = false;
     function updateAllCanvasSizes() {
-      // Skip resizing on mobile devices to improve performance
-      if (window.innerWidth <= 600 && resized) return;
-
-      resizeCanvas();
+      resizeWaterCanvas();
       resizeCloudCanvas(); 
       resizeBoatCanvas();
-      resized = true;
     }
+    updateAllCanvasSizes();
     
     function drawWater(time) {
       ctx.clearRect(0, 0, waterCanvas.width, waterCanvas.height);
