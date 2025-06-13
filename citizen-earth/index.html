@@ -552,7 +552,12 @@
           initializeSailboats();
         }
       }, 300); // Increased delay to ensure content is fully rendered
+
+      document.addEventListener('DOMContentLoaded', () => {
+        drawLines(positions, cols, rows);
+      });
     }
+
     function drawLines(positions, cols, rows) {
       svg.innerHTML = '';
       svg.setAttribute('width', document.body.scrollWidth);
