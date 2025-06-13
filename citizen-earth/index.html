@@ -58,9 +58,6 @@
 
       direction: ltr;
     }
-    .island-row {
-      display: contents;
-    }
     .island {
       display: flex;
       flex-direction: column;
@@ -162,14 +159,8 @@
     }
 
     // Water effect
-    const waveHeight = 10;
-    const waveLength = 200;
-    const speed = 0.0002;
     const waterCanvas = document.getElementById('water-canvas');
     const ctx = waterCanvas.getContext('2d');
-    
-    // Pre-calculate random values for consistent wave colors
-    let randomValues = [];
     
     // Cloud system
     const cloudImage = new Image();
@@ -356,17 +347,9 @@
       requestAnimationFrame(animateBoats);
     }
     
-    function generateRandomValues() {
-      randomValues = [];
-      for (let y = 0; y < waterCanvas.height; y += 20) {
-        randomValues.push((Math.random() - 0.5) * 0.2); // ±20% variance
-      }
-    }
-    
     function resizeWaterCanvas() {      
       waterCanvas.width = Math.max(document.documentElement.scrollWidth, window.innerWidth);
       waterCanvas.height = Math.max(document.documentElement.scrollHeight, window.innerHeight, document.body.offsetHeight);
-      generateRandomValues(); // Regenerate random values when canvas size changes
     }
     
     function updateAllCanvasSizes() {
@@ -390,12 +373,14 @@
         ctx.lineWidth = 2;
         
         // Create crescent shapes at different positions with independent movement
-        const baseY = (i * 80) ;
-        const rockingSpeed = 0.0003 + (i * 0.0001); // Each crescent has different rocking speed
-        const rockingAmplitude = 5 + (i * 10); // Different rocking distances
-        // Distribute crescents across the full width with some randomness
         const baseX = (i / 15) * waterCanvas.width + Math.sin(i * 1.7) * (waterCanvas.width * 0.2);
-        const xCenter = baseX + Math.sin(time * rockingSpeed) * rockingAmplitude;
+        
+        // Calculate Y position with downward movement
+        const waveSpeed = 0.005; // Speed of downward movement
+        const waveHeight = waterCanvas.height + 100; // Extra height for smooth transition
+        const baseY = ((time * waveSpeed) + (i * 80)) % waveHeight;
+        
+        const xCenter = baseX;
         const crescentWidth = 20 + Math.sin(i * 0.3) * 2;
         const crescentHeight = 3 + Math.sin(i * 0.7) * .7;
         
@@ -449,6 +434,7 @@
       { 
         name: 'Miami',
         dates: 'Jan - Apr',
+        duration: '3 months',
         islandImg: './images/miami.png',
         link: 'https://mirror.xyz/citizenearth.eth/mdQHEpgT3U0ZLge1NOm4xoMebfHwoaREPSYK3GIOdSc',
         linkText: 'Tied down'
@@ -456,35 +442,42 @@
       { 
         name: 'New York', 
         dates: 'Apr', 
+        duration: '1 month',
         islandImg: './images/NY.png',
         size: 200
       },
       { 
         name: 'Madrid', 
         dates: 'Apr - May', 
+        duration: '1 week',
         islandImg: './images/madrid.png' ,
         size: 150
       },
       { 
         name: 'Granada', 
         dates: 'May', 
+        duration: '2 weeks',
         islandImg: './images/granada.png' ,
         size: 200
       },
       { 
         name: 'Marseille', 
         dates: 'May',
+        duration: '1 day',
         islandImg: './images/marseille.png' ,
         size: 160
       },
       { 
         name: 'Hyeres', 
         dates: 'May - Jun', 
-        islandImg: './images/hyeres.png' 
+        duration: '1 month',
+        islandImg: './images/hyeres.png',
+        size: 160
       },
       { 
         name: 'Antibes', 
         dates: 'Jun', 
+        duration: '3 weeks',
         islandImg: './images/antibes.png',
         size: 160
       },
@@ -514,10 +507,10 @@
         div.style.gridRow = (row + 1).toString();
         div.style.gridColumn = (col + 1).toString();
         div.innerHTML = `
-          <img src="${cityObj.islandImg}" alt="Floating Island for ${cityObj.name}" style="width: ${cityObj.size ? cityObj.size + 'px' : '120px'}; height: auto;">
+          <img src="${cityObj.islandImg}" alt="${cityObj.name}" style="width: ${cityObj.size ? cityObj.size + 'px' : '120px'}; height: auto;">
           <div class="city-name">${cityObj.name}</div>
           <div class="island-tooltip">
-            <div><strong>${cityObj.name}</strong></div>
+            <div><strong>${cityObj.duration}</strong></div>
             <div>${cityObj.dates}</div>
             ${cityObj.link ? `<div><a href="${cityObj.link}" target="_blank">${cityObj.linkText}</a></div>` : ''}
           </div>
