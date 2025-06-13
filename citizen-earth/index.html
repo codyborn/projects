@@ -41,11 +41,25 @@
     }
     h1 {
       text-align: center;
-      margin-top: 32px;
+      margin-top: 43px;
       font-size: 2.5rem;
       color: #222;
       z-index: 5;
       position: relative;
+    }
+    #sunk-ships-counter {
+      position: fixed;
+      top: 10px;
+      right: 20px;
+      background: rgba(44, 62, 80, 0.9);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 1.2rem;
+      z-index: 9999;
+      display: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      pointer-events: none;
     }
     .island-grid {
       display: grid;
@@ -142,6 +156,7 @@
   <canvas id="cloud-canvas"></canvas>
   <canvas id="boat-canvas"></canvas>
   <h1>Citizen Earth</h1>
+  <div id="sunk-ships-counter">Ships Sunk: 0</div>
   <div class="island-grid" style="position:relative; z-index:2;">
     <!-- Islands will be inserted here by JS -->
   </div>
@@ -184,10 +199,13 @@
       const sailboatBottom = sailboatY + sailboatHeight;
       const sailboatRight = sailboatX + sailboatWidth;
       
+      // Add a buffer around islands (20 pixels)
+      const buffer = 20;
+      
       // Check if sailboat overlaps with any island
       for (let island of islandBounds) {
-        if (sailboatX < island.right && sailboatRight > island.left &&
-            sailboatY < island.bottom && sailboatBottom > island.top) {
+        if (sailboatX < island.right + buffer && sailboatRight > island.left - buffer &&
+            sailboatY < island.bottom + buffer && sailboatBottom > island.top - buffer) {
           return true; // Overlap detected
         }
       }
@@ -238,16 +256,21 @@
       for (let i = 0; i < 2; i++) {
         const size = 0.4;
         const direction = Math.random() > 0.5 ? 1 : -1;
+        const validPosition = getValidSailboatPosition(size);
+        
         sailboats.push({
-          x: Math.random() * boatCanvas.width,
-          y: Math.random() * boatCanvas.height,
+          x: validPosition.x,
+          y: validPosition.y,
           size: size,
           speedX: (0.1 + Math.random() * 0.1) * direction,
           speedY: (Math.random() - 0.5) * 0.05,
           stopped: false,
           stopTimer: 0,
           originalSpeedX: (0.1 + Math.random() * 0.1) * direction,
-          bobbingPhase: Math.random() * Math.PI * 2
+          bobbingPhase: Math.random() * Math.PI * 2,
+          sinking: false,
+          rotation: 0,
+          sinkProgress: 0
         });
       }
     }
@@ -461,13 +484,6 @@
         size: 200
       },
       { 
-        name: 'Marseille', 
-        dates: 'May',
-        duration: '1 day',
-        islandImg: './images/marseille.png' ,
-        size: 160
-      },
-      { 
         name: 'Hyeres', 
         dates: 'May - Jun', 
         duration: '1 month',
@@ -633,6 +649,18 @@
       handleScroll();
     }
 
+    let totalSunkShips = 0;
+    const sunkShipsCounter = document.getElementById('sunk-ships-counter');
+
+    function updateSunkShipsCounter() {
+      if (totalSunkShips > 0) {
+        sunkShipsCounter.style.display = 'block';
+        sunkShipsCounter.textContent = `Ships Sunk: ${totalSunkShips}`;
+      } else {
+        sunkShipsCounter.style.display = 'none';
+      }
+    }
+
     function updateSailboats() {
       // Random chance to spawn a new sailboat each frame
       if (Math.random() < sailboatSpawnProbability) {
@@ -643,6 +671,23 @@
       for (let i = sailboats.length - 1; i >= 0; i--) {
         const sailboat = sailboats[i];
         
+        if (sailboat.sinking) {
+            sailboat.speedX = sailboat.speedX * .99
+            // Update sinking animation
+            const sinkSpeed = 0.002;
+            sailboat.sinkProgress += sinkSpeed; // Speed of sinking
+            // lower boat into water
+            sailboat.y += sinkSpeed * sailboat.size * sailboatImage.height;
+            
+            // Remove boat once fully sunk
+            if (sailboat.sinkProgress >= 1) {
+              totalSunkShips++;
+              updateSunkShipsCounter();
+              sailboats.splice(i, 1);
+              continue;
+            }
+          }
+
         if (sailboat.stopped) {
           // Boat is stopped at island - only bob up and down
           sailboat.stopTimer++;
@@ -684,7 +729,7 @@
         }
         
         // Remove sailboat if it has completely exited the screen
-        if (sailboat.x + sailboatImage.width * sailboat.size < 0 || sailboat.x > boatCanvas.width) {
+        if (!sailboat.sinking && (sailboat.x + sailboatImage.width * sailboat.size < 0 || sailboat.x > boatCanvas.width)) {
           sailboats.splice(i, 1);
         }
       }
@@ -699,29 +744,105 @@
         
         sortedSailboats.forEach(sailboat => {
           boatCtx.save();
-          // Flip image if moving left
-          if (sailboat.speedX < 0) {
-            boatCtx.scale(-1, 1);
-            boatCtx.drawImage(
-              sailboatImage,
-              -(sailboat.x + sailboatImage.width * sailboat.size),
-              sailboat.y,
-              sailboatImage.width * sailboat.size,
-              sailboatImage.height * sailboat.size
-            );
-          } else {
-            boatCtx.drawImage(
-              sailboatImage,
-              sailboat.x,
-              sailboat.y,
-              sailboatImage.width * sailboat.size,
-              sailboatImage.height * sailboat.size
-            );
+          
+          // Calculate center point for rotation
+          const centerX = sailboat.x + (sailboatImage.width * sailboat.size) / 2;
+          const centerY = sailboat.y + (sailboatImage.height * sailboat.size) / 2;
+          
+          // Move to center point for rotation
+          boatCtx.translate(centerX, centerY);
+          
+          // Calculate clipping for sinking animation
+          if (sailboat.sinking) {
+            const clipHeight = sailboatImage.height * sailboat.size * (1 - sailboat.sinkProgress);
+            boatCtx.beginPath();
+            boatCtx.rect(-(sailboatImage.width * sailboat.size) / 2, 
+                        -(sailboatImage.height * sailboat.size) / 2,
+                        sailboatImage.width * sailboat.size,
+                        clipHeight);
+            boatCtx.clip();
           }
+          
+          // Draw the boat
+          boatCtx.drawImage(
+            sailboatImage,
+            -(sailboatImage.width * sailboat.size) / 2,
+            -(sailboatImage.height * sailboat.size) / 2,
+            sailboatImage.width * sailboat.size,
+            sailboatImage.height * sailboat.size
+          );
+          
           boatCtx.restore();
         });
       }
     }
+
+    // Add click detection for boats
+    boatCanvas.addEventListener('click', (event) => {
+      const rect = boatCanvas.getBoundingClientRect();
+      const clickX = event.clientX - rect.left;
+      const clickY = event.clientY - rect.top;
+      
+      // Check each boat for click
+      let clickedBoat = false;
+      for (let sailboat of sailboats) {
+        if (sailboat.sinking) continue; // Skip boats that are already sinking
+        
+        const boatWidth = sailboatImage.width * sailboat.size;
+        const boatHeight = sailboatImage.height * sailboat.size;
+        
+        // Check if click is within boat bounds
+        if (clickX >= sailboat.x && 
+            clickX <= sailboat.x + boatWidth &&
+            clickY >= sailboat.y && 
+            clickY <= sailboat.y + boatHeight) {
+          sailboat.sinking = true;
+          sailboat.sinkProgress = 0;
+          clickedBoat = true;
+          break; // Only sink one boat at a time
+        }
+      }
+      
+      // If we didn't click a boat, let the event pass through
+      if (!clickedBoat) {
+        event.stopPropagation();
+        event.preventDefault();
+        // Re-dispatch the click event on the element below
+        const elementBelow = document.elementFromPoint(event.clientX, event.clientY);
+        if (elementBelow) {
+          elementBelow.click();
+        }
+      }
+    });
+
+    document.body.addEventListener('mousemove', (event) => {
+      const rect = boatCanvas.getBoundingClientRect();
+      const mouseX = event.clientX - rect.left;
+      const mouseY = event.clientY - rect.top;
+      
+      let hoveringBoat = false;
+      for (let sailboat of sailboats) {
+        if (sailboat.sinking) continue;
+        
+        const boatWidth = sailboatImage.width * sailboat.size;
+        const boatHeight = sailboatImage.height * sailboat.size;
+        
+        if (mouseX >= sailboat.x && 
+            mouseX <= sailboat.x + boatWidth &&
+            mouseY >= sailboat.y && 
+            mouseY <= sailboat.y + boatHeight) {
+          hoveringBoat = true;
+          // change cursor to pointer
+          document.body.style.cursor = 'pointer';
+          break;
+        }
+      }
+      if (!hoveringBoat) {
+        document.body.style.cursor = 'default';
+      }
+      
+      boatCanvas.style.pointerEvents = hoveringBoat ? 'auto' : 'none';
+    });
 
     function spawnNewCloud() {
       const size = 0.3 + Math.random() * 0.5;
@@ -742,18 +863,32 @@
       const boatWidth = sailboatImage.width * size;
       const x = direction === 1 ? -boatWidth : boatCanvas.width + boatWidth;
       
+      // Get a valid Y position that doesn't overlap with islands
+      const validPosition = getValidSailboatPosition(size);
+      
       sailboats.push({
         x: x,
-        y: Math.random() * document.documentElement.scrollHeight,
+        y: validPosition.y,
         size: size,
         speedX: (0.1 + Math.random() * 0.1) * direction,
         speedY: (Math.random() - 0.5) * 0.05,
         stopped: false,
         stopTimer: 0,
         originalSpeedX: (0.1 + Math.random() * 0.1) * direction,
-        bobbingPhase: Math.random() * Math.PI * 2
+        bobbingPhase: Math.random() * Math.PI * 2,
+        sinking: false,
+        rotation: 0,
+        sinkProgress: 0
       });
     }
+
+    // Add window resize and scroll handlers to update island bounds
+    window.addEventListener('resize', () => {
+      updateIslandBounds();
+      updateAllCanvasSizes();
+    });
+
+    window.addEventListener('scroll', updateIslandBounds);
   </script>
 </body>
 </html> 
