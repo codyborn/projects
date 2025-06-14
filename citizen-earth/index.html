@@ -46,6 +46,7 @@
       color: #222;
       z-index: 5;
       position: relative;
+      pointer-events: none;
     }
     #sunk-ships-counter {
       position: fixed;
@@ -189,7 +190,11 @@
     const sailboatImage = new Image();
     sailboatImage.src = './images/sailboat.png';
     let sailboats = [];
-    const sailboatSpawnProbability = 0.002; // Reasonable spawn rate
+    let sailboatSpawnProbability = 0.005;
+
+    // Replace the single lastFrameTime with separate timing variables
+    let lastCloudFrameTime = 0;
+    let lastBoatFrameTime = 0;
 
     function checkSailboatOverlap(sailboatX, sailboatY, sailboatSize) {
       if (!sailboatImage.complete) return false;
@@ -321,24 +326,47 @@
       }
     }
     
-    function updateClouds() {
+    // Update the cloud animation function
+    function animateClouds(currentTime) {
+      if (!lastCloudFrameTime) lastCloudFrameTime = currentTime;
+      const deltaTime = currentTime - lastCloudFrameTime;
+      lastCloudFrameTime = currentTime;
+      
+      updateClouds(deltaTime);
+      drawClouds();
+      requestAnimationFrame(animateClouds);
+    }
+
+    // Update the boat animation function
+    function animateBoats(currentTime) {
+      if (!lastBoatFrameTime) lastBoatFrameTime = currentTime;
+      const deltaTime = currentTime - lastBoatFrameTime;
+      lastBoatFrameTime = currentTime;
+      
+      updateSailboats(deltaTime);
+      drawSailboats();
+      requestAnimationFrame(animateBoats);
+    }
+
+    // Update the cloud movement to use deltaTime
+    function updateClouds(deltaTime) {
       // Random chance to spawn a new cloud each frame
-      if (Math.random() < cloudSpawnProbability) {
+      if (Math.random() < cloudSpawnProbability * (deltaTime / 16.67)) { // Normalize to 60fps
         spawnNewCloud();
       }
       
       // Update existing clouds and remove those that have exited
       for (let i = clouds.length - 1; i >= 0; i--) {
         const cloud = clouds[i];
-        cloud.x -= cloudSpeed;
+        cloud.x -= cloudSpeed * (deltaTime / 16.67); // Normalize to 60fps
         
         // Remove cloud if it has completely exited the left side
         if (cloud.x + cloudImage.width * cloud.size < 0) {
-          clouds.splice(i, 1); // Delete the cloud
+          clouds.splice(i, 1);
         }
       }
     }
-    
+
     function drawClouds() {
       cloudCtx.clearRect(0, 0, cloudCanvas.width, cloudCanvas.height);
       
@@ -356,18 +384,6 @@
           cloudCtx.restore();
         });
       }
-    }
-    
-    function animateClouds() {
-      updateClouds();
-      drawClouds();
-      requestAnimationFrame(animateClouds);
-    }
-    
-    function animateBoats() {
-      updateSailboats();
-      drawSailboats();
-      requestAnimationFrame(animateBoats);
     }
     
     function resizeWaterCanvas() {      
@@ -495,6 +511,13 @@
         dates: 'Jun', 
         duration: '3 weeks',
         islandImg: './images/antibes.png',
+        size: 160
+      },
+      { 
+        name: 'Cannes', 
+        dates: 'Jun-July', 
+        duration: '1 week',
+        islandImg: './images/cannes.png',
         size: 160
       },
     ];
@@ -661,14 +684,19 @@
       if (totalSunkShips > 0) {
         sunkShipsCounter.style.display = 'block';
         sunkShipsCounter.textContent = `Ships Sunk: ${totalSunkShips}`;
+        // increase boat spawn probability
+        if (totalSunkShips > 10) {
+          sailboatSpawnProbability = 0.02;
+        }
       } else {
         sunkShipsCounter.style.display = 'none';
       }
     }
 
-    function updateSailboats() {
+    // Update the boat movement to use deltaTime
+    function updateSailboats(deltaTime) {
       // Random chance to spawn a new sailboat each frame
-      if (Math.random() < sailboatSpawnProbability) {
+      if (Math.random() < sailboatSpawnProbability * (deltaTime / 16.67)) { // Normalize to 60fps
         spawnNewSailboat();
       }
       
@@ -677,42 +705,42 @@
         const sailboat = sailboats[i];
         
         if (sailboat.sinking) {
-            sailboat.speedX = sailboat.speedX * .99
-            // Update sinking animation
-            const sinkSpeed = 0.002;
-            sailboat.sinkProgress += sinkSpeed; // Speed of sinking
-            // lower boat into water
-            sailboat.y += sinkSpeed * sailboat.size * sailboatImage.height;
-            
-            // Remove boat once fully sunk
-            if (sailboat.sinkProgress >= 1) {
-              totalSunkShips++;
-              updateSunkShipsCounter();
-              sailboats.splice(i, 1);
-              continue;
-            }
+          sailboat.speedX = sailboat.speedX * Math.pow(0.99, deltaTime / 16.67);
+          // Update sinking animation
+          const sinkSpeed = 0.004 * (deltaTime / 16.67);
+          sailboat.sinkProgress += sinkSpeed;
+          // lower boat into water
+          sailboat.y += sinkSpeed * sailboat.size * sailboatImage.height;
+          
+          // Remove boat once fully sunk
+          if (sailboat.sinkProgress >= 1) {
+            totalSunkShips++;
+            updateSunkShipsCounter();
+            sailboats.splice(i, 1);
+            continue;
           }
+        }
 
         if (sailboat.stopped) {
           // Boat is stopped at island - only bob up and down
-          sailboat.stopTimer++;
-          sailboat.y += Math.sin(sailboat.stopTimer * 0.03 + sailboat.bobbingPhase) * 0.02;
+          sailboat.stopTimer += deltaTime;
+          sailboat.y += Math.sin(sailboat.stopTimer * 0.03 + sailboat.bobbingPhase) * 0.02 * (deltaTime / 16.67);
           
           // After 5 seconds, resume sailing
-          if (sailboat.stopTimer >= 300) {
+          if (sailboat.stopTimer >= 5000) { // 5000ms = 5 seconds
             sailboat.stopped = false;
             sailboat.stopTimer = 0;
-            sailboat.speedX = -sailboat.originalSpeedX; // Reverse direction
-            sailboat.speedY = (Math.random() - 0.5) * 0.05;
+            sailboat.speedX = -sailboat.originalSpeedX;
+            sailboat.speedY = (Math.random() - 0.5) * 0.07;
           }
         } else {
           // Normal sailing behavior
           const prevX = sailboat.x;
           const prevY = sailboat.y;
           
-          // Update position
-          sailboat.x += sailboat.speedX;
-          sailboat.y += sailboat.speedY;
+          // Update position with deltaTime
+          sailboat.x += sailboat.speedX * (deltaTime / 16.67);
+          sailboat.y += sailboat.speedY * (deltaTime / 16.67);
           
           // Check for collision with islands and stop if needed
           if (checkSailboatOverlap(sailboat.x, sailboat.y, sailboat.size)) {
@@ -733,7 +761,6 @@
           }
         }
         
-        // Remove sailboat if it has completely exited the screen
         if (!sailboat.sinking && (sailboat.x + sailboatImage.width * sailboat.size < 0 || sailboat.x > boatCanvas.width)) {
           sailboats.splice(i, 1);
         }
@@ -760,11 +787,27 @@
           // Calculate clipping for sinking animation
           if (sailboat.sinking) {
             const clipHeight = sailboatImage.height * sailboat.size * (1 - sailboat.sinkProgress);
+            
+            // Create a wavy clipping path
             boatCtx.beginPath();
-            boatCtx.rect(-(sailboatImage.width * sailboat.size) / 2, 
-                        -(sailboatImage.height * sailboat.size) / 2,
-                        sailboatImage.width * sailboat.size,
-                        clipHeight);
+            const width = sailboatImage.width * sailboat.size;
+            const segments = 20; // Number of wave segments
+            const segmentWidth = width / segments;
+            
+            // Start from bottom-left
+            boatCtx.moveTo(-width/2, -sailboatImage.height * sailboat.size / 2);
+            
+            // Draw wavy line across the bottom
+            for (let i = 0; i <= segments; i++) {
+              const x = -width/2 + (i * segmentWidth);
+              const wave1 = Math.sin(i * 0.5 + sailboat.sinkProgress * 10) * 3;
+              const y = -sailboatImage.height * sailboat.size / 2 + clipHeight + wave1;
+              boatCtx.lineTo(x, y);
+            }
+            
+            // Complete the path
+            boatCtx.lineTo(width/2, -sailboatImage.height * sailboat.size / 2);
+            boatCtx.closePath();
             boatCtx.clip();
           }
           
@@ -879,7 +922,7 @@
         speedY: (Math.random() - 0.5) * 0.05,
         stopped: false,
         stopTimer: 0,
-        originalSpeedX: (0.1 + Math.random() * 0.1) * direction,
+        originalSpeedX: (0.1 + Math.random() * 0.2) * direction,
         bobbingPhase: Math.random() * Math.PI * 2,
         sinking: false,
         rotation: 0,
