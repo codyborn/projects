@@ -909,7 +909,11 @@
       const size = 0.4;
       const direction = Math.random() > 0.5 ? 1 : -1; // Random left or right
       const boatWidth = sailboatImage.width * size;
-      const x = direction === 1 ? -boatWidth : boatCanvas.width + boatWidth;
+      
+      // Fix the initial X position calculation
+      const x = direction === 1 ? 
+        -boatWidth : // Spawn off-screen to the left
+        boatCanvas.width; // Spawn at the right edge of the screen
       
       // Get a valid Y position that doesn't overlap with islands
       const validPosition = getValidSailboatPosition(size);
