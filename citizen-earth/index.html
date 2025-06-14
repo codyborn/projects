@@ -190,11 +190,20 @@
     const sailboatImage = new Image();
     sailboatImage.src = './images/sailboat.png';
     let sailboats = [];
-    let sailboatSpawnProbability = 0.005;
+    let sailboatSpawnProbability = 0.003;
 
     // Replace the single lastFrameTime with separate timing variables
     let lastCloudFrameTime = 0;
     let lastBoatFrameTime = 0;
+
+    // Add boss ship properties near the top with other global variables
+    let bossShip = null;
+    const bossShipImage = new Image();
+    bossShipImage.src = './images/trimast.png';
+    const bossShipDamagedImage = new Image();
+    bossShipDamagedImage.src = './images/trimast_damaged.png';
+    const bossShipFlotsamImage = new Image();
+    bossShipFlotsamImage.src = './images/trimast_flotsam.png';
 
     function checkSailboatOverlap(sailboatX, sailboatY, sailboatSize) {
       if (!sailboatImage.complete) return false;
@@ -263,20 +272,17 @@
         const direction = Math.random() > 0.5 ? 1 : -1;
         const validPosition = getValidSailboatPosition(size);
         
-        sailboats.push({
-          x: validPosition.x,
-          y: validPosition.y,
-          size: size,
-          speedX: (0.1 + Math.random() * 0.1) * direction,
-          speedY: (Math.random() - 0.5) * 0.05,
-          stopped: false,
-          stopTimer: 0,
-          originalSpeedX: (0.1 + Math.random() * 0.1) * direction,
-          bobbingPhase: Math.random() * Math.PI * 2,
-          sinking: false,
-          rotation: 0,
-          sinkProgress: 0
-        });
+        sailboats.push(new Boat(
+          validPosition.x,
+          validPosition.y,
+          size,
+          (0.1 + Math.random() * 0.1) * direction,
+          (Math.random() - 0.5) * 0.05,
+          sailboatImage,
+          0,
+          .004,
+          false
+        ));
       }
     }
 
@@ -684,144 +690,317 @@
       if (totalSunkShips > 0) {
         sunkShipsCounter.style.display = 'block';
         sunkShipsCounter.textContent = `Ships Sunk: ${totalSunkShips}`;
-        // increase boat spawn probability
+        
         if (totalSunkShips > 10) {
-          sailboatSpawnProbability = 0.02;
+          sailboatSpawnProbability = 0.01;
+        }
+        
+        // Spawn boss ship at 100 sunk ships
+        if (totalSunkShips === 1 && !bossShip) {
+          spawnBossShip();
         }
       } else {
         sunkShipsCounter.style.display = 'none';
       }
     }
 
-    // Update the boat movement to use deltaTime
-    function updateSailboats(deltaTime) {
-      // Random chance to spawn a new sailboat each frame
-      if (Math.random() < sailboatSpawnProbability * (deltaTime / 16.67)) { // Normalize to 60fps
-        spawnNewSailboat();
+    // Base Boat class
+    class Boat {
+      constructor(x, y, size, speedX, speedY, image, sinkProgress, sinkSpeed, hasFlotsam) {
+        this.x = x;
+        this.y = y;
+        this.size = size;
+        this.speedX = speedX;
+        this.speedY = speedY;
+        this.originalSpeedX = speedX;
+        this.image = image;
+        this.stopped = false;
+        this.stopTimer = 0;
+        this.bobbingPhase = Math.PI * 2;
+        this.sinking = false;
+        this.rotation = 0;
+        this.sinkProgress = sinkProgress;
+        this.sinkSpeed = sinkSpeed;
+        this.isFlotsam = false;
+        this.flotsamTimer = 0;
+        this.hasFlotsam = hasFlotsam;
+        this.sinkStartY = 0; // Add this to store the Y position when sinking starts
+        this.opacity = 1; // Add opacity property
       }
-      
-      // Update existing sailboats and remove those that have exited
-      for (let i = sailboats.length - 1; i >= 0; i--) {
-        const sailboat = sailboats[i];
-        
-        if (sailboat.sinking) {
-          sailboat.speedX = sailboat.speedX * Math.pow(0.99, deltaTime / 16.67);
-          // Update sinking animation
-          const sinkSpeed = 0.004 * (deltaTime / 16.67);
-          sailboat.sinkProgress += sinkSpeed;
-          // lower boat into water
-          sailboat.y += sinkSpeed * sailboat.size * sailboatImage.height;
-          
-          // Remove boat once fully sunk
-          if (sailboat.sinkProgress >= 1) {
-            totalSunkShips++;
-            updateSunkShipsCounter();
-            sailboats.splice(i, 1);
-            continue;
-          }
-        }
 
-        if (sailboat.stopped) {
-          // Boat is stopped at island - only bob up and down
-          sailboat.stopTimer += deltaTime;
-          sailboat.y += Math.sin(sailboat.stopTimer * 0.03 + sailboat.bobbingPhase) * 0.02 * (deltaTime / 16.67);
+      update(deltaTime) {
+        if (this.isFlotsam) {
+          if (this.hasFlotsam) {
+            this.sinking = false;
+            this.sinkProgress = 0;
+            this.y = this.sinkStartY; // Restore the Y position when becoming flotsam
+            
+            // Add bobbing animation for flotsam
+            this.y += Math.sin(this.flotsamTimer * 0.005 + this.bobbingPhase) * .08 * (deltaTime / 16.67);
+          }
+          else {
+            return false;
+          }
+          this.flotsamTimer += deltaTime;
+        } else if (this.sinking) {
+          if (this.sinkStartY === 0) { // Store Y position when sinking starts
+            this.sinkStartY = this.y;
+          }
+          this.speedX = this.speedX * Math.pow(0.99, deltaTime / 16.67);
+          const sinkSpeed = this.sinkSpeed * (deltaTime / 16.67);
+          this.sinkProgress += sinkSpeed;
+          this.y += sinkSpeed * this.size * this.image.height * 0.8;
           
-          // After 5 seconds, resume sailing
-          if (sailboat.stopTimer >= 5000) { // 5000ms = 5 seconds
-            sailboat.stopped = false;
-            sailboat.stopTimer = 0;
-            sailboat.speedX = -sailboat.originalSpeedX;
-            sailboat.speedY = (Math.random() - 0.5) * 0.07;
+          if (this.sinkProgress >= 1) {
+            this.isFlotsam = true;
+            this.flotsamTimer = 0;
           }
         } else {
-          // Normal sailing behavior
-          const prevX = sailboat.x;
-          const prevY = sailboat.y;
-          
-          // Update position with deltaTime
-          sailboat.x += sailboat.speedX * (deltaTime / 16.67);
-          sailboat.y += sailboat.speedY * (deltaTime / 16.67);
-          
-          // Check for collision with islands and stop if needed
-          if (checkSailboatOverlap(sailboat.x, sailboat.y, sailboat.size)) {
-            sailboat.x = prevX;
-            sailboat.y = prevY;
-            sailboat.stopped = true;
-            sailboat.stopTimer = 0;
-          }
-          
-          // Bounce off top and bottom edges
-          if (sailboat.y < 0) {
-            sailboat.y = 0;
-            sailboat.speedY = Math.abs(sailboat.speedY);
-          }
-          if (sailboat.y + sailboatImage.height * sailboat.size > boatCanvas.height) {
-            sailboat.y = boatCanvas.height - sailboatImage.height * sailboat.size;
-            sailboat.speedY = -Math.abs(sailboat.speedY);
+          if (this.stopped) {
+            this.stopTimer += deltaTime;
+            this.y += Math.sin(this.stopTimer * 0.005 + this.bobbingPhase) * .08 * (deltaTime / 16.67);
+            
+            if (this.stopTimer >= 5000) {
+              this.stopped = false;
+              this.stopTimer = 0;
+              this.speedX = -this.originalSpeedX;
+              this.speedY = (Math.random() - 0.5) * 0.07;
+            }
+          } else {
+            const prevX = this.x;
+            const prevY = this.y;
+            
+            this.x += this.speedX * (deltaTime / 16.67);
+            this.y += this.speedY * (deltaTime / 16.67);
+            
+            // Check for island collision
+            if (checkSailboatOverlap(this.x, this.y, this.size)) {
+              this.x = prevX;
+              this.y = prevY;
+              this.stopped = true;
+              this.stopTimer = 0;
+            }
+            
+            // Handle vertical screen edges
+            if (this.y < 0) {
+              this.y = 0;
+              this.speedY = Math.abs(this.speedY);
+            }
+            if (this.y + this.image.height * this.size > boatCanvas.height) {
+              this.y = boatCanvas.height - this.image.height * this.size;
+              this.speedY = -Math.abs(this.speedY);
+            }
+
+            // Handle horizontal screen edges - special case for boss ship
+            const boatWidth = this.image.width * this.size;
+            if (this instanceof BossShip) {
+              // Only bounce off edges if the ship has already entered the screen
+              if (this.x >= 0 && this.x <= boatCanvas.width - boatWidth) {
+                if (this.x < 0) {
+                  this.x = 0;
+                  this.speedX = Math.abs(this.speedX);
+                  this.originalSpeedX = this.speedX;
+                }
+                if (this.x + boatWidth > boatCanvas.width) {
+                  this.x = boatCanvas.width - boatWidth;
+                  this.speedX = -Math.abs(this.speedX);
+                  this.originalSpeedX = this.speedX;
+                }
+              }
+            } else {
+              // Regular boats can leave the screen
+              if (this.x + boatWidth < 0 || this.x > boatCanvas.width) {
+                return false; // Remove the boat
+              }
+            }
           }
         }
+        return true; // Keep the boat
+      }
+
+      draw(ctx) {
+        ctx.save();
         
-        if (!sailboat.sinking && (sailboat.x + sailboatImage.width * sailboat.size < 0 || sailboat.x > boatCanvas.width)) {
+        const centerX = this.x + (this.image.width * this.size) / 2;
+        const centerY = this.y + (this.image.height * this.size) / 2;
+        
+        ctx.translate(centerX, centerY);
+        
+        if (this.speedX > 0) {
+          ctx.scale(-1, 1);
+        }
+        
+        if (this.sinkProgress > 0) {
+          const clipHeight = this.image.height * this.size * (1 - this.sinkProgress);
+          
+          ctx.beginPath();
+          const width = this.image.width * this.size;
+          const segments = 20;
+          const segmentWidth = width / segments;
+          
+          ctx.moveTo(-width/2, -this.image.height * this.size / 2);
+          
+          // Add time-based animation to the wave
+          const time = Date.now() * 0.001; // Convert to seconds for smoother animation
+          
+          // Create multiple overlapping waves with different frequencies and phases
+          const waveAmplitude = this.size * 2; // Scale amplitude based on boat size
+          const waveDirection = this.speedX > 0 ? -1 : 1; // Reverse direction based on ship movement
+          
+          for (let i = 0; i <= segments; i++) {
+            const x = -width/2 + (i * segmentWidth);
+            const wave1 = Math.sin(i * 1.2 + time * 2 * waveDirection) * waveAmplitude; // Primary wave
+            const wave2 = Math.sin(i * 0.8 + time * 1.5 * waveDirection) * (waveAmplitude * 0.7); // Secondary wave
+            const wave3 = Math.sin(i * 1.5 + time * 2.5 * waveDirection) * (waveAmplitude * 0.5); // Tertiary wave
+            const combinedWave = wave1 + wave2 + wave3;
+            const y = -this.image.height * this.size / 2 + clipHeight + combinedWave;
+            ctx.lineTo(x, y);
+          }
+          
+          ctx.lineTo(width/2, -this.image.height * this.size / 2);
+          ctx.closePath();
+          ctx.clip();
+        }
+
+        // Handle flotsam fade-in
+        if (this.isFlotsam) {
+          // Calculate opacity based on flotsamTimer
+          const fadeDuration = 1000; // 1 second fade-in
+          this.opacity = Math.min(1, this.flotsamTimer / fadeDuration);
+          ctx.globalAlpha = this.opacity;
+        }
+        
+        ctx.drawImage(
+          this.image,
+          -(this.image.width * this.size) / 2,
+          -(this.image.height * this.size) / 2,
+          this.image.width * this.size,
+          this.image.height * this.size
+        );
+        
+        ctx.restore();
+      }
+
+      isPointInside(x, y) {
+        const boatWidth = this.image.width * this.size;
+        const boatHeight = this.image.height * this.size;
+        
+        const adjustedX = this.speedX > 0 ? 
+          this.x + boatWidth - (x - this.x) : 
+          x;
+        
+        return adjustedX >= this.x && 
+               adjustedX <= this.x + boatWidth &&
+               y >= this.y && 
+               y <= this.y + boatHeight;
+      }
+    }
+
+    // BossShip class
+    class BossShip extends Boat {
+      constructor(x, y, size, speedX, speedY, image, damagedImage, flotsamImage) {
+        super(x, y, size, speedX, speedY, image, .15, .002, true);
+        this.damagedImage = damagedImage;
+        this.flotsamImage = flotsamImage;
+        this.damage = 0;
+      }
+
+      draw(ctx) {
+        // Override draw to use different images based on state
+        const currentImage = this.isFlotsam ? 
+          this.flotsamImage : 
+          (this.damage >= 20 ? this.damagedImage : this.image);
+        
+        this.image = currentImage; // Temporarily set image for base class draw
+        super.draw(ctx);
+      }
+    }
+
+    function spawnNewSailboat() {
+      if (!sailboatImage.complete) return;
+      
+      const size = 0.4;
+      const direction = Math.random() > 0.5 ? 1 : -1;
+      const boatWidth = sailboatImage.width * size;
+      
+      const x = direction === 1 ? -boatWidth : boatCanvas.width;
+      const validPosition = getValidSailboatPosition(size);
+      
+      sailboats.push(new Boat(
+        x,
+        validPosition.y,
+        size,
+        (0.1 + Math.random() * 0.1) * direction,
+        (Math.random() - 0.5) * 0.05,
+        sailboatImage,
+        0,
+        .004,
+        false
+      ));
+    }
+
+    function spawnBossShip() {
+      if (!bossShipImage.complete) return;
+      
+      const size = 0.6;
+      const direction = Math.random() > 0.5 ? 1 : -1;
+      const boatWidth = bossShipImage.width * size;
+      
+      // Start completely off-screen
+      const x = direction === 1 ? -boatWidth - 100 : boatCanvas.width + 100;
+      
+      // Use a position in the middle third of the screen height
+      const screenHeight = boatCanvas.height;
+      const y = screenHeight * (0.33 + Math.random() * 0.34);
+      
+      bossShip = new BossShip(
+        x,
+        y,
+        size,
+        (0.15 + Math.random() * 0.05) * direction, // Slightly faster than regular boats
+        (Math.random() - 0.5) * 0.03, // Gentler vertical movement
+        bossShipImage,
+        bossShipDamagedImage,
+        bossShipFlotsamImage
+      );
+    }
+
+    // Update the animation and click handlers to use the new classes
+    function updateSailboats(deltaTime) {
+      // Update boss ship
+      if (bossShip && !bossShip.update(deltaTime)) {
+        bossShip = null;
+      }
+      
+      // Update regular boats
+      for (let i = sailboats.length - 1; i >= 0; i--) {
+        if (!sailboats[i].update(deltaTime)) {
+          if (sailboats[i].sinkProgress >= 1) {
+            totalSunkShips++;
+            updateSunkShipsCounter();
+          }
           sailboats.splice(i, 1);
         }
       }
+      
+      // Random chance to spawn new boat
+      if (Math.random() < sailboatSpawnProbability * (deltaTime / 16.67)) {
+        spawnNewSailboat();
+      }
     }
-    
+
     function drawSailboats() {
       boatCtx.clearRect(0, 0, boatCanvas.width, boatCanvas.height);
       
       if (sailboatImage.complete) {
-        // Sort sailboats by Y position (lower Y drawn first, higher Y drawn last = in front)
+        // Draw regular boats
         const sortedSailboats = [...sailboats].sort((a, b) => a.y - b.y);
+        sortedSailboats.forEach(boat => boat.draw(boatCtx));
         
-        sortedSailboats.forEach(sailboat => {
-          boatCtx.save();
-          
-          // Calculate center point for rotation
-          const centerX = sailboat.x + (sailboatImage.width * sailboat.size) / 2;
-          const centerY = sailboat.y + (sailboatImage.height * sailboat.size) / 2;
-          
-          // Move to center point for rotation
-          boatCtx.translate(centerX, centerY);
-          
-          // Calculate clipping for sinking animation
-          if (sailboat.sinking) {
-            const clipHeight = sailboatImage.height * sailboat.size * (1 - sailboat.sinkProgress);
-            
-            // Create a wavy clipping path
-            boatCtx.beginPath();
-            const width = sailboatImage.width * sailboat.size;
-            const segments = 20; // Number of wave segments
-            const segmentWidth = width / segments;
-            
-            // Start from bottom-left
-            boatCtx.moveTo(-width/2, -sailboatImage.height * sailboat.size / 2);
-            
-            // Draw wavy line across the bottom
-            for (let i = 0; i <= segments; i++) {
-              const x = -width/2 + (i * segmentWidth);
-              const wave1 = Math.sin(i * 0.5 + sailboat.sinkProgress * 10) * 3;
-              const y = -sailboatImage.height * sailboat.size / 2 + clipHeight + wave1;
-              boatCtx.lineTo(x, y);
-            }
-            
-            // Complete the path
-            boatCtx.lineTo(width/2, -sailboatImage.height * sailboat.size / 2);
-            boatCtx.closePath();
-            boatCtx.clip();
-          }
-          
-          // Draw the boat
-          boatCtx.drawImage(
-            sailboatImage,
-            -(sailboatImage.width * sailboat.size) / 2,
-            -(sailboatImage.height * sailboat.size) / 2,
-            sailboatImage.width * sailboat.size,
-            sailboatImage.height * sailboat.size
-          );
-          
-          boatCtx.restore();
-        });
+        // Draw boss ship
+        if (bossShip) {
+          bossShip.draw(boatCtx);
+        }
       }
     }
 
@@ -831,23 +1010,47 @@
       const clickX = event.clientX - rect.left;
       const clickY = event.clientY - rect.top;
       
-      // Check each boat for click
       let clickedBoat = false;
-      for (let sailboat of sailboats) {
-        if (sailboat.sinking) continue; // Skip boats that are already sinking
+      
+      // Check boss ship first
+      if (bossShip && !bossShip.sinking && !bossShip.isFlotsam) {
+        const boatWidth = bossShipImage.width * bossShip.size;
+        const boatHeight = bossShipImage.height * bossShip.size;
         
-        const boatWidth = sailboatImage.width * sailboat.size;
-        const boatHeight = sailboatImage.height * sailboat.size;
-        
-        // Check if click is within boat bounds
-        if (clickX >= sailboat.x && 
-            clickX <= sailboat.x + boatWidth &&
-            clickY >= sailboat.y && 
-            clickY <= sailboat.y + boatHeight) {
-          sailboat.sinking = true;
-          sailboat.sinkProgress = 0;
+        if (clickX >= bossShip.x && 
+            clickX <= bossShip.x + boatWidth &&
+            clickY >= bossShip.y && 
+            clickY <= bossShip.y + boatHeight) {
+          bossShip.damage++;
+
+          if (bossShip.damage >= 20) {
+            bossShip.sinkProgress = .18;
+          }
+          if (bossShip.damage >= 30) {
+            bossShip.sinking = true;
+          }
+          
           clickedBoat = true;
-          break; // Only sink one boat at a time
+        }
+      }
+      
+      // Check regular boats if boss ship wasn't clicked
+      if (!clickedBoat) {
+        for (let sailboat of sailboats) {
+          if (sailboat.sinking) continue; // Skip boats that are already sinking
+          
+          const boatWidth = sailboatImage.width * sailboat.size;
+          const boatHeight = sailboatImage.height * sailboat.size;
+          
+          // Check if click is within boat bounds
+          if (clickX >= sailboat.x && 
+              clickX <= sailboat.x + boatWidth &&
+              clickY >= sailboat.y && 
+              clickY <= sailboat.y + boatHeight) {
+            sailboat.sinking = true;
+            clickedBoat = true;
+            break; // Only sink one boat at a time
+          }
         }
       }
       
@@ -869,26 +1072,45 @@
       const mouseY = event.clientY - rect.top;
       
       let hoveringBoat = false;
-      for (let sailboat of sailboats) {
-        if (sailboat.sinking) continue;
+      
+      // Check boss ship first
+      if (bossShip && !bossShip.sinking && !bossShip.isFlotsam) {
+        const boatWidth = bossShipImage.width * bossShip.size;
+        const boatHeight = bossShipImage.height * bossShip.size;
         
-        const boatWidth = sailboatImage.width * sailboat.size;
-        const boatHeight = sailboatImage.height * sailboat.size;
+        // Adjust mouse position check based on ship direction
+        const adjustedX = bossShip.speedX > 0 ? 
+          bossShip.x + boatWidth - (mouseX - bossShip.x) : // Flip X coordinate if ship is flipped
+          mouseX;
         
-        if (mouseX >= sailboat.x && 
-            mouseX <= sailboat.x + boatWidth &&
-            mouseY >= sailboat.y && 
-            mouseY <= sailboat.y + boatHeight) {
+        if (adjustedX >= bossShip.x && 
+            adjustedX <= bossShip.x + boatWidth &&
+            mouseY >= bossShip.y && 
+            mouseY <= bossShip.y + boatHeight) {
           hoveringBoat = true;
-          // change cursor to pointer
-          document.body.style.cursor = 'pointer';
-          break;
         }
       }
+      
+      // Check regular boats if not hovering boss ship
       if (!hoveringBoat) {
-        document.body.style.cursor = 'default';
+        for (let sailboat of sailboats) {
+          if (sailboat.sinking) continue;
+          
+          const boatWidth = sailboatImage.width * sailboat.size;
+          const boatHeight = sailboatImage.height * sailboat.size;
+          
+          if (mouseX >= sailboat.x && 
+              mouseX <= sailboat.x + boatWidth &&
+              mouseY >= sailboat.y && 
+              mouseY <= sailboat.y + boatHeight) {
+            hoveringBoat = true;
+            break;
+          }
+        }
       }
       
+      // Update cursor and pointer events
+      document.body.style.cursor = hoveringBoat ? 'pointer' : 'default';
       boatCanvas.style.pointerEvents = hoveringBoat ? 'auto' : 'none';
     });
 
@@ -899,38 +1121,6 @@
         x: x,
         y: Math.random() * document.documentElement.scrollHeight,
         size: size,
-      });
-    }
-
-    function spawnNewSailboat() {
-      // Only spawn if image is loaded
-      if (!sailboatImage.complete) return;
-      
-      const size = 0.4;
-      const direction = Math.random() > 0.5 ? 1 : -1; // Random left or right
-      const boatWidth = sailboatImage.width * size;
-      
-      // Fix the initial X position calculation
-      const x = direction === 1 ? 
-        -boatWidth : // Spawn off-screen to the left
-        boatCanvas.width; // Spawn at the right edge of the screen
-      
-      // Get a valid Y position that doesn't overlap with islands
-      const validPosition = getValidSailboatPosition(size);
-      
-      sailboats.push({
-        x: x,
-        y: validPosition.y,
-        size: size,
-        speedX: (0.1 + Math.random() * 0.1) * direction,
-        speedY: (Math.random() - 0.5) * 0.05,
-        stopped: false,
-        stopTimer: 0,
-        originalSpeedX: (0.1 + Math.random() * 0.2) * direction,
-        bobbingPhase: Math.random() * Math.PI * 2,
-        sinking: false,
-        rotation: 0,
-        sinkProgress: 0
       });
     }
 
