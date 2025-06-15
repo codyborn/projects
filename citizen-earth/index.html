@@ -18,7 +18,7 @@
       -webkit-user-select: none;
       -moz-user-select: none;
       -ms-user-select: none;
-      touch-action: none;
+      touch-action: pan-y;
       -webkit-touch-callout: none;
       -webkit-tap-highlight-color: transparent;
     }
@@ -1185,12 +1185,12 @@
     function findValidBossShipPosition(size, direction) {
       const boatWidth = bossShipImage.width * size;
       
-      // Start completely off-screen
-      const x = direction === 1 ? -boatWidth : boatCanvas.width + boatWidth;
+      // Start just slightly off-screen
+      const x = direction === 1 ? -1 : boatCanvas.width + 1;
       
       // Use SpaceTracker to find a valid Y position
       const boatHeight = bossShipImage.height * size;
-      const overlapHeight = boatHeight * boatCollisionPercentage * 2; // Only check bottom x%
+      const overlapHeight = boatHeight * boatCollisionPercentage; // Only check bottom x%
       const availableSpace = spaceTracker.getRandomAvailableSpace(overlapHeight);
       
       if (!availableSpace) {
@@ -1199,13 +1199,13 @@
       }
       
       // Position the ship so its bottom x% is into the available space
-      return { x, y: availableSpace.start + overlapHeight * 2 };
+      return { x, y: availableSpace.start - boatHeight + overlapHeight };
     }
 
     function spawnBossShip() {
       if (!bossShipImage.complete) return;
       
-      const size = window.innerWidth <= 600 ? 0.6 : 0.8;
+      const size = 0.8;
       const direction = Math.random() > 0.5 ? 1 : -1;
       const position = findValidBossShipPosition(size, direction);
       
@@ -1335,7 +1335,7 @@
           if (bossShip.damage >= 20) {
             bossShip.sinkProgress = .13;
           }
-          if (bossShip.damage >= 30) {
+          if (bossShip.damage >= 40) {
             bossShip.sinking = true;
           }
           
