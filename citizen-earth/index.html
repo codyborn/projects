@@ -14,6 +14,13 @@
       margin: 0;
       padding: 0;
       overflow-x: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      touch-action: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
     }
     #water-canvas {
       position: absolute;
@@ -163,9 +170,161 @@
   </div>
   <svg id="island-lines" style="position:absolute; top:0; left:0; pointer-events:none; z-index:1;"></svg>
   <footer style="position: fixed; bottom: 2px; width: 100%; text-align: center; opacity: 0.2; font-size: 0.8rem; color: #222;">
-    Version 1.0.5
+    Version 1.0.6
   </footer>
   <script>
+    // SpaceTracker class definition
+    class SpaceTracker {
+      constructor(pageHeight) {
+        // Initialize with a single range covering the entire page height
+        this.ranges = [{
+          start: 0,
+          end: pageHeight
+        }];
+      }
+
+      // Add a new occupied space to the tracker
+      addOccupiedSpace(start, height) {
+        const end = start + height;
+        const newRanges = [];
+        
+        for (const range of this.ranges) {
+          // If the occupied space is completely outside this range, keep the range as is
+          if (end <= range.start || start >= range.end) {
+            newRanges.push({...range});
+            continue;
+          }
+          
+          // If the occupied space splits this range, create two new ranges
+          if (start > range.start && end < range.end) {
+            newRanges.push({
+              start: range.start,
+              end: start
+            });
+            newRanges.push({
+              start: end,
+              end: range.end
+            });
+          }
+          // If the occupied space overlaps the start of the range
+          else if (start <= range.start && end < range.end) {
+            newRanges.push({
+              start: end,
+              end: range.end
+            });
+          }
+          // If the occupied space overlaps the end of the range
+          else if (start > range.start && end >= range.end) {
+            newRanges.push({
+              start: range.start,
+              end: start
+            });
+          }
+          // If the occupied space completely covers the range, skip it
+        }
+        
+        // Sort ranges by start position and merge adjacent ranges
+        this.ranges = newRanges;
+      }
+
+      // Get all available spaces that are at least minHeight tall
+      getAvailableSpaces(minHeight) {
+        return this.ranges.filter(range => (range.end - range.start) >= minHeight);
+      }
+
+      // Get a random available space that is at least minHeight tall
+      getRandomAvailableSpace(minHeight) {
+        const availableSpaces = this.getAvailableSpaces(minHeight);
+        if (availableSpaces.length === 0) return null;
+        
+        const randomSpace = availableSpaces[Math.floor(Math.random() * availableSpaces.length)];
+        const maxStart = randomSpace.end - minHeight;
+        const randomStart = randomSpace.start + Math.random() * (maxStart - randomSpace.start);
+        
+        return {
+          start: randomStart,
+          height: minHeight
+        };
+      }
+
+      // Clear all ranges and reset to full page height
+      reset(pageHeight) {
+        this.ranges = [{
+          start: 0,
+          end: pageHeight
+        }];
+      }
+
+      // Get the total available space
+      getTotalAvailableSpace() {
+        return this.ranges.reduce((total, range) => total + (range.end - range.start), 0);
+      }
+    }
+
+
+    const debugMode = false;
+    // Initialize SpaceTracker with page height
+    const spaceTracker = new SpaceTracker(document.documentElement.scrollHeight);
+
+    // Modify the renderIslands function to use SpaceTracker
+    function renderIslands() {
+      grid.innerHTML = '';
+      const cols = getColumnCount();
+      const rows = Math.ceil(cities.length / cols);
+      const positions = [];
+      
+      cities.forEach((cityObj, i) => {
+        const row = Math.floor(i / cols);
+        let col = i % cols;
+        if (row % 2 === 1) col = cols - 1 - col;
+        const div = document.createElement('div');
+        div.className = 'island';
+        div.style.gridRow = (row + 1).toString();
+        div.style.gridColumn = (col + 1).toString();
+        div.innerHTML = `
+          <img src="${cityObj.islandImg}" alt="${cityObj.name}" style="width: ${cityObj.size ? cityObj.size + 'px' : '120px'}; height: auto;">
+          <div class="city-name">${cityObj.name}</div>
+          <div class="island-tooltip">
+            <div><strong>${cityObj.duration}</strong></div>
+            <div>${cityObj.dates}</div>
+            ${cityObj.link ? `<div><a href="${cityObj.link}" target="_blank">${cityObj.linkText}</a></div>` : ''}
+          </div>
+        `;
+        positions.push({row, col, div});
+        
+        // Add island to SpaceTracker after it's rendered
+        const img = div.querySelector('img');
+        const rect = img.getBoundingClientRect();
+        
+        // Tooltip show/hide
+        div.addEventListener('mouseenter', () => {
+          div.querySelector('.island-tooltip').style.opacity = 1;
+        });
+        div.addEventListener('mouseleave', () => {
+          div.querySelector('.island-tooltip').style.opacity = 0;
+        });
+        grid.appendChild(div);
+      });
+      
+      setTimeout(updateIslandBounds, 100);
+      setTimeout(() => {
+        drawLines(positions, cols, rows);
+        setupMobileTooltips();
+        if (!canvasesInitialized) {
+          canvasesInitialized = true;
+          updateAllCanvasSizes();
+          initializeClouds();
+          initializeSailboats();
+          storeIslandBounds();
+        }
+      }, 300);
+
+      document.addEventListener('DOMContentLoaded', () => {
+        drawLines(positions, cols, rows);
+        storeIslandBounds();
+      });
+    }
+
     // Lock orientation to portrait on mobile devices
     if (window.innerWidth <= 600 && screen.orientation && screen.orientation.lock) {
       screen.orientation.lock('portrait').catch(() => {
@@ -191,6 +350,7 @@
     sailboatImage.src = './images/sailboat.png';
     let sailboats = [];
     let sailboatSpawnProbability = 0.003;
+    const boatCollisionPercentage = 0.15;
 
     // Replace the single lastFrameTime with separate timing variables
     let lastCloudFrameTime = 0;
@@ -205,21 +365,35 @@
     const bossShipFlotsamImage = new Image();
     bossShipFlotsamImage.src = './images/trimast_flotsam.png';
 
-    function checkSailboatOverlap(sailboatX, sailboatY, sailboatSize) {
-      if (!sailboatImage.complete) return false;
-      
-      const sailboatWidth = sailboatImage.width * sailboatSize;
-      const sailboatHeight = sailboatImage.height * sailboatSize;
+    // Add damage icon properties near the top with other global variables
+    const damageIconImage = new Image();
+    damageIconImage.src = './images/damage_icon.png';
+    const damageIconScale = 0.1;
+    let damageFlash = null;
+
+    function checkSailboatOverlap(sailboatX, sailboatY, sailboatWidth, sailboatHeight) {
       const sailboatBottom = sailboatY + sailboatHeight;
+      const sailboatTop = sailboatY + sailboatHeight * (1 - boatCollisionPercentage);
       const sailboatRight = sailboatX + sailboatWidth;
-      
-      // Add a buffer around islands (20 pixels)
-      const buffer = 20;
+
+      if (debugMode) {
+        // Draw collision box
+        ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.rect(
+          sailboatX,
+          sailboatTop,
+          sailboatWidth,
+          sailboatBottom - sailboatTop
+        );
+        ctx.stroke();
+      }
       
       // Check if sailboat overlaps with any island
       for (let island of islandBounds) {
-        if ((sailboatX == -1 || (sailboatX < island.right + buffer && sailboatRight > island.left - buffer)) &&
-            sailboatY < island.bottom + buffer && sailboatBottom > island.top - buffer) {
+        if ((sailboatX == -1 || (sailboatX < island.right && sailboatRight > island.left)) &&
+            sailboatTop < island.bottom && sailboatBottom > island.top) {
           return true; // Overlap detected
         }
       }
@@ -227,40 +401,39 @@
     }
     
     function getValidSailboatPosition(sailboatSize) {
-      const maxAttempts = 50; // More attempts since we're checking X and Y
+      const maxAttempts = 50;
       let attempts = 0;
+      
+      const initialBoatWidth = sailboatImage.width * sailboatSize;
+      const initialBoatHeight = sailboatImage.height * sailboatSize;
       
       while (attempts < maxAttempts) {
         const randomX = Math.random() * boatCanvas.width;
-        const randomY = Math.random() * boatCanvas.height; // Use full canvas height
+        const randomY = Math.random() * boatCanvas.height;
         
-        if (!checkSailboatOverlap(randomX, randomY, sailboatSize)) {
+        if (!checkSailboatOverlap(randomX, randomY, initialBoatWidth, initialBoatHeight)) {
           return { x: randomX, y: randomY };
         }
         attempts++;
       }
       
-      // If no valid position found, place at edge of screen
+      // If we couldn't find a valid position, try some fallback positions
       const fallbackPositions = [
-        { x: 50, y: boatCanvas.height * 0.2 },
-        { x: boatCanvas.width - 100, y: boatCanvas.height * 0.4 },
-        { x: boatCanvas.width * 0.5, y: boatCanvas.height * 0.6 },
-        { x: 100, y: boatCanvas.height * 0.8 },
-        { x: boatCanvas.width - 150, y: boatCanvas.height * 0.9 }
+        { x: 50, y: 50 },
+        { x: boatCanvas.width - 50, y: 50 },
+        { x: 50, y: boatCanvas.height - 50 },
+        { x: boatCanvas.width - 50, y: boatCanvas.height - 50 }
       ];
       
       // Try each fallback position
       for (let pos of fallbackPositions) {
-        if (!checkSailboatOverlap(pos.x, pos.y, sailboatSize)) {
+        if (!checkSailboatOverlap(pos.x, pos.y, initialBoatWidth, initialBoatHeight)) {
           return pos;
         }
       }
       
-      // Last resort: place at safe edge position
-      return { 
-        x: Math.random() > 0.5 ? 50 : boatCanvas.width - 100, 
-        y: Math.random() * boatCanvas.height // Use full canvas height
-      };
+      // If all else fails, return a default position
+      return { x: 50, y: 50 };
     }
     
     function initializeSailboats() {
@@ -316,6 +489,74 @@
           right: rect.right + window.scrollX
         });
       });
+      
+      // Draw debug rectangles
+      if (debugMode) {
+        drawIslandBounds();
+      }
+    }
+
+    function getDebugCanvas() {
+      let debugCanvas = document.getElementById('debug-canvas');
+      if (!debugCanvas) {
+        debugCanvas = document.createElement('canvas');
+        debugCanvas.id = 'debug-canvas';
+        debugCanvas.style.position = 'absolute';
+        debugCanvas.style.top = '0';
+        debugCanvas.style.left = '0';
+        debugCanvas.style.pointerEvents = 'none';
+        debugCanvas.style.zIndex = '9999';
+        document.body.appendChild(debugCanvas);
+      }
+      return debugCanvas;
+    }
+    
+    function drawIslandBounds() {
+      // Create or get debug canvas
+      let debugCanvas = getDebugCanvas();
+      
+      const ctx = debugCanvas.getContext('2d');
+      debugCanvas.width = window.innerWidth;
+      debugCanvas.height = document.documentElement.scrollHeight;
+      
+      // Clear previous drawings
+      ctx.clearRect(0, 0, debugCanvas.width, debugCanvas.height);
+      
+      // Draw red rectangles for each island
+      ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+      ctx.lineWidth = 2;
+      
+      islandBounds.forEach(bounds => {
+        ctx.beginPath();
+        ctx.rect(
+          bounds.left,
+          bounds.top,
+          bounds.right - bounds.left,
+          bounds.bottom - bounds.top
+        );
+        ctx.stroke();
+      });
+    }
+
+    // Function to draw debug lines for available spaces
+    function drawSpaceTrackerLines() {
+      let debugCanvas = getDebugCanvas();
+
+      const ctx = debugCanvas.getContext('2d');
+      debugCanvas.width = window.innerWidth;
+      debugCanvas.height = document.documentElement.scrollHeight;
+      
+      // Draw red lines for each available space
+      const availableSpaces = spaceTracker.getAvailableSpaces(1);
+      ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+      ctx.lineWidth = 2;
+      
+      availableSpaces.forEach(space => {
+        ctx.beginPath();
+        ctx.moveTo(10, space.start);
+        ctx.lineTo(10, space.end);
+        ctx.stroke();
+      });
     }
     
     function initializeClouds() {
@@ -350,7 +591,7 @@
       lastBoatFrameTime = currentTime;
       
       updateSailboats(deltaTime);
-      drawSailboats();
+      drawSailboats(deltaTime);
       requestAnimationFrame(animateBoats);
     }
 
@@ -526,6 +767,13 @@
         islandImg: './images/cannes.png',
         size: 160
       },
+      { 
+        name: '???', 
+        dates: 'July', 
+        duration: '???',
+        islandImg: './images/mystery.png',
+        size: 160
+      },
     ];
 
     // Responsive grid: let CSS handle columns, JS figures out columns dynamically
@@ -538,55 +786,6 @@
     }
 
     let canvasesInitialized = false;
-    function renderIslands() {
-      grid.innerHTML = '';
-      const cols = getColumnCount();
-      const rows = Math.ceil(cities.length / cols);
-      const positions = [];
-      cities.forEach((cityObj, i) => {
-        const row = Math.floor(i / cols);
-        let col = i % cols;
-        if (row % 2 === 1) col = cols - 1 - col;
-        const div = document.createElement('div');
-        div.className = 'island';
-        div.style.gridRow = (row + 1).toString();
-        div.style.gridColumn = (col + 1).toString();
-        div.innerHTML = `
-          <img src="${cityObj.islandImg}" alt="${cityObj.name}" style="width: ${cityObj.size ? cityObj.size + 'px' : '120px'}; height: auto;">
-          <div class="city-name">${cityObj.name}</div>
-          <div class="island-tooltip">
-            <div><strong>${cityObj.duration}</strong></div>
-            <div>${cityObj.dates}</div>
-            ${cityObj.link ? `<div><a href="${cityObj.link}" target="_blank">${cityObj.linkText}</a></div>` : ''}
-          </div>
-        `;
-        positions.push({row, col, div});
-        // Tooltip show/hide
-        div.addEventListener('mouseenter', () => {
-          div.querySelector('.island-tooltip').style.opacity = 1;
-        });
-        div.addEventListener('mouseleave', () => {
-          div.querySelector('.island-tooltip').style.opacity = 0;
-        });
-        grid.appendChild(div);
-      });
-      setTimeout(updateIslandBounds, 100); // Update island bounds after layout is complete
-      setTimeout(() => {
-        drawLines(positions, cols, rows);
-        setupMobileTooltips(); // Setup mobile tooltip auto-display
-        if (!canvasesInitialized) {
-          canvasesInitialized = true;
-          updateAllCanvasSizes();
-          initializeClouds();
-          initializeSailboats();
-        }
-      }, 300); // Increased delay to ensure content is fully rendered
-
-      document.addEventListener('DOMContentLoaded', () => {
-        drawLines(positions, cols, rows);
-      });
-    }
-
     function drawLines(positions, cols, rows) {
       svg.innerHTML = '';
       svg.setAttribute('width', document.body.scrollWidth);
@@ -611,6 +810,20 @@
         line.setAttribute('stroke-linecap', 'round');
         line.setAttribute('stroke-dasharray', '8,8');
         svg.appendChild(line);
+      }
+    }
+
+    function storeIslandBounds() {
+      // Reset SpaceTracker with current page height
+      spaceTracker.reset(document.documentElement.scrollHeight);
+      const islands = document.querySelectorAll('.island');
+      islands.forEach(island => {
+        const img = island.querySelector('img');
+        const rect = img.getBoundingClientRect();
+        spaceTracker.addOccupiedSpace(rect.top + window.scrollY, rect.height);
+      });
+      if (debugMode) {
+        drawSpaceTrackerLines();
       }
     }
     // Set grid-template-columns to be responsive
@@ -696,7 +909,8 @@
         }
         
         // Spawn boss ship at 50 sunk ships
-        if (totalSunkShips === 50 && !bossShip) {
+        const bossShipSpawnThreshold = debugMode ? 1 : 50;
+        if (totalSunkShips === bossShipSpawnThreshold && !bossShip) {
           spawnBossShip();
         }
       } else {
@@ -738,6 +952,17 @@
             
             // Add bobbing animation for flotsam
             this.y += Math.sin(this.flotsamTimer * 0.005 + this.bobbingPhase) * .08 * (deltaTime / 16.67);
+
+            // Add flotsam bounds when ship becomes flotsam
+            const boatWidth = this.image.width * this.size;
+            const boatHeight = this.image.height * this.size;
+            this.flotsamBounds = {
+              left: this.x,
+              right: this.x + boatWidth,
+              top: this.y,
+              bottom: this.y + boatHeight
+            };
+            islandBounds.push(this.flotsamBounds);
           }
           else {
             return false;
@@ -766,7 +991,7 @@
               this.stopped = false;
               this.stopTimer = 0;
               this.speedX = -this.originalSpeedX;
-              this.speedY = (Math.random() - 0.5) * 0.07;
+              this.speedY = -this.speedY;
             }
           } else {
             const prevX = this.x;
@@ -775,8 +1000,10 @@
             this.x += this.speedX * (deltaTime / 16.67);
             this.y += this.speedY * (deltaTime / 16.67);
             
-            // Check for island collision
-            if (checkSailboatOverlap(this.x, this.y, this.size)) {
+            // Check for island collision using actual dimensions
+            const currentBoatWidth = this.image.width * this.size;
+            const currentBoatHeight = this.image.height * this.size;
+            if (checkSailboatOverlap(this.x, this.y, currentBoatWidth, currentBoatHeight)) {
               this.x = prevX;
               this.y = prevY;
               this.stopped = true;
@@ -961,32 +1188,18 @@
       // Start completely off-screen
       const x = direction === 1 ? -boatWidth : boatCanvas.width + boatWidth;
       
-      // Find a valid Y position that won't overlap with islands when the ship enters the screen
-      let validY = null;
-      const maxAttempts = 50;
-      let attempts = 0;
+      // Use SpaceTracker to find a valid Y position
+      const boatHeight = bossShipImage.height * size;
+      const overlapHeight = boatHeight * boatCollisionPercentage * 2; // Only check bottom x%
+      const availableSpace = spaceTracker.getRandomAvailableSpace(overlapHeight);
       
-      while (attempts < maxAttempts) {
-        // Try a random Y position
-        const screenHeight = boatCanvas.height;
-        const y = screenHeight * Math.random();
-        
-        // Check if this Y position would overlap with any islands when the ship is on screen
-        const onScreenX = -1;
-        if (!checkSailboatOverlap(onScreenX, y, size)) {
-          validY = y;
-          break;
-        }
-        attempts++;
+      if (!availableSpace) {
+        // Fallback to middle of screen if no valid space found
+        return { x, y: boatCanvas.height * 0.5 };
       }
       
-      // If no valid position found, use a safe fallback
-      if (validY === null) {
-        alert('No valid position found');
-        validY = boatCanvas.height * 0.5; // Middle of screen as fallback
-      }
-      
-      return { x, y: validY };
+      // Position the ship so its bottom x% is into the available space
+      return { x, y: availableSpace.start + overlapHeight * 2 };
     }
 
     function spawnBossShip() {
@@ -1049,7 +1262,8 @@
       }
     }
 
-    function drawSailboats() {
+    // Update the drawSailboats function to include damage flash
+    function drawSailboats(deltaTime) {
       boatCtx.clearRect(0, 0, boatCanvas.width, boatCanvas.height);
       
       if (sailboatImage.complete) {
@@ -1065,13 +1279,34 @@
           const bBottom = b.y + (b.image.height * b.size * (1-b.sinkProgress));
           return aBottom - bBottom;
         });
-        
-        // Draw all boats in sorted order
-        sortedBoats.forEach(boat => boat.draw(boatCtx));
+
+        sortedBoats.forEach(boat => {
+          boat.draw(boatCtx);
+        });
+
+        // Draw damage flash if active
+        if (damageFlash) {
+          damageFlash.opacity -= 0.1 * (deltaTime / 16.67);
+          if (damageFlash.opacity <= 0) {
+            damageFlash = null;
+          } else {
+            boatCtx.save();
+            boatCtx.translate(damageFlash.x, damageFlash.y);
+            boatCtx.globalAlpha = damageFlash.opacity;
+            boatCtx.drawImage(
+              damageIconImage,
+              -damageIconImage.width * damageIconScale / 2,  // Half of 1/10th width
+              -damageIconImage.height * damageIconScale / 2, // Half of 1/10th height
+              damageIconImage.width * damageIconScale,   // 1/10th of original width
+              damageIconImage.height * damageIconScale   // 1/10th of original height
+            );
+            boatCtx.restore();
+          }
+        }
       }
     }
 
-    // Add click detection for boats
+    // Update the click handler to add damage flash
     boatCanvas.addEventListener('click', (event) => {
       const rect = boatCanvas.getBoundingClientRect();
       const clickX = event.clientX - rect.left;
@@ -1089,6 +1324,13 @@
             clickY >= bossShip.y && 
             clickY <= bossShip.y + boatHeight) {
           bossShip.damage++;
+
+          // Add damage flash at click position
+          damageFlash = {
+            x: clickX,
+            y: clickY,
+            opacity: 1
+          };
 
           if (bossShip.damage >= 20) {
             bossShip.sinkProgress = .13;
