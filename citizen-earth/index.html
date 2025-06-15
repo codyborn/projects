@@ -218,7 +218,7 @@
       
       // Check if sailboat overlaps with any island
       for (let island of islandBounds) {
-        if (sailboatX < island.right + buffer && sailboatRight > island.left - buffer &&
+        if ((sailboatX == -1 || (sailboatX < island.right + buffer && sailboatRight > island.left - buffer)) &&
             sailboatY < island.bottom + buffer && sailboatBottom > island.top - buffer) {
           return true; // Overlap detected
         }
@@ -695,8 +695,8 @@
           sailboatSpawnProbability = 0.01;
         }
         
-        // Spawn boss ship at 100 sunk ships
-        if (totalSunkShips === 1 && !bossShip) {
+        // Spawn boss ship at 50 sunk ships
+        if (totalSunkShips === 50 && !bossShip) {
           spawnBossShip();
         }
       } else {
@@ -726,6 +726,7 @@
         this.hasFlotsam = hasFlotsam;
         this.sinkStartY = 0; // Add this to store the Y position when sinking starts
         this.opacity = 1; // Add opacity property
+        this.hasEnteredScreen = false; // Add this to track if the ship has entered the screen
       }
 
       update(deltaTime) {
@@ -733,7 +734,7 @@
           if (this.hasFlotsam) {
             this.sinking = false;
             this.sinkProgress = 0;
-            this.y = this.sinkStartY; // Restore the Y position when becoming flotsam
+            this.y = this.sinkStartY - 50; // Restore the Y position when becoming flotsam
             
             // Add bobbing animation for flotsam
             this.y += Math.sin(this.flotsamTimer * 0.005 + this.bobbingPhase) * .08 * (deltaTime / 16.67);
@@ -747,6 +748,7 @@
             this.sinkStartY = this.y;
           }
           this.speedX = this.speedX * Math.pow(0.99, deltaTime / 16.67);
+          this.x += this.speedX * (deltaTime / 16.67);
           const sinkSpeed = this.sinkSpeed * (deltaTime / 16.67);
           this.sinkProgress += sinkSpeed;
           this.y += sinkSpeed * this.size * this.image.height * 0.8;
@@ -794,18 +796,14 @@
             // Handle horizontal screen edges - special case for boss ship
             const boatWidth = this.image.width * this.size;
             if (this instanceof BossShip) {
-              // Only bounce off edges if the ship has already entered the screen
-              if (this.x >= 0 && this.x <= boatCanvas.width - boatWidth) {
-                if (this.x < 0) {
-                  this.x = 0;
-                  this.speedX = Math.abs(this.speedX);
-                  this.originalSpeedX = this.speedX;
-                }
-                if (this.x + boatWidth > boatCanvas.width) {
-                  this.x = boatCanvas.width - boatWidth;
-                  this.speedX = -Math.abs(this.speedX);
-                  this.originalSpeedX = this.speedX;
-                }
+              // Only respawn if the ship has entered the screen and then gone off-screen
+              if (this.hasEnteredScreen && (this.x + boatWidth < 0 || this.x > boatCanvas.width)) {
+                return 'respawn';
+              }
+              
+              // Mark that the ship has entered the screen
+              if (this.x >= 0 && this.x <= boatCanvas.width) {
+                this.hasEnteredScreen = true;
               }
             } else {
               // Regular boats can leave the screen
@@ -849,10 +847,16 @@
           
           for (let i = 0; i <= segments; i++) {
             const x = -width/2 + (i * segmentWidth);
-            const wave1 = Math.sin(i * 1.2 + time * 2 * waveDirection) * waveAmplitude; // Primary wave
-            const wave2 = Math.sin(i * 0.8 + time * 1.5 * waveDirection) * (waveAmplitude * 0.7); // Secondary wave
-            const wave3 = Math.sin(i * 1.5 + time * 2.5 * waveDirection) * (waveAmplitude * 0.5); // Tertiary wave
-            const combinedWave = wave1 + wave2 + wave3;
+            // Adjust wave phases based on direction
+            const phase1 = i * 1.2 - (time * 2);
+            const phase2 = i * 0.8 - (time * 1.5);
+            const phase3 = i * 1.5 - (time * 2.5);
+            
+            const wave1 = Math.sin(phase1) * waveAmplitude; // Primary wave
+            const wave2 = Math.sin(phase2) * (waveAmplitude * 0.7); // Secondary wave
+            const wave3 = Math.sin(phase3) * (waveAmplitude * 0.5); // Tertiary wave
+            
+            const combinedWave = waveDirection * (wave1 + wave2 + wave3);
             const y = -this.image.height * this.size / 2 + clipHeight + combinedWave;
             ctx.lineTo(x, y);
           }
@@ -898,8 +902,8 @@
 
     // BossShip class
     class BossShip extends Boat {
-      constructor(x, y, size, speedX, speedY, image, damagedImage, flotsamImage) {
-        super(x, y, size, speedX, speedY, image, .15, .002, true);
+      constructor(x, y, size, speedX, image, damagedImage, flotsamImage) {
+        super(x, y, size, speedX, 0, image, 0.08, .002, true);
         this.damagedImage = damagedImage;
         this.flotsamImage = flotsamImage;
         this.damage = 0;
@@ -914,6 +918,18 @@
         this.image = currentImage; // Temporarily set image for base class draw
         super.draw(ctx);
       }
+    }
+
+    function createBossShip(x, y, direction, size) {
+      return new BossShip(
+        x,
+        y,
+        size,
+        (0.15 + Math.random() * 0.05) * direction,
+        bossShipImage,
+        bossShipDamagedImage,
+        bossShipFlotsamImage
+      );
     }
 
     function spawnNewSailboat() {
@@ -939,37 +955,81 @@
       ));
     }
 
-    function spawnBossShip() {
-      if (!bossShipImage.complete) return;
-      
-      const size = 0.6;
-      const direction = Math.random() > 0.5 ? 1 : -1;
+    function findValidBossShipPosition(size, direction) {
       const boatWidth = bossShipImage.width * size;
       
       // Start completely off-screen
-      const x = direction === 1 ? -boatWidth - 100 : boatCanvas.width + 100;
+      const x = direction === 1 ? -boatWidth : boatCanvas.width + boatWidth;
       
-      // Use a position in the middle third of the screen height
-      const screenHeight = boatCanvas.height;
-      const y = screenHeight * (0.33 + Math.random() * 0.34);
+      // Find a valid Y position that won't overlap with islands when the ship enters the screen
+      let validY = null;
+      const maxAttempts = 50;
+      let attempts = 0;
       
-      bossShip = new BossShip(
-        x,
-        y,
-        size,
-        (0.15 + Math.random() * 0.05) * direction, // Slightly faster than regular boats
-        (Math.random() - 0.5) * 0.03, // Gentler vertical movement
-        bossShipImage,
-        bossShipDamagedImage,
-        bossShipFlotsamImage
-      );
+      while (attempts < maxAttempts) {
+        // Try a random Y position
+        const screenHeight = boatCanvas.height;
+        const y = screenHeight * Math.random();
+        
+        // Check if this Y position would overlap with any islands when the ship is on screen
+        const onScreenX = -1;
+        if (!checkSailboatOverlap(onScreenX, y, size)) {
+          validY = y;
+          break;
+        }
+        attempts++;
+      }
+      
+      // If no valid position found, use a safe fallback
+      if (validY === null) {
+        alert('No valid position found');
+        validY = boatCanvas.height * 0.5; // Middle of screen as fallback
+      }
+      
+      return { x, y: validY };
     }
 
-    // Update the animation and click handlers to use the new classes
+    function spawnBossShip() {
+      if (!bossShipImage.complete) return;
+      
+      const size = window.innerWidth <= 600 ? 0.6 : 0.8;
+      const direction = Math.random() > 0.5 ? 1 : -1;
+      const position = findValidBossShipPosition(size, direction);
+      
+      bossShip = createBossShip(position.x, position.y, direction, size);
+    }
+
     function updateSailboats(deltaTime) {
       // Update boss ship
-      if (bossShip && !bossShip.update(deltaTime)) {
-        bossShip = null;
+      if (bossShip) {
+        const result = bossShip.update(deltaTime);
+        if (result === 'respawn') {
+          // Respawn boss ship with same state
+          const currentState = {
+            damage: bossShip.damage,
+            sinking: bossShip.sinking,
+            sinkProgress: bossShip.sinkProgress,
+            isFlotsam: bossShip.isFlotsam,
+            flotsamTimer: bossShip.flotsamTimer
+          };
+          
+          // Spawn new boss ship
+          const size = window.innerWidth <= 600 ? 0.6 : 0.8;
+          const direction = Math.random() > 0.5 ? 1 : -1;
+          // sets the position based on the direction of the boss ship
+          const position = findValidBossShipPosition(size, direction);
+          
+          bossShip = createBossShip(position.x, position.y, direction, size);
+          
+          // Restore previous state
+          bossShip.damage = currentState.damage;
+          bossShip.sinking = currentState.sinking;
+          bossShip.sinkProgress = currentState.sinkProgress;
+          bossShip.isFlotsam = currentState.isFlotsam;
+          bossShip.flotsamTimer = currentState.flotsamTimer;
+        } else if (result === false) {
+          bossShip = null;
+        }
       }
       
       // Update regular boats
@@ -993,14 +1053,21 @@
       boatCtx.clearRect(0, 0, boatCanvas.width, boatCanvas.height);
       
       if (sailboatImage.complete) {
-        // Draw regular boats
-        const sortedSailboats = [...sailboats].sort((a, b) => a.y - b.y);
-        sortedSailboats.forEach(boat => boat.draw(boatCtx));
-        
-        // Draw boss ship
+        // Create array of all boats including boss ship
+        const allBoats = [...sailboats];
         if (bossShip) {
-          bossShip.draw(boatCtx);
+          allBoats.push(bossShip);
         }
+        
+        // Sort boats by their bottom Y position (y + height)
+        const sortedBoats = allBoats.sort((a, b) => {
+          const aBottom = a.y + (a.image.height * a.size * (1-a.sinkProgress));
+          const bBottom = b.y + (b.image.height * b.size * (1-b.sinkProgress));
+          return aBottom - bBottom;
+        });
+        
+        // Draw all boats in sorted order
+        sortedBoats.forEach(boat => boat.draw(boatCtx));
       }
     }
 
@@ -1024,7 +1091,7 @@
           bossShip.damage++;
 
           if (bossShip.damage >= 20) {
-            bossShip.sinkProgress = .18;
+            bossShip.sinkProgress = .13;
           }
           if (bossShip.damage >= 30) {
             bossShip.sinking = true;
