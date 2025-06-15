@@ -909,7 +909,7 @@
         }
         
         // Spawn boss ship at 50 sunk ships
-        const bossShipSpawnThreshold = debugMode ? 1 : 50;
+        const bossShipSpawnThreshold = debugMode ? 1 : window.innerWidth <= 600 ? 30 : 50;
         if (totalSunkShips === bossShipSpawnThreshold && !bossShip) {
           spawnBossShip();
         }
@@ -1205,7 +1205,7 @@
     function spawnBossShip() {
       if (!bossShipImage.complete) return;
       
-      const size = 0.8;
+      const size = window.innerWidth <= 600 ? 0.6 : 0.8;
       const direction = Math.random() > 0.5 ? 1 : -1;
       const position = findValidBossShipPosition(size, direction);
       
