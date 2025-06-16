@@ -238,11 +238,9 @@
         if (availableSpaces.length === 0) return null;
         
         const randomSpace = availableSpaces[Math.floor(Math.random() * availableSpaces.length)];
-        const maxStart = randomSpace.end - minHeight;
-        const randomStart = randomSpace.start + Math.random() * (maxStart - randomSpace.start);
         
         return {
-          start: randomStart,
+          start: randomSpace.start,
           height: minHeight
         };
       }
@@ -308,6 +306,7 @@
       
       setTimeout(updateIslandBounds, 100);
       setTimeout(() => {
+        storeIslandBounds();
         drawLines(positions, cols, rows);
         setupMobileTooltips();
         if (!canvasesInitialized) {
@@ -315,13 +314,12 @@
           updateAllCanvasSizes();
           initializeClouds();
           initializeSailboats();
-          storeIslandBounds();
         }
       }, 300);
 
       document.addEventListener('DOMContentLoaded', () => {
-        drawLines(positions, cols, rows);
         storeIslandBounds();
+        drawLines(positions, cols, rows);
       });
     }
 
@@ -553,8 +551,8 @@
       
       availableSpaces.forEach(space => {
         ctx.beginPath();
-        ctx.moveTo(10, space.start);
-        ctx.lineTo(10, space.end);
+        ctx.moveTo(1, space.start);
+        ctx.lineTo(1, space.end);
         ctx.stroke();
       });
     }
@@ -870,6 +868,9 @@
 
       // Handle scroll for first/last island edge cases
       function handleScroll() {
+        if (debugMode) {
+          drawSpaceTrackerLines();
+        }
         const scrollY = window.scrollY;
         const windowHeight = window.innerHeight;
         const documentHeight = document.documentElement.scrollHeight;
@@ -1186,7 +1187,7 @@
       const boatWidth = bossShipImage.width * size;
       
       // Start just slightly off-screen
-      const x = direction === 1 ? -1 : boatCanvas.width + 1;
+      const x = direction === 1 ? bossShipImage.width * -1 : boatCanvas.width + 1;
       
       // Use SpaceTracker to find a valid Y position
       const boatHeight = bossShipImage.height * size;
@@ -1199,7 +1200,7 @@
       }
       
       // Position the ship so its bottom x% is into the available space
-      return { x, y: availableSpace.start - boatHeight + overlapHeight };
+      return { x, y: availableSpace.start + (boatHeight - overlapHeight) + 20 };
     }
 
     function spawnBossShip() {
@@ -1216,6 +1217,7 @@
       // Update boss ship
       if (bossShip) {
         const result = bossShip.update(deltaTime);
+
         if (result === 'respawn') {
           // Respawn boss ship with same state
           const currentState = {
@@ -1337,6 +1339,12 @@
           }
           if (bossShip.damage >= 40) {
             bossShip.sinking = true;
+            sailboats.forEach(boat => {
+              if (!boat.sinking) {
+                boat.sinking = true;
+              }
+            });
+            sailboatSpawnProbability = 0.003; // Reset to initial spawn probability
           }
           
           clickedBoat = true;
