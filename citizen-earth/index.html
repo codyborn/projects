@@ -306,7 +306,6 @@
       
       setTimeout(updateIslandBounds, 100);
       setTimeout(() => {
-        storeIslandBounds();
         drawLines(positions, cols, rows);
         setupMobileTooltips();
         if (!canvasesInitialized) {
@@ -318,7 +317,6 @@
       }, 300);
 
       document.addEventListener('DOMContentLoaded', () => {
-        storeIslandBounds();
         drawLines(positions, cols, rows);
       });
     }
@@ -1217,7 +1215,8 @@
       
       // Use SpaceTracker to find a valid Y position
       const boatHeight = bossShipImage.height * size;
-      const overlapHeight = boatHeight * boatCollisionPercentage; // Only check bottom x%
+      const overlapBufferTop = 20;
+      const overlapHeight = boatHeight * boatCollisionPercentage + overlapBufferTop; // Only check bottom x%
       const availableSpace = spaceTracker.getRandomAvailableSpace(overlapHeight);
       
       if (!availableSpace) {
@@ -1226,12 +1225,13 @@
       }
       
       // Position the ship so its bottom x% is into the available space
-      return { x, y: availableSpace.start + (boatHeight - overlapHeight) + 20 };
+      return { x, y: availableSpace.start - (boatHeight - overlapHeight) + overlapBufferTop };
     }
 
     function spawnBossShip() {
       if (!bossShipImage.complete) return;
       
+      storeIslandBounds();
       const size = window.innerWidth <= 600 ? 0.6 : 0.8;
       const direction = Math.random() > 0.5 ? 1 : -1;
       const position = findValidBossShipPosition(size, direction);
@@ -1469,8 +1469,8 @@
 
     // Add window resize and scroll handlers to update island bounds
     window.addEventListener('resize', () => {
-      updateIslandBounds();
       updateAllCanvasSizes();
+      updateIslandBounds();
     });
 
     window.addEventListener('scroll', updateIslandBounds);
