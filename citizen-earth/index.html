@@ -170,7 +170,7 @@
   </div>
   <svg id="island-lines" style="position:absolute; top:0; left:0; pointer-events:none; z-index:1;"></svg>
   <footer style="position: fixed; bottom: 2px; width: 100%; text-align: center; opacity: 0.2; font-size: 0.8rem; color: #222;">
-    Version 1.0.7
+    Version 1.0.8
   </footer>
   <script>
     // SpaceTracker class definition
@@ -305,6 +305,33 @@
       });
       
       setTimeout(updateIslandBounds, 100);
+      
+      // Wait for all island images to load before drawing lines
+      const waitForImagesAndDraw = () => {
+        const islandImages = Array.from(document.querySelectorAll('.island img'));
+        const imagePromises = islandImages.map(img => {
+          if (img.complete) {
+            return Promise.resolve();
+          }
+          return new Promise((resolve) => {
+            img.addEventListener('load', resolve);
+            img.addEventListener('error', resolve); // Resolve even on error to avoid hanging
+          });
+        });
+        
+        Promise.all(imagePromises).then(() => {
+          if (!canvasesInitialized) {
+            canvasesInitialized = true;
+            updateAllCanvasSizes();
+            initializeClouds();
+            initializeSailboats();
+          }
+          drawLines(positions, cols, rows);
+          setupMobileTooltips();
+        });
+      };
+      
+      // Also add a fallback timeout in case images take too long
       setTimeout(() => {
         if (!canvasesInitialized) {
           canvasesInitialized = true;
@@ -314,11 +341,9 @@
         }
         drawLines(positions, cols, rows);
         setupMobileTooltips();
-      }, 300);
-
-      document.addEventListener('DOMContentLoaded', () => {
-        drawLines(positions, cols, rows);
-      });
+      }, 2000); // 2 second fallback
+      
+      waitForImagesAndDraw();
     }
 
     // Lock orientation to portrait on mobile devices
