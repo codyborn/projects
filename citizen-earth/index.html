@@ -117,6 +117,10 @@
       body {
         scroll-snap-type: y mandatory;
       }
+
+      h1 {
+        margin-top: 70px;
+      }
       .island-grid {
         grid-template-columns: 1fr !important;
         justify-items: center;
@@ -157,9 +161,106 @@
       color: #ffd700;
       text-decoration: underline;
     }
+
+    /* Night Mode Styles */
+    .night-mode-toggle {
+      position: fixed;
+      top: 10px;
+      left: 20px;
+      background: rgba(44, 62, 80, 0.9);
+      color: #fff;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 25px;
+      font-size: 1rem;
+      cursor: pointer;
+      z-index: 9999;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .night-mode-toggle:hover {
+      background: rgba(44, 62, 80, 1);
+      transform: scale(1.05);
+    }
+
+    .night-mode-toggle::before {
+      content: "🌙";
+      margin-right: 8px;
+      font-size: 1.2em;
+    }
+
+    .night-mode .night-mode-toggle::before {
+      content: "☀️";
+    }
+
+    /* Night mode transformations */
+    .night-mode {
+      background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d1b69 100%);
+      transition: background 0.8s ease;
+    }
+
+    .night-mode h1 {
+      color: #e6e6ff;
+      text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+    }
+
+    .night-mode .city-name {
+      color: #b3b3ff;
+      text-shadow: 0 0 10px rgba(179, 179, 255, 0.5);
+    }
+
+    /* Island image night transformations - this is the clever part! */
+    .night-mode .island img {
+      filter: 
+        brightness(0.6)          /* Darken the overall image */
+        contrast(1.6)            /* Increase contrast for dramatic effect */
+        saturate(0.7)            /* Reduce saturation slightly */
+        hue-rotate(200deg)       /* Shift hues toward blue/purple night tones */
+        sepia(0.2);              /* Add a slight sepia tone for warmth */
+      
+      transition: all 0.8s ease;
+      position: relative;
+    }
+
+
+    /* Night mode tooltip adjustments */
+    .night-mode .island-tooltip {
+      background: rgba(15, 15, 35, 0.95);
+      border: 1px solid rgba(179, 179, 255, 0.3);
+      box-shadow: 
+        0 4px 20px rgba(0, 0, 0, 0.5),
+        0 0 20px rgba(100, 150, 255, 0.2);
+    }
+
+    /* Night mode water/sky canvas effects */
+    .night-mode #water-canvas,
+    .night-mode #cloud-canvas,
+    .night-mode #boat-canvas {
+      filter: brightness(0.5) contrast(1.2);
+      transition: filter 0.8s ease;
+    }
+
+    .night-mode::before {
+      opacity: 0.6;
+    }
+
+    /* Ensure island grid stays above stars */
+    .night-mode .island-grid {
+      position: relative;
+      z-index: 2;
+    }
+
+    .night-mode line {
+      stroke: darkcyan;
+    }
   </style>
 </head>
 <body>
+  <!-- Night Mode Toggle Button -->
+  <button class="night-mode-toggle" onclick="toggleNightMode()"></button>
+  
   <canvas id="water-canvas"></canvas>
   <canvas id="cloud-canvas"></canvas>
   <canvas id="boat-canvas"></canvas>
@@ -211,13 +312,6 @@
             newRanges.push({
               start: end,
               end: range.end
-            });
-          }
-          // If the occupied space overlaps the end of the range
-          else if (start > range.start && end >= range.end) {
-            newRanges.push({
-              start: range.start,
-              end: start
             });
           }
           // If the occupied space completely covers the range, skip it
@@ -1488,6 +1582,30 @@
     });
 
     window.addEventListener('scroll', updateIslandBounds);
+
+    // Night mode toggle functionality
+    function toggleNightMode() {
+      document.body.classList.toggle('night-mode');
+      
+      // Save the night mode preference
+      const isNightMode = document.body.classList.contains('night-mode');
+      localStorage.setItem('night-mode', isNightMode);
+    }
+
+    // Load night mode preference on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedNightMode = localStorage.getItem('night-mode');
+      if (savedNightMode === 'true') {
+        document.body.classList.add('night-mode');
+      }
+    });
+
+    // Add keyboard shortcut for night mode (N key)
+    document.addEventListener('keydown', (event) => {
+      if (event.key.toLowerCase() === 'n' && !event.ctrlKey && !event.altKey && !event.metaKey) {
+        toggleNightMode();
+      }
+    });
   </script>
 </body>
 </html> 
