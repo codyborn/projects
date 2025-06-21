@@ -76,17 +76,15 @@ function renderIslands() {
     });
     
     Promise.all(imagePromises).then(() => {
-        setTimeout(() => {
-            if (!canvasesInitialized) {
-                canvasesInitialized = true;
-                updateAllCanvasSizes();
-                initializeClouds();
-                initializeSailboats();
-            }
-            drawLines(positions, cols, rows);
-            setupMobileTooltips();
-            handleScroll();
-        }, 200);
+        if (!canvasesInitialized) {
+            canvasesInitialized = true;
+            updateAllCanvasSizes();
+            initializeClouds();
+            initializeSailboats();
+        }
+        drawLines(positions, cols, rows);
+        setupMobileTooltips();
+        handleScroll();
     });
   };
   
