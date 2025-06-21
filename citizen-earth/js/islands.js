@@ -73,6 +73,7 @@ function renderIslands() {
       }
       drawLines(positions, cols, rows);
       setupMobileTooltips();
+      handleScroll();
     });
   };
   

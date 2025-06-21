@@ -95,6 +95,8 @@ h1 {
   transition: transform 0.2s;
   cursor: pointer;
   position: relative;
+  grid-area: auto !important;
+  scroll-snap-align: center;
 }
 
 .island img {
@@ -550,7 +552,6 @@ h1 {
   .island {
     grid-area: auto !important;
     scroll-snap-align: center;
-    scroll-snap-stop: always;
     display: flex;
     flex-direction: column;
     justify-content: center;
