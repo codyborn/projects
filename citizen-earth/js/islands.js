@@ -65,31 +65,17 @@ function renderIslands() {
     });
     
     Promise.all(imagePromises).then(() => {
-      if (!canvasesInitialized) {
-        canvasesInitialized = true;
-        updateAllCanvasSizes();
-        initializeClouds();
-        initializeSailboats();
-      }
-      
-      // Force layout recalculation for iOS Safari
-      const forceLayout = () => {
-        // Trigger layout recalculation
-        document.body.offsetHeight;
-        // Small delay to ensure iOS Safari has settled
         setTimeout(() => {
-          drawLines(positions, cols, rows);
-          setupMobileTooltips();
-          handleScroll();
-        }, 100);
-      };
-      
-      // On iOS, we need to wait a bit longer for the viewport to settle
-      if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-        setTimeout(forceLayout, 200);
-      } else {
-        forceLayout();
-      }
+            if (!canvasesInitialized) {
+                canvasesInitialized = true;
+                updateAllCanvasSizes();
+                initializeClouds();
+                initializeSailboats();
+            }
+            drawLines(positions, cols, rows);
+            setupMobileTooltips();
+            handleScroll();
+        }, 200);
     });
   };
   
@@ -193,7 +179,7 @@ function setupMobileTooltips() {
       drawSpaceTrackerLines();
     }
     const scrollY = window.scrollY;
-    const windowHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const windowHeight = window.innerHeight;
     const documentHeight = document.documentElement.scrollHeight;
     
     if (scrollY <= 50) {
@@ -210,30 +196,7 @@ function setupMobileTooltips() {
   }
 
   window.addEventListener('scroll', handleScroll);
-  
-  // Listen for visual viewport changes (iOS Safari address bar)
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', () => {
-      // Recalculate after viewport changes
-      setTimeout(handleScroll, 50);
-    });
-  }
-  
-  // Force initial check after a short delay to handle iOS viewport settling
-  setTimeout(() => {
-    handleScroll();
-    // Also trigger intersection observer check
-    const windowHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    islands.forEach(island => {
-      const rect = island.getBoundingClientRect();
-      const isVisible = rect.top < windowHeight && rect.bottom > 0;
-      if (isVisible) {
-        const tooltip = island.querySelector('.island-tooltip');
-        tooltip.style.opacity = '1';
-        tooltip.style.transform = 'translateY(-10px)';
-      }
-    });
-  }, 150);
+  handleScroll();
 }
 
 // Debug functions
