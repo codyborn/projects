@@ -9,6 +9,17 @@ const spaceTracker = new SpaceTracker(document.documentElement.scrollHeight);
 const grid = document.querySelector('.island-grid');
 const svg = document.getElementById('island-lines');
 
+// Preload all images to prevent mobile lazy loading
+function preloadImages() {
+  cities.forEach(cityObj => {
+    const img = new Image();
+    img.src = cityObj.islandImg;
+  });
+}
+
+// Start preloading immediately
+preloadImages();
+
 function renderIslands() {
   grid.innerHTML = '';
   const cols = getColumnCount();
@@ -29,7 +40,7 @@ function renderIslands() {
     div.style.gridRow = (row + 1).toString();
     div.style.gridColumn = (col + 1).toString();
     div.innerHTML = `
-      <img src="${cityObj.islandImg}" alt="${cityObj.name}" style="width: ${cityObj.size ? cityObj.size + 'px' : '120px'}; height: auto;">
+      <img src="${cityObj.islandImg}" alt="${cityObj.name}" style="width: ${cityObj.size ? cityObj.size + 'px' : '120px'}; height: auto;" loading="eager">
       <div class="city-name">${cityObj.name}</div>
       <div class="island-tooltip">
         <div><strong>${cityObj.duration}</strong></div>
