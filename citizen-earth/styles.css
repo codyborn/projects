@@ -528,12 +528,12 @@ h1 {
 
 @media (max-width: 600px) {
   html {
-    scroll-snap-type: y mandatory;
+    scroll-snap-type: y proximity;
     scroll-behavior: smooth;
   }
   
   body {
-    scroll-snap-type: y mandatory;
+    scroll-snap-type: y proximity;
   }
 
   h1 {

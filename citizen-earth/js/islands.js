@@ -49,9 +49,6 @@ function renderIslands() {
     grid.appendChild(div);
   });
   
-  // Set up mobile tooltips immediately
-  setupMobileTooltips();
-  
   setTimeout(updateIslandBounds, 100);
   
   // Wait for all island images to load before drawing lines
@@ -75,7 +72,6 @@ function renderIslands() {
         initializeSailboats();
       }
       drawLines(positions, cols, rows);
-      // Re-setup mobile tooltips after images load to ensure proper positioning
       setupMobileTooltips();
     });
   };
@@ -145,12 +141,10 @@ function storeIslandBounds() {
 }
 
 function setupMobileTooltips() {
-  const isMobile = window.innerWidth <= 600;
-  if (!isMobile) return;
+//   const isMobile = window.innerWidth <= 600;
+//   if (!isMobile) return;
 
   const islands = document.querySelectorAll('.island');
-  if (islands.length === 0) return;
-  
   const firstIsland = islands[0];
   const lastIsland = islands[islands.length - 1];
 
@@ -187,27 +181,19 @@ function setupMobileTooltips() {
     
     if (scrollY <= 50) {
       const firstTooltip = firstIsland.querySelector('.island-tooltip');
-      if (firstTooltip) {
-        firstTooltip.style.opacity = '1';
-        firstTooltip.style.transform = 'translateY(-10px)';
-      }
+      firstTooltip.style.opacity = '1';
+      firstTooltip.style.transform = 'translateY(-10px)';
     }
     
     if (scrollY + windowHeight >= documentHeight - 50) {
       const lastTooltip = lastIsland.querySelector('.island-tooltip');
-      if (lastTooltip) {
-        lastTooltip.style.opacity = '1';
-        lastTooltip.style.transform = 'translateY(-10px)';
-      }
+      lastTooltip.style.opacity = '1';
+      lastTooltip.style.transform = 'translateY(-10px)';
     }
   }
 
-  // Remove existing scroll listener to avoid duplicates
-  window.removeEventListener('scroll', handleScroll);
   window.addEventListener('scroll', handleScroll);
-  
-  // Trigger initial scroll handler after a short delay to ensure proper initialization
-  setTimeout(handleScroll, 100);
+  handleScroll();
 }
 
 // Debug functions
