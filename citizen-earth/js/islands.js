@@ -71,9 +71,25 @@ function renderIslands() {
         initializeClouds();
         initializeSailboats();
       }
-      drawLines(positions, cols, rows);
-      setupMobileTooltips();
-      handleScroll();
+      
+      // Force layout recalculation for iOS Safari
+      const forceLayout = () => {
+        // Trigger layout recalculation
+        document.body.offsetHeight;
+        // Small delay to ensure iOS Safari has settled
+        setTimeout(() => {
+          drawLines(positions, cols, rows);
+          setupMobileTooltips();
+          handleScroll();
+        }, 100);
+      };
+      
+      // On iOS, we need to wait a bit longer for the viewport to settle
+      if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+        setTimeout(forceLayout, 200);
+      } else {
+        forceLayout();
+      }
     });
   };
   
@@ -194,7 +210,21 @@ function setupMobileTooltips() {
   }
 
   window.addEventListener('scroll', handleScroll);
-  handleScroll();
+  
+  // Force initial check after a short delay to handle iOS viewport settling
+  setTimeout(() => {
+    handleScroll();
+    // Also trigger intersection observer check
+    islands.forEach(island => {
+      const rect = island.getBoundingClientRect();
+      const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+      if (isVisible) {
+        const tooltip = island.querySelector('.island-tooltip');
+        tooltip.style.opacity = '1';
+        tooltip.style.transform = 'translateY(-10px)';
+      }
+    });
+  }, 150);
 }
 
 // Debug functions
