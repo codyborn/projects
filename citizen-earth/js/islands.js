@@ -193,7 +193,7 @@ function setupMobileTooltips() {
       drawSpaceTrackerLines();
     }
     const scrollY = window.scrollY;
-    const windowHeight = window.innerHeight;
+    const windowHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
     const documentHeight = document.documentElement.scrollHeight;
     
     if (scrollY <= 50) {
@@ -211,13 +211,22 @@ function setupMobileTooltips() {
 
   window.addEventListener('scroll', handleScroll);
   
+  // Listen for visual viewport changes (iOS Safari address bar)
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      // Recalculate after viewport changes
+      setTimeout(handleScroll, 50);
+    });
+  }
+  
   // Force initial check after a short delay to handle iOS viewport settling
   setTimeout(() => {
     handleScroll();
     // Also trigger intersection observer check
+    const windowHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
     islands.forEach(island => {
       const rect = island.getBoundingClientRect();
-      const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+      const isVisible = rect.top < windowHeight && rect.bottom > 0;
       if (isVisible) {
         const tooltip = island.querySelector('.island-tooltip');
         tooltip.style.opacity = '1';
