@@ -21,6 +21,11 @@ function renderIslands() {
     if (row % 2 === 1) col = cols - 1 - col;
     const div = document.createElement('div');
     div.className = 'island';
+    div.onclick = () => {
+      if (cityObj.blog) {
+        openBlogPost(cityObj.blog, cityObj.blogTitle, cityObj.name);
+      }
+    };
     div.style.gridRow = (row + 1).toString();
     div.style.gridColumn = (col + 1).toString();
     div.innerHTML = `
@@ -29,7 +34,7 @@ function renderIslands() {
       <div class="island-tooltip">
         <div><strong>${cityObj.duration}</strong></div>
         <div>${cityObj.dates}</div>
-        ${cityObj.blog ? `<div><a href="#" onclick="openBlogPost('${cityObj.blog}', '${cityObj.blogTitle}', '${cityObj.name}'); return false;">${cityObj.blogTitle}</a></div>` : ''}
+        ${cityObj.blog ? `<div><a href="#">${cityObj.blogTitle}</a></div>` : ''}
       </div>
     `;
     positions.push({row, col, div});

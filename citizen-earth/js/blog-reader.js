@@ -12,19 +12,40 @@ window.addEventListener('DOMContentLoaded', () => {
   checkForAutoOpen();
 });
 
+// Handle browser back/forward navigation
+window.addEventListener('popstate', () => {
+  checkForAutoOpen();
+});
+
 function checkForAutoOpen() {
   const urlParams = new URLSearchParams(window.location.search);
   const cityParam = urlParams.get('city');
   
-  if (cityParam) {
-    const cityObj = cities.find(city => 
-      city.name.toLowerCase() === cityParam.toLowerCase() && city.blog
-    );
-    
-    if (cityObj) {
+  // If there's no city parameter and a blog is currently open, close it
+  if (!cityParam) {
+    if (document.getElementById('blog-overlay').classList.contains('active')) {
+      closeBlogOverlay();
+    }
+    return;
+  }
+  
+  // If there is a city parameter, find and open the corresponding blog
+  const cityObj = cities.find(city => 
+    city.name.toLowerCase() === cityParam.toLowerCase() && city.blog
+  );
+  
+  if (cityObj) {
+    // Only open if not already open with the same city
+    if (!document.getElementById('blog-overlay').classList.contains('active') || 
+        currentBlogCity !== cityObj.name) {
       setTimeout(() => {
         openBlogPost(cityObj.blog, cityObj.blogTitle, cityObj.name);
-      }, 500);
+      }, 100);
+    }
+  } else {
+    // City not found, close any open blog
+    if (document.getElementById('blog-overlay').classList.contains('active')) {
+      closeBlogOverlay();
     }
   }
 }
@@ -131,6 +152,12 @@ async function openBlogPost(blogPath, blogTitle, cityName) {
     
     currentBlogCity = cityName;
     
+    // Add city to query string in URL
+    if (window.history.pushState) {
+      const newUrl = `${window.location.pathname}?city=${encodeURIComponent(cityName)}`;
+      window.history.pushState({}, document.title, newUrl);
+    }
+    
   } catch (error) {
     console.error('Error loading blog post:', error);
     alert('Error loading blog post. Please try again.');
@@ -138,7 +165,6 @@ async function openBlogPost(blogPath, blogTitle, cityName) {
 }
 
 function startTextAnimation(text) {
-  const blogTextElement = document.getElementById('blog-text');
   
   switch (ANIMATION_TYPE) {
     case 'typing':
@@ -288,10 +314,10 @@ function closeBlogOverlay() {
   document.getElementById('blog-title').textContent = '';
   document.getElementById('blog-text').innerHTML = '';
   
-  // Remove query string from URL
-  if (window.history.replaceState) {
+  // Add new history entry without query string
+  if (window.history.pushState) {
     const newUrl = window.location.pathname;
-    window.history.replaceState({}, document.title, newUrl);
+    window.history.pushState({}, document.title, newUrl);
   }
   
   currentBlogCity = null;
