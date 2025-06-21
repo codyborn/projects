@@ -21,11 +21,22 @@ function renderIslands() {
     if (row % 2 === 1) col = cols - 1 - col;
     const div = document.createElement('div');
     div.className = 'island';
-    div.onclick = () => {
+    
+    // Function to open blog post
+    const openBlog = () => {
       if (cityObj.blog) {
         openBlogPost(cityObj.blog, cityObj.blogTitle, cityObj.name);
       }
     };
+    
+    // Handle both click and touch events for better mobile support
+    div.addEventListener('click', openBlog);
+    div.addEventListener('touchstart', (e) => {
+      // Prevent default to avoid double-firing with click
+      e.preventDefault();
+      openBlog();
+    }, { passive: false });
+    
     div.style.gridRow = (row + 1).toString();
     div.style.gridColumn = (col + 1).toString();
     div.innerHTML = `
