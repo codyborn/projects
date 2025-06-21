@@ -2,7 +2,8 @@
   "homepage": "https://codyborn.github.io/projects",
   "scripts": {
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "deploy": "gh-pages -d build",
+    "startCitizenEarth": "cd citizen-earth && npx live-server --port=8000 --no-browser"
   },
   "devDependencies": {
     "gh-pages": "^6.3.0"
