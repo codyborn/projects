@@ -21,22 +21,11 @@ function renderIslands() {
     if (row % 2 === 1) col = cols - 1 - col;
     const div = document.createElement('div');
     div.className = 'island';
-    
-    // Function to open blog post
-    const openBlog = () => {
+    div.onclick = () => {
       if (cityObj.blog) {
         openBlogPost(cityObj.blog, cityObj.blogTitle, cityObj.name);
       }
     };
-    
-    // Handle both click and touch events for better mobile support
-    div.addEventListener('click', openBlog);
-    div.addEventListener('touchstart', (e) => {
-      // Prevent default to avoid double-firing with click
-      e.preventDefault();
-      openBlog();
-    }, { passive: false });
-    
     div.style.gridRow = (row + 1).toString();
     div.style.gridColumn = (col + 1).toString();
     div.innerHTML = `
@@ -59,6 +48,9 @@ function renderIslands() {
     });
     grid.appendChild(div);
   });
+  
+  // Set up mobile tooltips immediately
+  setupMobileTooltips();
   
   setTimeout(updateIslandBounds, 100);
   
@@ -83,6 +75,7 @@ function renderIslands() {
         initializeSailboats();
       }
       drawLines(positions, cols, rows);
+      // Re-setup mobile tooltips after images load to ensure proper positioning
       setupMobileTooltips();
     });
   };
@@ -156,6 +149,8 @@ function setupMobileTooltips() {
   if (!isMobile) return;
 
   const islands = document.querySelectorAll('.island');
+  if (islands.length === 0) return;
+  
   const firstIsland = islands[0];
   const lastIsland = islands[islands.length - 1];
 
@@ -192,19 +187,27 @@ function setupMobileTooltips() {
     
     if (scrollY <= 50) {
       const firstTooltip = firstIsland.querySelector('.island-tooltip');
-      firstTooltip.style.opacity = '1';
-      firstTooltip.style.transform = 'translateY(-10px)';
+      if (firstTooltip) {
+        firstTooltip.style.opacity = '1';
+        firstTooltip.style.transform = 'translateY(-10px)';
+      }
     }
     
     if (scrollY + windowHeight >= documentHeight - 50) {
       const lastTooltip = lastIsland.querySelector('.island-tooltip');
-      lastTooltip.style.opacity = '1';
-      lastTooltip.style.transform = 'translateY(-10px)';
+      if (lastTooltip) {
+        lastTooltip.style.opacity = '1';
+        lastTooltip.style.transform = 'translateY(-10px)';
+      }
     }
   }
 
+  // Remove existing scroll listener to avoid duplicates
+  window.removeEventListener('scroll', handleScroll);
   window.addEventListener('scroll', handleScroll);
-  handleScroll();
+  
+  // Trigger initial scroll handler after a short delay to ensure proper initialization
+  setTimeout(handleScroll, 100);
 }
 
 // Debug functions
