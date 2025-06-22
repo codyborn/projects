@@ -88,7 +88,6 @@ function renderIslands() {
         }
         drawLines(positions, cols, rows);
         setupMobileTooltips();
-        handleScroll();
     });
   };
   
@@ -108,7 +107,7 @@ function updateIslandBounds() {
     });
   });
   
-  if (debugMode) {
+  if (window.debugMode) {
     drawIslandBounds();
   }
 }
@@ -151,7 +150,7 @@ function storeIslandBounds() {
     const rect = img.getBoundingClientRect();
     spaceTracker.addOccupiedSpace(rect.top + window.scrollY, rect.height);
   });
-  if (debugMode) {
+  if (window.debugMode) {
     drawSpaceTrackerLines();
   }
 }
@@ -188,7 +187,7 @@ function setupMobileTooltips() {
   });
 
   function handleScroll() {
-    if (debugMode) {
+    if (window.debugMode) {
       drawSpaceTrackerLines();
     }
     const scrollY = window.scrollY;

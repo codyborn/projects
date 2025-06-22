@@ -1,6 +1,9 @@
 // Main application initialization and night mode functionality
 const debugMode = false;
 
+// Make debugMode available globally
+window.debugMode = debugMode;
+
 // Lock orientation to portrait on mobile devices
 if (window.innerWidth <= 600 && screen.orientation && screen.orientation.lock) {
   screen.orientation.lock('portrait').catch(() => {

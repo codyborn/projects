@@ -36,7 +36,7 @@ function checkSailboatOverlap(sailboatX, sailboatY, sailboatWidth, sailboatHeigh
   const sailboatTop = sailboatY + sailboatHeight * (1 - boatCollisionPercentage);
   const sailboatRight = sailboatX + sailboatWidth;
 
-  if (debugMode) {
+  if (window.debugMode) {
     boatCtx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
     boatCtx.lineWidth = 2;
     boatCtx.beginPath();
@@ -340,7 +340,7 @@ function createBossShip(x, y, direction, size) {
     x,
     y,
     size,
-    (debugMode ? 0.5 : 0.18) * direction,
+    (window.debugMode ? 0.5 : 0.18) * direction,
     bossShipImage,
     bossShipDamagedImage,
     bossShipFlotsamImage
@@ -496,7 +496,7 @@ function updateSunkShipsCounter() {
       sailboatSpawnProbability = 0.01;
     }
     
-    const bossShipSpawnThreshold = debugMode ? 1 : window.innerWidth <= 600 ? 30 : 50;
+    const bossShipSpawnThreshold = window.debugMode ? 1 : window.innerWidth <= 600 ? 30 : 50;
     if (totalSunkShips === bossShipSpawnThreshold && !bossShip) {
       spawnBossShip();
     }

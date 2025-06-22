@@ -2,7 +2,7 @@
 const cities = [
   { 
     name: 'Miami',
-    subtitle: 'Miami, Key Largo, New Orleans',
+    subtitle: 'Key Largo, New Orleans',
     dates: 'Jan 1st - Apr 6th',
     duration: '96 days',
     islandImg: './images/miami.png',
@@ -28,11 +28,11 @@ const cities = [
     dates: 'May 2nd - May 11th', 
     duration: '10 days',
     islandImg: './images/granada.png' ,
-    size: 200
+    size: 180
   },
   { 
     name: 'Hyeres',
-    subtitle: 'Marseille, Hyeres, Toulon, St Tropez',
+    subtitle: 'Marseille, Toulon, St Tropez',
     dates: 'May 12th - Jun 7th', 
     duration: '26 days',
     islandImg: './images/hyeres.png',
@@ -40,7 +40,7 @@ const cities = [
   },
   { 
     name: 'Antibes', 
-    subtitle: 'Antibes, Nice, Monaco',
+    subtitle: 'Nice, Monaco',
     dates: 'Jun 7th - Jun 28th', 
     duration: '22 days',
     islandImg: './images/antibes.png',
@@ -55,7 +55,7 @@ const cities = [
   },
   { 
     name: 'Scotland',
-    subtitle: 'Inverness, Aviemore, Isle of Skye, Edinburgh',
+    subtitle: 'Aviemore, Isle of Skye, Edinburgh',
     dates: 'Jul 6th - Aug 17th', 
     duration: '42 days',
     islandImg: './images/scotland.png',
@@ -84,8 +84,8 @@ const cities = [
     size: 200
   },
   { 
-    name: '???', 
-    dates: 'September-October', 
+    name: '???',
+    dates: 'October', 
     duration: '???',
     islandImg: './images/mystery.png',
   },
