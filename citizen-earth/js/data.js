@@ -2,80 +2,86 @@
 const cities = [
   { 
     name: 'Miami',
-    dates: 'January - April',
-    duration: '3 months',
+    subtitle: 'Miami, Key Largo, New Orleans',
+    dates: 'Jan 1st - Apr 6th',
+    duration: '96 days',
     islandImg: './images/miami.png',
     blog: './posts/miami.md',
     blogTitle: 'Tied down',
   },
   { 
     name: 'New York', 
-    dates: 'April', 
-    duration: '1 month',
+    dates: 'Apr 6 - Apr 25th', 
+    duration: '21 days',
     islandImg: './images/NY.png',
     size: 200
   },
   { 
     name: 'Madrid', 
-    dates: 'April - May', 
-    duration: '1 week',
+    dates: 'Apr 26 - May 2nd', 
+    duration: '7 days',
     islandImg: './images/madrid.png' ,
     size: 150
   },
   { 
     name: 'Granada', 
-    dates: 'May', 
-    duration: '2 weeks',
+    dates: 'May 2nd - May 11th', 
+    duration: '10 days',
     islandImg: './images/granada.png' ,
     size: 200
   },
   { 
-    name: 'Hyeres', 
-    dates: 'May - June', 
-    duration: '1 month',
+    name: 'Hyeres',
+    subtitle: 'Marseille, Hyeres, Toulon, St Tropez',
+    dates: 'May 12th - Jun 7th', 
+    duration: '26 days',
     islandImg: './images/hyeres.png',
     size: 160
   },
   { 
     name: 'Antibes', 
-    dates: 'June', 
-    duration: '3 weeks',
+    subtitle: 'Antibes, Nice, Monaco',
+    dates: 'Jun 7th - Jun 28th', 
+    duration: '22 days',
     islandImg: './images/antibes.png',
     size: 160
   },
   { 
     name: 'Cannes', 
-    dates: 'June-July', 
-    duration: '1 week',
+    dates: 'Jun 28th - Jul 6th', 
+    duration: '8 days',
     islandImg: './images/cannes.png',
     size: 160
   },
   { 
-    name: 'Scotland', 
-    dates: 'July', 
-    duration: '???',
+    name: 'Scotland',
+    subtitle: 'Inverness, Aviemore, Isle of Skye, Edinburgh',
+    dates: 'Jul 6th - Aug 17th', 
+    duration: '42 days',
     islandImg: './images/scotland.png',
     size: 150
   },
   { 
-    name: '???', 
-    dates: 'July-August', 
-    duration: '???',
-    islandImg: './images/mystery.png',
+    name: 'Morocco', 
+    subtitle: 'Casablanca, Dakhla, Marrakech',
+    dates: 'Aug 17th - Sep 21st', 
+    duration: '36 days',
+    islandImg: './images/dakhla.png',
+    size: 160
   },
   { 
     name: 'Azores', 
-    dates: 'August', 
-    duration: '2 weeks',
+    dates: 'Sep 21st - Oct 4th', 
+    duration: '14 days',
     islandImg: './images/azores.png',
     size: 160
   },
   { 
-    name: 'Morocco', 
-    dates: 'August', 
-    duration: '???',
-    islandImg: './images/dakhla.png',
-    size: 160
+    name: 'New York', 
+    dates: 'Oct 4th - Oct 10th', 
+    duration: '7 days',
+    islandImg: './images/NY.png',
+    size: 200
   },
   { 
     name: '???', 

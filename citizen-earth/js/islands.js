@@ -43,8 +43,12 @@ function renderIslands() {
       <img src="${cityObj.islandImg}" alt="${cityObj.name}" style="width: ${cityObj.size ? cityObj.size + 'px' : '120px'}; height: auto;" loading="eager">
       <div class="city-name">${cityObj.name}</div>
       <div class="island-tooltip">
-        <div><strong>${cityObj.duration}</strong></div>
-        <div>${cityObj.dates}</div>
+        ${cityObj.subtitle ? `<div class="city-subtitle">${cityObj.subtitle}</div>` : ''}
+        <div class="city-dates">
+            ${cityObj.dates} 
+            ${cityObj.subtitle ? `<span style="float: right; padding-left: 10px;">${cityObj.duration}</span>` : ''}
+        </div>
+        ${!cityObj.subtitle ? `<div class="city-duration">${cityObj.duration}</div>` : ''}
         ${cityObj.blog ? `<div><a href="#">${cityObj.blogTitle}</a></div>` : ''}
       </div>
     `;
@@ -153,8 +157,8 @@ function storeIslandBounds() {
 }
 
 function setupMobileTooltips() {
-//   const isMobile = window.innerWidth <= 600;
-//   if (!isMobile) return;
+  const isMobile = window.innerWidth <= 600;
+  if (!isMobile) return;
 
   const islands = document.querySelectorAll('.island');
   const firstIsland = islands[0];
@@ -266,7 +270,6 @@ function drawSpaceTrackerLines() {
 }
 
 // Initialize islands
-grid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(180px, 1fr))';
 window.addEventListener('resize', renderIslands);
 renderIslands();
 

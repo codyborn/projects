@@ -95,8 +95,12 @@ h1 {
   transition: transform 0.2s;
   cursor: pointer;
   position: relative;
-  grid-area: auto !important;
+  grid-area: auto;
   scroll-snap-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .island img {
@@ -115,6 +119,16 @@ h1 {
   z-index: 5;
 }
 
+.city-subtitle {
+  font-size: 1rem;
+  color: #fff;
+  text-align: center;
+  position: relative;
+  z-index: 5;
+  font-style: italic;
+  padding-bottom: 10px;
+}
+
 /* Island Tooltips */
 .island-tooltip {
   background: rgba(44, 62, 80, 0.97);
@@ -122,17 +136,32 @@ h1 {
   padding: 10px 16px;
   border-radius: 5px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.18);
-  white-space: nowrap;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
   opacity: 0;
   transition: opacity 0.2s, transform 0.2s;
   z-index: 10;
   font-size: 1rem;
   margin-top: 1.5em;
+  max-width: 12em;
 }
 
 .island-tooltip a {
   color: #ffd700;
   text-decoration: underline;
+  text-align: center;
+  display: block;
+  padding-top: 10px;
+}
+
+.city-dates {
+    font-size: 0.9rem;
+}
+
+.city-duration {
+    font-size: 0.9rem;
+    padding-top: 10px;
 }
 
 /* Night Mode Toggle */
