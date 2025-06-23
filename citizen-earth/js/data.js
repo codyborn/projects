@@ -55,19 +55,17 @@ const cities = [
   },
   { 
     name: 'Scotland',
-    subtitle: 'Aviemore, Isle of Skye, Edinburgh',
+    subtitle: 'Aviemore, Isle of Skye, Glencoe',
     dates: 'Jul 6th - Aug 17th', 
-    duration: '42 days',
+    duration: '43 days',
     islandImg: './images/scotland.png',
     size: 150
   },
   { 
-    name: 'Morocco', 
-    subtitle: 'Casablanca, Dakhla, Marrakech',
+    name: '???',
     dates: 'Aug 17th - Sep 21st', 
     duration: '36 days',
-    islandImg: './images/dakhla.png',
-    size: 160
+    islandImg: './images/mystery.png',
   },
   { 
     name: 'Azores', 
@@ -111,6 +109,10 @@ const cities = [
     size: 140
   },
 ];
+
+const quotes = [
+  "The things you own end up owning you. - Tyler Durden, Fight Club",
+]
 
 // Utility functions
 function getColumnCount() {
