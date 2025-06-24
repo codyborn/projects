@@ -44,6 +44,8 @@ const cities = [
     dates: 'Jun 7th - Jun 28th', 
     duration: '22 days',
     islandImg: './images/antibes.png',
+    blog: './posts/antibes.md',
+    blogTitle: 'When you can\'t beat em',
     size: 160
   },
   { 
