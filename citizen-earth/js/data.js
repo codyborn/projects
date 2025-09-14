@@ -36,6 +36,8 @@ const cities = [
     dates: 'May 12th - Jun 7th', 
     duration: '26 days',
     islandImg: './images/hyeres.png',
+    blog: './posts/hyeres.md',
+    blogTitle: 'Bread is the answer',
     size: 160
   },
   { 
@@ -64,48 +66,60 @@ const cities = [
     size: 150
   },
   { 
-    name: '???',
-    dates: 'Aug 17th - Sep 21st', 
-    duration: '36 days',
-    islandImg: './images/mystery.png',
+    name: 'Morocco',
+    subtitle: 'Casablanca, Dakhla',
+    dates: 'Aug 17th - Sep 13th', 
+    duration: '26 days',
+    islandImg: './images/dakhla.png',
+    blog: './posts/dakhla.md',
+    blogTitle: 'The French have watches',
+    size: 160
   },
   { 
-    name: 'Azores', 
-    dates: 'Sep 21st - Oct 4th', 
-    duration: '14 days',
-    islandImg: './images/azores.png',
+    name: 'Lisbon', 
+    dates: 'Sep 13th - Sep 21st', 
+    duration: '9 days',
+    islandImg: './images/lisbon.png',
     size: 160
   },
   { 
     name: 'New York', 
-    dates: 'Oct 4th - Oct 10th', 
-    duration: '7 days',
+    dates: 'Sep 21st - Oct 11th', 
+    duration: '20 days',
     islandImg: './images/NY.png',
     size: 200
   },
   { 
-    name: '???',
-    dates: 'October', 
-    duration: '???',
-    islandImg: './images/mystery.png',
+    name: 'Santiago',
+    dates: 'Oct 11th - Oct 18th', 
+    duration: '8 days',
+    islandImg: './images/santiago.png',
+    size: 160
+  },
+  { 
+    name: 'Patagonia',
+    dates: 'Oct 18th - Nov 15th', 
+    duration: '28 days',
+    islandImg: './images/patagonia.png',
+    size: 180
   },
   { 
     name: 'Buenos Aires', 
-    dates: 'November', 
-    duration: '???',
+    dates: 'Nov 15th - Nov 22nd', 
+    duration: '7 days',
     islandImg: './images/buenos_aires.png',
     size: 160
   },
   { 
     name: 'Antarctica', 
-    dates: 'November', 
+    dates: 'Nov 22nd - Dec 1st', 
     duration: '12 days',
     islandImg: './images/antarctica.png',
     size: 160
   },
   { 
     name: 'Orange County', 
-    dates: 'December', 
+    dates: 'Dec 1st - Dec 31st', 
     duration: '1 month',
     islandImg: './images/orange_county.png',
     size: 140
@@ -113,7 +127,10 @@ const cities = [
 ];
 
 const quotes = [
-  "The things you own end up owning you. - Tyler Durden, Fight Club",
+  "The things you own end up owning you.",
+  "Travel is not a reward for working, it's education for living.",
+  "If a problem can be solved by money or time, it's not a problem.",
+  "It's a dangerous business, Frodo, going out your door. You step onto the road, and if you don't keep your feet, there's no knowing where you might be swept off to."
 ]
 
 // Utility functions
@@ -123,6 +140,99 @@ function getColumnCount() {
   const templateColumns = style.getPropertyValue('grid-template-columns');
   return templateColumns.split(' ').length;
 }
+
+// Date parsing and current island detection
+function parseDateString(dateStr) {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  
+  // Handle different date formats
+  if (dateStr.includes(' - ')) {
+    // Format: "Jan 1st - Apr 6th" or "Sep 13th - Sept 21st"
+    const [startStr, endStr] = dateStr.split(' - ');
+    const startDate = parseSingleDate(startStr, currentYear);
+    const endDate = parseSingleDate(endStr, currentYear);
+    return { start: startDate, end: endDate };
+  }
+}
+
+function parseSingleDate(dateStr, year) {
+  // Remove ordinal suffixes (st, nd, rd, th)
+  const cleanDate = dateStr.replace(/(\d+)(st|nd|rd|th)/, '$1');
+  
+  // Handle different month formats
+  const monthMap = {
+    'Jan': 0, 'January': 0,
+    'Feb': 1, 'February': 1,
+    'Mar': 2, 'March': 2,
+    'Apr': 3, 'April': 3,
+    'May': 4,
+    'Jun': 5, 'June': 5,
+    'Jul': 6, 'July': 6,
+    'Aug': 7, 'August': 7,
+    'Sep': 8, 'Sept': 8, 'September': 8,
+    'Oct': 9, 'October': 9,
+    'Nov': 10, 'November': 10,
+    'Dec': 11, 'December': 11
+  };
+  
+  const parts = cleanDate.trim().split(' ');
+  const monthName = parts[0];
+  const day = parseInt(parts[1]);
+  
+  const month = monthMap[monthName];
+  if (month !== undefined && !isNaN(day)) {
+    return new Date(year, month, day);
+  }
+  
+  return null;
+}
+
+function getCurrentIsland() {
+  const now = new Date();
+  
+  for (let i = 0; i < cities.length; i++) {
+    const city = cities[i];
+    const dateRange = parseDateString(city.dates);
+    
+    if (dateRange && dateRange.start && dateRange.end) {
+      // Check if current date falls within this city's date range
+      if (now >= dateRange.start && now <= dateRange.end) {
+        return { city, index: i };
+      }
+    }
+  }
+  
+  return null;
+}
+
+function scrollToCurrentIsland() {
+  // Only run on mobile devices
+  if (window.innerWidth > 600) return;
+  
+  const currentIsland = getCurrentIsland();
+  if (!currentIsland) return;
+  
+  // Wait for islands to be rendered
+  setTimeout(() => {
+    const islands = document.querySelectorAll('.island');
+    const targetIsland = islands[currentIsland.index];
+    
+    if (targetIsland) {
+      const islandRect = targetIsland.getBoundingClientRect();
+      const scrollTop = window.scrollY + islandRect.top - (window.innerHeight / 2) + (islandRect.height / 2);
+      
+      window.scrollTo({
+        top: Math.max(0, scrollTop),
+        behavior: 'smooth'
+      });
+    }
+  }, 200); // Give time for islands to render
+}
+
+// Make functions available globally
+window.scrollToCurrentIsland = scrollToCurrentIsland;
+window.getCurrentIsland = getCurrentIsland;
 
 // SpaceTracker class for managing available space
 class SpaceTracker {

@@ -46,11 +46,29 @@ body {
   display: block;
 }
 
+#bottle-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  pointer-events: none;
+  display: block;
+}
+
 /* Header */
 h1 {
   text-align: center;
   margin-top: 43px;
   font-size: 2.5rem;
+  color: #222;
+  z-index: 5;
+  position: relative;
+  pointer-events: none;
+}
+
+h2 {
+  text-align: center;
+  font-size: 1.5rem;
   color: #222;
   z-index: 5;
   position: relative;
@@ -466,7 +484,8 @@ h1 {
 
 .night-mode #water-canvas,
 .night-mode #cloud-canvas,
-.night-mode #boat-canvas {
+.night-mode #boat-canvas,
+.night-mode #bottle-canvas {
   filter: brightness(0.5) contrast(1.2);
   transition: filter 0.8s ease;
 }
@@ -524,6 +543,39 @@ h1 {
 
 .night-mode .typing-cursor {
   background: #ffffff;
+}
+
+/* Quote display animations */
+@keyframes wipeIn {
+  0% {
+    clip-path: inset(0 0 100% 0);
+  }
+  100% {
+    clip-path: inset(0 0 0% 0);
+  }
+}
+
+@keyframes mirageIn {
+  0% {
+    opacity: 0;
+    filter: blur(15px) hue-rotate(180deg);
+  }
+  25% {
+    opacity: 0.3;
+    filter: blur(8px) hue-rotate(90deg);
+  }
+  50% {
+    opacity: 0.6;
+    filter: blur(4px) hue-rotate(45deg);
+  }
+  75% {
+    opacity: 0.8;
+    filter: blur(1px) hue-rotate(10deg);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0px) hue-rotate(0deg);
+  }
 }
 
 /* Night mode markdown elements */

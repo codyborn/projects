@@ -88,6 +88,11 @@ function renderIslands() {
         }
         drawLines(positions, cols, rows);
         setupMobileTooltips();
+        
+        // Scroll to current island on mobile after everything is rendered
+        if (typeof scrollToCurrentIsland === 'function') {
+            scrollToCurrentIsland();
+        }
     });
   };
   
@@ -269,7 +274,13 @@ function drawSpaceTrackerLines() {
 }
 
 // Initialize islands
-window.addEventListener('resize', renderIslands);
+window.addEventListener('resize', () => {
+  renderIslands();
+  // Re-scroll to current island on mobile after resize
+  if (window.innerWidth <= 600 && typeof scrollToCurrentIsland === 'function') {
+    setTimeout(scrollToCurrentIsland, 300);
+  }
+});
 renderIslands();
 
 // Export for use in other modules

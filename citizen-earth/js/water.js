@@ -11,6 +11,7 @@ function updateAllCanvasSizes() {
   resizeWaterCanvas();
   resizeCloudCanvas(); 
   resizeBoatCanvas();
+  resizeBottleCanvas();
 }
 
 function drawWater(time) {

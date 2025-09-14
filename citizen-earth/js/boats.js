@@ -2,7 +2,7 @@
 const sailboatImage = new Image();
 sailboatImage.src = './images/sailboat.png';
 let sailboats = [];
-let sailboatSpawnProbability = 0.003;
+let sailboatSpawnProbability = 0.001;
 const boatCollisionPercentage = 0.15;
 let lastBoatFrameTime = 0;
 let totalSunkShips = 0;
@@ -513,39 +513,121 @@ document.addEventListener('click', (event) => {
   
   let clickedBoat = false;
   
-  // Check if click is within boat canvas bounds
-  if (clickX >= 0 && clickX <= boatCanvas.width && 
-      clickY >= 0 && clickY <= boatCanvas.height) {
+      // Check if click is within boat canvas bounds
+    if (clickX >= 0 && clickX <= boatCanvas.width && 
+        clickY >= 0 && clickY <= boatCanvas.height) {
     
-    if (bossShip && !bossShip.sinking && !bossShip.isFlotsam) {
-      const boatWidth = bossShipImage.width * bossShip.size;
-      const boatHeight = bossShipImage.height * bossShip.size;
-      
-      if (clickX >= bossShip.x && 
-          clickX <= bossShip.x + boatWidth &&
-          clickY >= bossShip.y && 
-          clickY <= bossShip.y + boatHeight) {
-        bossShip.damage++;
-
-        damageFlash = {
-          x: clickX,
-          y: clickY,
-          opacity: 1
-        };
-
-        if (bossShip.damage >= 40) {
-          bossShip.setSinking();
-          sailboats.forEach(boat => {
-            boat.setSinking();
-          });
-          sailboatSpawnProbability = 0.003;
-        }
+      // Check boss ship flotsam first
+      if (bossShip && bossShip.isFlotsam) {
+        const boatWidth = bossShipImage.width * bossShip.size;
+        const boatHeight = bossShipImage.height * bossShip.size;
         
-        clickedBoat = true;
-        event.preventDefault();
-        event.stopPropagation();
+        if (clickX >= bossShip.x && 
+            clickX <= bossShip.x + boatWidth &&
+            clickY >= bossShip.y && 
+            clickY <= bossShip.y + boatHeight) {
+          
+          // Show the specific quote for boss ship flotsam
+          const bossQuote = `
+                            My music is the Northwind's roar;
+
+                            The bellowings of the Black Sea's shore,
+
+                            And rolling of my guns.
+
+                            And as the thunders loudly sound,
+
+                            And furious the tempests rave,
+
+                            I calmly rest in sleep profound,
+
+                            So rocked upon the wave.
+                            `;
+          
+          // Create or update quote display
+          let quoteDisplay = document.getElementById('quote-display');
+          if (!quoteDisplay) {
+            quoteDisplay = document.createElement('div');
+            quoteDisplay.id = 'quote-display';
+            quoteDisplay.style.cssText = `
+              position: fixed;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              background: rgba(0, 0, 0, 0.9);
+              color: white;
+              padding: 20px;
+              border-radius: 10px;
+              max-width: 400px;
+              text-align: center;
+              font-family: 'Georgia', serif;
+              font-style: italic;
+              font-size: 16px;
+              line-height: 1.5;
+              z-index: 1000;
+              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+              cursor: pointer;
+              white-space: pre-line;
+              animation: wipeIn 0.8s ease-out forwards;
+            `;
+            document.body.appendChild(quoteDisplay);
+            
+            // Close quote on click
+            quoteDisplay.addEventListener('click', () => {
+              quoteDisplay.remove();
+            });
+          }
+          
+          // Create a text span for the mirage effect
+          const quoteText = document.createElement('span');
+          quoteText.textContent = `${bossQuote}`;
+          quoteText.style.cssText = `
+            display: block;
+            opacity: 0;
+          `;
+          if (!quoteDisplay.firstChild) {
+            quoteDisplay.appendChild(quoteText);
+          }
+          
+          // Apply mirage animation to the text after container wipe-in
+          quoteText.style.animation = 'mirageIn 2s ease-out forwards';
+          
+          clickedBoat = true;
+          event.preventDefault();
+          event.stopPropagation();
+        }
       }
-    }
+      
+      // Check boss ship (not flotsam)
+      if (bossShip && !bossShip.sinking && !bossShip.isFlotsam) {
+        const boatWidth = bossShipImage.width * bossShip.size;
+        const boatHeight = bossShipImage.height * bossShip.size;
+        
+        if (clickX >= bossShip.x && 
+            clickX <= bossShip.x + boatWidth &&
+            clickY >= bossShip.y && 
+            clickY <= bossShip.y + boatHeight) {
+          bossShip.damage++;
+
+          damageFlash = {
+            x: clickX,
+            y: clickY,
+            opacity: 1
+          };
+
+          if (bossShip.damage >= 40) {
+            bossShip.setSinking();
+            sailboats.forEach(boat => {
+              boat.setSinking();
+            });
+            sailboatSpawnProbability = 0.003;
+          }
+          
+          clickedBoat = true;
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }
     
     if (!clickedBoat) {
       for (let sailboat of sailboats) {
@@ -576,27 +658,40 @@ document.addEventListener('mousemove', (event) => {
   
   let hoveringBoat = false;
   
-  // Check if mouse is within boat canvas bounds
-  if (mouseX >= 0 && mouseX <= boatCanvas.width && 
-      mouseY >= 0 && mouseY <= boatCanvas.height) {
+      // Check if mouse is within boat canvas bounds
+    if (mouseX >= 0 && mouseX <= boatCanvas.width && 
+        mouseY >= 0 && mouseY <= boatCanvas.height) {
     
-    // Check boss ship first
-    if (bossShip && !bossShip.sinking && !bossShip.isFlotsam) {
-      const boatWidth = bossShipImage.width * bossShip.size;
-      const boatHeight = bossShipImage.height * bossShip.size;
-      
-      // Adjust mouse position check based on ship direction
-      const adjustedX = bossShip.speedX > 0 ? 
-        bossShip.x + boatWidth - (mouseX - bossShip.x) :
-        mouseX;
-      
-      if (adjustedX >= bossShip.x && 
-          adjustedX <= bossShip.x + boatWidth &&
-          mouseY >= bossShip.y && 
-          mouseY <= bossShip.y + boatHeight) {
-        hoveringBoat = true;
+      // Check boss ship flotsam first
+      if (bossShip && bossShip.isFlotsam) {
+        const boatWidth = bossShipImage.width * bossShip.size;
+        const boatHeight = bossShipImage.height * bossShip.size;
+        
+        if (mouseX >= bossShip.x && 
+            mouseX <= bossShip.x + boatWidth &&
+            mouseY >= bossShip.y && 
+            mouseY <= bossShip.y + boatHeight) {
+          hoveringBoat = true;
+        }
       }
-    }
+      
+      // Check boss ship (not flotsam)
+      if (bossShip && !bossShip.sinking && !bossShip.isFlotsam) {
+        const boatWidth = bossShipImage.width * bossShip.size;
+        const boatHeight = bossShipImage.height * bossShip.size;
+        
+        // Adjust mouse position check based on ship direction
+        const adjustedX = bossShip.speedX > 0 ? 
+          bossShip.x + boatWidth - (mouseX - bossShip.x) :
+          mouseX;
+        
+        if (adjustedX >= bossShip.x && 
+            adjustedX <= bossShip.x + boatWidth &&
+            mouseY >= bossShip.y && 
+            mouseY <= bossShip.y + boatHeight) {
+          hoveringBoat = true;
+        }
+      }
     
     // Check regular boats if not hovering boss ship
     if (!hoveringBoat) {
