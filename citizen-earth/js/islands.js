@@ -276,10 +276,6 @@ function drawSpaceTrackerLines() {
 // Initialize islands
 window.addEventListener('resize', () => {
   renderIslands();
-  // Re-scroll to current island on mobile after resize
-  if (window.innerWidth <= 600 && typeof scrollToCurrentIsland === 'function') {
-    setTimeout(scrollToCurrentIsland, 300);
-  }
 });
 renderIslands();
 

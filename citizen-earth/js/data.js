@@ -142,6 +142,8 @@ function getColumnCount() {
 }
 
 // Date parsing and current island detection
+let hasScrolledToCurrentIsland = false;
+
 function parseDateString(dateStr) {
   const now = new Date();
   const currentYear = now.getFullYear();
@@ -207,11 +209,14 @@ function getCurrentIsland() {
 }
 
 function scrollToCurrentIsland() {
-  // Only run on mobile devices
-  if (window.innerWidth > 600) return;
+  // Only run on mobile devices and only once per page load
+  if (window.innerWidth > 600 || hasScrolledToCurrentIsland) return;
   
   const currentIsland = getCurrentIsland();
   if (!currentIsland) return;
+  
+  // Mark as scrolled to prevent future scrolls
+  hasScrolledToCurrentIsland = true;
   
   // Wait for islands to be rendered
   setTimeout(() => {
