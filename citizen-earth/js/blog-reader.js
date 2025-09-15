@@ -112,7 +112,7 @@ function parseMarkdown(text) {
     .replace(/_(.*?)_/g, '<em>$1</em>')
     
     // Images (must come before links to avoid conflicts)
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width: 100%; height: auto; display: block; margin: 20px auto;">')
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<div class="image-container"><img src="$2" alt="$1" style="max-width: 100%; height: auto; display: block; margin: 20px auto;"></div>')
     
     // Links
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
@@ -121,8 +121,8 @@ function parseMarkdown(text) {
     .replace(/\n\n/g, '</p><p>')
     .replace(/\n/g, '<br>')
     
-    // Wrap in paragraphs
-    .replace(/^(.+)$/gm, '<p>$1</p>')
+    // Wrap in paragraphs (but not image containers)
+    .replace(/^(?!<div class="image-container">)(.+)$/gm, '<p>$1</p>')
     
     // Clean up empty paragraphs
     .replace(/<p><\/p>/g, '')
