@@ -12,4 +12,4 @@ So in France, surrounded by world-class bakeries, I ran a little experiment. I i
 
 What I've taken away from this experience is that the mind and body aren’t separate. The mind is the body. You can’t just “think harder” to change your mental state; you have to change the environment the mind exists in. Eat well, sleep deeply, keep your cardiovascular system strong, reduce noise and distraction. Do that, and your thoughts and emotions follow suit. I’ll leave you with this comic, which sums it up better than I ever could.
 
-![Comic about good thoughts and sleep](../images/comic.png)
+![Comic about good thoughts and sleep](./images/comic.png)
