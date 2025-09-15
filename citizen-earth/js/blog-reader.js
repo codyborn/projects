@@ -99,7 +99,10 @@ function showShareFeedback() {
 
 // Simple Markdown Parser
 function parseMarkdown(text) {
-  return text
+  // Debug: log the original text
+  console.log('Original markdown text:', text);
+  
+  const result = text
     // Headers
     .replace(/^### (.*$)/gim, '<h3>$1</h3>')
     .replace(/^## (.*$)/gim, '<h2>$1</h2>')
@@ -112,7 +115,10 @@ function parseMarkdown(text) {
     .replace(/_(.*?)_/g, '<em>$1</em>')
     
     // Images (must come before links to avoid conflicts)
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<div class="image-container"><img src="$2" alt="$1" style="max-width: 100%; height: auto; display: block; margin: 20px auto;"></div>')
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
+      console.log('Processing image:', match, 'alt:', alt, 'src:', src);
+      return '<div class="image-container"><img src="' + src + '" alt="' + alt + '" style="max-width: 100%; height: auto; display: block; margin: 20px auto;"></div>';
+    })
     
     // Links
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
@@ -121,8 +127,8 @@ function parseMarkdown(text) {
     .replace(/\n\n/g, '</p><p>')
     .replace(/\n/g, '<br>')
     
-    // Wrap in paragraphs (but not image containers)
-    .replace(/^(?!<div class="image-container">)(.+)$/gm, '<p>$1</p>')
+    // Wrap in paragraphs (but not image containers or empty lines)
+    .replace(/^(?!<div class="image-container">)(?!\s*$)(.+)$/gm, '<p>$1</p>')
     
     // Clean up empty paragraphs
     .replace(/<p><\/p>/g, '')
@@ -130,6 +136,8 @@ function parseMarkdown(text) {
     
     // Clean up consecutive paragraph tags
     .replace(/<\/p><p>/g, '</p>\n<p>');
+    
+  return result;
 }
 
 async function openBlogPost(blogPath, blogTitle, cityName) {
