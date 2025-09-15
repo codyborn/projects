@@ -114,6 +114,9 @@ function parseMarkdown(text) {
     // Links
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
     
+    // Images
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width: 100%; height: auto; display: block; margin: 20px auto;">')
+    
     // Line breaks
     .replace(/\n\n/g, '</p><p>')
     .replace(/\n/g, '<br>')
