@@ -280,14 +280,15 @@ function startParagraphFadeAnimation(text) {
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = parsedHtml;
   
-  const blockElements = tempDiv.querySelectorAll('p, h1, h2, h3, h4, h5, h6');
+  const blockElements = tempDiv.querySelectorAll('p, h1, h2, h3, h4, h5, h6, div.image-container');
   let html = '';
   
   blockElements.forEach((element, index) => {
-    if (element.textContent.trim()) {
+    if (element.textContent.trim() || element.classList.contains('image-container')) {
       const tagName = element.tagName.toLowerCase();
       const content = element.innerHTML;
-      html += `<${tagName} class="paragraph-fade" style="animation-delay: ${index * 0.3}s;">${content}</${tagName}>`;
+      const className = element.classList.contains('image-container') ? 'image-container paragraph-fade' : 'paragraph-fade';
+      html += `<${tagName} class="${className}" style="animation-delay: ${index * 0.3}s;">${content}</${tagName}>`;
     }
   });
   
