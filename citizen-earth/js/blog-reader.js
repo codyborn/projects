@@ -99,45 +99,58 @@ function showShareFeedback() {
 
 // Simple Markdown Parser
 function parseMarkdown(text) {
-  // Debug: log the original text
-  console.log('Original markdown text:', text);
+  // First, process images to avoid conflicts
+  let processedText = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/gm, '<div class="image-container"><img src="$2" alt="$1" style="max-width: 100%; height: auto; display: block; margin: 20px auto;"></div>');
   
-  const result = text
-    // Headers
-    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+  // Split into lines for processing
+  const lines = processedText.split('\n');
+  const processedLines = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     
-    // Bold and italic
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/__(.*?)__/g, '<strong>$1</strong>')
-    .replace(/_(.*?)_/g, '<em>$1</em>')
+    // Skip empty lines
+    if (line.trim() === '') {
+      processedLines.push('');
+      continue;
+    }
     
-    // Images (must come before links to avoid conflicts)
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
-      console.log('Processing image:', match, 'alt:', alt, 'src:', src);
-      return '<div class="image-container"><img src="' + src + '" alt="' + alt + '" style="max-width: 100%; height: auto; display: block; margin: 20px auto;"></div>';
-    })
+    // Don't wrap image containers in paragraphs
+    if (line.includes('<div class="image-container">')) {
+      processedLines.push(line);
+      continue;
+    }
     
-    // Links
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+    // Process other markdown elements
+    let processedLine = line
+      // Headers
+      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+      
+      // Bold and italic
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/__(.*?)__/g, '<strong>$1</strong>')
+      .replace(/_(.*?)_/g, '<em>$1</em>')
+      
+      // Links
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
     
-    // Line breaks
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/\n/g, '<br>')
+    // Wrap in paragraph if it's not already a block element
+    if (!processedLine.match(/^<(h[1-6]|div)/)) {
+      processedLine = `<p>${processedLine}</p>`;
+    }
     
-    // Wrap in paragraphs (but not image containers or empty lines)
-    .replace(/^(?!<div class="image-container">)(?!\s*$)(.+)$/gm, '<p>$1</p>')
-    
-    // Clean up empty paragraphs
+    processedLines.push(processedLine);
+  }
+  
+  // Join lines and clean up
+  return processedLines
+    .join('')
     .replace(/<p><\/p>/g, '')
     .replace(/<p><br><\/p>/g, '')
-    
-    // Clean up consecutive paragraph tags
     .replace(/<\/p><p>/g, '</p>\n<p>');
-    
-  return result;
 }
 
 async function openBlogPost(blogPath, blogTitle, cityName) {
