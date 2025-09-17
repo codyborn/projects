@@ -79,8 +79,8 @@ const cities = [
     name: 'Lisbon', 
     dates: 'Sep 13th - Sep 21st', 
     duration: '9 days',
-    islandImg: './images/lisbon.png',
-    size: 160
+    islandImg: './images/lisbon.gif',
+    size: 150
   },
   { 
     name: 'New York', 
