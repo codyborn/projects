@@ -35,7 +35,7 @@ const cities = [
     subtitle: 'Marseille, Toulon, St Tropez',
     dates: 'May 12th - Jun 7th', 
     duration: '26 days',
-    islandImg: './images/hyeres.png',
+    islandImg: './images/hyeres.gif',
     blog: './posts/hyeres.md',
     blogTitle: 'Bread is the answer',
     size: 160
