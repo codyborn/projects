@@ -54,7 +54,7 @@ const cities = [
     name: 'Cannes', 
     dates: 'Jun 28th - Jul 6th', 
     duration: '8 days',
-    islandImg: './images/cannes.png',
+    islandImg: './images/cannes.gif',
     size: 160
   },
   { 
