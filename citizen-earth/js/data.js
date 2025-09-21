@@ -100,7 +100,7 @@ const cities = [
     name: 'Patagonia',
     dates: 'Oct 18th - Nov 15th', 
     duration: '28 days',
-    islandImg: './images/patagonia.png',
+    islandImg: './images/patagonia.gif',
     size: 180
   },
   { 
@@ -114,7 +114,7 @@ const cities = [
     name: 'Antarctica', 
     dates: 'Nov 22nd - Dec 1st', 
     duration: '12 days',
-    islandImg: './images/antarctica.png',
+    islandImg: './images/antarctica.gif',
     size: 160
   },
   { 
