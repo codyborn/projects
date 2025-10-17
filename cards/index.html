@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cards - Custom Deck Manager</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/cards.css">
+</head>
+<body>
+    <!-- Side Menu Toggle Button -->
+    <button id="menu-toggle" class="menu-toggle">☰</button>
+    
+    <!-- Side Menu -->
+    <div id="side-menu" class="side-menu">
+        <div class="menu-header">
+            <h2>Deck Manager</h2>
+            <button id="menu-close" class="menu-close">×</button>
+        </div>
+        
+        <div class="menu-content">
+            <div class="deck-section">
+                <h3>Current Deck</h3>
+                <div id="current-deck-info" class="deck-info">
+                    <span id="current-deck-name">Standard Deck</span>
+                    <span id="current-deck-count">52 cards</span>
+                </div>
+            </div>
+            
+            <div class="deck-section">
+                <h3>Available Decks</h3>
+                <div id="deck-list" class="deck-list">
+                    <!-- Decks will be populated here -->
+                </div>
+                <button id="create-deck-btn" class="btn-primary">Create New Deck</button>
+            </div>
+            
+            <div class="deck-section">
+                <h3>Import/Export</h3>
+                <input type="file" id="import-deck" accept=".json" style="display: none;">
+                <button id="import-btn" class="btn-secondary">Import Deck</button>
+                <button id="export-btn" class="btn-secondary">Export Current</button>
+            </div>
+            
+            <div class="deck-section">
+                <h3>Multiplayer</h3>
+                <div class="connection-status" id="menu-connection-status">
+                    <span class="status-indicator offline"></span>
+                    <span class="status-text">Offline</span>
+                </div>
+                <div class="room-controls">
+                    <button id="create-room-btn" class="btn-primary">Create Room</button>
+                    <button id="join-room-btn" class="btn-secondary">Join Room</button>
+                    <input type="text" id="room-code-input" placeholder="Enter room code" maxlength="6">
+                </div>
+                <div id="room-info" class="room-info" style="display: none;">
+                    <div class="room-code-display">
+                        <span>Room Code:</span>
+                        <span id="room-code-display"></span>
+                        <button id="copy-room-code" class="btn-small">Copy</button>
+                    </div>
+                    <div class="connected-players">
+                        <span>Players:</span>
+                        <span id="player-count">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Deck Editor Modal -->
+    <div id="deck-editor-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Create New Deck</h3>
+                <button id="modal-close" class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="deck-name">Deck Name:</label>
+                    <input type="text" id="deck-name" placeholder="Enter deck name">
+                </div>
+                <div class="form-group">
+                    <label for="deck-description">Description:</label>
+                    <textarea id="deck-description" placeholder="Enter deck description"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="deck-json">Deck JSON:</label>
+                    <textarea id="deck-json" placeholder="Enter JSON deck data"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button id="save-deck-btn" class="btn-primary">Save Deck</button>
+                    <button id="cancel-deck-btn" class="btn-secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Overlay for modals -->
+    <div id="modal-overlay" class="modal-overlay"></div>
+    
+    <div id="game-container">
+        <div id="card-table"></div>
+        <div id="game-info">
+            <h1>Cards - Custom Deck Manager</h1>
+            <p>Click and drag cards to move them. Click (without dragging) to flip cards. Right-click to shuffle cards back into the deck.</p>
+            <div id="controls">
+                <button id="shuffle-btn">Shuffle Deck</button>
+                <button id="reset-btn">Reset Game</button>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- Load our custom card system -->
+    <script src="scripts/cards.js"></script>
+    <script src="scripts/multiplayer.js"></script>
+    <script src="scripts/app.js"></script>
+</body>
+</html>

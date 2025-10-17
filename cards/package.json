@@ -1,0 +1,19 @@
+{
+  "name": "cards-multiplayer",
+  "version": "1.0.0",
+  "description": "Multiplayer card game with WebRTC",
+  "main": "signaling-server.js",
+  "scripts": {
+    "start": "node signaling-server.js",
+    "dev": "nodemon signaling-server.js"
+  },
+  "dependencies": {
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": ["webrtc", "multiplayer", "cards", "game"],
+  "author": "",
+  "license": "MIT"
+}
