@@ -10,11 +10,14 @@ let totalSunkShips = 0;
 // Boss ship properties
 let bossShip = null;
 const bossShipImage = new Image();
-bossShipImage.src = './images/trimast.png';
+bossShipImage.src = './images/trimast.gif';
 const bossShipDamagedImage = new Image();
-bossShipDamagedImage.src = './images/trimast_damaged.png';
+bossShipDamagedImage.src = './images/trimast_damaged.gif';
 const bossShipFlotsamImage = new Image();
 bossShipFlotsamImage.src = './images/trimast_flotsam.png';
+
+// Animated GIF overlay for boss ship
+let bossShipGifElement = null;
 
 // Damage icon properties
 const damageIconImage = new Image();
@@ -93,24 +96,6 @@ function getValidSailboatPosition(sailboatSize) {
 
 function initializeSailboats() {
   sailboats = [];
-  
-  for (let i = 0; i < 2; i++) {
-    const size = 0.4;
-    const direction = Math.random() > 0.5 ? 1 : -1;
-    const validPosition = getValidSailboatPosition(size);
-    
-    sailboats.push(new Boat(
-      validPosition.x,
-      validPosition.y,
-      size,
-      (0.1 + Math.random() * 0.1) * direction,
-      (Math.random() - 0.5) * 0.05,
-      sailboatImage,
-      0,
-      .004,
-      false
-    ));
-  }
 }
 
 // Base Boat class
@@ -151,7 +136,7 @@ class Boat {
       if (this.hasFlotsam) {
         this.sinking = false;
         this.sinkProgress = 0;
-        this.y = this.sinkStartY - 50;
+        this.y = this.sinkStartY + 100; // Lower the flotsam position
         
         this.y += Math.sin(this.flotsamTimer * 0.005 + this.bobbingPhase) * .08 * (deltaTime / 16.67);
 
@@ -323,6 +308,8 @@ class BossShip extends Boat {
     this.damagedImage = damagedImage;
     this.flotsamImage = flotsamImage;
     this.damage = 0;
+    this.gifElement = null;
+    this.currentGifState = 'normal'; // Track current GIF state
   }
 
   draw(ctx) {
@@ -331,7 +318,118 @@ class BossShip extends Boat {
       (this.damage >= 20 ? this.damagedImage : this.image);
     
     this.image = currentImage;
-    super.draw(ctx);
+    
+    // For boss ship (undamaged or damaged), use HTML overlay instead of canvas
+    if (!this.isFlotsam) {
+      this.updateGifOverlay();
+      
+      // If sinking, apply wave clipping to the GIF overlay
+      if (this.sinkProgress > 0) {
+        this.applySinkingEffect();
+      } else {
+        // Clear clipping when not sinking
+        if (this.gifElement) {
+          this.gifElement.style.clipPath = 'none';
+        }
+      }
+    } else {
+      // Hide GIF overlay for flotsam state
+      if (this.gifElement) {
+        this.gifElement.style.display = 'none';
+      }
+      super.draw(ctx);
+    }
+  }
+
+  updateGifOverlay() {
+    if (!this.gifElement) {
+      // Create GIF element
+      this.gifElement = document.createElement('img');
+      this.gifElement.style.position = 'absolute';
+      this.gifElement.style.pointerEvents = 'none';
+      this.gifElement.style.zIndex = '5'; // Lower than canvas z-index
+      document.body.appendChild(this.gifElement);
+      
+      // Set initial source
+      this.currentGifState = 'normal';
+      this.gifElement.src = './images/trimast.gif';
+    }
+
+    // Only change the GIF source when the damage state actually changes
+    const newGifState = this.damage >= 20 ? 'damaged' : 'normal';
+    if (newGifState !== this.currentGifState) {
+      this.currentGifState = newGifState;
+      if (this.damage >= 20) {
+        this.gifElement.src = './images/trimast_damaged.gif';
+      } else {
+        this.gifElement.src = './images/trimast.gif';
+      }
+    }
+
+    // Update position and size
+    const canvasRect = boatCanvas.getBoundingClientRect();
+    const scale = this.size;
+    const width = bossShipImage.width * scale;
+    const height = bossShipImage.height * scale;
+    
+    this.gifElement.style.left = (canvasRect.left + this.x) + 'px';
+    this.gifElement.style.top = (0 + this.y) + 'px';
+    this.gifElement.style.width = width + 'px';
+    this.gifElement.style.height = height + 'px';
+    this.gifElement.style.display = 'block';
+    this.gifElement.style.zIndex = '5'; // Lower than canvas z-index
+    
+    // Flip horizontally if moving right
+    if (this.speedX > 0) {
+      this.gifElement.style.transform = 'scaleX(-1)';
+    } else {
+      this.gifElement.style.transform = 'scaleX(1)';
+    }
+  }
+
+  applySinkingEffect() {
+    if (!this.gifElement) return;
+    
+    // Create a clipping mask using CSS clip-path
+    const clipHeight = this.image.height * this.size * (1 - this.sinkProgress);
+    const width = this.image.width * this.size;
+    const segments = 20;
+    const segmentWidth = width / segments;
+    
+    const time = Date.now() * 0.001;
+    const waveAmplitude = this.size * 2;
+    const waveDirection = this.speedX > 0 ? -1 : 1;
+    
+    // Build the wave path for clip-path
+    let wavePath = `polygon(0% 0%, `;
+    
+    for (let i = 0; i <= segments; i++) {
+      const x = (i / segments) * 100; // Convert to percentage
+      const phase1 = i * 1.2 - (time * 2);
+      const phase2 = i * 0.8 - (time * 1.5);
+      const phase3 = i * 1.5 - (time * 2.5);
+      
+      const wave1 = Math.sin(phase1) * waveAmplitude;
+      const wave2 = Math.sin(phase2) * (waveAmplitude * 0.7);
+      const wave3 = Math.sin(phase3) * (waveAmplitude * 0.5);
+      
+      const combinedWave = waveDirection * (wave1 + wave2 + wave3);
+      const y = ((clipHeight + combinedWave) / (this.image.height * this.size)) * 100;
+      
+      wavePath += `${x}% ${y}%, `;
+    }
+    
+    wavePath += `100% 0%)`;
+    
+    // Apply the clipping mask
+    this.gifElement.style.clipPath = wavePath;
+  }
+
+  destroy() {
+    if (this.gifElement) {
+      this.gifElement.remove();
+      this.gifElement = null;
+    }
   }
 }
 
@@ -389,7 +487,7 @@ function spawnBossShip() {
   if (!bossShipImage.complete) return;
   
   storeIslandBounds();
-  const size = window.innerWidth <= 600 ? 0.6 : 0.8;
+  const size = window.innerWidth <= 600 ? 0.3 : 0.4;
   const direction = Math.random() > 0.5 ? 1 : -1;
   const position = findValidBossShipPosition(size, direction);
   
@@ -409,6 +507,11 @@ function updateSailboats(deltaTime) {
         flotsamTimer: bossShip.flotsamTimer
       };
       
+      // Clean up old GIF element
+      if (bossShip.gifElement) {
+        bossShip.gifElement.remove();
+      }
+      
       const size = window.innerWidth <= 600 ? 0.6 : 0.8;
       const direction = Math.random() > 0.5 ? 1 : -1;
       const position = findValidBossShipPosition(size, direction);
@@ -421,6 +524,10 @@ function updateSailboats(deltaTime) {
       bossShip.isFlotsam = currentState.isFlotsam;
       bossShip.flotsamTimer = currentState.flotsamTimer;
     } else if (result === false) {
+      // Clean up GIF element when boss ship is destroyed
+      if (bossShip.gifElement) {
+        bossShip.gifElement.remove();
+      }
       bossShip = null;
     }
   }
@@ -460,6 +567,7 @@ function drawSailboats(deltaTime) {
       if (damageFlash.opacity <= 0) {
         damageFlash = null;
       } else {
+        // Draw damage icon on canvas (will appear on top of GIF overlay)
         boatCtx.save();
         boatCtx.translate(damageFlash.x, damageFlash.y);
         boatCtx.globalAlpha = damageFlash.opacity;
