@@ -20,6 +20,14 @@
         
         <div class="menu-content">
             <div class="deck-section">
+                <h3>Current Game</h3>
+                <div id="current-game-info" class="game-info">
+                    <div id="current-game-title" class="game-title">Cards - Custom Deck Manager</div>
+                    <div id="current-game-description" class="game-description">Click and drag cards to move them. Click (without dragging) to flip cards. Right-click to shuffle cards back into the deck.</div>
+                </div>
+            </div>
+            
+            <div class="deck-section">
                 <h3>Current Deck</h3>
                 <div id="current-deck-info" class="deck-info">
                     <span id="current-deck-name">Standard Deck</span>
@@ -102,10 +110,9 @@
     <div id="game-container">
         <div id="card-table"></div>
         <div id="game-info">
-            <h1>Cards - Custom Deck Manager</h1>
-            <p>Click and drag cards to move them. Click (without dragging) to flip cards. Right-click to shuffle cards back into the deck.</p>
+            <h1 id="main-game-title">Cards - Custom Deck Manager</h1>
+            <p id="main-game-description">Click and drag cards to move them. Click (without dragging) to flip cards. Right-click to shuffle cards back into the deck.</p>
             <div id="controls">
-                <button id="shuffle-btn">Shuffle Deck</button>
                 <button id="reset-btn">Reset Game</button>
             </div>
             

@@ -274,9 +274,6 @@ class MultiplayerManager {
             case 'deckShuffle':
                 this.handleDeckShuffle();
                 break;
-            case 'dealCards':
-                this.handleDealCards(message.data);
-                break;
             case 'cardDeal':
                 this.handleCardDeal(message.data);
                 break;
@@ -298,6 +295,8 @@ class MultiplayerManager {
             console.log('Moving card element:', cardElement);
             cardElement.style.left = x + 'px';
             cardElement.style.top = y + 'px';
+            // Bring moved card to front by giving it the highest z-index
+            cardElement.style.zIndex = ++this.game.zIndexCounter;
         } else {
             console.log('Card element not found for ID:', cardId);
         }
@@ -308,6 +307,7 @@ class MultiplayerManager {
         const cardElement = document.querySelector(`[data-card-id="${cardId}"]`);
         if (cardElement) {
             cardElement.classList.toggle('flipped');
+            cardElement.style.zIndex = ++this.game.zIndexCounter;
         }
     }
     
@@ -335,37 +335,6 @@ class MultiplayerManager {
     handleDeckShuffle() {
         this.game.deck.shuffle();
         this.game.renderDeck();
-    }
-    
-    handleDealCards(data) {
-        const { count, cards, deckState, cardIds } = data;
-        
-        // First, synchronize the deck state if provided
-        if (deckState) {
-            this.game.deck.cards = [...deckState.cards];
-            this.game.renderDeck();
-        }
-        
-        if (cards && cards.length > 0) {
-            // Clear any existing dealt cards first
-            this.game.dealtCards = [];
-            document.querySelectorAll('.card').forEach(card => {
-                if (!card.classList.contains('deck')) {
-                    card.remove();
-                }
-            });
-            
-            // Deal the specific cards that were broadcast with their IDs
-            for (let i = 0; i < cards.length; i++) {
-                const cardId = cardIds && cardIds[i] ? cardIds[i] : null;
-                this.game.dealSpecificCard(cards[i], cardId);
-            }
-        } else {
-            // Fallback: deal the specified number of cards
-            for (let i = 0; i < count; i++) {
-                this.game.dealCard();
-            }
-        }
     }
     
     handleCardDeal(data) {
@@ -428,13 +397,6 @@ class MultiplayerManager {
         this.sendMessage({
             type: 'deckShuffle',
             data: {}
-        });
-    }
-    
-    broadcastDealCards(count, cards = null, deckState = null, cardIds = null) {
-        this.sendMessage({
-            type: 'dealCards',
-            data: { count, cards, deckState, cardIds }
         });
     }
     

@@ -6,6 +6,7 @@ class Card {
         this.description = cardData.description || '';
         this.image = cardData.image || '';
         this.emoji = cardData.emoji || '';
+        this.color = cardData.color || '';
         this.faceUp = false;
     }
 
@@ -19,6 +20,7 @@ class Deck {
         this.cards = [];
         this.name = 'Standard Deck';
         this.description = 'Standard 52-card deck';
+        this.invertTitle = true;
         
         if (customCards) {
             this.loadCustomDeck(customCards);
@@ -84,16 +86,21 @@ class Deck {
         this.cards = [];
         this.name = deckData.name || 'Custom Deck';
         this.description = deckData.description || 'Custom deck';
+        this.invertTitle = deckData.invertTitle;
         
         if (deckData.cards && Array.isArray(deckData.cards)) {
             deckData.cards.forEach(cardData => {
-                const card = new Card({
-                    title: cardData.title,
-                    description: cardData.description,
-                    image: cardData.image,
-                    emoji: cardData.emoji
-                });
-                this.cards.push(card);
+                const cardCount = cardData.count ?? 1;
+                for (let i = 0; i < cardCount; i++) {
+                    const card = new Card({
+                        title: cardData.title,
+                        description: cardData.description,
+                        image: cardData.image,
+                        emoji: cardData.emoji,
+                        color: cardData.color
+                    });
+                    this.cards.push(card);
+                }
             });
         }
     }
@@ -119,29 +126,6 @@ class Deck {
 
 // Create a global cards object to match cards.js API
 window.cards = {
-    // Standard deck creation
-    all: (() => {
-        const suits = [
-            { emoji: '♥️', name: 'hearts' },
-            { emoji: '♦️', name: 'diamonds' },
-            { emoji: '♣️', name: 'clubs' },
-            { emoji: '♠️', name: 'spades' }
-        ];
-        const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-        const allCards = [];
-        
-        suits.forEach(suit => {
-            ranks.forEach(rank => {
-                allCards.push(new Card({
-                    title: rank,
-                    emoji: suit.emoji,
-                    description: ''
-                }));
-            });
-        });
-        
-        return allCards;
-    })(),
 
     // Initialize function (minimal implementation)
     init: function(options) {
