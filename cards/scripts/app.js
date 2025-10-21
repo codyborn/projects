@@ -18,6 +18,10 @@ class CardGame {
         this.cardIdCounter = 0;
         this.zIndexCounter = 0;
         
+        // Private hand system
+        this.privateHands = new Map(); // playerId -> { cards: [], count: number }
+        this.privateHandZone = null;
+        
         this.init();
     }
 
@@ -37,6 +41,9 @@ class CardGame {
         
         // Initialize multiplayer
         this.initializeMultiplayer();
+        
+        // Initialize private hand system
+        this.initializePrivateHand();
         
         // Initial render
         this.renderDeck();
@@ -214,17 +221,33 @@ class CardGame {
     }
 
     createCardElement(deck, card) {
+        // Defensive programming - ensure card has required properties
+        if (!card) {
+            console.error('createCardElement called with null/undefined card');
+            return null;
+        }
+        
+        // Ensure card has required properties with defaults
+        const safeCard = {
+            title: card.title || 'Card',
+            description: card.description || '',
+            image: card.image || '',
+            emoji: card.emoji || '?',
+            color: card.color || '',
+            faceUp: card.faceUp || false
+        };
+        
         const cardElement = document.createElement('div');
         cardElement.className = 'card';
-        cardElement.dataset.title = card.title;
+        cardElement.dataset.title = safeCard.title;
         cardElement.dataset.cardId = `card_${++this.cardIdCounter}`;
         
         // Set z-index to bring new card to front
         cardElement.style.zIndex = ++this.zIndexCounter;
         
         // Add color class for styling
-        if (card.color) {
-            cardElement.classList.add(`card-${card.color}`);
+        if (safeCard.color) {
+            cardElement.classList.add(`card-${safeCard.color}`);
         }
         
         // Create card face
@@ -232,9 +255,9 @@ class CardGame {
         cardFace.className = 'card-face';
         
         // Use card properties
-        const displaySymbol = card.emoji || '?';
-        const displayTitle = card.title || 'Card';
-        const cardColor = this.getCardColor(card.color);
+        const displaySymbol = safeCard.emoji || '?';
+        const displayTitle = safeCard.title || 'Card';
+        const cardColor = this.getCardColor(safeCard.color);
         
         cardFace.style.backgroundColor = cardColor;
         cardFace.style.color = '#333';
@@ -243,7 +266,7 @@ class CardGame {
             <div style="font-size: 14px; color: #333;">${displayTitle}</div>
             <div style="font-size: 24px;">${displaySymbol}</div>
             ${deck.invertTitle ? `<div style="font-size: 14px; transform: rotate(180deg); color: #333;">${displayTitle}</div>` : ''}
-            ${card.description ? `<div style="font-size: 8px; color: #333; margin-top: 2px; opacity: 0.8;">${card.description}</div>` : ''}
+            ${safeCard.description ? `<div style="font-size: 8px; color: #333; margin-top: 2px; opacity: 0.8;">${safeCard.description}</div>` : ''}
         `;
         
         // Create card back
@@ -348,8 +371,23 @@ class CardGame {
                     isDragging = false;
                     this.isDragging = false;
                     
-                    // Ensure z-index is maintained after drag ends
-                    cardElement.style.zIndex = this.zIndexCounter;
+                    // Check if card was dropped in private hand zone
+                    const privateHandZone = document.getElementById('private-hand-zone');
+                    if (!privateHandZone) {
+                        console.error('Private hand zone not found!');
+                        return;
+                    }
+                    const cardRect = cardElement.getBoundingClientRect();
+                    const zoneRect = privateHandZone.getBoundingClientRect();
+                    
+                    // Check if the center of the card is within the private hand zone
+                    const cardCenterX = cardRect.left + cardRect.width / 2;
+                    const cardCenterY = cardRect.top + cardRect.height / 2;
+                    
+                    const isInPrivateZone = cardCenterX >= zoneRect.left && 
+                                          cardCenterX <= zoneRect.right && 
+                                          cardCenterY >= zoneRect.top && 
+                                          cardCenterY <= zoneRect.bottom;
                     
                     // Broadcast card movement to other players
                     if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
@@ -357,6 +395,20 @@ class CardGame {
                         const x = parseInt(cardElement.style.left) || 0;
                         const y = parseInt(cardElement.style.top) || 0;
                         this.multiplayer.broadcastCardMove(cardId, x, y);
+                    }
+                    if (isInPrivateZone) {
+                        // Add card to private hand if not already
+                        if (!this.isCardInPrivateHand(card)) {
+                            this.addCardToPrivateHand(cardElement, card);
+                        }
+                    } else {
+                        // Remove from private hand if it was there
+                        if (this.isCardInPrivateHand(card)) {
+                            this.removeCardFromPrivateHand(card);
+                        }
+                        
+                        // Ensure z-index is maintained after drag ends
+                        cardElement.style.zIndex = this.zIndexCounter;
                     }
                     
                     // Prevent table click event after dragging
@@ -433,6 +485,40 @@ class CardGame {
                     cardElement.classList.remove('dragging');
                     isDragging = false;
                     this.isDragging = false;
+                    
+                    // Check if card was dropped in private hand zone (touch)
+                    const privateHandZone = document.getElementById('private-hand-zone');
+                    if (privateHandZone) {
+                        const cardRect = cardElement.getBoundingClientRect();
+                        const zoneRect = privateHandZone.getBoundingClientRect();
+                        
+                        // Check if the center of the card is within the private hand zone
+                        const cardCenterX = cardRect.left + cardRect.width / 2;
+                        const cardCenterY = cardRect.top + cardRect.height / 2;
+                        
+                        const isInPrivateZone = cardCenterX >= zoneRect.left && 
+                                              cardCenterX <= zoneRect.right && 
+                                              cardCenterY >= zoneRect.top && 
+                                              cardCenterY <= zoneRect.bottom;
+                        
+                        console.log('Touch private zone detection:', {
+                            cardCenterX, cardCenterY,
+                            zoneRect: { left: zoneRect.left, right: zoneRect.right, top: zoneRect.top, bottom: zoneRect.bottom },
+                            isInPrivateZone
+                        });
+                        
+                        if (isInPrivateZone) {
+                            // Add card to private hand if not already
+                            if (!this.isCardInPrivateHand(card)) {
+                                this.addCardToPrivateHand(cardElement, card);
+                            }
+                        } else {
+                            // Remove from private hand if it was there
+                            if (this.isCardInPrivateHand(card)) {
+                                this.removeCardFromPrivateHand(card);
+                            }
+                        }
+                    }
                 } else {
                     this.flipCard(cardElement);
                 }
@@ -543,6 +629,12 @@ class CardGame {
         this.deck = new cards.Deck();
         this.deck.shuffle();
         this.dealtCards = [];
+        
+        // Reset private hands
+        this.privateHands.clear();
+        const playerId = this.multiplayer ? this.multiplayer.playerId : 'local';
+        this.privateHands.set(playerId, { cards: [], count: 0 });
+        this.updatePrivateHandDisplay();
         
         // Re-render deck
         this.renderDeck();
@@ -981,6 +1073,101 @@ class CardGame {
             ]
         };
     }
+    
+    // Private Hand System Methods
+    initializePrivateHand() {
+        this.privateHandZone = document.getElementById('private-hand-zone');
+        // Initialize with empty map, will be set when multiplayer connects
+        this.updatePrivateHandDisplay();
+    }
+    
+    isCardInPrivateHand(card) {
+        const localHand = this.getPrivateHand();
+        for (let i = 0; i < localHand.cards.length; i++) {
+            const privCard = localHand.cards[i];
+            if (privCard == card) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    getPrivateHand() {
+        const playerId = this.multiplayer ? this.multiplayer.playerId : 'local';
+        if (!this.privateHands.has(playerId)) {
+            this.privateHands.set(playerId, { cards: [], count: 0 });
+        }
+        return this.privateHands.get(playerId);
+    }
+    
+    addCardToPrivateHand(cardElement, card) {
+        // Add to local private hand
+        const localHand = getPrivateHand();
+        localHand.cards.push(card);
+        localHand.count = localHand.cards.length;
+        
+        // Update display   
+        this.updatePrivateHandDisplay();
+        
+        // Broadcast to other players
+        if (this.multiplayer) {
+            this.multiplayer.broadcastPrivateHandUpdate(this.multiplayer.playerId, localHand.count);
+        }
+    }
+    
+    removeCardFromPrivateHand(card) {
+        const localHand = getPrivateHand();
+        for (let i = 0; i < localHand.cards.length; i++) {
+            const privCard = localHand.cards[i];
+            if (privCard == card) {
+                localHand.cards.delete(i);
+            }
+        }
+        localHand.count = localHand.cards.length;
+        // Broadcast to other players
+        if (this.multiplayer) {
+            this.multiplayer.broadcastPrivateHandUpdate(this.multiplayer.playerId, localHand.count);
+        }
+    }
+    
+    updatePrivateHandDisplay() {
+        // Update your own hand count
+        const yourHandCount = document.getElementById('your-hand-count');
+        const playerId = this.multiplayer ? this.multiplayer.playerId : 'local';
+        const localHand = this.privateHands.get(playerId);
+        yourHandCount.textContent = localHand ? localHand.count : 0;
+        
+        // Update other players' counts
+        this.updateOtherPlayersDisplay();
+    }
+    
+    updateOtherPlayersDisplay() {
+        const otherPlayersContainer = document.getElementById('other-players-counts');
+        otherPlayersContainer.innerHTML = '';
+        
+        const currentPlayerId = this.multiplayer ? this.multiplayer.playerId : 'local';
+        this.privateHands.forEach((hand, playerId) => {
+            if (playerId !== currentPlayerId) {
+                const playerItem = document.createElement('div');
+                playerItem.className = 'player-count-item';
+                playerItem.innerHTML = `
+                    <span class="player-id">${playerId}</span>
+                    <span class="card-count">${hand.count}</span>
+                `;
+                otherPlayersContainer.appendChild(playerItem);
+            }
+        });
+    }
+    
+    updateOtherPlayerPrivateHand(playerId, count) {
+        const currentPlayerId = this.multiplayer ? this.multiplayer.playerId : 'local';
+        if (playerId === currentPlayerId) return;
+        
+        // Store the count for this player
+        this.privateHands.set(playerId, { cards: [], count: count });
+        this.updateOtherPlayersDisplay();
+    }
+    
 }
 
 // Initialize game when page loads

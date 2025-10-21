@@ -108,7 +108,26 @@
     <div id="modal-overlay" class="modal-overlay"></div>
     
     <div id="game-container">
-        <div id="card-table"></div>
+        <div id="card-table">
+            <!-- Private Hand Area -->
+            <div id="private-hand-area" class="private-hand-area">
+                <div class="private-hand-header">
+                    <h3>Your hand (private)</h3>
+                    <div class="player-hand-counts">
+                        <div class="player-count-item">
+                            <span class="player-id">You</span>
+                            <span class="card-count" id="your-hand-count">0</span>
+                        </div>
+                        <div id="other-players-counts">
+                            <!-- Other players' hand counts will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                <div id="private-hand-zone" class="private-hand-zone">
+                    <!-- Cards in private hand will be placed here -->
+                </div>
+            </div>
+        </div>
         <div id="game-info">
             <h1 id="main-game-title">Cards - Custom Deck Manager</h1>
             <p id="main-game-description">Click and drag cards to move them. Click (without dragging) to flip cards. Right-click to shuffle cards back into the deck.</p>

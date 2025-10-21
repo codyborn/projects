@@ -14,7 +14,7 @@ class MultiplayerManager {
         this.playerId = this.generatePlayerId();
         this.connectionStatus = 'offline';
         this.signalingSocket = null;
-        this.testMode = false; // Test flag for auto-connection
+        this.testMode = true; // Test flag for auto-connection
         
         // WebRTC configuration
         this.rtcConfig = {
@@ -283,6 +283,9 @@ class MultiplayerManager {
             case 'playerJoin':
                 this.handlePlayerJoin(message.data);
                 break;
+            case 'privateHandUpdate':
+                this.handlePrivateHandUpdate(message.data);
+                break;
         }
     }
     
@@ -340,6 +343,8 @@ class MultiplayerManager {
     handleCardDeal(data) {
         const { cardId, card, x, y, deckState } = data;
         
+        console.log('handleCardDeal received data:', { cardId, card, x, y, deckState });
+        
         // Synchronize deck state if provided
         if (deckState) {
             this.game.deck.cards = [...deckState];
@@ -350,7 +355,11 @@ class MultiplayerManager {
         this.game.dealtCards.push(card);
         
         // Create card element with the specific ID
-        const cardElement = this.game.createCardElement(card);
+        const cardElement = this.game.createCardElement(this.game.deck, card);
+        if (!cardElement) {
+            console.error('Failed to create card element for card:', card);
+            return;
+        }
         cardElement.dataset.cardId = cardId;
         
         // Position the card at the exact same coordinates
@@ -369,6 +378,12 @@ class MultiplayerManager {
     handlePlayerJoin(data) {
         this.connectedPlayers.add(data.playerId);
         this.updatePlayerCount();
+    }
+    
+    handlePrivateHandUpdate(data) {
+        const { playerId, count } = data;
+        console.log('Handling private hand update:', { playerId, count, currentPlayerId: this.playerId });
+        this.game.updateOtherPlayerPrivateHand(playerId, count);
     }
     
     // Public methods for game integration
@@ -411,6 +426,13 @@ class MultiplayerManager {
         this.sendMessage({
             type: 'resetGame',
             data: {}
+        });
+    }
+    
+    broadcastPrivateHandUpdate(playerId, count) {
+        this.sendMessage({
+            type: 'privateHandUpdate',
+            data: { playerId, count }
         });
     }
     

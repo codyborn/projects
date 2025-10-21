@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, orientation=portrait">
+  <title>Citizen Earth</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Night Mode Toggle Button -->
+  <button class="night-mode-toggle" onclick="toggleNightMode()"></button>
+  
+  <canvas id="water-canvas"></canvas>
+  <canvas id="cloud-canvas"></canvas>
+  <canvas id="boat-canvas"></canvas>
+  <canvas id="bottle-canvas"></canvas>
+  <h1>Citizen Earth</h1>
+  <h2>2025</h2>
+  <div id="sunk-ships-counter">Ships Sunk: 0</div>
+  <div class="island-grid" style="position:relative; z-index:2;">
+    <!-- Islands will be inserted here by JS -->
+  </div>
+  <svg id="island-lines" style="position:absolute; top:0; left:0; pointer-events:none; z-index:1;"></svg>
+  
+  <!-- Blog Reader Overlay -->
+  <div class="blog-overlay" id="blog-overlay">
+    <div class="blog-content">
+      <div class="blog-header">
+        <h2 class="blog-title" id="blog-title"></h2>
+        <div style="display: flex; gap: 10px;">
+          <button class="share-button" id="share-button" onclick="copyBlogLink()">Share</button>
+          <button class="return-button" onclick="closeBlogOverlay()">Close</button>
+        </div>
+      </div>
+      <div class="blog-text" id="blog-text"></div>
+    </div>
+  </div>
+  
+  <footer style="position: fixed; bottom: 2px; width: 100%; text-align: center; opacity: 0.2; font-size: 0.8rem; color: #222;">
+    Version 1.0.12
+  </footer>
+
+  <!-- JavaScript files -->
+  <script src="js/data.js"></script>
+  <script src="js/water.js"></script>
+  <script src="js/clouds.js"></script>
+  <script src="js/boats.js"></script>
+  <script src="js/bottles.js"></script>
+  <script src="js/islands.js"></script>
+  <script src="js/blog-reader.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html> 
