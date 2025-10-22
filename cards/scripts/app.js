@@ -1067,11 +1067,11 @@ class CardGame {
                 {"title": "Any", "color": "wild", "emoji": "💊", "count": 1},
                 
                 // Treatment Cards (23 total) - Various types
-                {"title": "Transplant", "description": "Exchange an organ with another player", "color": "neutral", "emoji": "🔄", "count": 4},
+                {"title": "Transplant", "description": "Exchange an organ with another player", "color": "neutral", "emoji": "🫀🔄🧠", "count": 4},
                 {"title": "Organ Thief", "description": "Steal an organ from another player", "color": "neutral", "emoji": "🥷", "count": 4},
                 {"title": "Contagion", "description": "Transfer viruses to other players", "color": "neutral", "emoji": "☣️", "count": 4},
                 {"title": "Latex Glove", "description": "All players discard their hand", "color": "neutral", "emoji": "🧤", "count": 4},
-                {"title": "Medical Error", "description": "Swap your entire body with another player", "color": "neutral", "emoji": "👥", "count": 4},
+                {"title": "Medical Error", "description": "Swap your entire body with another player", "color": "neutral", "emoji": "👤🔄👤", "count": 4},
             ]
         };
     }
