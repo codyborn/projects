@@ -286,6 +286,9 @@ class MultiplayerManager {
             case 'privateHandUpdate':
                 this.handlePrivateHandUpdate(message.data);
                 break;
+            case 'cardVisibility':
+                this.handleCardVisibility(message.data);
+                break;
         }
     }
     
@@ -386,6 +389,21 @@ class MultiplayerManager {
         this.game.updateOtherPlayerPrivateHand(playerId, count);
     }
     
+    handleCardVisibility(data) {
+        const { cardId, isVisible } = data;
+        console.log('Handling card visibility:', { cardId, isVisible });
+        const cardElement = document.querySelector(`[data-card-id="${cardId}"]`);
+        if (cardElement) {
+            if (isVisible) {
+                cardElement.style.display = 'block';
+                cardElement.style.visibility = 'visible';
+            } else {
+                cardElement.style.display = 'none';
+                cardElement.style.visibility = 'hidden';
+            }
+        }
+    }
+    
     // Public methods for game integration
     broadcastCardMove(cardId, x, y) {
         this.sendMessage({
@@ -433,6 +451,13 @@ class MultiplayerManager {
         this.sendMessage({
             type: 'privateHandUpdate',
             data: { playerId, count }
+        });
+    }
+    
+    broadcastCardVisibility(cardId, isVisible) {
+        this.sendMessage({
+            type: 'cardVisibility',
+            data: { cardId, isVisible }
         });
     }
     

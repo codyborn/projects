@@ -404,7 +404,7 @@ class CardGame {
                     } else {
                         // Remove from private hand if it was there
                         if (this.isCardInPrivateHand(card)) {
-                            this.removeCardFromPrivateHand(card);
+                            this.removeCardFromPrivateHand(cardElement, card);
                         }
                         
                         // Ensure z-index is maintained after drag ends
@@ -488,25 +488,28 @@ class CardGame {
                     
                     // Check if card was dropped in private hand zone (touch)
                     const privateHandZone = document.getElementById('private-hand-zone');
-                    if (privateHandZone) {
-                        const cardRect = cardElement.getBoundingClientRect();
-                        const zoneRect = privateHandZone.getBoundingClientRect();
-                        
-                        // Check if the center of the card is within the private hand zone
-                        const cardCenterX = cardRect.left + cardRect.width / 2;
-                        const cardCenterY = cardRect.top + cardRect.height / 2;
-                        
-                        const isInPrivateZone = cardCenterX >= zoneRect.left && 
-                                              cardCenterX <= zoneRect.right && 
-                                              cardCenterY >= zoneRect.top && 
-                                              cardCenterY <= zoneRect.bottom;
-                        
-                        console.log('Touch private zone detection:', {
-                            cardCenterX, cardCenterY,
-                            zoneRect: { left: zoneRect.left, right: zoneRect.right, top: zoneRect.top, bottom: zoneRect.bottom },
-                            isInPrivateZone
-                        });
-                        
+                    if (!privateHandZone) {
+                        console.error('Private hand zone not found!');
+                        return;
+                    }
+                    const cardRect = cardElement.getBoundingClientRect();
+                    const zoneRect = privateHandZone.getBoundingClientRect();
+                    
+                    // Check if the center of the card is within the private hand zone
+                    const cardCenterX = cardRect.left + cardRect.width / 2;
+                    const cardCenterY = cardRect.top + cardRect.height / 2;
+                    
+                    const isInPrivateZone = cardCenterX >= zoneRect.left && 
+                                          cardCenterX <= zoneRect.right && 
+                                          cardCenterY >= zoneRect.top && 
+                                          cardCenterY <= zoneRect.bottom;
+                    
+                    console.log('Touch private zone detection:', {
+                        cardCenterX, cardCenterY,
+                        zoneRect: { left: zoneRect.left, right: zoneRect.right, top: zoneRect.top, bottom: zoneRect.bottom },
+                        isInPrivateZone
+                    });
+                    
                         if (isInPrivateZone) {
                             // Add card to private hand if not already
                             if (!this.isCardInPrivateHand(card)) {
@@ -515,10 +518,9 @@ class CardGame {
                         } else {
                             // Remove from private hand if it was there
                             if (this.isCardInPrivateHand(card)) {
-                                this.removeCardFromPrivateHand(card);
+                                this.removeCardFromPrivateHand(cardElement, card);
                             }
                         }
-                    }
                 } else {
                     this.flipCard(cardElement);
                 }
@@ -1085,7 +1087,7 @@ class CardGame {
         const localHand = this.getPrivateHand();
         for (let i = 0; i < localHand.cards.length; i++) {
             const privCard = localHand.cards[i];
-            if (privCard == card) {
+            if (privCard === card) {
                 return true;
             }
         }
@@ -1102,7 +1104,7 @@ class CardGame {
     
     addCardToPrivateHand(cardElement, card) {
         // Add to local private hand
-        const localHand = getPrivateHand();
+        const localHand = this.getPrivateHand();
         localHand.cards.push(card);
         localHand.count = localHand.cards.length;
         
@@ -1112,21 +1114,33 @@ class CardGame {
         // Broadcast to other players
         if (this.multiplayer) {
             this.multiplayer.broadcastPrivateHandUpdate(this.multiplayer.playerId, localHand.count);
+            // Hide card from other players
+            const cardId = cardElement.dataset.cardId;
+            this.multiplayer.broadcastCardVisibility(cardId, false);
         }
     }
     
-    removeCardFromPrivateHand(card) {
-        const localHand = getPrivateHand();
+    removeCardFromPrivateHand(cardElement, card) {
+        const localHand = this.getPrivateHand();
+        
         for (let i = 0; i < localHand.cards.length; i++) {
             const privCard = localHand.cards[i];
-            if (privCard == card) {
-                localHand.cards.delete(i);
+            if (privCard === card) {
+                localHand.cards.splice(i, 1);
+                break;
             }
         }
         localHand.count = localHand.cards.length;
+        
+        // Update display
+        this.updatePrivateHandDisplay();
+        
         // Broadcast to other players
         if (this.multiplayer) {
             this.multiplayer.broadcastPrivateHandUpdate(this.multiplayer.playerId, localHand.count);
+            // Show card to other players again
+            const cardId = cardElement.dataset.cardId;
+            this.multiplayer.broadcastCardVisibility(cardId, true);
         }
     }
     
@@ -1135,7 +1149,9 @@ class CardGame {
         const yourHandCount = document.getElementById('your-hand-count');
         const playerId = this.multiplayer ? this.multiplayer.playerId : 'local';
         const localHand = this.privateHands.get(playerId);
-        yourHandCount.textContent = localHand ? localHand.count : 0;
+        if (yourHandCount) {
+            yourHandCount.textContent = localHand ? localHand.count : 0;
+        }
         
         // Update other players' counts
         this.updateOtherPlayersDisplay();
