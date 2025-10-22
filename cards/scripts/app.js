@@ -621,7 +621,7 @@ class CardGame {
         }
     }
 
-    resetGame() {
+    resetGame(shouldBroadcast = true) {
         // Clear dealt cards
         const table = document.getElementById('card-table');
         const cardElements = table.querySelectorAll('.card');
@@ -641,8 +641,8 @@ class CardGame {
         // Re-render deck
         this.renderDeck();
         
-        // Broadcast reset game to other players
-        if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
+        // Broadcast reset game to other players (only if this is a user-initiated reset)
+        if (shouldBroadcast && this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
             this.multiplayer.broadcastResetGame();
         }
         

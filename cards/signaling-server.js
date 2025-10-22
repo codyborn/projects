@@ -70,12 +70,18 @@ class SignalingServer {
     
     handleCreateRoom(ws, message) {
         const { roomCode } = message;
+        console.log(`Attempting to create room: ${roomCode}`);
         
         if (this.rooms.has(roomCode)) {
-            ws.send(JSON.stringify({
-                type: 'error',
-                message: 'Room already exists'
-            }));
+            // Room already exists, make this connection a client instead
+            console.log(`Room ${roomCode} already exists, making connection a client`);
+            const existingRoom = this.rooms.get(roomCode);
+            console.log(`Existing room state:`, {
+                hasHost: !!existingRoom.host,
+                hostReady: existingRoom.host ? existingRoom.host.readyState : 'N/A',
+                clientCount: existingRoom.clients.length
+            });
+            this.handleJoinRoom(ws, message);
             return;
         }
         
@@ -94,13 +100,17 @@ class SignalingServer {
             roomCode
         }));
         
-        console.log(`Room ${roomCode} created`);
+        console.log(`Room ${roomCode} created successfully`);
+        console.log(`Available rooms after creation:`, Array.from(this.rooms.keys()));
     }
     
     handleJoinRoom(ws, message) {
         const { roomCode } = message;
+        console.log(`Attempting to join room: ${roomCode}`);
+        console.log(`Available rooms:`, Array.from(this.rooms.keys()));
         
         if (!this.rooms.has(roomCode)) {
+            console.log(`Room ${roomCode} not found, sending error`);
             ws.send(JSON.stringify({
                 type: 'error',
                 message: 'Room not found'
