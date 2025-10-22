@@ -25,7 +25,8 @@ class MultiplayerManager {
                 { urls: 'stun:stun2.l.google.com:19302' },
                 { urls: 'stun:stun3.l.google.com:19302' },
                 { urls: 'stun:stun4.l.google.com:19302' }
-            ]
+            ],
+            iceCandidatePoolSize: 10
         };
         
         this.setupEventListeners();
@@ -186,6 +187,9 @@ class MultiplayerManager {
         this.peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
                 console.log('ICE candidate:', event.candidate);
+                console.log('Candidate type:', event.candidate.type);
+                console.log('Candidate protocol:', event.candidate.protocol);
+                console.log('Candidate address:', event.candidate.address);
                 // Send ICE candidate through signaling server
                 if (this.signalingSocket && this.signalingSocket.readyState === WebSocket.OPEN) {
                     this.signalingSocket.send(JSON.stringify({
@@ -193,6 +197,8 @@ class MultiplayerManager {
                         candidate: event.candidate
                     }));
                 }
+            } else {
+                console.log('ICE gathering complete - no more candidates');
             }
         };
         
@@ -216,18 +222,30 @@ class MultiplayerManager {
             } else if (this.peerConnection.connectionState === 'disconnected' || 
                       this.peerConnection.connectionState === 'failed') {
                 console.log('WebRTC connection failed:', this.peerConnection.connectionState);
-                console.log('Falling back to simulation mode for local testing');
+                console.log('ICE connection state:', this.peerConnection.iceConnectionState);
                 this.updateConnectionStatus('offline');
                 this.connectedPlayers.clear();
                 this.updatePlayerCount();
-                // Fall back to simulation mode
-                this.setupFallbackConnection();
             }
         };
         
         // Handle ICE connection state changes
         this.peerConnection.oniceconnectionstatechange = () => {
             console.log('ICE connection state changed:', this.peerConnection.iceConnectionState);
+            if (this.peerConnection.iceConnectionState === 'failed') {
+                console.log('ICE connection failed - checking candidate types');
+                console.log('Local description:', this.peerConnection.localDescription);
+                console.log('Remote description:', this.peerConnection.remoteDescription);
+            } else if (this.peerConnection.iceConnectionState === 'connected') {
+                console.log('ICE connection established successfully!');
+            } else if (this.peerConnection.iceConnectionState === 'disconnected') {
+                console.log('ICE connection lost - this might be a network issue');
+            }
+        };
+        
+        // Handle ICE gathering state changes
+        this.peerConnection.onicegatheringstatechange = () => {
+            console.log('ICE gathering state changed:', this.peerConnection.iceGatheringState);
         };
         
         // Create data channel if we're the host
@@ -536,6 +554,9 @@ class MultiplayerManager {
         const signalingUrl = `${protocol}//${host}:${port}`;
         
         console.log('Connecting to:', signalingUrl);
+        console.log('Current location:', window.location.href);
+        console.log('Protocol:', window.location.protocol);
+        console.log('Hostname:', window.location.hostname);
         
         try {
             this.signalingSocket = new WebSocket(signalingUrl);
@@ -561,26 +582,25 @@ class MultiplayerManager {
             
             this.signalingSocket.onerror = (error) => {
                 console.error('Signaling server error:', error);
+                console.error('WebSocket error details:', error);
                 this.updateConnectionStatus('offline');
-                // Fall back to simulation if signaling server fails
-                this.setupFallbackConnection();
             };
             
             // Add timeout for connection
             setTimeout(() => {
                 if (this.signalingSocket && this.signalingSocket.readyState === WebSocket.CONNECTING) {
-                    console.log('Signaling server connection timeout, falling back to simulation');
+                    console.log('Signaling server connection timeout after 5 seconds');
+                    console.log('WebSocket state:', this.signalingSocket.readyState);
+                    console.log('Signaling URL:', signalingUrl);
                     this.signalingSocket.close();
-                    this.setupFallbackConnection();
+                    this.updateConnectionStatus('offline');
                 }
             }, 5000); // 5 second timeout
             
         } catch (error) {
             console.error('Failed to connect to signaling server:', error);
-            console.log('Falling back to simulation mode for testing');
+            console.error('Connection error details:', error);
             this.updateConnectionStatus('offline');
-            // Fall back to simulation for testing
-            this.setupFallbackConnection();
         }
     }
     
@@ -773,6 +793,9 @@ class MultiplayerManager {
                             type: 'answer',
                             answer: this.peerConnection.localDescription
                         }));
+                        console.log('Answer sent to host successfully');
+                    } else {
+                        console.error('Signaling socket not ready, cannot send answer');
                     }
                 })
                 .catch(error => {
@@ -787,6 +810,7 @@ class MultiplayerManager {
             this.peerConnection.setRemoteDescription(answer)
                 .then(() => {
                     console.log('Answer processed successfully');
+                    console.log('WebRTC negotiation complete - waiting for connection...');
                 })
                 .catch(error => {
                     console.error('Error handling answer:', error);
@@ -797,7 +821,18 @@ class MultiplayerManager {
     handleIceCandidate(candidate) {
         if (this.peerConnection) {
             console.log('Adding ICE candidate:', candidate);
-            this.peerConnection.addIceCandidate(candidate)
+            console.log('Candidate type:', candidate.type);
+            console.log('Candidate protocol:', candidate.protocol);
+            console.log('Candidate address:', candidate.address);
+            
+            // Reconstruct the RTCIceCandidate object properly
+            const iceCandidate = new RTCIceCandidate(candidate);
+            console.log('Reconstructed ICE candidate:', iceCandidate);
+            console.log('Reconstructed type:', iceCandidate.type);
+            console.log('Reconstructed protocol:', iceCandidate.protocol);
+            console.log('Reconstructed address:', iceCandidate.address);
+            
+            this.peerConnection.addIceCandidate(iceCandidate)
                 .then(() => {
                     console.log('ICE candidate added successfully');
                 })
