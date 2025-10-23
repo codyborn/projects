@@ -1,19 +1,20 @@
 {
   "name": "cards-multiplayer",
   "version": "1.0.0",
-  "description": "Multiplayer card game with WebRTC",
-  "main": "signaling-server.js",
+  "description": "Multiplayer card game with WebSocket",
+  "main": "index.html",
   "scripts": {
-    "start": "node signaling-server.js",
-    "dev": "nodemon signaling-server.js"
+    "start": "node scripts/simple-websocket-server.js",
+    "dev": "python3 -m http.server 8001"
   },
   "dependencies": {
     "ws": "^8.14.2"
   },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
-  },
-  "keywords": ["webrtc", "multiplayer", "cards", "game"],
+  "devDependencies": {},
+  "keywords": ["websocket", "multiplayer", "cards", "game"],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "engines": {
+    "node": "18.x"
+  }
 }

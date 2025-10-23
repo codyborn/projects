@@ -1,0 +1,1 @@
+web: node scripts/simple-websocket-server.js

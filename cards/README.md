@@ -1,6 +1,6 @@
 # Cards - Multiplayer Card Game
 
-A real-time multiplayer card game built with WebRTC and Node.js signaling server.
+A real-time multiplayer card game built with WebSocket and Heroku.
 
 ## Features
 
@@ -25,7 +25,7 @@ The web server will run on port 8001.
 
 Open your browser and go to: `http://localhost:8001`
 
-**Note**: The multiplayer system now uses a simplified approach that works without requiring a separate signaling server. This makes it much easier to test and use!
+**Note**: The multiplayer system uses WebSocket connections to a deployed Heroku server at `cards-websocket-server-02b8944e7896.herokuapp.com` for reliable real-time communication!
 
 ## How to Play Multiplayer
 
@@ -37,9 +37,11 @@ Open your browser and go to: `http://localhost:8001`
 ## Technical Details
 
 - **Frontend**: HTML5, CSS3, JavaScript (ES6+)
-- **Real-time Communication**: WebRTC with simplified signaling
+- **Real-time Communication**: WebSocket with Heroku
 - **Data Storage**: Local browser storage for custom decks
 - **Multiplayer**: Room-based system with 6-character codes
+- **Local Development**: Uses local WebSocket server on port 8080
+- **Production**: Automatically uses Heroku WebSocket server
 
 
 ## File Structure
@@ -52,7 +54,7 @@ cards/
 │   └── cards.css          # Card-specific styles
 ├── scripts/
 │   ├── cards.js           # Card and deck classes
-│   ├── multiplayer.js     # WebRTC multiplayer logic
+│   ├── websocket-multiplayer.js  # WebSocket multiplayer logic
 │   └── app.js             # Main game application
 └── README.md              # This file
 ```
@@ -60,5 +62,5 @@ cards/
 ## Troubleshooting
 
 - **Connection Issues**: Make sure the web server is running on port 8001
-- **WebRTC Issues**: Try refreshing both browser windows
+- **WebSocket Issues**: Check that the WebSocket server is deployed and the URL is correct
 - **Port Conflicts**: Change the port in the Python server command if needed

@@ -652,7 +652,7 @@ class CardGame {
     // ===== MULTIPLAYER METHODS =====
     
     initializeMultiplayer() {
-        this.multiplayer = new MultiplayerManager(this);
+        this.multiplayer = new WebSocketMultiplayerManager(this);
         
         // Enable test mode for easier testing
         this.multiplayer.enableTestMode();
