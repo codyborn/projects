@@ -667,16 +667,12 @@ class CardGame {
         
         // Deck management buttons
         document.getElementById('create-deck-btn').addEventListener('click', () => this.openDeckEditor());
-        document.getElementById('import-btn').addEventListener('click', () => this.importDeck());
-        document.getElementById('export-btn').addEventListener('click', () => this.exportCurrentDeck());
         
         // Modal controls
         document.getElementById('modal-close').addEventListener('click', () => this.closeDeckEditor());
         document.getElementById('cancel-deck-btn').addEventListener('click', () => this.closeDeckEditor());
         document.getElementById('save-deck-btn').addEventListener('click', () => this.saveDeck());
         
-        // File input
-        document.getElementById('import-deck').addEventListener('change', (e) => this.handleFileImport(e));
         
         // Click outside to close
         document.getElementById('modal-overlay').addEventListener('click', () => this.closeDeckEditor());
@@ -685,11 +681,13 @@ class CardGame {
     toggleSideMenu() {
         const sideMenu = document.getElementById('side-menu');
         sideMenu.classList.toggle('open');
+        document.body.classList.toggle('menu-open');
     }
     
     closeSideMenu() {
         const sideMenu = document.getElementById('side-menu');
         sideMenu.classList.remove('open');
+        document.body.classList.remove('menu-open');
     }
     
     loadDecksFromStorage() {
@@ -753,17 +751,8 @@ class CardGame {
     }
     
     updateDeckManager() {
-        this.updateCurrentDeckInfo();
         this.updateGameInfo();
         this.updateDeckList();
-    }
-    
-    updateCurrentDeckInfo() {
-        const deckName = this.deck.name || 'Standard Deck';
-        const deckCount = this.deck.cards.length;
-        
-        document.getElementById('current-deck-name').textContent = deckName;
-        document.getElementById('current-deck-count').textContent = `${deckCount} cards`;
     }
     
     updateGameInfo() {
@@ -774,9 +763,7 @@ class CardGame {
         document.getElementById('current-game-title').textContent = gameTitle;
         document.getElementById('current-game-description').textContent = gameDescription;
         
-        // Update main game info
-        document.getElementById('main-game-title').textContent = gameTitle;
-        document.getElementById('main-game-description').textContent = gameDescription;
+        // Main game info is now in the side menu
     }
     
     updateDeckList() {
@@ -830,7 +817,7 @@ class CardGame {
         return item;
     }
     
-    loadDeck(deckId) {
+    loadDeck(deckId, shouldBroadcast = true) {
         // Clear any existing cards from the board
         this.clearBoard();
         
@@ -856,6 +843,12 @@ class CardGame {
         
         // Store the last selected deck in localStorage
         this.saveLastSelectedDeck(deckId);
+        
+        // Broadcast deck change to other players
+        if (shouldBroadcast && this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
+            const deckData = this.deck.exportToJSON();
+            this.multiplayer.broadcastDeckChange(deckId, deckData);
+        }
         
         console.log(`Loaded deck: ${this.deck.name}`);
     }
@@ -957,63 +950,6 @@ class CardGame {
         }
     }
     
-    importDeck() {
-        document.getElementById('import-deck').click();
-    }
-    
-    handleFileImport(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const deckData = JSON.parse(e.target.result);
-                
-                // Validate deck data
-                if (!deckData.cards || !Array.isArray(deckData.cards)) {
-                    alert('Invalid deck file. Must include a "cards" array.');
-                    return;
-                }
-                
-                // Generate unique ID and name
-                const deckId = `imported_${Date.now()}`;
-                if (!deckData.name) {
-                    deckData.name = `Imported Deck ${new Date().toLocaleDateString()}`;
-                }
-                
-                // Save deck
-                this.customDecks.set(deckId, deckData);
-                this.saveDecksToStorage();
-                
-                // Load the imported deck
-                this.loadDeck(deckId);
-                this.updateDeckManager();
-                
-                console.log(`Imported deck: ${deckData.name}`);
-            } catch (error) {
-                alert('Error importing deck: ' + error.message);
-            }
-        };
-        reader.readAsText(file);
-        
-        // Reset file input
-        event.target.value = '';
-    }
-    
-    exportCurrentDeck() {
-        const deckData = this.deck.exportToJSON();
-        const blob = new Blob([JSON.stringify(deckData, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${deckData.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
     
     getDefaultDeckJSON() {
         return JSON.stringify({

@@ -15,6 +15,23 @@ class WebSocketMultiplayerManager {
         this.testMode = false;
         this.roomCreationAttempted = false;
         
+        // Message queuing and retry system
+        this.messageQueue = [];
+        this.pendingMessages = new Map(); // messageId -> { message, retries, timestamp }
+        this.messageIdCounter = 0;
+        this.retryInterval = null;
+        this.maxRetries = 2; // Reduced from 3
+        this.retryDelay = 2000; // Increased from 1 second to 2 seconds
+        
+        // Message deduplication
+        this.processedMessages = new Set(); // Track processed message IDs
+        this.messageDeduplicationTimeout = 30000; // 30 seconds
+        
+        // Connection health monitoring
+        this.healthCheckInterval = null;
+        this.lastMessageTime = 0;
+        this.connectionTimeout = 30000; // 30 seconds
+        
         this.setupEventListeners();
     }
     
@@ -61,6 +78,13 @@ class WebSocketMultiplayerManager {
             if (e.key === 'Enter') {
                 this.joinRoom();
             }
+        });
+        
+        // Handle input changes to enable/disable join button
+        document.getElementById('room-code-input').addEventListener('input', (e) => {
+            const joinBtn = document.getElementById('join-room-btn');
+            const hasContent = e.target.value.trim().length > 0;
+            joinBtn.disabled = !hasContent;
         });
         
         // Auto-connect in test mode
@@ -149,6 +173,9 @@ class WebSocketMultiplayerManager {
             
             this.socket.onopen = () => {
                 console.log('Connected to WebSocket server');
+                this.updateConnectionStatus('connected');
+                this.lastMessageTime = Date.now();
+                this.startHealthCheck();
                 this.handleWebSocketConnected();
             };
             
@@ -259,27 +286,73 @@ class WebSocketMultiplayerManager {
     sendMessage(message) {
         console.log('Sending message:', message);
         
+        // Add unique message ID and acknowledgment requirement
+        const messageId = ++this.messageIdCounter;
+        const messageData = {
+            ...message,
+            playerId: this.playerId,
+            timestamp: Date.now(),
+            roomCode: this.roomCode,
+            messageId: messageId,
+            requiresAck: true
+        };
+        
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-            const messageData = {
-                ...message,
-                playerId: this.playerId,
-                timestamp: Date.now(),
-                roomCode: this.roomCode
-            };
+            // Store message for retry if needed
+            this.pendingMessages.set(messageId, {
+                message: messageData,
+                retries: 0,
+                timestamp: Date.now()
+            });
             
             this.socket.send(JSON.stringify({
                 type: 'gameMessage',
                 data: messageData
             }));
+            
+            // Start retry mechanism if not already running
+            if (!this.retryInterval) {
+                this.startRetryMechanism();
+            }
         } else {
-            console.error('WebSocket not connected, cannot send message');
+            console.error('WebSocket not connected, queuing message');
+            this.messageQueue.push(messageData);
         }
     }
     
     handleIncomingMessage(message) {
+        // Update last message time for health check
+        this.lastMessageTime = Date.now();
+        
+        // Handle message acknowledgments
+        if (message.type === 'messageAck') {
+            this.handleMessageAcknowledgment(message.messageId);
+            return;
+        }
+        
+        // Check for duplicate messages
+        if (message.messageId && this.processedMessages.has(message.messageId)) {
+            console.log('Ignoring duplicate message:', message.messageId);
+            return;
+        }
+        
+        // Send acknowledgment for received messages
+        if (message.requiresAck && message.messageId) {
+            this.sendAcknowledgment(message.messageId);
+        }
+        
         // Don't process our own messages
         if (message.playerId === this.playerId) {
             return;
+        }
+        
+        // Mark message as processed
+        if (message.messageId) {
+            this.processedMessages.add(message.messageId);
+            // Clean up old processed messages periodically
+            setTimeout(() => {
+                this.processedMessages.delete(message.messageId);
+            }, this.messageDeduplicationTimeout);
         }
         
         console.log('Received message:', message);
@@ -311,6 +384,9 @@ class WebSocketMultiplayerManager {
                 break;
             case 'cardVisibility':
                 this.handleCardVisibility(message.data);
+                break;
+            case 'deckChange':
+                this.handleDeckChange(message.data);
                 break;
         }
     }
@@ -417,6 +493,14 @@ class WebSocketMultiplayerManager {
         }
     }
     
+    handleDeckChange(data) {
+        const { deckId, deckData } = data;
+        console.log('Handling deck change:', { deckId, deckData });
+        
+        // Load the new deck without broadcasting (to avoid infinite loops)
+        this.game.loadDeck(deckId, false);
+    }
+    
     // Public methods for game integration (same as WebRTC version)
     broadcastCardMove(cardId, x, y) {
         this.sendMessage({
@@ -474,6 +558,13 @@ class WebSocketMultiplayerManager {
         });
     }
     
+    broadcastDeckChange(deckId, deckData) {
+        this.sendMessage({
+            type: 'deckChange',
+            data: { deckId, deckData }
+        });
+    }
+    
     showRoomInfo() {
         document.getElementById('room-code-display').textContent = this.roomCode;
         document.getElementById('room-info').style.display = 'block';
@@ -495,11 +586,124 @@ class WebSocketMultiplayerManager {
         document.getElementById('player-count').textContent = this.connectedPlayers.size;
     }
     
+    // Message acknowledgment and retry methods
+    sendAcknowledgment(messageId) {
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            this.socket.send(JSON.stringify({
+                type: 'messageAck',
+                messageId: messageId,
+                playerId: this.playerId
+            }));
+        }
+    }
+    
+    handleMessageAcknowledgment(messageId) {
+        if (this.pendingMessages.has(messageId)) {
+            this.pendingMessages.delete(messageId);
+            console.log(`Message ${messageId} acknowledged`);
+        }
+    }
+    
+    startRetryMechanism() {
+        if (this.retryInterval) return;
+        
+        this.retryInterval = setInterval(() => {
+            const now = Date.now();
+            const messagesToRetry = [];
+            
+            // Check for messages that need retrying
+            this.pendingMessages.forEach((pending, messageId) => {
+                const timeSinceSent = now - pending.timestamp;
+                const maxAge = 10000; // 10 seconds max age for any message
+                
+                if (timeSinceSent > maxAge) {
+                    console.warn(`Message ${messageId} expired after ${maxAge}ms`);
+                    this.pendingMessages.delete(messageId);
+                } else if (timeSinceSent > this.retryDelay && pending.retries < this.maxRetries) {
+                    messagesToRetry.push({ messageId, pending });
+                } else if (pending.retries >= this.maxRetries) {
+                    console.warn(`Message ${messageId} failed after ${this.maxRetries} retries`);
+                    this.pendingMessages.delete(messageId);
+                }
+            });
+            
+            // Retry messages (only if we have pending messages)
+            if (messagesToRetry.length > 0) {
+                console.log(`Retrying ${messagesToRetry.length} messages`);
+                messagesToRetry.forEach(({ messageId, pending }) => {
+                    pending.retries++;
+                    pending.timestamp = now;
+                    console.log(`Retrying message ${messageId} (attempt ${pending.retries})`);
+                    
+                    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+                        this.socket.send(JSON.stringify({
+                            type: 'gameMessage',
+                            data: pending.message
+                        }));
+                    }
+                });
+            }
+            
+            // Process queued messages when connection is restored
+            if (this.socket && this.socket.readyState === WebSocket.OPEN && this.messageQueue.length > 0) {
+                const queuedMessages = [...this.messageQueue];
+                this.messageQueue = [];
+                console.log(`Processing ${queuedMessages.length} queued messages`);
+                queuedMessages.forEach(message => this.sendMessage(message));
+            }
+            
+            // Stop retry mechanism if no pending messages
+            if (this.pendingMessages.size === 0 && this.messageQueue.length === 0) {
+                console.log('Stopping retry mechanism - no pending messages');
+                clearInterval(this.retryInterval);
+                this.retryInterval = null;
+            }
+        }, this.retryDelay);
+    }
+    
+    startHealthCheck() {
+        if (this.healthCheckInterval) return;
+        
+        this.healthCheckInterval = setInterval(() => {
+            const now = Date.now();
+            const timeSinceLastMessage = now - this.lastMessageTime;
+            
+            if (timeSinceLastMessage > this.connectionTimeout) {
+                console.warn('Connection health check failed - no messages received recently');
+                this.handleConnectionLoss();
+            }
+        }, 5000); // Check every 5 seconds
+    }
+    
+    handleConnectionLoss() {
+        console.log('Handling connection loss...');
+        this.updateConnectionStatus('offline');
+        
+        // Attempt to reconnect
+        if (this.roomCode) {
+            console.log('Attempting to reconnect...');
+            setTimeout(() => {
+                this.connectToWebSocketServer();
+            }, 2000);
+        }
+    }
+    
     // Cleanup method
     disconnect() {
         if (this.socket) {
             this.socket.close();
         }
+        if (this.retryInterval) {
+            clearInterval(this.retryInterval);
+            this.retryInterval = null;
+        }
+        if (this.healthCheckInterval) {
+            clearInterval(this.healthCheckInterval);
+            this.healthCheckInterval = null;
+        }
+        this.pendingMessages.clear();
+        this.messageQueue = [];
+        this.processedMessages.clear();
         this.updateConnectionStatus('offline');
         this.connectedPlayers.clear();
         this.updatePlayerCount();

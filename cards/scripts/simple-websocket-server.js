@@ -100,6 +100,15 @@ class SimpleWebSocketServer {
                 }, ws);
                 break;
                 
+            case 'messageAck':
+                // Forward acknowledgment to sender only
+                ws.send(JSON.stringify({
+                    type: 'messageAck',
+                    messageId: message.messageId,
+                    playerId: message.playerId
+                }));
+                break;
+                
             default:
                 // Broadcast any other message to the room
                 this.broadcastToRoom(roomCode, message, ws);
