@@ -242,6 +242,9 @@ class CardGame {
         cardElement.className = 'card';
         cardElement.dataset.title = safeCard.title;
         cardElement.dataset.cardId = `card_${++this.cardIdCounter}`;
+        if (safeCard.description) {
+            cardElement.dataset.description = safeCard.description;
+        }
         
         // Set z-index to bring new card to front
         cardElement.style.zIndex = ++this.zIndexCounter;
@@ -280,7 +283,6 @@ class CardGame {
             <div style="font-size: 14px; color: ${textColor};">${displayTitle}</div>
             <div style="font-size: ${imageSize}px;">${displaySymbol}</div>
             ${deck.invertTitle ? `<div style="font-size: 14px; transform: rotate(180deg); color: ${textColor};">${displayTitle}</div>` : ''}
-            ${safeCard.description ? `<div style="font-size: 8px; color: ${textColor}; margin-top: 2px; opacity: 0.8;">${safeCard.description}</div>` : ''}
         `;
         
         // Create card back
@@ -570,6 +572,50 @@ class CardGame {
                 
                 startX = undefined;
                 startY = undefined;
+            }
+        });
+        
+        // Add tooltip functionality
+        this.addCardTooltip(cardElement);
+    }
+    
+    addCardTooltip(cardElement) {
+        const description = cardElement.dataset.description;
+        if (!description) return;
+        
+        let tooltip = null;
+        
+        cardElement.addEventListener('mouseenter', (e) => {
+            if (tooltip) return; // Prevent multiple tooltips
+            
+            // Only show tooltip if card is face up (not flipped)
+            if (cardElement.classList.contains('flipped')) return;
+            
+            tooltip = document.createElement('div');
+            tooltip.className = 'card-tooltip';
+            tooltip.textContent = description;
+            
+            // Position tooltip
+            const rect = cardElement.getBoundingClientRect();
+            tooltip.style.left = rect.left + rect.width / 2 + 'px';
+            tooltip.style.top = rect.top - 10 + 'px';
+            tooltip.style.transform = 'translateX(-50%) translateY(-100%)';
+            
+            document.body.appendChild(tooltip);
+        });
+        
+        cardElement.addEventListener('mouseleave', () => {
+            if (tooltip) {
+                tooltip.remove();
+                tooltip = null;
+            }
+        });
+        
+        cardElement.addEventListener('mousemove', (e) => {
+            if (tooltip) {
+                const rect = cardElement.getBoundingClientRect();
+                tooltip.style.left = rect.left + rect.width / 2 + 'px';
+                tooltip.style.top = rect.top - 10 + 'px';
             }
         });
     }
