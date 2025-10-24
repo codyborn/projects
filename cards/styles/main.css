@@ -244,6 +244,10 @@ body.menu-open #card-table {
     line-height: 1.4;
 }
 
+.game-description ul {
+    margin-left: 20px;
+}
+
 .deck-list {
     max-height: 200px;
     overflow-y: auto;

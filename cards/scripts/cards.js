@@ -6,6 +6,7 @@ class Card {
         this.description = cardData.description || '';
         this.image = cardData.image || '';
         this.emoji = cardData.emoji || '';
+        this.imageSize = cardData.imageSize || 24;
         this.color = cardData.color || '';
         this.faceUp = false;
     }
@@ -97,6 +98,7 @@ class Deck {
                         description: cardData.description,
                         image: cardData.image,
                         emoji: cardData.emoji,
+                        imageSize: cardData.imageSize,
                         color: cardData.color
                     });
                     this.cards.push(card);
@@ -118,7 +120,8 @@ class Deck {
                 title: card.title,
                 description: card.description,
                 image: card.image,
-                emoji: card.emoji
+                emoji: card.emoji,
+                imageSize: card.imageSize
             }))
         };
     }

@@ -234,6 +234,7 @@ class CardGame {
             image: card.image || '',
             emoji: card.emoji || '?',
             color: card.color || '',
+            imageSize: card.imageSize || 24,
             faceUp: card.faceUp || false
         };
         
@@ -254,19 +255,32 @@ class CardGame {
         const cardFace = document.createElement('div');
         cardFace.className = 'card-face';
         
+        // Add wild class for wild cards to enable gradient styling
+        if (safeCard.color === 'wild') {
+            cardFace.classList.add('wild');
+        }
+        
         // Use card properties
         const displaySymbol = safeCard.emoji || '?';
         const displayTitle = safeCard.title || 'Card';
         const cardColor = this.getCardColor(safeCard.color);
         
-        cardFace.style.backgroundColor = cardColor;
-        cardFace.style.color = '#333';
+        // Don't set background color for wild cards - let CSS gradient handle it
+        if (safeCard.color !== 'wild') {
+            cardFace.style.backgroundColor = cardColor;
+            cardFace.style.color = '#333';
+        } else {
+            // Wild cards use white text for better contrast with gradient
+            cardFace.style.color = 'white';
+        }
         
+        const textColor = safeCard.color === 'wild' ? 'white' : '#333';
+        const imageSize = safeCard.imageSize || 24; // Default to 24px if not specified
         cardFace.innerHTML = `
-            <div style="font-size: 14px; color: #333;">${displayTitle}</div>
-            <div style="font-size: 24px;">${displaySymbol}</div>
-            ${deck.invertTitle ? `<div style="font-size: 14px; transform: rotate(180deg); color: #333;">${displayTitle}</div>` : ''}
-            ${safeCard.description ? `<div style="font-size: 8px; color: #333; margin-top: 2px; opacity: 0.8;">${safeCard.description}</div>` : ''}
+            <div style="font-size: 14px; color: ${textColor};">${displayTitle}</div>
+            <div style="font-size: ${imageSize}px;">${displaySymbol}</div>
+            ${deck.invertTitle ? `<div style="font-size: 14px; transform: rotate(180deg); color: ${textColor};">${displayTitle}</div>` : ''}
+            ${safeCard.description ? `<div style="font-size: 8px; color: ${textColor}; margin-top: 2px; opacity: 0.8;">${safeCard.description}</div>` : ''}
         `;
         
         // Create card back
@@ -350,9 +364,24 @@ class CardGame {
                     }
                     
                     // Calculate new position relative to the initial position
-                    const newX = initialX + deltaX;
-                    const newY = initialY + deltaY;
+                    let newX = initialX + deltaX;
+                    let newY = initialY + deltaY;
                     
+                    // Get board boundaries
+                    const table = document.getElementById('card-table');
+                    const tableRect = table.getBoundingClientRect();
+                    const cardRect = cardElement.getBoundingClientRect();
+                    const cardWidth = cardRect.width;
+                    const cardHeight = cardRect.height;
+                    
+                    // Constrain to board boundaries
+                    const minX = 0;
+                    const maxX = tableRect.width - cardWidth;
+                    const minY = 0;
+                    const maxY = tableRect.height - cardHeight;
+                    
+                    newX = Math.max(minX, Math.min(maxX, newX));
+                    newY = Math.max(minY, Math.min(maxY, newY));
                     
                     // Update position directly using left/top
                     cardElement.style.left = newX + 'px';
@@ -470,8 +499,22 @@ class CardGame {
                     // Convert to table coordinates
                     const table = document.getElementById('card-table');
                     const tableRect = table.getBoundingClientRect();
-                    const newX = touch.clientX - tableRect.left - 30;
-                    const newY = touch.clientY - tableRect.top - 42;
+                    let newX = touch.clientX - tableRect.left - 30;
+                    let newY = touch.clientY - tableRect.top - 42;
+                    
+                    // Get card dimensions for boundary checking
+                    const cardRect = cardElement.getBoundingClientRect();
+                    const cardWidth = cardRect.width;
+                    const cardHeight = cardRect.height;
+                    
+                    // Constrain to board boundaries
+                    const minX = 0;
+                    const maxX = tableRect.width - cardWidth;
+                    const minY = 0;
+                    const maxY = tableRect.height - cardHeight;
+                    
+                    newX = Math.max(minX, Math.min(maxX, newX));
+                    newY = Math.max(minY, Math.min(maxY, newY));
                     
                     cardElement.style.left = newX + 'px';
                     cardElement.style.top = newY + 'px';
@@ -532,8 +575,6 @@ class CardGame {
     }
 
     flipCard(cardElement) {
-        cardElement.classList.toggle('flipped');
-        
         // Broadcast card flip to other players
         if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
             const cardId = cardElement.dataset.cardId;
@@ -542,9 +583,16 @@ class CardGame {
         
         // Add flip animation
         cardElement.classList.add('card-flipping');
+        
+        // Wait until animation reaches 50% (width = 0%) before changing content
+        setTimeout(() => {
+            cardElement.classList.toggle('flipped');
+        }, 200); // 50% of 400ms animation
+        
+        // Remove animation class when complete
         setTimeout(() => {
             cardElement.classList.remove('card-flipping');
-        }, 600);
+        }, 400);
     }
 
     shuffleCardBackToDeck(cardElement, card) {
@@ -761,7 +809,7 @@ class CardGame {
         
         // Update sidebar game info
         document.getElementById('current-game-title').textContent = gameTitle;
-        document.getElementById('current-game-description').textContent = gameDescription;
+        document.getElementById('current-game-description').innerHTML = gameDescription;
         
         // Main game info is now in the side menu
     }
@@ -977,8 +1025,34 @@ class CardGame {
     
     getVirusDeckData() {
         return {
-            "name": "Virus Deck",
-            "description": "Official Virus card game deck - 68 cards",
+            "name": "VIRUS!",
+            "description": `
+                <h3>The Most Contagious Card Game</h3>
+                <p><strong>Players:</strong> 2-6 | <strong>Goal:</strong> Be the first to collect 4 different healthy organs</p>
+                
+                <h4>How to Play:</h4>
+                <ul>
+                    <li><strong>Each turn:</strong> Play 1 card OR discard cards, then draw to maintain 3 cards in hand</li>
+                    <li><strong>Healthy organs</strong> are virus-free, vaccinated, or immunized</li>
+                    <li><strong>Win:</strong> Have 4 different healthy organs in your body</li>
+                </ul>
+                
+                <h4>Card Types:</h4>
+                <ul>
+                    <li><strong>🫀 ORGANS</strong> - Build your body (Heart, Lungs, Brain, Bones)</li>
+                    <li><strong>🦠 VIRUSES</strong> - Infect/destroy organs of the same color</li>
+                    <li><strong>💊 MEDICINES</strong> - Cure viruses or vaccinate organs</li>
+                    <li><strong>🔄 TREATMENTS</strong> - Special effects (Transplant, Organ Thief, etc.)</li>
+                </ul>
+                
+                <h4>Key Rules:</h4>
+                <ul>
+                    <li>Viruses and medicines affect organs of the <strong>same color</strong></li>
+                    <li><strong>Two medicines</strong> on one organ = <strong>immunized forever</strong></li>
+                    <li><strong>Multicolor cards</strong> affect any color but are vulnerable to any attack</li>
+                    <li>You cannot have <strong>two organs of the same color</strong> in your body</li>
+                </ul>
+            `,
             "invertTitle": false,
             "cards": [
                 // Organ Cards (5 total) - 1 of each color + 1 Wild
@@ -1003,11 +1077,11 @@ class CardGame {
                 {"title": "Any", "color": "wild", "emoji": "💊", "count": 1},
                 
                 // Treatment Cards (23 total) - Various types
-                {"title": "Transplant", "description": "Exchange an organ with another player", "color": "neutral", "emoji": "🫀🔄🧠", "count": 4},
+                {"title": "Transplant", "description": "Exchange an organ with another player", "color": "neutral", "emoji": "🫀🔄🧠", "imageSize": 16, "count": 4},
                 {"title": "Organ Thief", "description": "Steal an organ from another player", "color": "neutral", "emoji": "🥷", "count": 4},
                 {"title": "Contagion", "description": "Transfer viruses to other players", "color": "neutral", "emoji": "☣️", "count": 4},
                 {"title": "Latex Glove", "description": "All players discard their hand", "color": "neutral", "emoji": "🧤", "count": 4},
-                {"title": "Medical Error", "description": "Swap your entire body with another player", "color": "neutral", "emoji": "👤🔄👤", "count": 4},
+                {"title": "Medical Error", "description": "Swap your entire body with another player", "color": "neutral", "emoji": "👤🔄👤", "imageSize": 16, "count": 4},
             ]
         };
     }
