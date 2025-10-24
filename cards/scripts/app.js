@@ -1111,14 +1111,14 @@ class CardGame {
                 // Virus Cards (20 total) - 4 of each color
                 {"title": "Heart", "color": "red", "emoji": "🦠", "count": 4},
                 {"title": "Brain", "color": "blue", "emoji": "🦠", "count": 4},
-                {"title": "Stomach", "color": "green", "emoji": "🦠", "count": 4},
+                {"title": "Lungs", "color": "green", "emoji": "🦠", "count": 4},
                 {"title": "Bone", "color": "yellow", "emoji": "🦠", "count": 4},
                 {"title": "Any", "color": "wild", "emoji": "🦠", "count": 1},
                 
                 // Medicine Cards (20 total) - 4 of each color
                 {"title": "Heart", "color": "red", "emoji": "💊", "count": 4},
                 {"title": "Brain", "color": "blue", "emoji": "💊", "count": 4},
-                {"title": "Stomach", "color": "green", "emoji": "💊", "count": 4},
+                {"title": "Lungs", "color": "green", "emoji": "💊", "count": 4},
                 {"title": "Bone", "color": "yellow", "emoji": "💊", "count": 4},
                 {"title": "Any", "color": "wild", "emoji": "💊", "count": 1},
                 
