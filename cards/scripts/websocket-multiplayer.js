@@ -12,27 +12,33 @@ class WebSocketMultiplayerManager {
         this.connectedPlayers = new Set();
         this.playerId = this.generatePlayerId();
         this.connectionStatus = 'offline';
-        this.testMode = false;
+        this.testMode = true;
         this.roomCreationAttempted = false;
         
-        // Message queuing and retry system
+        // Message queuing system (retry logic removed)
         this.messageQueue = [];
-        this.pendingMessages = new Map(); // messageId -> { message, retries, timestamp }
         this.messageIdCounter = 0;
-        this.retryInterval = null;
-        this.maxRetries = 2; // Reduced from 3
-        this.retryDelay = 2000; // Increased from 1 second to 2 seconds
         
-        // Message deduplication
-        this.processedMessages = new Set(); // Track processed message IDs
-        this.messageDeduplicationTimeout = 30000; // 30 seconds
+        // Message deduplication removed - state validation handles synchronization
         
         // Connection health monitoring
         this.healthCheckInterval = null;
         this.lastMessageTime = 0;
         this.connectionTimeout = 30000; // 30 seconds
         
+        // Periodic synchronization
+        this.syncInterval = null;
+        
+        // State validation system
+        this.lastStateHash = null;
+        this.lastStateTimestamp = 0;
+        this.stateValidationInterval = null;
+        
         this.setupEventListeners();
+        
+        // Expose manual cleanup for debugging
+        window.cleanupCards = () => this.manualCleanup();
+        window.validateState = () => this.validateAndCorrectState();
     }
     
     generatePlayerId() {
@@ -250,6 +256,10 @@ class WebSocketMultiplayerManager {
                 this.connectedPlayers.add(this.playerId);
                 this.updatePlayerCount();
                 this.updateConnectionStatus('connected');
+                // Start periodic sync for host
+                this.startPeriodicSync();
+                // Start state validation
+                this.startStateValidation();
                 break;
                 
             case 'roomJoined':
@@ -257,12 +267,27 @@ class WebSocketMultiplayerManager {
                 this.connectedPlayers.add(this.playerId);
                 this.updatePlayerCount();
                 this.updateConnectionStatus('connected');
+                // Clean up any existing duplicate cards
+                this.cleanupDuplicateCards();
+                // Start state validation
+                this.startStateValidation();
+                // Request full state synchronization from host
+                if (!this.isHost) {
+                    this.sendMessage({
+                        type: 'requestFullState'
+                    });
+                }
                 break;
                 
             case 'playerJoined':
                 console.log('Player joined the room:', message.playerId);
                 this.connectedPlayers.add(message.playerId);
                 this.updatePlayerCount();
+                
+                // If we're the host, send our deck data and board state to the new player
+                if (this.isHost) {
+                    this.syncNewPlayer(message.playerId);
+                }
                 break;
                 
             case 'playerLeft':
@@ -298,21 +323,18 @@ class WebSocketMultiplayerManager {
         };
         
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-            // Store message for retry if needed
-            this.pendingMessages.set(messageId, {
-                message: messageData,
-                retries: 0,
-                timestamp: Date.now()
-            });
-            
-            this.socket.send(JSON.stringify({
-                type: 'gameMessage',
-                data: messageData
-            }));
-            
-            // Start retry mechanism if not already running
-            if (!this.retryInterval) {
-                this.startRetryMechanism();
+            // If targetPlayerId is specified, this is a targeted message
+            if (message.targetPlayerId) {
+                this.socket.send(JSON.stringify({
+                    type: 'targetedMessage',
+                    data: messageData,
+                    targetPlayerId: message.targetPlayerId
+                }));
+            } else {
+                this.socket.send(JSON.stringify({
+                    type: 'gameMessage',
+                    data: messageData
+                }));
             }
         } else {
             console.error('WebSocket not connected, queuing message');
@@ -324,54 +346,24 @@ class WebSocketMultiplayerManager {
         // Update last message time for health check
         this.lastMessageTime = Date.now();
         
-        // Handle message acknowledgments
-        if (message.type === 'messageAck') {
-            this.handleMessageAcknowledgment(message.messageId);
-            return;
-        }
+        // Message acknowledgment handling removed - no longer needed without retry system
         
-        // Check for duplicate messages
-        if (message.messageId && this.processedMessages.has(message.messageId)) {
-            console.log('Ignoring duplicate message:', message.messageId);
-            return;
-        }
+        // Message deduplication removed - state validation handles synchronization
         
-        // Send acknowledgment for received messages
-        if (message.requiresAck && message.messageId) {
-            this.sendAcknowledgment(message.messageId);
-        }
+        // Message acknowledgment removed - no longer needed without retry system
         
         // Don't process our own messages
         if (message.playerId === this.playerId) {
             return;
         }
         
-        // Mark message as processed
-        if (message.messageId) {
-            this.processedMessages.add(message.messageId);
-            // Clean up old processed messages periodically
-            setTimeout(() => {
-                this.processedMessages.delete(message.messageId);
-            }, this.messageDeduplicationTimeout);
-        }
+        // Message processing tracking removed - state validation handles synchronization
         
         console.log('Received message:', message);
         
         switch (message.type) {
-            case 'cardMove':
-                this.handleCardMove(message.data);
-                break;
-            case 'cardFlip':
-                this.handleCardFlip(message.data);
-                break;
-            case 'cardShuffle':
-                this.handleCardShuffle(message.data);
-                break;
-            case 'deckShuffle':
-                this.handleDeckShuffle();
-                break;
-            case 'cardDeal':
-                this.handleCardDeal(message.data);
+            case 'cardState':
+                this.handleCardState(message.data);
                 break;
             case 'resetGame':
                 this.handleResetGame();
@@ -382,86 +374,137 @@ class WebSocketMultiplayerManager {
             case 'privateHandUpdate':
                 this.handlePrivateHandUpdate(message.data);
                 break;
-            case 'cardVisibility':
-                this.handleCardVisibility(message.data);
-                break;
             case 'deckChange':
                 this.handleDeckChange(message.data);
                 break;
+            case 'requestFullState':
+                // Host responds with full state
+                if (this.isHost) {
+                    this.broadcastAllCardStates();
+                }
+                break;
+            case 'stateValidation':
+                this.handleStateValidation(message.data);
+                break;
+            case 'requestStateCorrection':
+                this.handleStateCorrectionRequest(message.data);
+                break;
+                
+            case 'syncDeckData':
+                this.handleSyncDeckData(message.data);
+                break;
         }
     }
     
-    // Game state synchronization handlers (same as WebRTC version)
-    handleCardMove(data) {
-        const { cardId, x, y } = data;
-        console.log('Handling card move:', { cardId, x, y });
-        const cardElement = document.querySelector(`[data-card-id="${cardId}"]`);
+    // New cardState handler - handles complete card state synchronization
+    handleCardState(data) {
+        const { uniqueId, card, position, isFlipped, isVisible, location, playerId, zIndex } = data;
+        console.log('Handling card state:', { uniqueId, position, isFlipped, isVisible, location, playerId });
+        
+        // First, check if we already have a card with this instanceId
+        const instanceId = card.instanceId;
+        let cardElement = document.querySelector(`[data-instance-id="${instanceId}"]`);
+        
         if (cardElement) {
-            console.log('Moving card element:', cardElement);
-            cardElement.style.left = x + 'px';
-            cardElement.style.top = y + 'px';
-            cardElement.style.zIndex = ++this.game.zIndexCounter;
+            console.log('Found existing card by instanceId:', instanceId);
         } else {
-            console.log('Card element not found for ID:', cardId);
+            // Check for duplicate cards with the same uniqueId and remove stale ones
+            const duplicateCards = document.querySelectorAll(`[data-unique-id="${uniqueId}"]`);
+            if (duplicateCards.length > 1) {
+                console.warn(`Found ${duplicateCards.length} cards with same uniqueId: ${uniqueId}, removing stale ones`);
+                // Keep the first one, remove the rest
+                for (let i = 1; i < duplicateCards.length; i++) {
+                    console.log('Removing stale card:', duplicateCards[i]);
+                    duplicateCards[i].remove();
+                }
+                cardElement = duplicateCards[0]; // Use the first (oldest) card
+            } else if (duplicateCards.length === 1) {
+                cardElement = duplicateCards[0];
+            }
         }
-    }
-    
-    handleCardFlip(data) {
-        const { cardId } = data;
-        const cardElement = document.querySelector(`[data-card-id="${cardId}"]`);
-        if (cardElement) {
-            cardElement.classList.toggle('flipped');
-            cardElement.style.zIndex = ++this.game.zIndexCounter;
-        }
-    }
-    
-    handleCardShuffle(data) {
-        const { cardId, card, deckState } = data;
-        const cardElement = document.querySelector(`[data-card-id="${cardId}"]`);
-        if (cardElement) {
-            cardElement.remove();
+        
+        if (!cardElement) {
+            // Check if there are any cards with the same instanceId that might be duplicates
+            const existingCards = document.querySelectorAll('.card');
+            let duplicateCard = null;
             
-            if (deckState) {
-                this.game.deck.cards = [...deckState.cards];
-            } else if (card) {
-                this.game.deck.addCard(card);
-                this.game.deck.shuffle();
+            for (let existingCard of existingCards) {
+                if (existingCard.dataset.instanceId === instanceId) {
+                    console.warn('Found card with same instanceId, removing old one:', existingCard.dataset.instanceId);
+                    duplicateCard.remove();
+                    break;
+                }
             }
             
-            this.game.renderDeck();
+            // Card doesn't exist, create it
+            console.log('Creating new card element for instanceId:', instanceId);
+            cardElement = this.game.createCardElement(this.game.deck, card);
+            if (!cardElement) {
+                console.error('Failed to create card element for card:', card);
+                return;
+            }
+            // Set both uniqueId and instanceId for consistency
+            cardElement.dataset.uniqueId = uniqueId;
+            cardElement.dataset.instanceId = instanceId;
+            document.getElementById('card-table').appendChild(cardElement);
+            this.game.addCardInteractions(cardElement, card);
         }
+        
+        // Mark this card as being updated from remote to prevent broadcast loops
+        cardElement.dataset.remoteUpdate = 'true';
+        
+        // Update card state
+        if (position) {
+            cardElement.style.left = position.x + 'px';
+            cardElement.style.top = position.y + 'px';
+        }
+        
+        if (zIndex !== undefined) {
+            cardElement.style.zIndex = zIndex;
+        }
+        
+        // Update flipped state
+        if (isFlipped !== undefined) {
+            if (isFlipped) {
+                cardElement.classList.add('flipped');
+            } else {
+                cardElement.classList.remove('flipped');
+            }
+        }
+        
+        // Update visibility
+        if (isVisible !== undefined) {
+            if (isVisible) {
+                cardElement.style.display = 'block';
+                cardElement.style.visibility = 'visible';
+            } else {
+                cardElement.style.display = 'none';
+                cardElement.style.visibility = 'hidden';
+            }
+        }
+        
+        // Handle location changes
+        if (location === 'privateHand' && playerId) {
+            // Update private hand display for other players
+            this.game.updateOtherPlayerPrivateHand(playerId, 1); // Assuming we're adding a card
+        }
+        
+        // Clear the remote update flag after a short delay to allow for user interactions
+        setTimeout(() => {
+            if (cardElement && cardElement.parentNode) {
+                cardElement.dataset.remoteUpdate = 'false';
+            }
+        }, 100);
+        
+        // Log successful card state update
+        console.log('Card state updated successfully:', {
+            uniqueId,
+            position: cardElement.style.left + ', ' + cardElement.style.top,
+            isFlipped: cardElement.classList.contains('flipped'),
+            isVisible: cardElement.style.display !== 'none'
+        });
     }
     
-    handleDeckShuffle() {
-        this.game.deck.shuffle();
-        this.game.renderDeck();
-    }
-    
-    handleCardDeal(data) {
-        const { cardId, card, x, y, deckState } = data;
-        
-        console.log('handleCardDeal received data:', { cardId, card, x, y, deckState });
-        
-        if (deckState) {
-            this.game.deck.cards = [...deckState];
-            this.game.renderDeck();
-        }
-        
-        this.game.dealtCards.push(card);
-        
-        const cardElement = this.game.createCardElement(this.game.deck, card);
-        if (!cardElement) {
-            console.error('Failed to create card element for card:', card);
-            return;
-        }
-        cardElement.dataset.cardId = cardId;
-        
-        cardElement.style.left = x + 'px';
-        cardElement.style.top = y + 'px';
-        
-        document.getElementById('card-table').appendChild(cardElement);
-        this.game.addCardInteractions(cardElement, card);
-    }
     
     handleResetGame() {
         this.game.resetGame(false);
@@ -501,42 +544,131 @@ class WebSocketMultiplayerManager {
         this.game.loadDeck(deckId, false);
     }
     
-    // Public methods for game integration (same as WebRTC version)
-    broadcastCardMove(cardId, x, y) {
+    // Helper method to compare card content
+    cardsHaveSameContent(card1, card2) {
+        return card1.title === card2.title &&
+               card1.emoji === card2.emoji &&
+               card1.color === card2.color &&
+               card1.description === card2.description;
+    }
+    
+    // Generate hash of current card state for validation
+    generateStateHash() {
+        const allCards = document.querySelectorAll('.card');
+        const cardStates = [];
+        
+        allCards.forEach(card => {
+            const state = {
+                instanceId: card.dataset.instanceId,
+                uniqueId: card.dataset.uniqueId,
+                position: {
+                    x: parseInt(card.style.left) || 0,
+                    y: parseInt(card.style.top) || 0
+                },
+                isFlipped: card.classList.contains('flipped'),
+                isVisible: card.style.display !== 'none' && card.style.visibility !== 'hidden',
+                zIndex: parseInt(card.style.zIndex) || 0,
+                location: card.dataset.location || 'table',
+                playerId: card.dataset.playerId || null
+            };
+            cardStates.push(state);
+        });
+        
+        // Sort by instanceId for consistent hashing (primary identifier)
+        cardStates.sort((a, b) => (a.instanceId || '').localeCompare(b.instanceId || ''));
+        
+        // Create hash from sorted state
+        const stateString = JSON.stringify(cardStates);
+        let hash = 0;
+        for (let i = 0; i < stateString.length; i++) {
+            const char = stateString.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+        
+        return Math.abs(hash).toString(36);
+    }
+    
+    // Get current state with timestamp
+    getCurrentState() {
+        return {
+            hash: this.generateStateHash(),
+            timestamp: Date.now(),
+            playerId: this.playerId,
+            cardCount: document.querySelectorAll('.card').length
+        };
+    }
+    
+    // Generate unique ID based on card content with deterministic instance tracking
+    generateCardUniqueId(card, instanceId = null) {
+        const cardData = {
+            title: card.title || '',
+            emoji: card.emoji || '',
+            color: card.color || '',
+            description: card.description || '',
+            image: card.image || ''
+        };
+        
+        // Use encodeURIComponent to handle Unicode characters, then create a hash
+        const jsonString = JSON.stringify(cardData);
+        const encoded = encodeURIComponent(jsonString);
+        
+        // Create a simple hash from the encoded string
+        let hash = 0;
+        for (let i = 0; i < encoded.length; i++) {
+            const char = encoded.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+        
+        // Create base ID from content hash
+        const baseId = `card_${Math.abs(hash).toString(36)}`;
+        
+        // Use the card's deterministic instance ID if available, otherwise use provided instanceId
+        const finalInstanceId = card.instanceId || instanceId || 'unknown';
+        
+        return `${baseId}_${finalInstanceId}`;
+    }
+    
+    // New cardState broadcast method - sends complete card state
+    broadcastCardState(cardElement, card, location = 'table', playerId = null) {
+        // Update timestamp for state tracking
+        this.lastStateTimestamp = Date.now();
+        
+        const uniqueId = this.generateCardUniqueId(card);
+        const rect = cardElement.getBoundingClientRect();
+        const tableRect = document.getElementById('card-table').getBoundingClientRect();
+        
+        const cardState = {
+            uniqueId: uniqueId,
+            card: {
+                title: card.title,
+                emoji: card.emoji,
+                color: card.color,
+                description: card.description,
+                image: card.image,
+                imageSize: card.imageSize,
+                instanceId: card.instanceId
+            },
+            position: {
+                x: parseInt(cardElement.style.left) || 0,
+                y: parseInt(cardElement.style.top) || 0
+            },
+            isFlipped: cardElement.classList.contains('flipped'),
+            isVisible: cardElement.style.display !== 'none' && cardElement.style.visibility !== 'hidden',
+            location: location,
+            playerId: playerId,
+            zIndex: parseInt(cardElement.style.zIndex) || 0,
+            timestamp: this.lastStateTimestamp
+        };
+        
         this.sendMessage({
-            type: 'cardMove',
-            data: { cardId, x, y }
+            type: 'cardState',
+            data: cardState
         });
     }
     
-    broadcastCardFlip(cardId) {
-        this.sendMessage({
-            type: 'cardFlip',
-            data: { cardId }
-        });
-    }
-    
-    broadcastCardShuffle(cardId, card = null, deckState = null) {
-        this.sendMessage({
-            type: 'cardShuffle',
-            data: { cardId, card, deckState }
-        });
-    }
-    
-    broadcastDeckShuffle() {
-        this.sendMessage({
-            type: 'deckShuffle',
-            data: {}
-        });
-    }
-    
-    broadcastCardDeal(cardId, card, x, y, deckState) {
-        this.sendMessage({
-            type: 'cardDeal',
-            data: { cardId, card, x, y, deckState }
-        });
-    }
-    
+    // Public methods for game integration
     broadcastResetGame() {
         this.sendMessage({
             type: 'resetGame',
@@ -551,18 +683,189 @@ class WebSocketMultiplayerManager {
         });
     }
     
-    broadcastCardVisibility(cardId, isVisible) {
-        this.sendMessage({
-            type: 'cardVisibility',
-            data: { cardId, isVisible }
-        });
-    }
-    
     broadcastDeckChange(deckId, deckData) {
         this.sendMessage({
             type: 'deckChange',
             data: { deckId, deckData }
         });
+    }
+    
+    // Broadcast all current card states for initial synchronization
+    broadcastAllCardStates() {
+        const cardElements = document.querySelectorAll('.card');
+        console.log(`Broadcasting ${cardElements.length} card states for synchronization`);
+        
+        cardElements.forEach(cardElement => {
+            const card = this.game.getCardFromElement(cardElement);
+            const location = cardElement.dataset.location || 'table';
+            const playerId = cardElement.dataset.playerId || null;
+            this.broadcastCardState(cardElement, card, location, playerId);
+        });
+    }
+    
+    // Periodic full state synchronization for resilience
+    startPeriodicSync() {
+        // if (this.syncInterval) return;
+        
+        // this.syncInterval = setInterval(() => {
+        //     if (this.isHost && this.connectionStatus === 'connected') {
+        //         console.log('Performing periodic full state sync');
+        //         this.broadcastAllCardStates();
+        //     }
+            
+        //     // Also perform periodic cleanup of duplicate cards
+        //     this.cleanupDuplicateCards();
+        // }, 3000); // Every 3 seconds
+    }
+    
+    // Cleanup function to remove duplicate cards
+    cleanupDuplicateCards() {
+        const allCards = document.querySelectorAll('.card');
+        const instanceIdCounts = new Map();
+        
+        // Count cards by instanceId (primary identifier)
+        allCards.forEach(card => {
+            const instanceId = card.dataset.instanceId;
+            if (instanceId) {
+                if (!instanceIdCounts.has(instanceId)) {
+                    instanceIdCounts.set(instanceId, []);
+                }
+                instanceIdCounts.get(instanceId).push(card);
+            }
+        });
+        
+        // Remove duplicates, keeping the first (oldest) card
+        instanceIdCounts.forEach((cards, instanceId) => {
+            if (cards.length > 1) {
+                console.warn(`Cleaning up ${cards.length - 1} duplicate cards for instanceId: ${instanceId}`);
+                for (let i = 1; i < cards.length; i++) {
+                    console.log('Removing duplicate card:', cards[i]);
+                    cards[i].remove();
+                }
+            }
+        });
+    }
+    
+    stopPeriodicSync() {
+        if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+            this.syncInterval = null;
+        }
+    }
+    
+    // Manual cleanup function for debugging (can be called from console)
+    manualCleanup() {
+        console.log('Manual cleanup of duplicate cards...');
+        this.cleanupDuplicateCards();
+        console.log('Cleanup complete');
+    }
+    
+    // State validation and correction system
+    startStateValidation() {
+        if (this.stateValidationInterval) return;
+        
+        this.stateValidationInterval = setInterval(() => {
+            if (this.connectionStatus === 'connected') {
+                this.validateAndCorrectState();
+            }
+        }, 3000); // Check every 3 seconds - reasonable frequency for state validation
+    }
+    
+    stopStateValidation() {
+        if (this.stateValidationInterval) {
+            clearInterval(this.stateValidationInterval);
+            this.stateValidationInterval = null;
+        }
+    }
+    
+    validateAndCorrectState() {
+        const currentState = this.getCurrentState();
+        console.log('Validating state:', currentState);
+        
+        // Broadcast current state for comparison
+        this.sendMessage({
+            type: 'stateValidation',
+            data: currentState
+        });
+    }
+    
+    handleStateValidation(data) {
+        const { hash, timestamp, playerId, cardCount } = data;
+        
+        // Don't process our own state
+        if (playerId === this.playerId) return;
+        
+        const myState = this.getCurrentState();
+        
+        // Check if states are different
+        if (hash !== myState.hash) {
+            console.warn('State mismatch detected!', {
+                myHash: myState.hash,
+                theirHash: hash,
+                myTimestamp: myState.timestamp,
+                theirTimestamp: timestamp,
+                myCardCount: myState.cardCount,
+                theirCardCount: cardCount
+            });
+            
+            // If their state is newer or equal (to handle simultaneous validation), request full state from them
+            // Also request correction if they have cards and we don't (clear state difference)
+            if (timestamp >= myState.timestamp || (cardCount > 0 && myState.cardCount === 0)) {
+                console.log('Requesting state correction from player:', playerId);
+                this.sendMessage({
+                    type: 'requestStateCorrection',
+                    data: { fromPlayerId: playerId }
+                });
+            }
+        }
+    }
+    
+    handleStateCorrectionRequest(data) {
+        const { fromPlayerId } = data;
+        
+        // Only host responds to state correction requests
+        if (!this.isHost) return;
+        
+        console.log('Sending full state correction to player:', fromPlayerId);
+        this.broadcastAllCardStates();
+    }
+    
+    handleSyncDeckData(data) {
+        const { deckData, isRemote } = data;
+        
+        if (isRemote && this.game) {
+            console.log('Received remote deck data from host:', deckData.name);
+            
+            // Load the remote deck
+            this.game.loadRemoteDeck(deckData);
+            
+            // Show notification that we're using a remote deck
+            this.showRemoteDeckNotification(deckData.name);
+        }
+    }
+    
+    showRemoteDeckNotification(deckName) {
+        // Create a notification to show that we're using a remote deck
+        const notification = document.createElement('div');
+        notification.className = 'remote-deck-notification';
+        notification.innerHTML = `
+            <div style="background: #4CAF50; color: white; padding: 10px; margin: 10px; border-radius: 5px; text-align: center;">
+                📡 Using remote deck: <strong>${deckName}</strong> (synced from host)
+            </div>
+        `;
+        
+        // Insert at the top of the game area
+        const gameArea = document.querySelector('.game-area');
+        if (gameArea) {
+            gameArea.insertBefore(notification, gameArea.firstChild);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 5000);
+        }
     }
     
     showRoomInfo() {
@@ -586,80 +889,31 @@ class WebSocketMultiplayerManager {
         document.getElementById('player-count').textContent = this.connectedPlayers.size;
     }
     
-    // Message acknowledgment and retry methods
-    sendAcknowledgment(messageId) {
-        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-            this.socket.send(JSON.stringify({
-                type: 'messageAck',
-                messageId: messageId,
-                playerId: this.playerId
-            }));
-        }
-    }
-    
-    handleMessageAcknowledgment(messageId) {
-        if (this.pendingMessages.has(messageId)) {
-            this.pendingMessages.delete(messageId);
-            console.log(`Message ${messageId} acknowledged`);
-        }
-    }
-    
-    startRetryMechanism() {
-        if (this.retryInterval) return;
+    // Sync new player with host's deck and board state
+    syncNewPlayer(playerId) {
+        console.log('Syncing new player with host state:', playerId);
         
-        this.retryInterval = setInterval(() => {
-            const now = Date.now();
-            const messagesToRetry = [];
-            
-            // Check for messages that need retrying
-            this.pendingMessages.forEach((pending, messageId) => {
-                const timeSinceSent = now - pending.timestamp;
-                const maxAge = 10000; // 10 seconds max age for any message
-                
-                if (timeSinceSent > maxAge) {
-                    console.warn(`Message ${messageId} expired after ${maxAge}ms`);
-                    this.pendingMessages.delete(messageId);
-                } else if (timeSinceSent > this.retryDelay && pending.retries < this.maxRetries) {
-                    messagesToRetry.push({ messageId, pending });
-                } else if (pending.retries >= this.maxRetries) {
-                    console.warn(`Message ${messageId} failed after ${this.maxRetries} retries`);
-                    this.pendingMessages.delete(messageId);
-                }
+        // Send deck data
+        if (this.game && this.game.deck) {
+            this.sendMessage({
+                type: 'syncDeckData',
+                data: {
+                    deckData: this.game.deck.exportToJSON(),
+                    isRemote: true
+                },
+                targetPlayerId: playerId
             });
-            
-            // Retry messages (only if we have pending messages)
-            if (messagesToRetry.length > 0) {
-                console.log(`Retrying ${messagesToRetry.length} messages`);
-                messagesToRetry.forEach(({ messageId, pending }) => {
-                    pending.retries++;
-                    pending.timestamp = now;
-                    console.log(`Retrying message ${messageId} (attempt ${pending.retries})`);
-                    
-                    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-                        this.socket.send(JSON.stringify({
-                            type: 'gameMessage',
-                            data: pending.message
-                        }));
-                    }
-                });
-            }
-            
-            // Process queued messages when connection is restored
-            if (this.socket && this.socket.readyState === WebSocket.OPEN && this.messageQueue.length > 0) {
-                const queuedMessages = [...this.messageQueue];
-                this.messageQueue = [];
-                console.log(`Processing ${queuedMessages.length} queued messages`);
-                queuedMessages.forEach(message => this.sendMessage(message));
-            }
-            
-            // Stop retry mechanism if no pending messages
-            if (this.pendingMessages.size === 0 && this.messageQueue.length === 0) {
-                console.log('Stopping retry mechanism - no pending messages');
-                clearInterval(this.retryInterval);
-                this.retryInterval = null;
-            }
-        }, this.retryDelay);
+        }
+        
+        // Send current board state
+        this.broadcastAllCardStates();
     }
+    
+    // Message acknowledgment methods removed - no longer needed without retry system
+    
+    // Message acknowledgment handling removed - no longer needed without retry system
+    
+    // Retry mechanism removed - state validation handles synchronization
     
     startHealthCheck() {
         if (this.healthCheckInterval) return;
@@ -701,9 +955,9 @@ class WebSocketMultiplayerManager {
             clearInterval(this.healthCheckInterval);
             this.healthCheckInterval = null;
         }
-        this.pendingMessages.clear();
+        this.stopPeriodicSync();
+        this.stopStateValidation();
         this.messageQueue = [];
-        this.processedMessages.clear();
         this.updateConnectionStatus('offline');
         this.connectedPlayers.clear();
         this.updatePlayerCount();

@@ -25,6 +25,66 @@ class CardGame {
         this.init();
     }
 
+    // Generate unique ID based on card content with deterministic instance tracking
+    generateCardUniqueId(card, instanceId = null) {
+        const cardData = {
+            title: card.title || '',
+            emoji: card.emoji || '',
+            color: card.color || '',
+            description: card.description || '',
+            image: card.image || ''
+        };
+        
+        // Use encodeURIComponent to handle Unicode characters, then create a hash
+        const jsonString = JSON.stringify(cardData);
+        const encoded = encodeURIComponent(jsonString);
+        
+        // Create a simple hash from the encoded string
+        let hash = 0;
+        for (let i = 0; i < encoded.length; i++) {
+            const char = encoded.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+        
+        // Create base ID from content hash
+        const baseId = `card_${Math.abs(hash).toString(36)}`;
+        
+        // Use the card's deterministic instance ID if available, otherwise use provided instanceId
+        const finalInstanceId = card.instanceId || instanceId || 'unknown';
+        
+        return `${baseId}_${finalInstanceId}`;
+    }
+    
+    // Get card object from card element
+    getCardFromElement(cardElement) {
+        // Extract emoji from the card face innerHTML
+        const cardFace = cardElement.querySelector('.card-face');
+        let emoji = '?';
+        if (cardFace) {
+            const innerHTML = cardFace.innerHTML;
+            // Look for the emoji in the second div (the symbol) - it's the middle div
+            const divs = innerHTML.match(/<div[^>]*>([^<]*)<\/div>/g);
+            if (divs && divs.length >= 2) {
+                // The emoji is in the second div (index 1)
+                const emojiMatch = divs[1].match(/<div[^>]*>([^<]*)<\/div>/);
+                if (emojiMatch && emojiMatch[1]) {
+                    emoji = emojiMatch[1].trim();
+                }
+            }
+        }
+        
+        return {
+            title: cardElement.dataset.title || 'Card',
+            emoji: emoji,
+            color: cardElement.classList.toString().match(/card-(\w+)/)?.[1] || '',
+            description: cardElement.dataset.description || '',
+            image: '', // Not stored in element
+            imageSize: 24,
+            instanceId: cardElement.dataset.instanceId || 'unknown'
+        };
+    }
+
     init() {
         // Initialize our custom card system
         cards.init({ table: '#card-table' });
@@ -153,8 +213,7 @@ class CardGame {
         
         // Broadcast card deal to other players
         if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
-            const cardId = cardElement.dataset.cardId;
-            this.multiplayer.broadcastCardDeal(cardId, card, x, y, this.deck.cards);
+            this.multiplayer.broadcastCardState(cardElement, card, 'table');
         }
     }
     
@@ -215,8 +274,7 @@ class CardGame {
         
         // Broadcast card deal to other players
         if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
-            const cardId = cardElement.dataset.cardId;
-            this.multiplayer.broadcastCardDeal(cardId, card, relativeX, relativeY, this.deck.cards);
+            this.multiplayer.broadcastCardState(cardElement, card, 'table');
         }
     }
 
@@ -235,13 +293,20 @@ class CardGame {
             emoji: card.emoji || '?',
             color: card.color || '',
             imageSize: card.imageSize || 24,
-            faceUp: card.faceUp || false
+            faceUp: card.faceUp || false,
+            instanceId: card.instanceId || 'unknown'
         };
         
         const cardElement = document.createElement('div');
         cardElement.className = 'card';
         cardElement.dataset.title = safeCard.title;
-        cardElement.dataset.cardId = `card_${++this.cardIdCounter}`;
+        
+        // Generate unique ID based on card content with automatic instance ID
+        const uniqueId = this.generateCardUniqueId(safeCard);
+        cardElement.dataset.uniqueId = uniqueId;
+        cardElement.dataset.instanceId = safeCard.instanceId || 'unknown';
+        cardElement.dataset.cardId = `card_${++this.cardIdCounter}`; // Keep for backward compatibility
+        
         if (safeCard.description) {
             cardElement.dataset.description = safeCard.description;
         }
@@ -420,12 +485,10 @@ class CardGame {
                                           cardCenterY >= zoneRect.top && 
                                           cardCenterY <= zoneRect.bottom;
                     
-                    // Broadcast card movement to other players
-                    if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
-                        const cardId = cardElement.dataset.cardId;
-                        const x = parseInt(cardElement.style.left) || 0;
-                        const y = parseInt(cardElement.style.top) || 0;
-                        this.multiplayer.broadcastCardMove(cardId, x, y);
+                    // Broadcast complete card state to other players (only if not a remote update)
+                    if (this.multiplayer && this.multiplayer.connectionStatus === 'connected' && cardElement.dataset.remoteUpdate !== 'true') {
+                        const card = this.getCardFromElement(cardElement);
+                        this.multiplayer.broadcastCardState(cardElement, card, 'table');
                     }
                     if (isInPrivateZone) {
                         // Add card to private hand if not already
@@ -618,21 +681,29 @@ class CardGame {
                 tooltip.style.top = rect.top - 10 + 'px';
             }
         });
+        
+        // Store cleanup function on the card element
+        cardElement._cleanupTooltip = () => {
+            if (tooltip) {
+                tooltip.remove();
+                tooltip = null;
+            }
+        };
     }
 
     flipCard(cardElement) {
-        // Broadcast card flip to other players
-        if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
-            const cardId = cardElement.dataset.cardId;
-            this.multiplayer.broadcastCardFlip(cardId);
-        }
-        
         // Add flip animation
         cardElement.classList.add('card-flipping');
         
         // Wait until animation reaches 50% (width = 0%) before changing content
         setTimeout(() => {
             cardElement.classList.toggle('flipped');
+            
+            // Broadcast complete card state to other players AFTER the flip (only if not a remote update)
+            if (this.multiplayer && this.multiplayer.connectionStatus === 'connected' && cardElement.dataset.remoteUpdate !== 'true') {
+                const card = this.getCardFromElement(cardElement);
+                this.multiplayer.broadcastCardState(cardElement, card, 'table');
+            }
         }, 200); // 50% of 400ms animation
         
         // Remove animation class when complete
@@ -642,10 +713,15 @@ class CardGame {
     }
 
     shuffleCardBackToDeck(cardElement, card) {
+        // Clean up any active tooltip before removing the card
+        if (cardElement._cleanupTooltip) {
+            cardElement._cleanupTooltip();
+        }
+        
         // Broadcast card shuffle to other players with card data and deck state
         if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
-            const cardId = cardElement.dataset.cardId;
-            this.multiplayer.broadcastCardShuffle(cardId, card, this.deck.cards);
+            const card = this.getCardFromElement(cardElement);
+            this.multiplayer.broadcastCardState(cardElement, card, 'table');
         }
         
         // Add the card back to the deck
@@ -850,8 +926,14 @@ class CardGame {
     }
     
     updateGameInfo() {
-        const gameTitle = this.deck.name || 'Cards - Custom Deck Manager';
-        const gameDescription = this.deck.description || 'Click and drag cards to move them. Click (without dragging) to flip cards. Right-click to shuffle cards back into the deck.';
+        let gameTitle = this.deck.name || 'Cards - Custom Deck Manager';
+        let gameDescription = this.deck.description || 'Click and drag cards to move them. Click (without dragging) to flip cards. Right-click to shuffle cards back into the deck.';
+        
+        // Show remote deck indicator
+        if (this.currentDeckId === 'remote') {
+            gameTitle = `📡 ${gameTitle} (Remote)`;
+            gameDescription = `📡 Synced from host: ${gameDescription}`;
+        }
         
         // Update sidebar game info
         document.getElementById('current-game-title').textContent = gameTitle;
@@ -945,6 +1027,23 @@ class CardGame {
         }
         
         console.log(`Loaded deck: ${this.deck.name}`);
+    }
+    
+    loadRemoteDeck(deckData) {
+        console.log('Loading remote deck from host:', deckData.name);
+        
+        // Clear any existing cards from the board
+        this.clearBoard();
+        
+        // Create deck from remote data
+        this.deck = new cards.Deck(deckData);
+        this.currentDeckId = 'remote';
+        this.deck.shuffle();
+        this.dealtCards = [];
+        this.renderDeck();
+        this.updateDeckManager();
+        
+        console.log(`Loaded remote deck: ${this.deck.name}`);
     }
     
     openDeckEditor(deckId = null) {
@@ -1171,12 +1270,17 @@ class CardGame {
         if (this.multiplayer) {
             this.multiplayer.broadcastPrivateHandUpdate(this.multiplayer.playerId, localHand.count);
             // Hide card from other players
-            const cardId = cardElement.dataset.cardId;
-            this.multiplayer.broadcastCardVisibility(cardId, false);
+            const card = this.getCardFromElement(cardElement);
+            this.multiplayer.broadcastCardState(cardElement, card, 'privateHand', this.playerId);
         }
     }
     
     removeCardFromPrivateHand(cardElement, card) {
+        // Clean up any active tooltip before removing the card
+        if (cardElement._cleanupTooltip) {
+            cardElement._cleanupTooltip();
+        }
+        
         const localHand = this.getPrivateHand();
         
         for (let i = 0; i < localHand.cards.length; i++) {
@@ -1195,8 +1299,8 @@ class CardGame {
         if (this.multiplayer) {
             this.multiplayer.broadcastPrivateHandUpdate(this.multiplayer.playerId, localHand.count);
             // Show card to other players again
-            const cardId = cardElement.dataset.cardId;
-            this.multiplayer.broadcastCardVisibility(cardId, true);
+            const card = this.getCardFromElement(cardElement);
+            this.multiplayer.broadcastCardState(cardElement, card, 'table');
         }
     }
     

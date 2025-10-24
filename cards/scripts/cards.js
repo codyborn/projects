@@ -43,11 +43,14 @@ class Deck {
         
         suits.forEach(suit => {
             ranks.forEach(rank => {
-                this.cards.push(new Card({
+                const card = new Card({
                     title: rank,
                     emoji: suit.emoji,
                     description: ''
-                }));
+                });
+                // Add deterministic instance ID for multiplayer synchronization
+                card.instanceId = `${rank}_${suit.name}`;
+                this.cards.push(card);
             });
         });
     }
@@ -101,6 +104,8 @@ class Deck {
                         imageSize: cardData.imageSize,
                         color: cardData.color
                     });
+                    // Add deterministic instance ID for multiplayer synchronization
+                    card.instanceId = `${cardData.title}_${i}`;
                     this.cards.push(card);
                 }
             });
