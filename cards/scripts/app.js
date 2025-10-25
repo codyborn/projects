@@ -19,7 +19,6 @@ class CardGame {
         this.zIndexCounter = 0;
         
         // Private hand system
-        this.privateHands = new Map(); // playerId -> { cards: [], count: number }
         this.privateHandZone = null;
         
         this.init();
@@ -75,13 +74,11 @@ class CardGame {
         }
         
         return {
-            title: cardElement.dataset.title || 'Card',
+            // Include all dataset attributes to preserve complete state
+            ...cardElement.dataset,
+            // Add computed properties not stored in dataset
             emoji: emoji,
             color: cardElement.classList.toString().match(/card-(\w+)/)?.[1] || '',
-            description: cardElement.dataset.description || '',
-            image: '', // Not stored in element
-            imageSize: 24,
-            instanceId: cardElement.dataset.instanceId || 'unknown'
         };
     }
 
@@ -213,7 +210,7 @@ class CardGame {
         
         // Broadcast card deal to other players
         if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
-            this.multiplayer.broadcastCardState(cardElement, card, 'table');
+            this.multiplayer.broadcastCardState(cardElement, card);
         }
     }
     
@@ -274,7 +271,7 @@ class CardGame {
         
         // Broadcast card deal to other players
         if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
-            this.multiplayer.broadcastCardState(cardElement, card, 'table');
+            this.multiplayer.broadcastCardState(cardElement, card);
         }
     }
 
@@ -485,23 +482,23 @@ class CardGame {
                                           cardCenterY >= zoneRect.top && 
                                           cardCenterY <= zoneRect.bottom;
                     
+                    // Set privateTo attribute on the card element
+                    if (isInPrivateZone) {
+                        cardElement.dataset.privateTo = this.multiplayer.playerId;
+                    } else {
+                        delete cardElement.dataset.privateTo;
+                    }
+                    
                     // Broadcast complete card state to other players (only if not a remote update)
                     if (this.multiplayer && this.multiplayer.connectionStatus === 'connected' && cardElement.dataset.remoteUpdate !== 'true') {
                         const card = this.getCardFromElement(cardElement);
-                        this.multiplayer.broadcastCardState(cardElement, card, 'table');
+                        const privateTo = isInPrivateZone ? this.multiplayer.playerId : undefined;
+                        this.multiplayer.broadcastCardState(cardElement, card, privateTo);
+                        // Update display after state change
+                        this.updatePrivateHandDisplay();
                     }
-                    if (isInPrivateZone) {
-                        // Add card to private hand if not already
-                        if (!this.isCardInPrivateHand(card)) {
-                            this.addCardToPrivateHand(cardElement, card);
-                        }
-                    } else {
-                        // Remove from private hand if it was there
-                        if (this.isCardInPrivateHand(card)) {
-                            this.removeCardFromPrivateHand(cardElement, card);
-                        }
-                        
-                        // Ensure z-index is maintained after drag ends
+                    // Ensure z-index is maintained after drag ends
+                    if (!isInPrivateZone) {
                         cardElement.style.zIndex = this.zIndexCounter;
                     }
                     
@@ -618,17 +615,6 @@ class CardGame {
                         isInPrivateZone
                     });
                     
-                        if (isInPrivateZone) {
-                            // Add card to private hand if not already
-                            if (!this.isCardInPrivateHand(card)) {
-                                this.addCardToPrivateHand(cardElement, card);
-                            }
-                        } else {
-                            // Remove from private hand if it was there
-                            if (this.isCardInPrivateHand(card)) {
-                                this.removeCardFromPrivateHand(cardElement, card);
-                            }
-                        }
                 } else {
                     this.flipCard(cardElement);
                 }
@@ -702,7 +688,8 @@ class CardGame {
             // Broadcast complete card state to other players AFTER the flip (only if not a remote update)
             if (this.multiplayer && this.multiplayer.connectionStatus === 'connected' && cardElement.dataset.remoteUpdate !== 'true') {
                 const card = this.getCardFromElement(cardElement);
-                this.multiplayer.broadcastCardState(cardElement, card, 'table');
+                const privateTo = cardElement.dataset.privateTo;
+                this.multiplayer.broadcastCardState(cardElement, card, privateTo);
             }
         }, 200); // 50% of 400ms animation
         
@@ -721,7 +708,7 @@ class CardGame {
         // Broadcast card shuffle to other players with card data and deck state
         if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
             const card = this.getCardFromElement(cardElement);
-            this.multiplayer.broadcastCardState(cardElement, card, 'table');
+            this.multiplayer.broadcastCardState(cardElement, card);
         }
         
         // Add the card back to the deck
@@ -803,9 +790,6 @@ class CardGame {
         this.dealtCards = [];
         
         // Reset private hands
-        this.privateHands.clear();
-        const playerId = this.multiplayer ? this.multiplayer.playerId : 'local';
-        this.privateHands.set(playerId, { cards: [], count: 0 });
         this.updatePrivateHandDisplay();
         
         // Re-render deck
@@ -1238,110 +1222,43 @@ class CardGame {
         this.updatePrivateHandDisplay();
     }
     
-    isCardInPrivateHand(card) {
-        const localHand = this.getPrivateHand();
-        for (let i = 0; i < localHand.cards.length; i++) {
-            const privCard = localHand.cards[i];
-            if (privCard === card) {
-                return true;
-            }
-        }
-        return false;
-    }
 
-    getPrivateHand() {
-        const playerId = this.multiplayer ? this.multiplayer.playerId : 'local';
-        if (!this.privateHands.has(playerId)) {
-            this.privateHands.set(playerId, { cards: [], count: 0 });
-        }
-        return this.privateHands.get(playerId);
-    }
-    
-    addCardToPrivateHand(cardElement, card) {
-        // Add to local private hand
-        const localHand = this.getPrivateHand();
-        localHand.cards.push(card);
-        localHand.count = localHand.cards.length;
-        
-        // Update display   
-        this.updatePrivateHandDisplay();
-        
-        // Broadcast to other players
-        if (this.multiplayer) {
-            this.multiplayer.broadcastPrivateHandUpdate(this.multiplayer.playerId, localHand.count);
-            // Hide card from other players
-            const card = this.getCardFromElement(cardElement);
-            this.multiplayer.broadcastCardState(cardElement, card, 'privateHand', this.playerId);
-        }
-    }
-    
-    removeCardFromPrivateHand(cardElement, card) {
-        // Clean up any active tooltip before removing the card
-        if (cardElement._cleanupTooltip) {
-            cardElement._cleanupTooltip();
-        }
-        
-        const localHand = this.getPrivateHand();
-        
-        for (let i = 0; i < localHand.cards.length; i++) {
-            const privCard = localHand.cards[i];
-            if (privCard === card) {
-                localHand.cards.splice(i, 1);
-                break;
-            }
-        }
-        localHand.count = localHand.cards.length;
-        
-        // Update display
-        this.updatePrivateHandDisplay();
-        
-        // Broadcast to other players
-        if (this.multiplayer) {
-            this.multiplayer.broadcastPrivateHandUpdate(this.multiplayer.playerId, localHand.count);
-            // Show card to other players again
-            const card = this.getCardFromElement(cardElement);
-            this.multiplayer.broadcastCardState(cardElement, card, 'table');
-        }
-    }
-    
     updatePrivateHandDisplay() {
+        // Count cards by their privateTo attribute
+        const cardCounts = new Map();
+        const allCards = document.querySelectorAll('.card');
+        
+        allCards.forEach(card => {
+            const privateTo = card.dataset.privateTo;
+            if (privateTo && privateTo !== 'null' && privateTo !== 'undefined') {
+                cardCounts.set(privateTo, (cardCounts.get(privateTo) || 0) + 1);
+            }
+        });
+        
         // Update your own hand count
         const yourHandCount = document.getElementById('your-hand-count');
-        const playerId = this.multiplayer ? this.multiplayer.playerId : 'local';
-        const localHand = this.privateHands.get(playerId);
+        const currentPlayerId = this.multiplayer ? this.multiplayer.playerId : 'local';
         if (yourHandCount) {
-            yourHandCount.textContent = localHand ? localHand.count : 0;
+            yourHandCount.textContent = cardCounts.get(currentPlayerId) || 0;
         }
         
         // Update other players' counts
-        this.updateOtherPlayersDisplay();
-    }
-    
-    updateOtherPlayersDisplay() {
         const otherPlayersContainer = document.getElementById('other-players-counts');
-        otherPlayersContainer.innerHTML = '';
-        
-        const currentPlayerId = this.multiplayer ? this.multiplayer.playerId : 'local';
-        this.privateHands.forEach((hand, playerId) => {
-            if (playerId !== currentPlayerId) {
-                const playerItem = document.createElement('div');
-                playerItem.className = 'player-count-item';
-                playerItem.innerHTML = `
-                    <span class="player-id">${playerId}</span>
-                    <span class="card-count">${hand.count}</span>
-                `;
-                otherPlayersContainer.appendChild(playerItem);
-            }
-        });
-    }
-    
-    updateOtherPlayerPrivateHand(playerId, count) {
-        const currentPlayerId = this.multiplayer ? this.multiplayer.playerId : 'local';
-        if (playerId === currentPlayerId) return;
-        
-        // Store the count for this player
-        this.privateHands.set(playerId, { cards: [], count: count });
-        this.updateOtherPlayersDisplay();
+        if (otherPlayersContainer) {
+            otherPlayersContainer.innerHTML = '';
+            
+            cardCounts.forEach((count, playerId) => {
+                if (playerId !== currentPlayerId) {
+                    const playerItem = document.createElement('div');
+                    playerItem.className = 'player-count-item';
+                    playerItem.innerHTML = `
+                        <span class="player-id">${playerId}</span>
+                        <span class="card-count">${count}</span>
+                    `;
+                    otherPlayersContainer.appendChild(playerItem);
+                }
+            });
+        }
     }
     
 }

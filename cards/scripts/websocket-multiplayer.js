@@ -371,9 +371,6 @@ class WebSocketMultiplayerManager {
             case 'playerJoin':
                 this.handlePlayerJoin(message.data);
                 break;
-            case 'privateHandUpdate':
-                this.handlePrivateHandUpdate(message.data);
-                break;
             case 'deckChange':
                 this.handleDeckChange(message.data);
                 break;
@@ -398,8 +395,8 @@ class WebSocketMultiplayerManager {
     
     // New cardState handler - handles complete card state synchronization
     handleCardState(data) {
-        const { uniqueId, card, position, isFlipped, isVisible, location, playerId, zIndex } = data;
-        console.log('Handling card state:', { uniqueId, position, isFlipped, isVisible, location, playerId });
+        const { uniqueId, card, position, isFlipped, zIndex, privateTo } = data;
+        console.log('Handling card state:', { uniqueId, position, isFlipped, privateTo });
         
         // First, check if we already have a card with this instanceId
         const instanceId = card.instanceId;
@@ -453,6 +450,13 @@ class WebSocketMultiplayerManager {
         // Mark this card as being updated from remote to prevent broadcast loops
         cardElement.dataset.remoteUpdate = 'true';
         
+        // Set privateTo and location dataset attributes
+        if (privateTo !== undefined && privateTo !== null) {
+            cardElement.dataset.privateTo = privateTo;
+        } else {
+            delete cardElement.dataset.privateTo;
+        }
+        
         // Update card state
         if (position) {
             cardElement.style.left = position.x + 'px';
@@ -472,22 +476,22 @@ class WebSocketMultiplayerManager {
             }
         }
         
-        // Update visibility
-        if (isVisible !== undefined) {
-            if (isVisible) {
+        // Update visibility based on privateTo field
+        if (privateTo !== undefined && privateTo !== null && privateTo !== 'null') {
+            // If privateTo is set, only show to that player
+            if (privateTo === this.playerId) {
                 cardElement.style.display = 'block';
                 cardElement.style.visibility = 'visible';
             } else {
                 cardElement.style.display = 'none';
                 cardElement.style.visibility = 'hidden';
             }
+        } else {
+            // Default: show to all players (non-private cards)
+            cardElement.style.display = 'block';
+            cardElement.style.visibility = 'visible';
         }
         
-        // Handle location changes
-        if (location === 'privateHand' && playerId) {
-            // Update private hand display for other players
-            this.game.updateOtherPlayerPrivateHand(playerId, 1); // Assuming we're adding a card
-        }
         
         // Clear the remote update flag after a short delay to allow for user interactions
         setTimeout(() => {
@@ -496,12 +500,16 @@ class WebSocketMultiplayerManager {
             }
         }, 100);
         
+        // Update private hand display after card state changes
+        if (this.game && this.game.updatePrivateHandDisplay) {
+            this.game.updatePrivateHandDisplay();
+        }
+        
         // Log successful card state update
         console.log('Card state updated successfully:', {
             uniqueId,
             position: cardElement.style.left + ', ' + cardElement.style.top,
-            isFlipped: cardElement.classList.contains('flipped'),
-            isVisible: cardElement.style.display !== 'none'
+            isFlipped: cardElement.classList.contains('flipped')
         });
     }
     
@@ -515,26 +523,6 @@ class WebSocketMultiplayerManager {
         this.updatePlayerCount();
     }
     
-    handlePrivateHandUpdate(data) {
-        const { playerId, count } = data;
-        console.log('Handling private hand update:', { playerId, count, currentPlayerId: this.playerId });
-        this.game.updateOtherPlayerPrivateHand(playerId, count);
-    }
-    
-    handleCardVisibility(data) {
-        const { cardId, isVisible } = data;
-        console.log('Handling card visibility:', { cardId, isVisible });
-        const cardElement = document.querySelector(`[data-card-id="${cardId}"]`);
-        if (cardElement) {
-            if (isVisible) {
-                cardElement.style.display = 'block';
-                cardElement.style.visibility = 'visible';
-            } else {
-                cardElement.style.display = 'none';
-                cardElement.style.visibility = 'hidden';
-            }
-        }
-    }
     
     handleDeckChange(data) {
         const { deckId, deckData } = data;
@@ -566,10 +554,8 @@ class WebSocketMultiplayerManager {
                     y: parseInt(card.style.top) || 0
                 },
                 isFlipped: card.classList.contains('flipped'),
-                isVisible: card.style.display !== 'none' && card.style.visibility !== 'hidden',
+                privateTo: card.dataset.privateTo || undefined,
                 zIndex: parseInt(card.style.zIndex) || 0,
-                location: card.dataset.location || 'table',
-                playerId: card.dataset.playerId || null
             };
             cardStates.push(state);
         });
@@ -631,13 +617,11 @@ class WebSocketMultiplayerManager {
     }
     
     // New cardState broadcast method - sends complete card state
-    broadcastCardState(cardElement, card, location = 'table', playerId = null) {
+    broadcastCardState(cardElement, card, privateTo = null) {
         // Update timestamp for state tracking
         this.lastStateTimestamp = Date.now();
         
         const uniqueId = this.generateCardUniqueId(card);
-        const rect = cardElement.getBoundingClientRect();
-        const tableRect = document.getElementById('card-table').getBoundingClientRect();
         
         const cardState = {
             uniqueId: uniqueId,
@@ -655,9 +639,7 @@ class WebSocketMultiplayerManager {
                 y: parseInt(cardElement.style.top) || 0
             },
             isFlipped: cardElement.classList.contains('flipped'),
-            isVisible: cardElement.style.display !== 'none' && cardElement.style.visibility !== 'hidden',
-            location: location,
-            playerId: playerId,
+            privateTo: privateTo,
             zIndex: parseInt(cardElement.style.zIndex) || 0,
             timestamp: this.lastStateTimestamp
         };
@@ -676,12 +658,6 @@ class WebSocketMultiplayerManager {
         });
     }
     
-    broadcastPrivateHandUpdate(playerId, count) {
-        this.sendMessage({
-            type: 'privateHandUpdate',
-            data: { playerId, count }
-        });
-    }
     
     broadcastDeckChange(deckId, deckData) {
         this.sendMessage({
@@ -697,9 +673,8 @@ class WebSocketMultiplayerManager {
         
         cardElements.forEach(cardElement => {
             const card = this.game.getCardFromElement(cardElement);
-            const location = cardElement.dataset.location || 'table';
-            const playerId = cardElement.dataset.playerId || null;
-            this.broadcastCardState(cardElement, card, location, playerId);
+            const privateTo = cardElement.dataset.privateTo || null;
+            this.broadcastCardState(cardElement, card, privateTo);
         });
     }
     
