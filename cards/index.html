@@ -27,6 +27,10 @@
                     <span class="status-text">Offline</span>
                 </div>
                 <div class="connected-players">
+                    <div class="player-name-section">
+                        <label for="player-name-input">Your Name:</label>
+                        <input type="text" id="player-name-input" placeholder="Enter your name" maxlength="20">
+                    </div>
                     <span>Players:</span>
                     <span id="player-count">0</span>
                 </div>
@@ -120,8 +124,10 @@
     </div>
 
     <!-- Load our custom card system -->
-    <script src="scripts/cards.js"></script>
-    <script src="scripts/websocket-multiplayer.js"></script>
-    <script src="scripts/app.js"></script>
+    <script src="src/shared/cards.js"></script>
+    <script src="src/shared/StandardDeck.js"></script>
+    <script src="src/shared/VirusDeck.js"></script>
+    <script src="src/client/websocket-multiplayer.js"></script>
+    <script src="src/client/app.js"></script>
 </body>
 </html>

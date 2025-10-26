@@ -1,20 +1,25 @@
 {
-  "name": "cards-multiplayer",
+  "name": "cards-game",
   "version": "1.0.0",
-  "description": "Multiplayer card game with WebSocket",
-  "main": "index.html",
+  "description": "Custom card game with multiplayer support",
+  "main": "server/simple-websocket-server.js",
   "scripts": {
-    "start": "node scripts/simple-websocket-server.js",
-    "dev": "python3 -m http.server 8001"
+    "start": "node server/simple-websocket-server.js",
+    "test": "node tests/simple-integration-test.js",
+    "dev": "python3 -m http.server 3000",
+    "serve": "python3 -m http.server 3000",
+    "deploy:heroku": "./deploy.sh heroku",
+    "deploy:railway": "./deploy.sh railway",
+    "deploy:test": "./deploy.sh test",
+    "deploy:local": "./deploy.sh local"
   },
+  "keywords": ["cards", "game", "multiplayer", "websocket"],
+  "author": "Cards Game Team",
+  "license": "MIT",
   "dependencies": {
     "ws": "^8.14.2"
   },
-  "devDependencies": {},
-  "keywords": ["websocket", "multiplayer", "cards", "game"],
-  "author": "",
-  "license": "MIT",
   "engines": {
-    "node": "18.x"
+    "node": ">=14.0.0"
   }
 }

@@ -24,6 +24,11 @@
     transition: none; /* Disable transitions during drag for smoothness */
 }
 
+/* White border for face-up cards only */
+.card:not(.flipped) {
+    border: 2px solid #fff;
+}
+
 /* Card face and back positioning */
 .card-face, .card-back {
     position: absolute;
@@ -192,6 +197,31 @@
     }
     100% {
         background-position: 0% 50%;
+    }
+}
+
+/* Card highlighting for movements and placements */
+.card-highlight {
+    animation: cardHighlight 1.5s ease-out forwards;
+    z-index: 1002 !important;
+}
+
+@keyframes cardHighlight {
+    0% {
+        box-shadow: 0 0 0 0 var(--highlight-color, #FFD700), 0 0 0 0 var(--highlight-color, #FFD700);
+        transform: scale(1.1);
+    }
+    20% {
+        box-shadow: 0 0 0 8px var(--highlight-color, #FFD700), 0 0 0 16px var(--highlight-color, #FFD700);
+        transform: scale(1.15);
+    }
+    50% {
+        box-shadow: 0 0 0 12px var(--highlight-color, #FFD700), 0 0 0 24px var(--highlight-color, #FFD700);
+        transform: scale(1.1);
+    }
+    100% {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        transform: scale(1);
     }
 }
 

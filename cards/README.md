@@ -1,66 +1,121 @@
-# Cards - Multiplayer Card Game
+# Cards Game - Multiplayer Card Game
 
-A real-time multiplayer card game built with WebSocket and Heroku.
+A custom card game with real-time multiplayer support using WebSockets.
 
-## Features
-
-- 🎮 Real-time multiplayer card gameplay
-- 🏠 Room-based multiplayer with 6-character codes
-- 🔄 Synchronized card movements, flips, and deck actions
-- 🎨 Custom deck management with JSON import/export
-- 📱 Responsive design for desktop and mobile
-
-## Setup Instructions
-
-### 1. Start the Web Server
-
-```bash
-cd cards
-python3 -m http.server 8001
-```
-
-The web server will run on port 8001.
-
-### 2. Open the Game
-
-Open your browser and go to: `http://localhost:8001`
-
-**Note**: The multiplayer system uses WebSocket connections to a deployed Heroku server at `cards-websocket-server-02b8944e7896.herokuapp.com` for reliable real-time communication!
-
-## How to Play Multiplayer
-
-1. **Create a Room**: Click "Create Room" to generate a room code
-2. **Share the Code**: Copy the 6-character room code and share it with friends
-3. **Join a Room**: Enter the room code and click "Join Room"
-4. **Play Together**: All card movements, flips, and actions are synchronized in real-time!
-
-## Technical Details
-
-- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
-- **Real-time Communication**: WebSocket with Heroku
-- **Data Storage**: Local browser storage for custom decks
-- **Multiplayer**: Room-based system with 6-character codes
-- **Local Development**: Uses local WebSocket server on port 8080
-- **Production**: Automatically uses Heroku WebSocket server
-
-
-## File Structure
+## 🏗️ Project Structure
 
 ```
 cards/
-├── index.html              # Main HTML file
-├── styles/
-│   ├── main.css           # Main styles
-│   └── cards.css          # Card-specific styles
-├── scripts/
-│   ├── cards.js           # Card and deck classes
-│   ├── websocket-multiplayer.js  # WebSocket multiplayer logic
-│   └── app.js             # Main game application
-└── README.md              # This file
+├── src/                          # Source code
+│   ├── client/                   # Client-side code
+│   │   ├── app.js               # Main game logic
+│   │   └── websocket-multiplayer.js  # WebSocket client
+│   ├── server/                   # Server-side code
+│   │   └── simple-websocket-server.js  # WebSocket server
+│   └── shared/                   # Shared code
+│       ├── cards.js             # Card system
+│       ├── StandardDeck.js      # Standard playing cards
+│       └── VirusDeck.js         # Virus card game deck
+├── tests/                        # Test files
+│   └── simple-integration-test.js  # Integration tests
+├── styles/                       # CSS files
+│   ├── main.css                 # Main styles
+│   └── cards.css                # Card-specific styles
+├── server/                       # Server files
+│   └── simple-websocket-server.js
+├── index.html                    # Main HTML file
+├── package.json                  # Node.js dependencies
+└── README.md                     # This file
 ```
 
-## Troubleshooting
+## 🚀 Getting Started
 
-- **Connection Issues**: Make sure the web server is running on port 8001
-- **WebSocket Issues**: Check that the WebSocket server is deployed and the URL is correct
-- **Port Conflicts**: Change the port in the Python server command if needed
+### Prerequisites
+- Node.js (v14 or higher)
+- Python 3 (for serving static files)
+
+### Installation
+```bash
+# Install dependencies
+npm install
+
+# Start the WebSocket server
+npm start
+
+# In another terminal, serve the client
+npm run dev
+```
+
+### Development
+```bash
+# Run integration tests
+npm test
+
+# Start development server
+npm run serve
+```
+
+## 🎮 How to Play
+
+1. **Create a Room**: Click "Create Room" to start a new game
+2. **Join a Room**: Enter a 6-character room code to join an existing game
+3. **Play Cards**: Click and drag cards to move them around
+4. **Flip Cards**: Click (without dragging) to flip cards
+5. **Shuffle**: Right-click to shuffle cards back into the deck
+
+## 🧪 Testing
+
+The project includes comprehensive integration tests that simulate multiple browser instances to test synchronization:
+
+```bash
+npm test
+```
+
+Tests cover:
+- Room creation and joining
+- Card synchronization
+- State validation
+- Room switching
+- Multiple card synchronization
+- Deck synchronization
+
+## 🔧 Architecture
+
+### Client-Side
+- **app.js**: Main game logic, card handling, UI management
+- **websocket-multiplayer.js**: WebSocket communication, state synchronization
+
+### Server-Side
+- **simple-websocket-server.js**: WebSocket server with room isolation
+
+### Shared
+- **cards.js**: Core card system with Deck and Card classes
+- **StandardDeck.js**: Standard playing card deck
+- **VirusDeck.js**: Virus card game deck
+
+## 🌐 Multiplayer Features
+
+- **Real-time synchronization**: All players see the same game state
+- **Room isolation**: Each game room is completely separate
+- **State validation**: Automatic detection and correction of sync issues
+- **Private hands**: Players can have private cards that others can't see
+
+## 🚀 Deployment
+
+For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
+
+### Quick Deploy to Heroku
+```bash
+# Create Heroku app
+heroku create your-cards-game-app
+
+# Deploy
+git push heroku main
+
+# Open app
+heroku open
+```
+
+## 📝 License
+
+MIT License - see LICENSE file for details

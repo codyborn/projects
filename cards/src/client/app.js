@@ -23,37 +23,6 @@ class CardGame {
         
         this.init();
     }
-
-    // Generate unique ID based on card content with deterministic instance tracking
-    generateCardUniqueId(card, instanceId = null) {
-        const cardData = {
-            title: card.title || '',
-            emoji: card.emoji || '',
-            color: card.color || '',
-            description: card.description || '',
-            image: card.image || ''
-        };
-        
-        // Use encodeURIComponent to handle Unicode characters, then create a hash
-        const jsonString = JSON.stringify(cardData);
-        const encoded = encodeURIComponent(jsonString);
-        
-        // Create a simple hash from the encoded string
-        let hash = 0;
-        for (let i = 0; i < encoded.length; i++) {
-            const char = encoded.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash; // Convert to 32-bit integer
-        }
-        
-        // Create base ID from content hash
-        const baseId = `card_${Math.abs(hash).toString(36)}`;
-        
-        // Use the card's deterministic instance ID if available, otherwise use provided instanceId
-        const finalInstanceId = card.instanceId || instanceId || 'unknown';
-        
-        return `${baseId}_${finalInstanceId}`;
-    }
     
     // Get card object from card element
     getCardFromElement(cardElement) {
@@ -102,6 +71,9 @@ class CardGame {
         // Initialize private hand system
         this.initializePrivateHand();
         
+        // Setup player name controls after multiplayer is initialized
+        this.setupPlayerNameControls();
+        
         // Initial render
         this.renderDeck();
         this.updateDeckManager();
@@ -116,7 +88,7 @@ class CardGame {
             this.loadDeck(lastDeckId);
         } else {
             // Default to standard deck
-            this.deck = new cards.Deck();
+            this.deck = new StandardDeck();
             this.deck.shuffle();
             this.currentDeckId = 'standard';
         }
@@ -133,6 +105,19 @@ class CardGame {
                 this.dealCardToPosition(e.clientX, e.clientY);
             }
         });
+    }
+
+    getDeckCount() {
+        // Calculate deck count as: total deck size - cards on table
+        const totalDeckSize = this.getTotalDeckSize();
+        const cardsOnTable = document.querySelectorAll('.card').length;
+        return Math.max(0, totalDeckSize - cardsOnTable);
+    }
+
+    getTotalDeckSize() {
+        // Get the original deck size from the deck's total cards
+        // This includes both remaining cards and dealt cards
+        return this.deck.cards.length + this.dealtCards.length;
     }
 
     renderDeck() {
@@ -157,7 +142,7 @@ class CardGame {
                         <div class="corner bottom-right">♠</div>
                     </div>
                 </div>
-                <div class="deck-count">${this.deck.cards.length}</div>
+                <div class="deck-count">${this.getDeckCount()}</div>
             </div>
         `;
         
@@ -245,6 +230,48 @@ class CardGame {
         this.addCardInteractions(cardElement, card);
     }
 
+    // Generate a deterministic color based on player alias
+    generatePlayerColor(playerAlias) {
+        if (!playerAlias) return '#FFD700'; // Default golden color
+        
+        // Simple hash function to convert string to number
+        let hash = 0;
+        for (let i = 0; i < playerAlias.length; i++) {
+            const char = playerAlias.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+        
+        // Convert hash to positive number and use modulo for hue
+        const hue = Math.abs(hash) % 360;
+        
+        // Use high saturation and lightness for vibrant colors
+        return `hsl(${hue}, 80%, 60%)`;
+    }
+
+    // Highlight a card to show it has moved or been placed
+    highlightCard(cardElement, playerAlias = null) {
+        // Remove any existing highlight class
+        cardElement.classList.remove('card-highlight');
+        
+        // Force a reflow to ensure the class removal takes effect
+        cardElement.offsetHeight;
+        
+        // Generate color based on player alias
+        const highlightColor = this.generatePlayerColor(playerAlias);
+        
+        // Set CSS custom property for the highlight color
+        cardElement.style.setProperty('--highlight-color', highlightColor);
+        
+        // Add the highlight class to trigger the animation
+        cardElement.classList.add('card-highlight');
+        
+        // Remove the class after animation completes
+        setTimeout(() => {
+            cardElement.classList.remove('card-highlight');
+        }, 1500);
+    }
+
     dealCardToPosition(x, y) {
         if (this.deck.cards.length === 0) {
             alert('No more cards in deck!');
@@ -269,6 +296,9 @@ class CardGame {
         this.addCardInteractions(cardElement, card);
         this.renderDeck();
         
+        // Highlight the newly dealt card
+        this.highlightCard(cardElement, this.multiplayer ? this.multiplayer.playerAlias : null);
+        
         // Broadcast card deal to other players
         if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
             this.multiplayer.broadcastCardState(cardElement, card);
@@ -291,17 +321,17 @@ class CardGame {
             color: card.color || '',
             imageSize: card.imageSize || 24,
             faceUp: card.faceUp || false,
-            instanceId: card.instanceId || 'unknown'
+            instanceId: card.instanceId,
+            uniqueId: card.uniqueId
         };
         
         const cardElement = document.createElement('div');
         cardElement.className = 'card';
         cardElement.dataset.title = safeCard.title;
         
-        // Generate unique ID based on card content with automatic instance ID
-        const uniqueId = this.generateCardUniqueId(safeCard);
-        cardElement.dataset.uniqueId = uniqueId;
-        cardElement.dataset.instanceId = safeCard.instanceId || 'unknown';
+        // Use the stored unique ID from the card object
+        cardElement.dataset.uniqueId = safeCard.uniqueId;
+        cardElement.dataset.instanceId = safeCard.instanceId;
         cardElement.dataset.cardId = `card_${++this.cardIdCounter}`; // Keep for backward compatibility
         
         if (safeCard.description) {
@@ -373,10 +403,10 @@ class CardGame {
     
     getCardColor(color) {
         const colorMap = {
-            'red': '#dc2626',
-            'blue': '#2563eb', 
-            'green': '#16a34a',
-            'yellow': '#ca8a04',
+            'red': '#f87171',
+            'blue': '#60a5fa',
+            'green': '#4ade80',
+            'yellow': '#facc15',
             'wild': '#9333ea',
             'neutral': '#FFF'
         };
@@ -402,13 +432,18 @@ class CardGame {
             startY = e.clientY;
             mouseDownTime = Date.now();
             
-            const rect = cardElement.getBoundingClientRect();
-            initialX = rect.left;
-            initialY = rect.top;
+            // Get current card position relative to table
+            const table = document.getElementById('card-table');
+            const tableRect = table.getBoundingClientRect();
+            const cardRect = cardElement.getBoundingClientRect();
+            
+            // Convert screen coordinates to table-relative coordinates
+            initialX = cardRect.left - tableRect.left;
+            initialY = cardRect.top - tableRect.top;
             
             // Calculate offset from mouse to card corner
-            offsetX = e.clientX - rect.left;
-            offsetY = e.clientY - rect.top;
+            offsetX = e.clientX - cardRect.left;
+            offsetY = e.clientY - cardRect.top;
             
             // Bring card to front when starting to drag
             cardElement.style.zIndex = ++this.zIndexCounter;
@@ -490,13 +525,17 @@ class CardGame {
                     }
                     
                     // Broadcast complete card state to other players (only if not a remote update)
-                    if (this.multiplayer && this.multiplayer.connectionStatus === 'connected' && cardElement.dataset.remoteUpdate !== 'true') {
+                    if (this.multiplayer && this.multiplayer.connectionStatus === 'connected' && cardElement.dataset.remoteUpdate !== 'true' && !cardElement.dataset.beingRemoved) {
                         const card = this.getCardFromElement(cardElement);
                         const privateTo = isInPrivateZone ? this.multiplayer.playerId : undefined;
                         this.multiplayer.broadcastCardState(cardElement, card, privateTo);
                         // Update display after state change
                         this.updatePrivateHandDisplay();
                     }
+                    
+                    // Highlight the card to show it has moved
+                    this.highlightCard(cardElement, this.multiplayer ? this.multiplayer.playerAlias : null);
+                    
                     // Ensure z-index is maintained after drag ends
                     if (!isInPrivateZone) {
                         cardElement.style.zIndex = this.zIndexCounter;
@@ -539,9 +578,14 @@ class CardGame {
             startX = touch.clientX;
             startY = touch.clientY;
             
-            const rect = cardElement.getBoundingClientRect();
-            initialX = rect.left;
-            initialY = rect.top;
+            // Get current card position relative to table
+            const table = document.getElementById('card-table');
+            const tableRect = table.getBoundingClientRect();
+            const cardRect = cardElement.getBoundingClientRect();
+            
+            // Convert screen coordinates to table-relative coordinates
+            initialX = cardRect.left - tableRect.left;
+            initialY = cardRect.top - tableRect.top;
         });
 
         document.addEventListener('touchmove', (e) => {
@@ -644,10 +688,17 @@ class CardGame {
             tooltip.className = 'card-tooltip';
             tooltip.textContent = description;
             
-            // Position tooltip
-            const rect = cardElement.getBoundingClientRect();
-            tooltip.style.left = rect.left + rect.width / 2 + 'px';
-            tooltip.style.top = rect.top - 10 + 'px';
+            // Position tooltip relative to the card's actual position in the document
+            const cardRect = cardElement.getBoundingClientRect();
+            
+            // Calculate card position relative to the document (accounting for scroll)
+            const cardLeft = cardRect.left + window.scrollX;
+            const cardTop = cardRect.top + window.scrollY;
+            const cardWidth = cardRect.width;
+            
+            // Position tooltip centered above the card
+            tooltip.style.left = (cardLeft + cardWidth / 2) + 'px';
+            tooltip.style.top = (cardTop - 10) + 'px';
             tooltip.style.transform = 'translateX(-50%) translateY(-100%)';
             
             document.body.appendChild(tooltip);
@@ -662,9 +713,15 @@ class CardGame {
         
         cardElement.addEventListener('mousemove', (e) => {
             if (tooltip) {
-                const rect = cardElement.getBoundingClientRect();
-                tooltip.style.left = rect.left + rect.width / 2 + 'px';
-                tooltip.style.top = rect.top - 10 + 'px';
+                // Update tooltip position relative to the card's actual position in the document
+                const cardRect = cardElement.getBoundingClientRect();
+                
+                // Calculate card position relative to the document (accounting for scroll)
+                const cardLeft = cardRect.left + window.scrollX;
+                const cardTop = cardRect.top + window.scrollY;
+                
+                tooltip.style.left = (cardLeft + cardRect.width / 2) + 'px';
+                tooltip.style.top = (cardTop - 10) + 'px';
             }
         });
         
@@ -686,7 +743,7 @@ class CardGame {
             cardElement.classList.toggle('flipped');
             
             // Broadcast complete card state to other players AFTER the flip (only if not a remote update)
-            if (this.multiplayer && this.multiplayer.connectionStatus === 'connected' && cardElement.dataset.remoteUpdate !== 'true') {
+            if (this.multiplayer && this.multiplayer.connectionStatus === 'connected' && cardElement.dataset.remoteUpdate !== 'true' && !cardElement.dataset.beingRemoved) {
                 const card = this.getCardFromElement(cardElement);
                 const privateTo = cardElement.dataset.privateTo;
                 this.multiplayer.broadcastCardState(cardElement, card, privateTo);
@@ -705,10 +762,15 @@ class CardGame {
             cardElement._cleanupTooltip();
         }
         
-        // Broadcast card shuffle to other players with card data and deck state
+        // Mark the card as being removed to prevent other broadcasts
+        cardElement.dataset.beingRemoved = 'true';
+        
+        // Broadcast card state with "discarded" status to other players
         if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
-            const card = this.getCardFromElement(cardElement);
-            this.multiplayer.broadcastCardState(cardElement, card);
+            const uniqueId = cardElement.dataset.uniqueId;
+            if (uniqueId) {
+                this.multiplayer.broadcastCardState(cardElement, card, null, 'discarded');
+            }
         }
         
         // Add the card back to the deck
@@ -784,8 +846,20 @@ class CardGame {
         const cardElements = table.querySelectorAll('.card');
         cardElements.forEach(card => card.remove());
         
-        // Reset deck
-        this.deck = new cards.Deck();
+        // Reset deck based on current deck type
+        if (this.currentDeckId === 'standard') {
+            this.deck = new StandardDeck();
+        } else if (this.currentDeckId === 'virus') {
+            this.deck = new VirusDeck();
+        } else if (this.customDecks.has(this.currentDeckId)) {
+            const deckData = this.customDecks.get(this.currentDeckId);
+            this.deck = new cards.Deck(deckData);
+        } else {
+            // Default to standard deck
+            this.deck = new StandardDeck();
+            this.currentDeckId = 'standard';
+        }
+        
         this.deck.shuffle();
         this.dealtCards = [];
         
@@ -832,6 +906,23 @@ class CardGame {
         document.getElementById('modal-overlay').addEventListener('click', () => this.closeDeckEditor());
     }
     
+    setupPlayerNameControls() {
+        const playerNameInput = document.getElementById('player-name-input');
+        
+        // Load current player alias (display name)
+        if (this.multiplayer) {
+            playerNameInput.value = this.multiplayer.playerAlias;
+        }
+        
+        // Handle name change
+        playerNameInput.addEventListener('input', (e) => {
+            const newAlias = e.target.value.trim();
+            if (newAlias && this.multiplayer) {
+                this.multiplayer.setPlayerAlias(newAlias);
+            }
+        });
+    }
+    
     toggleSideMenu() {
         const sideMenu = document.getElementById('side-menu');
         sideMenu.classList.toggle('open');
@@ -850,11 +941,6 @@ class CardGame {
             if (savedDecks) {
                 const decks = JSON.parse(savedDecks);
                 this.customDecks = new Map(Object.entries(decks));
-            }
-            
-            // Add Virus deck as a default deck if it doesn't exist
-            if (!this.customDecks.has('virus')) {
-                this.customDecks.set('virus', this.getVirusDeckData());
             }
         } catch (error) {
             console.error('Error loading decks from storage:', error);
@@ -935,18 +1021,15 @@ class CardGame {
         deckList.appendChild(standardItem);
         
         // Add virus deck as default with correct count
-        const virusDeckData = this.getVirusDeckData();
-        const virusDeck = new Deck(virusDeckData);
+        const virusDeck = new VirusDeck();
         const virusItem = this.createDeckItem('virus', virusDeck.name, virusDeck.cards.length, true);
         deckList.appendChild(virusItem);
         
-        // Add custom decks (excluding virus deck since it's already added as default)
+        // Add custom decks
         this.customDecks.forEach((deckData, deckId) => {
-            if (deckId !== 'virus') {
-                const customDeck = new Deck(deckData);
-                const deckItem = this.createDeckItem(deckId, deckData.name, customDeck.cards.length, false);
-                deckList.appendChild(deckItem);
-            }
+            const customDeck = new Deck(deckData);
+            const deckItem = this.createDeckItem(deckId, deckData.name, customDeck.cards.length, false);
+            deckList.appendChild(deckItem);
         });
     }
     
@@ -982,11 +1065,9 @@ class CardGame {
         this.clearBoard();
         
         if (deckId === 'standard') {
-            this.deck = new cards.Deck();
-            this.deck.setMetadata('Standard Deck', 'Standard 52-card deck');
+            this.deck = new StandardDeck();
         } else if (deckId === 'virus') {
-            const virusDeckData = this.getVirusDeckData();
-            this.deck = new cards.Deck(virusDeckData);
+            this.deck = new VirusDeck();
         } else if (this.customDecks.has(deckId)) {
             const deckData = this.customDecks.get(deckId);
             this.deck = new cards.Deck(deckData);
@@ -1152,68 +1233,6 @@ class CardGame {
         }, null, 2);
     }
     
-    getVirusDeckData() {
-        return {
-            "name": "VIRUS!",
-            "description": `
-                <h3>The Most Contagious Card Game</h3>
-                <p><strong>Players:</strong> 2-6 | <strong>Goal:</strong> Be the first to collect 4 different healthy organs</p>
-                
-                <h4>How to Play:</h4>
-                <ul>
-                    <li><strong>Each turn:</strong> Play 1 card OR discard cards, then draw to maintain 3 cards in hand</li>
-                    <li><strong>Healthy organs</strong> are virus-free, vaccinated, or immunized</li>
-                    <li><strong>Win:</strong> Have 4 different healthy organs in your body</li>
-                </ul>
-                
-                <h4>Card Types:</h4>
-                <ul>
-                    <li><strong>🫀 ORGANS</strong> - Build your body (Heart, Lungs, Brain, Bones)</li>
-                    <li><strong>🦠 VIRUSES</strong> - Infect/destroy organs of the same color</li>
-                    <li><strong>💊 MEDICINES</strong> - Cure viruses or vaccinate organs</li>
-                    <li><strong>🔄 TREATMENTS</strong> - Special effects (Transplant, Organ Thief, etc.)</li>
-                </ul>
-                
-                <h4>Key Rules:</h4>
-                <ul>
-                    <li>Viruses and medicines affect organs of the <strong>same color</strong></li>
-                    <li><strong>Two medicines</strong> on one organ = <strong>immunized forever</strong></li>
-                    <li><strong>Multicolor cards</strong> affect any color but are vulnerable to any attack</li>
-                    <li>You cannot have <strong>two organs of the same color</strong> in your body</li>
-                </ul>
-            `,
-            "invertTitle": false,
-            "cards": [
-                // Organ Cards (5 total) - 1 of each color + 1 Wild
-                {"title": "Heart", "color": "red", "emoji": "🫀", "count": 4},
-                {"title": "Lungs", "color": "green", "emoji": "🫁", "count": 4},
-                {"title": "Brain", "color": "blue", "emoji": "🧠", "count": 4},
-                {"title": "Bones", "color": "yellow", "emoji": "🦴", "count": 4},
-                {"title": "Any", "color": "wild", "emoji": "👤", "count": 4},
-                
-                // Virus Cards (20 total) - 4 of each color
-                {"title": "Heart", "color": "red", "emoji": "🦠", "count": 4},
-                {"title": "Brain", "color": "blue", "emoji": "🦠", "count": 4},
-                {"title": "Lungs", "color": "green", "emoji": "🦠", "count": 4},
-                {"title": "Bone", "color": "yellow", "emoji": "🦠", "count": 4},
-                {"title": "Any", "color": "wild", "emoji": "🦠", "count": 1},
-                
-                // Medicine Cards (20 total) - 4 of each color
-                {"title": "Heart", "color": "red", "emoji": "💊", "count": 4},
-                {"title": "Brain", "color": "blue", "emoji": "💊", "count": 4},
-                {"title": "Lungs", "color": "green", "emoji": "💊", "count": 4},
-                {"title": "Bone", "color": "yellow", "emoji": "💊", "count": 4},
-                {"title": "Any", "color": "wild", "emoji": "💊", "count": 1},
-                
-                // Treatment Cards (23 total) - Various types
-                {"title": "Transplant", "description": "Exchange an organ with another player", "color": "neutral", "emoji": "🫀🔄🧠", "imageSize": 16, "count": 4},
-                {"title": "Organ Thief", "description": "Steal an organ from another player", "color": "neutral", "emoji": "🥷", "count": 4},
-                {"title": "Contagion", "description": "Transfer viruses to other players", "color": "neutral", "emoji": "☣️", "count": 4},
-                {"title": "Latex Glove", "description": "All players discard their hand", "color": "neutral", "emoji": "🧤", "count": 4},
-                {"title": "Medical Error", "description": "Swap your entire body with another player", "color": "neutral", "emoji": "👤🔄👤", "imageSize": 16, "count": 4},
-            ]
-        };
-    }
     
     // Private Hand System Methods
     initializePrivateHand() {
@@ -1242,18 +1261,42 @@ class CardGame {
             yourHandCount.textContent = cardCounts.get(currentPlayerId) || 0;
         }
         
-        // Update other players' counts
+        // Update the "You" label color with current player's color
+        const youLabel = document.querySelector('.player-count-item .player-id');
+        if (youLabel && youLabel.textContent === 'You') {
+            const currentPlayerAlias = this.multiplayer ? this.multiplayer.playerAlias : 'You';
+            const playerColor = this.generatePlayerColor(currentPlayerAlias);
+            youLabel.style.color = playerColor;
+        }
+        
+        // Update other players' counts - show ALL connected players, even with 0 cards
         const otherPlayersContainer = document.getElementById('other-players-counts');
         if (otherPlayersContainer) {
             otherPlayersContainer.innerHTML = '';
             
-            cardCounts.forEach((count, playerId) => {
+            // Get all connected players from multiplayer manager
+            const connectedPlayers = this.multiplayer ? this.multiplayer.connectedPlayers : new Set();
+            
+            connectedPlayers.forEach(playerId => {
                 if (playerId !== currentPlayerId) {
                     const playerItem = document.createElement('div');
                     playerItem.className = 'player-count-item';
+                    
+                    // Get the player's display name (alias or ID)
+                    let displayName = playerId;
+                    if (this.multiplayer) {
+                        displayName = this.multiplayer.getPlayerDisplayName(playerId);
+                    }
+                    
+                    // Get card count for this player (0 if they have no cards)
+                    const cardCount = cardCounts.get(playerId) || 0;
+                    
+                    // Generate player-specific color for the name
+                    const playerColor = this.generatePlayerColor(displayName);
+                    
                     playerItem.innerHTML = `
-                        <span class="player-id">${playerId}</span>
-                        <span class="card-count">${count}</span>
+                        <span class="player-id" style="color: ${playerColor}">${displayName}</span>
+                        <span class="card-count">${cardCount}</span>
                     `;
                     otherPlayersContainer.appendChild(playerItem);
                 }

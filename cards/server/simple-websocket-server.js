@@ -3,6 +3,11 @@
 /**
  * Simple WebSocket Server for Card Game
  * Fallback server that can be deployed to any Node.js hosting service
+ * 
+ * NOTE: DO NOT MODIFY THIS FILE
+ * This server is designed to be simple and generic. All game logic and 
+ * player management should be handled client-side via gameMessage broadcasts.
+ * The server only needs to forward messages between players in the same room.
  */
 
 const WebSocket = require('ws');
