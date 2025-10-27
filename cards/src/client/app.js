@@ -151,6 +151,10 @@ class CardGame {
         deckElement.style.top = '50%';
         deckElement.style.left = '50%';
         deckElement.style.transform = 'translate(-50%, -50%)';
+        deckElement.style.pointerEvents = 'auto'; // Ensure it's clickable
+        deckElement.draggable = false; // Prevent dragging
+        deckElement.style.userSelect = 'none'; // Prevent text selection
+        deckElement.style.cursor = 'pointer'; // Show it's clickable
         
         // Add click handler for dealing
         deckElement.addEventListener('click', () => this.dealCard());
@@ -170,20 +174,28 @@ class CardGame {
         // Create card element
         const cardElement = this.createCardElement(this.deck, card);
         
-        // Position card near deck
+        // Position card in private hand zone with smart positioning
+        const privateHandZone = document.getElementById('private-hand-zone');
+        if (!privateHandZone) {
+            console.error('Private hand zone not found!');
+            return;
+        }
+        
+        const zoneRect = privateHandZone.getBoundingClientRect();
         const table = document.getElementById('card-table');
         const tableRect = table.getBoundingClientRect();
-        const centerX = tableRect.width / 2;
-        const centerY = tableRect.height / 2;
         
-        // Random position around center
-        const angle = Math.random() * Math.PI * 2;
-        const distance = 100 + Math.random() * 50;
-        const x = centerX + Math.cos(angle) * distance;
-        const y = centerY + Math.sin(angle) * distance;
+        // Find a good position for the new card
+        const position = this.findBestPositionInPrivateZone(zoneRect, tableRect);
         
-        cardElement.style.left = x + 'px';
-        cardElement.style.top = y + 'px';
+        cardElement.style.left = position.x + 'px';
+        cardElement.style.top = position.y + 'px';
+        
+        // Set as private to current player
+        cardElement.dataset.privateTo = this.multiplayer ? this.multiplayer.playerId : 'local';
+        
+        // Make the card face up (remove flipped class to show the front)
+        cardElement.classList.remove('flipped');
         
         table.appendChild(cardElement);
         
@@ -193,9 +205,15 @@ class CardGame {
         // Add interaction handlers
         this.addCardInteractions(cardElement, card);
         
+        // Highlight the deck with player's color
+        this.highlightDeck();
+        
+        // Update private hand display to reflect the new card
+        this.updatePrivateHandDisplay();
+        
         // Broadcast card deal to other players
         if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
-            this.multiplayer.broadcastCardState(cardElement, card);
+            this.multiplayer.broadcastCardState(cardElement, card, this.multiplayer.playerId);
         }
     }
     
@@ -269,6 +287,106 @@ class CardGame {
         // Remove the class after animation completes
         setTimeout(() => {
             cardElement.classList.remove('card-highlight');
+        }, 1500);
+    }
+
+    // Find the best position for a new card in the private hand zone
+    findBestPositionInPrivateZone(zoneRect, tableRect) {
+        // Get actual card dimensions dynamically
+        const existingCard = document.querySelector('.card');
+        let cardWidth = 76; // Default fallback
+        let cardHeight = 100; // Default fallback
+        
+        if (existingCard) {
+            const cardRect = existingCard.getBoundingClientRect();
+            cardWidth = cardRect.width;
+            cardHeight = cardRect.height;
+        }
+        
+        const spacing = 10; // Spacing between cards
+        
+        // Convert zone coordinates to table coordinates
+        const zoneLeft = zoneRect.left - tableRect.left;
+        const zoneTop = zoneRect.top - tableRect.top;
+        const zoneWidth = zoneRect.width;
+        const zoneHeight = zoneRect.height;
+        
+        // Get all existing cards in private hand zone
+        const existingCards = Array.from(document.querySelectorAll('.card')).filter(card => {
+            const privateTo = card.dataset.privateTo;
+            const currentPlayerId = this.multiplayer ? this.multiplayer.playerId : 'local';
+            return privateTo === currentPlayerId;
+        });
+        
+        // Try to find a position that doesn't overlap with existing cards
+        const maxAttempts = 50;
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            // Try different positions: left to right, top to bottom
+            const cardsPerRow = Math.floor(zoneWidth / (cardWidth + spacing));
+            const row = Math.floor(attempt / cardsPerRow);
+            const col = attempt % cardsPerRow;
+            
+            const x = zoneLeft + (col * (cardWidth + spacing)) + spacing;
+            const y = zoneTop + (row * (cardHeight + spacing)) + spacing;
+            
+            // Check if this position is within the zone bounds
+            if (x + cardWidth > zoneLeft + zoneWidth || y + cardHeight > zoneTop + zoneHeight) {
+                continue; // Position is outside zone
+            }
+            
+            // Check if this position overlaps with any existing card
+            let hasOverlap = false;
+            for (const existingCard of existingCards) {
+                const existingRect = existingCard.getBoundingClientRect();
+                const existingX = existingRect.left - tableRect.left;
+                const existingY = existingRect.top - tableRect.top;
+                
+                // Check for overlap (with some padding)
+                const padding = 5;
+                if (!(x + cardWidth + padding < existingX || 
+                      x - padding > existingX + existingRect.width ||
+                      y + cardHeight + padding < existingY || 
+                      y - padding > existingY + existingRect.height)) {
+                    hasOverlap = true;
+                    break;
+                }
+            }
+            
+            if (!hasOverlap) {
+                return { x, y };
+            }
+        }
+        
+        // If we couldn't find a non-overlapping position, place it randomly in the zone
+        const randomX = zoneLeft + Math.random() * (zoneWidth - cardWidth);
+        const randomY = zoneTop + Math.random() * (zoneHeight - cardHeight);
+        return { x: randomX, y: randomY };
+    }
+
+    // Highlight the deck to show a card was dealt
+    highlightDeck() {
+        const deckElement = document.querySelector('.deck');
+        if (!deckElement) return;
+        
+        // Remove any existing highlight class
+        deckElement.classList.remove('deck-highlight');
+        
+        // Force a reflow to ensure the class removal takes effect
+        deckElement.offsetHeight;
+        
+        // Generate color based on current player's alias
+        const playerAlias = this.multiplayer ? this.multiplayer.playerAlias : 'local';
+        const highlightColor = this.generatePlayerColor(playerAlias);
+        
+        // Set CSS custom property for the highlight color
+        deckElement.style.setProperty('--highlight-color', highlightColor);
+        
+        // Add the highlight class to trigger the animation
+        deckElement.classList.add('deck-highlight');
+        
+        // Remove the class after animation completes
+        setTimeout(() => {
+            deckElement.classList.remove('deck-highlight');
         }, 1500);
     }
 
@@ -748,6 +866,8 @@ class CardGame {
                 const privateTo = cardElement.dataset.privateTo;
                 this.multiplayer.broadcastCardState(cardElement, card, privateTo);
             }
+            
+            this.highlightCard(cardElement, this.multiplayer ? this.multiplayer.playerAlias : null);
         }, 200); // 50% of 400ms animation
         
         // Remove animation class when complete
@@ -845,20 +965,6 @@ class CardGame {
         const table = document.getElementById('card-table');
         const cardElements = table.querySelectorAll('.card');
         cardElements.forEach(card => card.remove());
-        
-        // Reset deck based on current deck type
-        if (this.currentDeckId === 'standard') {
-            this.deck = new StandardDeck();
-        } else if (this.currentDeckId === 'virus') {
-            this.deck = new VirusDeck();
-        } else if (this.customDecks.has(this.currentDeckId)) {
-            const deckData = this.customDecks.get(this.currentDeckId);
-            this.deck = new cards.Deck(deckData);
-        } else {
-            // Default to standard deck
-            this.deck = new StandardDeck();
-            this.currentDeckId = 'standard';
-        }
         
         this.deck.shuffle();
         this.dealtCards = [];

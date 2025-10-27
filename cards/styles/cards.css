@@ -156,10 +156,13 @@
     left: 50%;
     transform: translate(-50%, -50%);
     cursor: pointer;
-    transition: all 0.3s ease;
     width: 76px;
     height: 100px;
     box-sizing: border-box;
+    user-select: none;
+    pointer-events: auto;
+    z-index: 1000;
+    border-radius: 8px;
 }
 
 .deck:hover {
@@ -197,6 +200,31 @@
     }
     100% {
         background-position: 0% 50%;
+    }
+}
+
+/* Deck highlighting for when cards are dealt */
+.deck-highlight {
+    animation: deckHighlight 1.5s ease-out forwards;
+    z-index: 1002 !important;
+}
+
+@keyframes deckHighlight {
+    0% {
+        box-shadow: 0 0 0 0 var(--highlight-color, #FFD700), 0 0 0 0 var(--highlight-color, #FFD700);
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+    20% {
+        box-shadow: 0 0 0 8px var(--highlight-color, #FFD700), 0 0 0 16px var(--highlight-color, #FFD700);
+        transform: translate(-50%, -50%) scale(1.15);
+    }
+    50% {
+        box-shadow: 0 0 0 12px var(--highlight-color, #FFD700), 0 0 0 24px var(--highlight-color, #FFD700);
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+    100% {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        transform: translate(-50%, -50%) scale(1);
     }
 }
 

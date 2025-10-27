@@ -558,6 +558,26 @@ body {
     margin-right: 15px;
 }
 
+/* Common input styling for multiplayer inputs */
+.multiplayer-input {
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.multiplayer-input:focus {
+    outline: none;
+    border-color: #4CAF50;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.multiplayer-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
 .player-name-section label {
     color: white;
     font-weight: bold;
@@ -567,22 +587,6 @@ body {
 
 .player-name-section input {
     width: 120px;
-    padding: 4px 8px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    font-size: 12px;
-}
-
-.player-name-section input:focus {
-    outline: none;
-    border-color: #4CAF50;
-    background: rgba(255, 255, 255, 0.15);
-}
-
-.player-name-section input::placeholder {
-    color: rgba(255, 255, 255, 0.6);
 }
 
 /* Multiplayer Controls */
@@ -637,19 +641,9 @@ body {
 }
 
 .room-controls input {
-    padding: 8px 12px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
-    font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 1px;
     width: 120px;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-}
-
-.room-controls input::placeholder {
-    color: rgba(255, 255, 255, 0.6);
 }
 
 .room-info {
