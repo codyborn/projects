@@ -1,0 +1,256 @@
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:11.093Z"}
+{"level":"info","message":"Found 1 migration files","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:11.095Z"}
+{"level":"info","message":"Running migration: 001_initial_schema.sql","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:11.095Z"}
+{"level":"info","message":"Completed migration: 001_initial_schema.sql","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:11.117Z"}
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.185Z"}
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.190Z"}
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.195Z"}
+{"level":"info","message":"Database connection closed","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.204Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.205Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.209Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.210Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.212Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.212Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.214Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.218Z"}
+{"level":"info","message":"User 9 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.218Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.219Z"}
+{"level":"info","message":"User 10 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.220Z"}
+{"level":"info","message":"User 10 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.220Z"}
+{"level":"info","message":"User 10 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.220Z"}
+{"level":"error","message":"Error incrementing user points: User with ID 99999 not found","service":"touching-grass-bot","stack":"Error: User with ID 99999 not found\n    at UserService.incrementUserPoints (/Users/cody.born/repos/projects/touching-grass-bot/src/services/userService.js:55:15)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at Object.<anonymous> (/Users/cody.born/repos/projects/touching-grass-bot/tests/unit/userService.test.js:119:7)","timestamp":"2025-10-28T12:03:24.225Z"}
+{"level":"info","message":"User created/updated: U1111111111","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.227Z"}
+{"level":"info","message":"User created/updated: U2222222222","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.227Z"}
+{"level":"info","message":"User created/updated: U3333333333","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.228Z"}
+{"level":"info","message":"User 12 points incremented by 3","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.229Z"}
+{"level":"info","message":"User 11 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.229Z"}
+{"level":"info","message":"User 13 points incremented by 2","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.230Z"}
+{"level":"info","message":"Database connection closed","service":"touching-grass-bot","timestamp":"2025-10-28T12:03:24.232Z"}
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T12:04:56.008Z"}
+{"level":"info","message":"Found 1 migration files","service":"touching-grass-bot","timestamp":"2025-10-28T12:04:56.009Z"}
+{"level":"info","message":"Running migration: 001_initial_schema.sql","service":"touching-grass-bot","timestamp":"2025-10-28T12:04:56.009Z"}
+{"error":"trigger \"update_users_updated_at\" for relation \"users\" already exists","level":"error","message":"Database query error:","service":"touching-grass-bot","text":"-- Create users table\nCREATE TABLE IF NOT EXISTS users (\n  id SERIAL PRIMARY KEY,\n  slack_user_id VARCHAR(50) UNIQUE NOT NULL,\n  slack_username VARCHAR(100) NOT NULL,\n  display_name VARCHAR(100),\n  total_points INTEGER DEFAULT 0,\n  total_photos INTEGER DEFAULT 0,\n  created_at TIMESTAMP DEFAULT NOW(),\n  updated_at TIMESTAMP DEFAULT NOW()\n);\n\n-- Create photos table\nCREATE TABLE IF NOT EXISTS photos (\n  id SERIAL PRIMARY KEY,\n  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,\n  slack_message_ts VARCHAR(50) NOT NULL,\n  slack_channel_id VARCHAR(50) NOT NULL,\n  image_url TEXT,\n  points_awarded INTEGER DEFAULT 1,\n  created_at TIMESTAMP DEFAULT NOW()\n);\n\n-- Create indexes for better performance\nCREATE INDEX IF NOT EXISTS idx_users_slack_user_id ON users(slack_user_id);\nCREATE INDEX IF NOT EXISTS idx_users_total_points ON users(total_points DESC);\nCREATE INDEX IF NOT EXISTS idx_photos_user_id ON photos(user_id);\nCREATE INDEX IF NOT EXISTS idx_photos_created_at ON photos(created_at);\nCREATE INDEX IF NOT EXISTS idx_photos_slack_message_ts ON photos(slack_message_ts);\n\n-- Create updated_at trigger for users table\nCREATE OR REPLACE FUNCTION update_updated_at_column()\nRETURNS TRIGGER AS $$\nBEGIN\n    NEW.updated_at = NOW();\n    RETURN NEW;\nEND;\n$$ language 'plpgsql';\n\nCREATE TRIGGER update_users_updated_at \n    BEFORE UPDATE ON users \n    FOR EACH ROW \n    EXECUTE FUNCTION update_updated_at_column();\n","timestamp":"2025-10-28T12:04:56.014Z"}
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:14.457Z"}
+{"level":"info","message":"Found 1 migration files","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:14.459Z"}
+{"level":"info","message":"Running migration: 001_initial_schema.sql","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:14.459Z"}
+{"level":"info","message":"Completed migration: 001_initial_schema.sql","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:14.488Z"}
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.052Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.059Z"}
+{"level":"info","message":"Photo recorded for user 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.060Z"}
+{"level":"info","message":"User created/updated: U1111111111","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.064Z"}
+{"level":"info","message":"User created/updated: U2222222222","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.065Z"}
+{"level":"info","message":"Photo recorded for user 2","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.066Z"}
+{"level":"info","message":"Photo recorded for user 3","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.066Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.068Z"}
+{"level":"info","message":"Photo recorded for user 4","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.068Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.070Z"}
+{"level":"info","message":"Photo recorded for user 5","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.070Z"}
+{"level":"info","message":"Photo recorded for user 5","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.071Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.074Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.075Z"}
+{"level":"info","message":"Photo recorded for user 7","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.076Z"}
+{"level":"info","message":"Photo recorded for user 7","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.076Z"}
+{"level":"info","message":"Photo recorded for user 7","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.076Z"}
+{"level":"info","message":"Photo recorded for user 7","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.077Z"}
+{"level":"info","message":"Photo recorded for user 7","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.077Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.079Z"}
+{"level":"info","message":"Photo recorded for user 8","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.079Z"}
+{"level":"info","message":"User created/updated: U1111111111","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.083Z"}
+{"level":"info","message":"User created/updated: U2222222222","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.083Z"}
+{"level":"info","message":"Photo recorded for user 9","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.084Z"}
+{"level":"info","message":"Photo recorded for user 10","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.085Z"}
+{"level":"info","message":"Database connection closed","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.087Z"}
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.137Z"}
+{"level":"info","message":"User created/updated: U1111111111","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.141Z"}
+{"level":"info","message":"User created/updated: U2222222222","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.142Z"}
+{"level":"info","message":"User created/updated: U3333333333","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.143Z"}
+{"level":"info","message":"User 12 points incremented by 3","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.145Z"}
+{"level":"info","message":"User 11 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.146Z"}
+{"level":"info","message":"User 13 points incremented by 2","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.147Z"}
+{"level":"info","message":"User created/updated: U1000000000","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.152Z"}
+{"level":"info","message":"User 14 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.152Z"}
+{"level":"info","message":"User created/updated: U2000000000","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.153Z"}
+{"level":"info","message":"User 15 points incremented by 2","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.153Z"}
+{"level":"info","message":"User created/updated: U3000000000","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.154Z"}
+{"level":"info","message":"User 16 points incremented by 3","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.154Z"}
+{"level":"info","message":"User created/updated: U4000000000","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.155Z"}
+{"level":"info","message":"User 17 points incremented by 4","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.156Z"}
+{"level":"info","message":"User created/updated: U5000000000","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.156Z"}
+{"level":"info","message":"User 18 points incremented by 5","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.157Z"}
+{"level":"info","message":"User created/updated: U1111111111","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.159Z"}
+{"level":"info","message":"User created/updated: U2222222222","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.159Z"}
+{"level":"info","message":"User 20 points incremented by 2","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.159Z"}
+{"level":"info","message":"User 19 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.160Z"}
+{"level":"info","message":"Database connection closed","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.165Z"}
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.194Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.198Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.200Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.205Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.206Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.207Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.209Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.212Z"}
+{"level":"info","message":"User 27 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.213Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.215Z"}
+{"level":"info","message":"User 28 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.215Z"}
+{"level":"info","message":"User 28 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.216Z"}
+{"level":"info","message":"User 28 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.216Z"}
+{"level":"error","message":"Error incrementing user points: User with ID 99999 not found","service":"touching-grass-bot","stack":"Error: User with ID 99999 not found\n    at UserService.incrementUserPoints (/Users/cody.born/repos/projects/touching-grass-bot/src/services/userService.js:55:15)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at Object.<anonymous> (/Users/cody.born/repos/projects/touching-grass-bot/tests/unit/userService.test.js:119:7)","timestamp":"2025-10-28T12:05:15.221Z"}
+{"level":"info","message":"User created/updated: U1111111111","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.223Z"}
+{"level":"info","message":"User created/updated: U2222222222","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.224Z"}
+{"level":"info","message":"User created/updated: U3333333333","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.224Z"}
+{"level":"info","message":"User 30 points incremented by 3","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.225Z"}
+{"level":"info","message":"User 29 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.225Z"}
+{"level":"info","message":"User 31 points incremented by 2","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.226Z"}
+{"level":"info","message":"Database connection closed","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.227Z"}
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.258Z"}
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.261Z"}
+{"level":"info","message":"Database connection closed","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:15.268Z"}
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.077Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.084Z"}
+{"level":"info","message":"Photo recorded for user 34","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.085Z"}
+{"level":"info","message":"User created/updated: U1111111111","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.088Z"}
+{"level":"info","message":"User created/updated: U2222222222","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.089Z"}
+{"level":"info","message":"Photo recorded for user 35","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.090Z"}
+{"level":"info","message":"Photo recorded for user 36","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.090Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.092Z"}
+{"level":"info","message":"Photo recorded for user 37","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.092Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.094Z"}
+{"level":"info","message":"Photo recorded for user 38","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.095Z"}
+{"level":"info","message":"Photo recorded for user 38","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.096Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.098Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.099Z"}
+{"level":"info","message":"Photo recorded for user 40","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.100Z"}
+{"level":"info","message":"Photo recorded for user 40","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.100Z"}
+{"level":"info","message":"Photo recorded for user 40","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.102Z"}
+{"level":"info","message":"Photo recorded for user 40","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.102Z"}
+{"level":"info","message":"Photo recorded for user 40","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.103Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.107Z"}
+{"level":"info","message":"Photo recorded for user 41","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.107Z"}
+{"level":"info","message":"User created/updated: U1111111111","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.111Z"}
+{"level":"info","message":"User created/updated: U2222222222","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.112Z"}
+{"level":"info","message":"Photo recorded for user 42","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.112Z"}
+{"level":"info","message":"Photo recorded for user 43","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.113Z"}
+{"level":"info","message":"Database connection closed","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.115Z"}
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.162Z"}
+{"level":"info","message":"User created/updated: U1111111111","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.166Z"}
+{"level":"info","message":"User created/updated: U2222222222","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.167Z"}
+{"level":"info","message":"User created/updated: U3333333333","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.168Z"}
+{"level":"info","message":"User 45 points incremented by 3","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.170Z"}
+{"level":"info","message":"User 44 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.171Z"}
+{"level":"info","message":"User 46 points incremented by 2","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.171Z"}
+{"level":"info","message":"User created/updated: U1000000000","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.175Z"}
+{"level":"info","message":"User 47 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.176Z"}
+{"level":"info","message":"User created/updated: U2000000000","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.176Z"}
+{"level":"info","message":"User 48 points incremented by 2","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.176Z"}
+{"level":"info","message":"User created/updated: U3000000000","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.177Z"}
+{"level":"info","message":"User 49 points incremented by 3","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.177Z"}
+{"level":"info","message":"User created/updated: U4000000000","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.178Z"}
+{"level":"info","message":"User 50 points incremented by 4","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.178Z"}
+{"level":"info","message":"User created/updated: U5000000000","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.179Z"}
+{"level":"info","message":"User 51 points incremented by 5","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.179Z"}
+{"level":"info","message":"User created/updated: U1111111111","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.181Z"}
+{"level":"info","message":"User created/updated: U2222222222","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.182Z"}
+{"level":"info","message":"User 53 points incremented by 2","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.182Z"}
+{"level":"info","message":"User 52 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.182Z"}
+{"level":"info","message":"Database connection closed","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.187Z"}
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.227Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.231Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.234Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.236Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.238Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.238Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.240Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.243Z"}
+{"level":"info","message":"User 60 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.244Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.245Z"}
+{"level":"info","message":"User 61 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.246Z"}
+{"level":"info","message":"User 61 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.246Z"}
+{"level":"info","message":"User 61 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.247Z"}
+{"level":"error","message":"Error incrementing user points: User with ID 99999 not found","service":"touching-grass-bot","stack":"Error: User with ID 99999 not found\n    at UserService.incrementUserPoints (/Users/cody.born/repos/projects/touching-grass-bot/src/services/userService.js:55:15)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at Object.<anonymous> (/Users/cody.born/repos/projects/touching-grass-bot/tests/unit/userService.test.js:119:7)","timestamp":"2025-10-28T12:05:35.251Z"}
+{"level":"info","message":"User created/updated: U1111111111","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.253Z"}
+{"level":"info","message":"User created/updated: U2222222222","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.253Z"}
+{"level":"info","message":"User created/updated: U3333333333","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.253Z"}
+{"level":"info","message":"User 63 points incremented by 3","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.254Z"}
+{"level":"info","message":"User 62 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.254Z"}
+{"level":"info","message":"User 64 points incremented by 2","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.255Z"}
+{"level":"info","message":"Database connection closed","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.257Z"}
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.286Z"}
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.291Z"}
+{"level":"info","message":"Database connection closed","service":"touching-grass-bot","timestamp":"2025-10-28T12:05:35.298Z"}
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:29.947Z"}
+{"level":"info","message":"Found 1 migration files","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:29.948Z"}
+{"level":"info","message":"Running migration: 001_initial_schema.sql","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:29.949Z"}
+{"level":"info","message":"Completed migration: 001_initial_schema.sql","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:29.959Z"}
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.242Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.250Z"}
+{"level":"info","message":"Photo recorded for user 67","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.251Z"}
+{"level":"info","message":"User created/updated: U1111111111","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.254Z"}
+{"level":"info","message":"User created/updated: U2222222222","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.255Z"}
+{"level":"info","message":"Photo recorded for user 68","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.256Z"}
+{"level":"info","message":"Photo recorded for user 69","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.257Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.259Z"}
+{"level":"info","message":"Photo recorded for user 70","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.260Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.262Z"}
+{"level":"info","message":"Photo recorded for user 71","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.263Z"}
+{"level":"info","message":"Photo recorded for user 71","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.263Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.266Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.269Z"}
+{"level":"info","message":"Photo recorded for user 73","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.269Z"}
+{"level":"info","message":"Photo recorded for user 73","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.269Z"}
+{"level":"info","message":"Photo recorded for user 73","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.270Z"}
+{"level":"info","message":"Photo recorded for user 73","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.270Z"}
+{"level":"info","message":"Photo recorded for user 73","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.270Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.272Z"}
+{"level":"info","message":"Photo recorded for user 74","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.272Z"}
+{"level":"info","message":"User created/updated: U1111111111","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.277Z"}
+{"level":"info","message":"User created/updated: U2222222222","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.278Z"}
+{"level":"info","message":"Photo recorded for user 75","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.278Z"}
+{"level":"info","message":"Photo recorded for user 76","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.279Z"}
+{"level":"info","message":"Database connection closed","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.281Z"}
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.318Z"}
+{"level":"info","message":"User created/updated: U1111111111","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.321Z"}
+{"level":"info","message":"User created/updated: U2222222222","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.322Z"}
+{"level":"info","message":"User created/updated: U3333333333","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.322Z"}
+{"level":"info","message":"User 78 points incremented by 3","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.328Z"}
+{"level":"info","message":"User 77 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.328Z"}
+{"level":"info","message":"User 79 points incremented by 2","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.329Z"}
+{"level":"info","message":"User created/updated: U1000000000","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.332Z"}
+{"level":"info","message":"User 80 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.333Z"}
+{"level":"info","message":"User created/updated: U2000000000","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.334Z"}
+{"level":"info","message":"User 81 points incremented by 2","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.334Z"}
+{"level":"info","message":"User created/updated: U3000000000","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.335Z"}
+{"level":"info","message":"User 82 points incremented by 3","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.335Z"}
+{"level":"info","message":"User created/updated: U4000000000","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.335Z"}
+{"level":"info","message":"User 83 points incremented by 4","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.336Z"}
+{"level":"info","message":"User created/updated: U5000000000","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.336Z"}
+{"level":"info","message":"User 84 points incremented by 5","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.337Z"}
+{"level":"info","message":"User created/updated: U1111111111","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.338Z"}
+{"level":"info","message":"User created/updated: U2222222222","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.338Z"}
+{"level":"info","message":"User 86 points incremented by 2","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.339Z"}
+{"level":"info","message":"User 85 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.339Z"}
+{"level":"info","message":"Database connection closed","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.346Z"}
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.385Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.389Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.391Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.396Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.397Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.398Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.400Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.404Z"}
+{"level":"info","message":"User 93 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.405Z"}
+{"level":"info","message":"User created/updated: U1234567890","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.406Z"}
+{"level":"info","message":"User 94 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.406Z"}
+{"level":"info","message":"User 94 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.407Z"}
+{"level":"info","message":"User 94 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.408Z"}
+{"level":"error","message":"Error incrementing user points: User with ID 99999 not found","service":"touching-grass-bot","stack":"Error: User with ID 99999 not found\n    at UserService.incrementUserPoints (/Users/cody.born/repos/projects/touching-grass-bot/src/services/userService.js:55:15)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at Object.<anonymous> (/Users/cody.born/repos/projects/touching-grass-bot/tests/unit/userService.test.js:119:7)","timestamp":"2025-10-28T22:35:31.414Z"}
+{"level":"info","message":"User created/updated: U1111111111","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.415Z"}
+{"level":"info","message":"User created/updated: U2222222222","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.416Z"}
+{"level":"info","message":"User created/updated: U3333333333","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.417Z"}
+{"level":"info","message":"User 96 points incremented by 3","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.417Z"}
+{"level":"info","message":"User 95 points incremented by 1","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.418Z"}
+{"level":"info","message":"User 97 points incremented by 2","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.418Z"}
+{"level":"info","message":"Database connection closed","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.420Z"}
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.451Z"}
+{"level":"info","message":"Database connection established successfully","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.457Z"}
+{"level":"info","message":"Database connection closed","service":"touching-grass-bot","timestamp":"2025-10-28T22:35:31.467Z"}
