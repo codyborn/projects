@@ -1,1 +1,1 @@
-web: node touching-grass-bot/src/app.js
+web: node src/app.js
