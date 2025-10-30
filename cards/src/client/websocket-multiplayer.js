@@ -29,7 +29,24 @@ class WebSocketMultiplayerManager {
         // Connection health monitoring
         this.healthCheckInterval = null;
         this.lastMessageTime = 0;
-        this.connectionTimeout = 30000; // 30 seconds
+        this.connectionTimeout = 60000; // 60 seconds (more lenient, but should be caught by ping/pong)
+        
+        // Ping/pong keepalive
+        this.pingInterval = null;
+        this.pingIntervalMs = 15000; // Send ping every 15 seconds (more frequent for Heroku's 55s timeout)
+        this.pongTimeout = null;
+        this.pongTimeoutMs = 10000; // Wait 10 seconds for pong (more lenient)
+        this.lastPongTime = 0;
+        this.missedPongs = 0; // Track consecutive missed pongs
+        this.maxMissedPongs = 3; // Disconnect after 3 missed pongs
+        
+        // Reconnection management
+        this.reconnecting = false;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 10;
+        this.reconnectDelay = 1000; // Start with 1 second
+        this.maxReconnectDelay = 30000; // Max 30 seconds
+        this.reconnectTimer = null;
         
         // Periodic synchronization
         this.syncInterval = null;
@@ -307,7 +324,16 @@ class WebSocketMultiplayerManager {
                 // Keep as 'connecting' until room is actually joined
                 this.updateConnectionStatus('connecting');
                 this.lastMessageTime = Date.now();
+                this.lastPongTime = Date.now();
+                
+                // Reset reconnection state on successful connection
+                this.reconnecting = false;
+                this.reconnectAttempts = 0;
+                this.reconnectDelay = 1000;
+                this.missedPongs = 0; // Reset missed pongs
+                
                 this.startHealthCheck();
+                this.startPingInterval();
                 
                 // Handle reconnection if we already had a room
                 if (this.roomCode && this.roomCreationAttempted) {
@@ -319,15 +345,39 @@ class WebSocketMultiplayerManager {
             
             this.socket.onmessage = (event) => {
                 try {
+                    // Handle WebSocket ping/pong (binary frame with single byte)
+                    if (typeof event.data === 'string' && event.data === 'pong') {
+                        this.handlePong();
+                        return;
+                    }
+                    
                     const message = JSON.parse(event.data);
+                    
+                    // Handle ping/pong messages (JSON format fallback)
+                    if (message.type === 'pong') {
+                        this.handlePong();
+                        return;
+                    }
+                    
                     this.handleWebSocketMessage(message);
                 } catch (error) {
+                    // If it's a pong binary frame, handle it
+                    if (event.data instanceof ArrayBuffer || event.data instanceof Blob) {
+                        // Could be binary pong, but WebSocket library typically handles this
+                        // For now, just log and continue
+                        console.log('Received binary data (possibly pong)');
+                        return;
+                    }
                     console.error('Error parsing WebSocket message:', error);
                 }
             };
             
             this.socket.onclose = (event) => {
                 console.log('Disconnected from WebSocket server', event.code, event.reason);
+                
+                // Stop ping/pong when connection closes
+                this.stopPingInterval();
+                this.stopHealthCheck();
                 
                 // If we tried localhost and it failed, try remote server as fallback
                 const connAttempt = this.socket._connectionAttempt;
@@ -350,11 +400,9 @@ class WebSocketMultiplayerManager {
                 }
                 
                 this.updateConnectionStatus('offline');
-                // Attempt reconnection to the same server (don't loop between local/remote)
+                // Attempt reconnection with exponential backoff (don't loop between local/remote)
                 if (this.roomCode && (!connAttempt || !connAttempt.triedRemote)) {
-                    setTimeout(() => {
-                        this.connectToWebSocketServer();
-                    }, 2000);
+                    this.scheduleReconnect();
                 }
             };
             
@@ -374,7 +422,7 @@ class WebSocketMultiplayerManager {
                             this.socket.readyState === WebSocket.CLOSING) && 
                             connAttempt && !connAttempt.triedRemote) {
                             console.log('Connection appears closed after error, trying remote fallback');
-                            const remoteUrl = `${protocol}//${remoteHost}/chat/${this.roomCode}`;
+                            const remoteUrl = `wss://${remoteHost}/chat/${this.roomCode}`;
                             connAttempt.triedRemote = true;
                             if (this.roomCode) {
                                 this.connectToRemoteServer(remoteUrl);
@@ -383,6 +431,10 @@ class WebSocketMultiplayerManager {
                     }, 1000);
                 } else {
                     this.updateConnectionStatus('offline');
+                    // Schedule reconnect attempt if we're still in a room
+                    if (this.roomCode && !this.reconnecting) {
+                        this.scheduleReconnect();
+                    }
                 }
             };
             
@@ -436,7 +488,16 @@ class WebSocketMultiplayerManager {
                 console.log('Connected to remote WebSocket server');
                 this.updateConnectionStatus('connecting');
                 this.lastMessageTime = Date.now();
+                this.lastPongTime = Date.now();
+                
+                // Reset reconnection state on successful connection
+                this.reconnecting = false;
+                this.reconnectAttempts = 0;
+                this.reconnectDelay = 1000;
+                this.missedPongs = 0; // Reset missed pongs
+                
                 this.startHealthCheck();
+                this.startPingInterval();
                 
                 if (this.roomCode && this.roomCreationAttempted) {
                     this.onReconnection();
@@ -447,20 +508,38 @@ class WebSocketMultiplayerManager {
             
             this.socket.onmessage = (event) => {
                 try {
+                    // Handle WebSocket ping/pong (binary frame with single byte)
+                    if (typeof event.data === 'string' && event.data === 'pong') {
+                        this.handlePong();
+                        return;
+                    }
+                    
                     const message = JSON.parse(event.data);
+                    
+                    // Handle ping/pong messages (JSON format fallback)
+                    if (message.type === 'pong') {
+                        this.handlePong();
+                        return;
+                    }
+                    
                     this.handleWebSocketMessage(message);
                 } catch (error) {
+                    // If it's a pong binary frame, handle it
+                    if (event.data instanceof ArrayBuffer || event.data instanceof Blob) {
+                        console.log('Received binary data (possibly pong)');
+                        return;
+                    }
                     console.error('Error parsing WebSocket message:', error);
                 }
             };
             
             this.socket.onclose = () => {
                 console.log('Disconnected from remote WebSocket server');
+                this.stopPingInterval();
+                this.stopHealthCheck();
                 this.updateConnectionStatus('offline');
                 if (this.roomCode) {
-                    setTimeout(() => {
-                        this.connectToWebSocketServer();
-                    }, 2000);
+                    this.scheduleReconnect();
                 }
             };
             
@@ -744,6 +823,9 @@ class WebSocketMultiplayerManager {
     handleIncomingMessage(message) {
         // Update last message time for health check
         this.lastMessageTime = Date.now();
+        
+        // Update pong time if we receive any message (indicates connection is alive)
+        this.lastPongTime = Date.now();
         
         // Message acknowledgment handling removed - no longer needed without retry system
         
@@ -1765,25 +1847,157 @@ class WebSocketMultiplayerManager {
         this.healthCheckInterval = setInterval(() => {
             const now = Date.now();
             const timeSinceLastMessage = now - this.lastMessageTime;
+            const timeSinceLastPong = now - this.lastPongTime;
             
-            if (timeSinceLastMessage > this.connectionTimeout) {
-                console.warn('Connection health check failed - no messages received recently');
+            // Check if we haven't received any messages or pongs recently
+            if (timeSinceLastMessage > this.connectionTimeout || timeSinceLastPong > this.connectionTimeout) {
+                console.warn('Connection health check failed - no messages/pongs received recently');
                 this.handleConnectionLoss();
             }
         }, 5000); // Check every 5 seconds
     }
     
+    stopHealthCheck() {
+        if (this.healthCheckInterval) {
+            clearInterval(this.healthCheckInterval);
+            this.healthCheckInterval = null;
+        }
+    }
+    
+    startPingInterval() {
+        if (this.pingInterval) return;
+        
+        this.pingInterval = setInterval(() => {
+            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+                this.sendPing();
+            }
+        }, this.pingIntervalMs);
+    }
+    
+    stopPingInterval() {
+        if (this.pingInterval) {
+            clearInterval(this.pingInterval);
+            this.pingInterval = null;
+        }
+        if (this.pongTimeout) {
+            clearTimeout(this.pongTimeout);
+            this.pongTimeout = null;
+        }
+    }
+    
+    sendPing() {
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+            return;
+        }
+        
+        try {
+            // Check if we've received any pongs recently
+            const now = Date.now();
+            const timeSinceLastPong = now - this.lastPongTime;
+            
+            // If it's been too long since last pong, increment missed counter
+            if (this.lastPongTime > 0 && timeSinceLastPong > this.pingIntervalMs * 2) {
+                this.missedPongs++;
+                console.warn(`Missed pong detected (${this.missedPongs}/${this.maxMissedPongs})`);
+                
+                if (this.missedPongs >= this.maxMissedPongs) {
+                    console.error('Too many missed pongs, connection appears dead');
+                    this.handleConnectionLoss();
+                    return;
+                }
+            }
+            
+            // Send ping as JSON message (fallback if binary ping not supported)
+            this.socket.send(JSON.stringify({ type: 'ping' }));
+            
+            // Set timeout to wait for pong
+            this.pongTimeout = setTimeout(() => {
+                const now = Date.now();
+                const timeSinceLastPong = now - this.lastPongTime;
+                
+                // If we haven't received a pong within the timeout period, connection may be dead
+                if (timeSinceLastPong > this.pongTimeoutMs) {
+                    console.warn('Pong timeout - connection may be dead');
+                    this.missedPongs++;
+                    if (this.missedPongs >= this.maxMissedPongs) {
+                        this.handleConnectionLoss();
+                    }
+                }
+            }, this.pongTimeoutMs);
+        } catch (error) {
+            console.error('Failed to send ping:', error);
+            this.handleConnectionLoss();
+        }
+    }
+    
+    handlePong() {
+        // Update last pong time and message time (indicates connection is alive)
+        const now = Date.now();
+        this.lastPongTime = now;
+        this.lastMessageTime = now; // Any message indicates connection is alive
+        
+        // Reset missed pongs counter on successful pong
+        this.missedPongs = 0;
+        
+        // Clear pong timeout
+        if (this.pongTimeout) {
+            clearTimeout(this.pongTimeout);
+            this.pongTimeout = null;
+        }
+    }
+    
     handleConnectionLoss() {
         console.log('Handling connection loss...');
         this.updateConnectionStatus('offline');
+        this.stopPingInterval();
+        this.stopHealthCheck();
         
-        // Attempt to reconnect
-        if (this.roomCode) {
-            console.log('Attempting to reconnect...');
-            setTimeout(() => {
-                this.connectToWebSocketServer();
-            }, 2000);
+        // Close existing socket if still open
+        if (this.socket) {
+            try {
+                this.socket.close();
+            } catch (error) {
+                // Ignore errors when closing
+            }
         }
+        
+        // Schedule reconnection with exponential backoff
+        if (this.roomCode && !this.reconnecting) {
+            this.scheduleReconnect();
+        }
+    }
+    
+    scheduleReconnect() {
+        if (this.reconnecting) {
+            return; // Already reconnecting
+        }
+        
+        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+            console.error('Max reconnection attempts reached, giving up');
+            this.showErrorNotification('Connection lost. Please refresh the page to reconnect.');
+            return;
+        }
+        
+        this.reconnecting = true;
+        this.reconnectAttempts++;
+        
+        // Calculate delay with exponential backoff
+        const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1), this.maxReconnectDelay);
+        
+        console.log(`Scheduling reconnection attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`);
+        
+        // Clear any existing reconnect timer
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+        }
+        
+        this.reconnectTimer = setTimeout(() => {
+            this.reconnecting = false;
+            if (this.roomCode) {
+                console.log(`Reconnection attempt ${this.reconnectAttempts}`);
+                this.connectToWebSocketServer();
+            }
+        }, delay);
     }
     
     onReconnection() {
@@ -1853,9 +2067,19 @@ class WebSocketMultiplayerManager {
             clearInterval(this.healthCheckInterval);
             this.healthCheckInterval = null;
         }
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
+        }
+        this.stopPingInterval();
+        this.stopHealthCheck();
         this.stopPeriodicSync();
         this.stopStateValidation();
         this.messageQueue = [];
+        this.reconnecting = false;
+        this.reconnectAttempts = 0;
+        this.reconnectDelay = 1000;
+        this.missedPongs = 0; // Reset missed pongs
         this.updateConnectionStatus('offline');
         this.connectedPlayers.clear();
         this.updatePlayerCount();

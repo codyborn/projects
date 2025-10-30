@@ -43,6 +43,27 @@ class SimpleWebSocketServer {
             // Track connection (room and playerId will be set on joinRoom)
             this.connections.set(ws, { roomCode, playerId: null });
 
+            // Enable native WebSocket ping/pong for keepalive
+            // Server will send ping frames every 20 seconds
+            const pingInterval = setInterval(() => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    try {
+                        ws.ping();
+                    } catch (error) {
+                        console.error('Failed to send ping:', error);
+                        clearInterval(pingInterval);
+                    }
+                } else {
+                    clearInterval(pingInterval);
+                }
+            }, 20000); // Send ping every 20 seconds
+
+            // Handle pong responses (automatic in ws library, but we can track it)
+            ws.on('pong', () => {
+                // Pong received - connection is alive
+                // This is handled automatically by the ws library
+            });
+
             ws.on('message', (data) => {
                 try {
                     const message = JSON.parse(data.toString());
@@ -55,11 +76,13 @@ class SimpleWebSocketServer {
 
             ws.on('close', () => {
                 console.log(`Connection closed for room: ${roomCode}`);
+                clearInterval(pingInterval);
                 this.removeFromRoom(ws, roomCode);
             });
 
             ws.on('error', (error) => {
                 console.error('WebSocket error:', error);
+                clearInterval(pingInterval);
                 this.removeFromRoom(ws, roomCode);
             });
         });
@@ -74,13 +97,21 @@ class SimpleWebSocketServer {
     }
 
     handleMessage(ws, message, roomCode) {
-        this.metrics.messagesProcessed++;
-        console.log(`Room ${roomCode}: ${message.type}`);
-        
         const connInfo = this.connections.get(ws);
         const playerId = message.playerId || connInfo?.playerId;
         
+        // Handle ping messages separately (don't log or increment metrics)
+        if (message.type === 'ping') {
+            // Respond to ping with pong to keep connection alive
+            this.sendToClient(ws, { type: 'pong' });
+            return;
+        }
+        
+        this.metrics.messagesProcessed++;
+        console.log(`Room ${roomCode}: ${message.type}`);
+        
         switch (message.type) {
+            
             case 'joinRoom':
                 this.joinRoom(ws, message.roomCode || roomCode, playerId, message.playerName || message.playerAlias || 'Player');
                 break;
