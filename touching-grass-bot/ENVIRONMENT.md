@@ -12,6 +12,7 @@
 - `LOG_LEVEL` - Logging level (defaults to info)
 - `RATE_LIMIT_WINDOW_MS` - Rate limit window in milliseconds
 - `RATE_LIMIT_MAX_REQUESTS` - Max requests per window
+- `OPENAI_API_KEY` - OpenAI API key for AI photo comments (optional, falls back to standard message if not set)
 
 ## Example .env file
 ```

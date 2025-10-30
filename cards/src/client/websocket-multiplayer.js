@@ -206,6 +206,21 @@ class WebSocketMultiplayerManager {
                 text.textContent = 'Connected';
                 break;
         }
+
+        // Update on-board overlay as well
+        const boardStatus = document.getElementById('board-connection-status');
+        if (boardStatus) {
+            const boardIndicator = boardStatus.querySelector('.status-indicator');
+            const boardText = boardStatus.querySelector('.status-text');
+            if (boardIndicator) boardIndicator.className = `status-indicator ${status}`;
+            if (boardText) {
+                if (status === 'offline') boardText.textContent = 'Offline';
+                else if (status === 'connecting') boardText.textContent = 'Connecting...';
+                else boardText.textContent = 'Connected';
+            }
+            // Show the overlay when not connected; hide when connected
+            boardStatus.style.display = (status === 'connected') ? 'none' : 'flex';
+        }
     }
     
     createRoom() {

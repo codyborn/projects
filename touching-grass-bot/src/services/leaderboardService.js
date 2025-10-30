@@ -3,6 +3,88 @@ const photoService = require('./photoService')
 const logger = require('../utils/logger')
 
 class LeaderboardService {
+  async getLeaderboardByPeriod(period = 'all', limit = 10) {
+    try {
+      const { query } = require('../database/connection')
+      let dateFilter = ''
+      let periodLabel = 'All Time'
+
+      let result
+      
+      if (period === 'weekly' || period === 'week') {
+        dateFilter = 'AND p.created_at >= NOW() - INTERVAL \'7 days\''
+        periodLabel = 'This Week'
+        const sql = `
+          SELECT 
+            u.id,
+            u.slack_user_id,
+            u.slack_username,
+            u.display_name,
+            COALESCE(SUM(p.points_awarded), 0) as points,
+            COUNT(p.id) as photos
+          FROM users u
+          LEFT JOIN photos p ON u.id = p.user_id ${dateFilter}
+          GROUP BY u.id, u.slack_user_id, u.slack_username, u.display_name
+          HAVING COUNT(p.id) > 0
+          ORDER BY points DESC, photos DESC, u.created_at ASC
+          LIMIT $1
+        `
+        result = await query(sql, [limit])
+      } else if (period === 'monthly' || period === 'month') {
+        dateFilter = 'AND p.created_at >= NOW() - INTERVAL \'30 days\''
+        periodLabel = 'This Month'
+        const sql = `
+          SELECT 
+            u.id,
+            u.slack_user_id,
+            u.slack_username,
+            u.display_name,
+            COALESCE(SUM(p.points_awarded), 0) as points,
+            COUNT(p.id) as photos
+          FROM users u
+          LEFT JOIN photos p ON u.id = p.user_id ${dateFilter}
+          GROUP BY u.id, u.slack_user_id, u.slack_username, u.display_name
+          HAVING COUNT(p.id) > 0
+          ORDER BY points DESC, photos DESC, u.created_at ASC
+          LIMIT $1
+        `
+        result = await query(sql, [limit])
+      } else {
+        // All time: use users table for better performance
+        periodLabel = 'All Time'
+        const sql = `
+          SELECT 
+            u.id,
+            u.slack_user_id,
+            u.slack_username,
+            u.display_name,
+            u.total_points as points,
+            u.total_photos as photos
+          FROM users u
+          WHERE u.total_photos > 0
+          ORDER BY u.total_points DESC, u.total_photos DESC, u.created_at ASC
+          LIMIT $1
+        `
+        result = await query(sql, [limit])
+      }
+      
+      return {
+        period: periodLabel,
+        periodKey: period,
+        leaderboard: result.rows.map((user, index) => ({
+          rank: index + 1,
+          username: user.display_name || user.slack_username,
+          points: parseInt(user.points) || 0,
+          photos: parseInt(user.photos) || 0,
+          slack_user_id: user.slack_user_id
+        }))
+      }
+    } catch (error) {
+      logger.error('Error getting leaderboard by period:', error)
+      throw error
+    }
+  }
+
   async getCurrentLeaderboard(limit = 10) {
     try {
       const topUsers = await userService.getTopUsers(limit)
@@ -92,14 +174,21 @@ class LeaderboardService {
     }
   }
 
-  formatLeaderboardForSlack(leaderboard) {
+  formatLeaderboardForSlack(leaderboard, period = 'all') {
     if (leaderboard.length === 0) {
-      return '🌱 *Touching Grass Leaderboard*\n\nNo photos submitted yet! Be the first to post a photo with `/grass`!'
+      return 'Post a photo with "grass" to join the leaderboard! :grass:'
     }
 
     const emojis = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟']
     
-    let message = '🌱 *Touching Grass Leaderboard*\n\n'
+    const periodLabels = {
+      'all': 'All Time',
+      'weekly': 'This Week',
+      'monthly': 'This Month'
+    }
+    const periodLabel = periodLabels[period] || 'All Time'
+    
+    let message = `:grass: *Touching Grass Leaderboard - ${periodLabel}*\n\n`
     
     leaderboard.forEach((user, index) => {
       const emoji = emojis[index] || `${index + 1}.`
@@ -109,9 +198,54 @@ class LeaderboardService {
       message += `${emoji} *${user.username}* - ${user.points} ${pointsText} (${user.photos} ${photosText})\n`
     })
     
-    message += '\nPost a photo with `/grass` to join the leaderboard! 🌿'
+    message += '\nPost a photo with "grass" to join the leaderboard! :grass:'
     
     return message
+  }
+
+  getLeaderboardBlocks(leaderboardData, currentPeriod = 'all') {
+    const blocks = [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: this.formatLeaderboardForSlack(leaderboardData.leaderboard, leaderboardData.periodKey || currentPeriod)
+        }
+      },
+      {
+        type: 'actions',
+        elements: [
+          {
+            type: 'button',
+            text: {
+              type: 'plain_text',
+              text: '📅 This Week'
+            },
+            value: 'weekly',
+            action_id: 'leaderboard_weekly'
+          },
+          {
+            type: 'button',
+            text: {
+              type: 'plain_text',
+              text: '📆 This Month'
+            },
+            value: 'monthly',
+            action_id: 'leaderboard_monthly'
+          },
+          {
+            type: 'button',
+            text: {
+              type: 'plain_text',
+              text: '🏆 All Time'
+            },
+            value: 'all',
+            action_id: 'leaderboard_all'
+          }
+        ]
+      }
+    ]
+    return blocks
   }
 }
 

@@ -9,6 +9,7 @@ const logger = require('./utils/logger')
 const config = require('./config/config')
 const { setupDatabase } = require('./database/connection')
 const { handleGrassCommand, handleLeaderboardCommand } = require('./handlers/slackHandlers')
+const leaderboardService = require('./services/leaderboardService')
 
 // Initialize Slack app
 const slackApp = new App({
@@ -50,8 +51,6 @@ function containsGrassKeyword(text) {
   if (!value) return false
   return (
     /(^|\s)#?grass(\s|$)/i.test(value) ||
-    value.includes('🌱') ||
-    value.includes(':seedling:') ||
     value.includes(':grass:')
   )
 }
@@ -114,15 +113,26 @@ slackApp.event('file_shared', async ({ event, client }) => {
     }
     if (!channelId) return
 
+    // Build combined text for user comment (excluding grass keywords)
+    const initial = (file.initial_comment && file.initial_comment.comment) ? file.initial_comment.comment : ''
+    const title = file.title || ''
+    const combined = [initial, title].filter(t => {
+      if (!t) return false
+      const value = t.toLowerCase()
+      return !/(^|\s)#?grass(\s|$)/i.test(value) && !value.includes(':grass:')
+    }).join(' ').trim()
+
     const messageLike = {
       user: file.user,
       channel: channelId,
       ts: String(file.timestamp || file.created || Date.now() / 1000),
+      text: combined,
       files: [
         {
           url_private: file.url_private,
           permalink: file.permalink,
-          title: file.title
+          title: file.title,
+          initial_comment: file.initial_comment
         }
       ]
     }
@@ -138,7 +148,7 @@ slackApp.event('app_mention', async ({ event, client }) => {
   try {
     await client.chat.postMessage({
       channel: event.channel,
-      text: `🌱 Hi! I'm the Touching Grass Bot. I help track who's getting outside and touching grass!\n\nTo use me:\n• Post photos with \`/grass\` to earn points\n• Use \`/leaderboard\` to see current rankings\n\nLet's get outside and touch some grass! 🌿`,
+      text: `:grass: Hi! I'm the Touching Grass Bot. I help track who's getting outside and touching grass!\n\nTo use me:\n• Post photos with \`#grass\` in the caption to earn points\n• Use \`/leaderboard\` to see current rankings\n\nLet's get outside and touch some grass! 🌿`,
       thread_ts: event.ts
     })
   } catch (error) {
@@ -152,7 +162,7 @@ slackApp.command('/grass', async ({ command, ack, respond, client }) => {
 
   try {
     await respond({
-      text: 'To earn points: post a photo and include "#grass" (or 🌱) in the same message. I’ll count it automatically!\n\nTip: You can also type "grass" anywhere in the caption.',
+      text: 'To earn points: post a photo and include "#grass" (or :grass:) in the same message. I’ll count it automatically!\n\nTip: You can also type "grass" anywhere in the caption.',
       response_type: 'ephemeral'
     })
   } catch (error) {
@@ -164,16 +174,40 @@ slackApp.command('/grass', async ({ command, ack, respond, client }) => {
   }
 })
 
-slackApp.command('/leaderboard', async ({ command, ack, respond }) => {
+slackApp.command('/leaderboard', async ({ command, ack, respond, client }) => {
   await ack()
   
   try {
-    await handleLeaderboardCommand(command, respond)
+    await handleLeaderboardCommand(command, respond, client)
   } catch (error) {
     logger.error('Error handling /leaderboard command:', error)
     await respond({
       text: 'Sorry, there was an error retrieving the leaderboard. Please try again.',
       response_type: 'ephemeral'
+    })
+  }
+})
+
+// Handle leaderboard period button interactions
+slackApp.action(/^leaderboard_(weekly|monthly|all)$/, async ({ action, ack, respond, client }) => {
+  await ack()
+  
+  try {
+    const period = action.action_id.replace('leaderboard_', '')
+    const leaderboardData = await leaderboardService.getLeaderboardByPeriod(period, 10)
+    const blocks = leaderboardService.getLeaderboardBlocks(leaderboardData, period)
+    
+    await respond({
+      blocks: blocks,
+      replace_original: true
+    })
+    
+    logger.info(`Leaderboard updated to: ${period}`)
+  } catch (error) {
+    logger.error('Error handling leaderboard button action:', error)
+    await respond({
+      text: 'Sorry, there was an error updating the leaderboard. Please try again.',
+      replace_original: false
     })
   }
 })

@@ -119,6 +119,12 @@ class CardGame {
         // Initialize multiplayer
         this.initializeMultiplayer();
         
+        // Ensure board connection status is initialized
+        if (this.multiplayer) {
+            const initialStatus = this.multiplayer.connectionStatus || 'offline';
+            this.multiplayer.updateConnectionStatus(initialStatus);
+        }
+        
         // Initialize private hand system
         this.initializePrivateHand();
         
@@ -170,6 +176,11 @@ class CardGame {
         // Card table for dealing
         document.getElementById('card-table').addEventListener('click', (e) => {
             // Only deal if clicking directly on the table (not on cards) and not dragging
+            const isConnected = !this.multiplayer || this.multiplayer.connectionStatus === 'connected';
+            if (!isConnected) {
+                e.preventDefault();
+                return;
+            }
             if (e.target.id === 'card-table' && !this.isDragging && !this.preventTableClick && !e.defaultPrevented) {
                 this.dealCardToPosition(e.clientX, e.clientY);
             }
@@ -240,6 +251,12 @@ class CardGame {
     }
 
     dealCard() {
+        // Prevent dealing when not connected
+        const isConnected = !this.multiplayer || this.multiplayer.connectionStatus === 'connected';
+        if (!isConnected) {
+            return;
+        }
+        
         if (this.deck.cards.length === 0) {
             alert('No more cards in deck!');
             return;
@@ -492,6 +509,12 @@ class CardGame {
     }
 
     dealCardToPosition(x, y) {
+        // Prevent dealing when not connected
+        const isConnected = !this.multiplayer || this.multiplayer.connectionStatus === 'connected';
+        if (!isConnected) {
+            return;
+        }
+        
         if (this.deck.cards.length === 0) {
             alert('No more cards in deck!');
             return;
@@ -654,6 +677,12 @@ class CardGame {
 
         // Mouse events
         cardElement.addEventListener('mousedown', (e) => {
+            const isConnected = !this.multiplayer || this.multiplayer.connectionStatus === 'connected';
+            if (!isConnected) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
             e.preventDefault();
             e.stopPropagation();
             
@@ -853,6 +882,12 @@ class CardGame {
 
         // Right-click to shuffle card back into deck
         cardElement.addEventListener('contextmenu', (e) => {
+            const isConnected = !this.multiplayer || this.multiplayer.connectionStatus === 'connected';
+            if (!isConnected) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
             e.preventDefault();
             e.stopPropagation();
             
@@ -862,6 +897,12 @@ class CardGame {
 
         // Touch events for mobile
         cardElement.addEventListener('touchstart', (e) => {
+            const isConnected = !this.multiplayer || this.multiplayer.connectionStatus === 'connected';
+            if (!isConnected) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
             e.preventDefault();
             e.stopPropagation();
             

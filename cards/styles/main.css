@@ -40,6 +40,35 @@ body {
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
 }
 
+/* Board connection status overlay */
+.board-connection-status {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: none; /* hidden when connected */
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.65);
+    z-index: 2000;
+    color: #fff;
+    font-size: 14px;
+    backdrop-filter: blur(2px);
+    pointer-events: auto; /* Block all interactions when visible */
+}
+
+.board-connection-status .status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.board-connection-status .status-text {
+    font-weight: 600;
+}
+
 #game-info {
     width: 300px;
     padding: 20px;
@@ -100,7 +129,7 @@ body {
     position: fixed;
     top: 20px;
     left: 20px;
-    z-index: 2001; /* Higher than menu to stay on top */
+    z-index: 10001; /* Higher than menu and overlay to stay on top */
     background: rgba(255, 255, 255, 0.1);
     border: 2px solid rgba(255, 255, 255, 0.3);
     color: white;
@@ -127,7 +156,7 @@ body {
     backdrop-filter: blur(20px);
     border-right: 2px solid rgba(255, 255, 255, 0.1);
     transition: left 0.3s ease;
-    z-index: 2000; /* Higher z-index to appear above table and cards */
+    z-index: 10000; /* Highest global z-index to always be accessible */
     overflow-y: auto;
 }
 
