@@ -217,6 +217,8 @@ class WebSocketMultiplayerManager {
         this.iLastBroadcastDeck = true;
         this.updateConnectionStatus('connecting');
         
+        console.log('Room created:', this.roomCode);
+        
         // Show room info
         this.showRoomInfo();
         
@@ -257,25 +259,175 @@ class WebSocketMultiplayerManager {
         console.log('Connecting to WebSocket server');
         
         // Determine WebSocket server URL
-        // For development, you can use the local PartyKit dev server
-        // For production, you'll need to deploy the durable-game-worker and use that URL
+        // For local testing/development, try localhost first with fallback to remote
+        // For production, use the deployed server
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        let host = 'cards-websocket-server-02b8944e7896.herokuapp.com';
-
         
-        const wsUrl = `${protocol}//${host}/chat/${this.roomCode}`;
+        // Check if we're running locally (localhost or 127.0.0.1)
+        // This allows tests to connect to local test server
+        const isLocalhost = window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1' ||
+                           window.location.hostname === '';
+        
+        // If accessing from localhost, try local server first, fallback to remote
+        // Otherwise, use remote server directly
+        const remoteHost = 'cards-websocket-server-02b8944e7896.herokuapp.com';
+        const localHost = 'localhost:8080';
+        
+        let host = isLocalhost ? localHost : remoteHost;
+        // Always use secure WebSocket for remote Heroku host, even if page is served over http
+        const wsUrl = isLocalhost
+            ? `${protocol}//${host}/chat/${this.roomCode}`
+            : `wss://${host}/chat/${this.roomCode}`;
         
         console.log('Connecting to:', wsUrl);
         
         try {
             this.socket = new WebSocket(wsUrl);
+            this.socket._connectionAttempt = { host, isLocalhost, triedRemote: false };
             
             this.socket.onopen = () => {
                 console.log('Connected to WebSocket server');
-                this.updateConnectionStatus('connected');
+                // Don't set status to 'connected' yet - wait for roomJoined
+                // Keep as 'connecting' until room is actually joined
+                this.updateConnectionStatus('connecting');
                 this.lastMessageTime = Date.now();
                 this.startHealthCheck();
-                this.handleWebSocketConnected();
+                
+                // Handle reconnection if we already had a room
+                if (this.roomCode && this.roomCreationAttempted) {
+                    this.onReconnection();
+                } else {
+                    this.handleWebSocketConnected();
+                }
+            };
+            
+            this.socket.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    this.handleWebSocketMessage(message);
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
+                }
+            };
+            
+            this.socket.onclose = (event) => {
+                console.log('Disconnected from WebSocket server', event.code, event.reason);
+                
+                // If we tried localhost and it failed, try remote server as fallback
+                const connAttempt = this.socket._connectionAttempt;
+                if (connAttempt && connAttempt.isLocalhost && !connAttempt.triedRemote) {
+                    // Connection failed or closed abnormally (1006 = abnormal closure, or any error)
+                    // Try remote server as fallback
+                    console.log('Local server connection failed or closed, falling back to remote server');
+                    connAttempt.triedRemote = true;
+                    
+                    const remoteUrl = `wss://${remoteHost}/chat/${this.roomCode}`;
+                    console.log('Connecting to remote server:', remoteUrl);
+                    
+                    // Wait a bit before retrying
+                    setTimeout(() => {
+                        if (this.roomCode) {
+                            this.connectToRemoteServer(remoteUrl);
+                        }
+                    }, 1000);
+                    return;
+                }
+                
+                this.updateConnectionStatus('offline');
+                // Attempt reconnection to the same server (don't loop between local/remote)
+                if (this.roomCode && (!connAttempt || !connAttempt.triedRemote)) {
+                    setTimeout(() => {
+                        this.connectToWebSocketServer();
+                    }, 2000);
+                }
+            };
+            
+            this.socket.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                
+                // If localhost failed, mark that we should try remote
+                const connAttempt = this.socket._connectionAttempt;
+                if (connAttempt && connAttempt.isLocalhost && !connAttempt.triedRemote) {
+                    console.log('Local server error detected, will try remote as fallback');
+                    // Set a flag to trigger fallback on close
+                    connAttempt.shouldTryRemote = true;
+                    // If socket closes immediately after error, onclose will handle it
+                    // But also schedule a fallback attempt in case onclose doesn't fire
+                    setTimeout(() => {
+                        if (this.socket && (this.socket.readyState === WebSocket.CLOSED || 
+                            this.socket.readyState === WebSocket.CLOSING) && 
+                            connAttempt && !connAttempt.triedRemote) {
+                            console.log('Connection appears closed after error, trying remote fallback');
+                            const remoteUrl = `${protocol}//${remoteHost}/chat/${this.roomCode}`;
+                            connAttempt.triedRemote = true;
+                            if (this.roomCode) {
+                                this.connectToRemoteServer(remoteUrl);
+                            }
+                        }
+                    }, 1000);
+                } else {
+                    this.updateConnectionStatus('offline');
+                }
+            };
+            
+            // Add timeout for connection
+            setTimeout(() => {
+                if (this.socket && this.socket.readyState === WebSocket.CONNECTING) {
+                    console.log('WebSocket connection timeout after 5 seconds');
+                    this.socket.close();
+                    
+                    // If we tried localhost, try remote
+                    const connAttempt = this.socket._connectionAttempt;
+                    if (connAttempt && connAttempt.isLocalhost && !connAttempt.triedRemote) {
+                        const remoteUrl = `wss://${remoteHost}/chat/${this.roomCode}`;
+                        console.log('Connection timeout, trying remote server:', remoteUrl);
+                        connAttempt.triedRemote = true;
+                        setTimeout(() => {
+                            if (this.roomCode) {
+                                this.connectToRemoteServer(remoteUrl);
+                            }
+                        }, 500);
+                    } else {
+                        this.updateConnectionStatus('offline');
+                    }
+                }
+            }, 5000);
+            
+        } catch (error) {
+            console.error('Failed to connect to WebSocket server:', error);
+            
+            // If localhost failed and we haven't tried remote, try it
+            if (isLocalhost && this.roomCode) {
+                const remoteUrl = `wss://${remoteHost}/chat/${this.roomCode}`;
+                console.log('Connection exception, trying remote server:', remoteUrl);
+                setTimeout(() => {
+                    this.connectToRemoteServer(remoteUrl);
+                }, 500);
+            } else {
+                this.updateConnectionStatus('offline');
+            }
+        }
+    }
+    
+    connectToRemoteServer(wsUrl) {
+        console.log('Connecting to remote WebSocket server:', wsUrl);
+        
+        try {
+            this.socket = new WebSocket(wsUrl);
+            this.socket._connectionAttempt = { host: wsUrl.split('//')[1].split('/')[0], isLocalhost: false, triedRemote: true };
+            
+            this.socket.onopen = () => {
+                console.log('Connected to remote WebSocket server');
+                this.updateConnectionStatus('connecting');
+                this.lastMessageTime = Date.now();
+                this.startHealthCheck();
+                
+                if (this.roomCode && this.roomCreationAttempted) {
+                    this.onReconnection();
+                } else {
+                    this.handleWebSocketConnected();
+                }
             };
             
             this.socket.onmessage = (event) => {
@@ -288,104 +440,110 @@ class WebSocketMultiplayerManager {
             };
             
             this.socket.onclose = () => {
-                console.log('Disconnected from WebSocket server');
+                console.log('Disconnected from remote WebSocket server');
                 this.updateConnectionStatus('offline');
+                if (this.roomCode) {
+                    setTimeout(() => {
+                        this.connectToWebSocketServer();
+                    }, 2000);
+                }
             };
             
             this.socket.onerror = (error) => {
-                console.error('WebSocket error:', error);
+                console.error('Remote WebSocket error:', error);
                 this.updateConnectionStatus('offline');
             };
             
-            // Add timeout for connection
-            setTimeout(() => {
-                if (this.socket && this.socket.readyState === WebSocket.CONNECTING) {
-                    console.log('WebSocket connection timeout after 5 seconds');
-                    this.socket.close();
-                    this.updateConnectionStatus('offline');
-                }
-            }, 5000);
-            
         } catch (error) {
-            console.error('Failed to connect to WebSocket server:', error);
+            console.error('Failed to connect to remote WebSocket server:', error);
             this.updateConnectionStatus('offline');
         }
     }
     
     handleWebSocketConnected() {
-        console.log('WebSocket server connected, creating room or joining...');
+        console.log('WebSocket server connected, joining room...');
         console.log('Room code:', this.roomCode, 'Is host:', this.isHost);
         
         if (this.roomCreationAttempted) {
-            console.log('Room creation already attempted, skipping');
+            console.log('Room join already attempted, skipping');
             return;
         }
         
         this.roomCreationAttempted = true;
         
-        if (this.isHost) {
-            // Host creates room
-            console.log('Attempting to create room:', this.roomCode);
-            this.socket.send(JSON.stringify({
-                type: 'createRoom',
-                roomCode: this.roomCode
-            }));
-        } else {
-            // Client joins room
-            console.log('Attempting to join room:', this.roomCode);
-            this.socket.send(JSON.stringify({
-                type: 'joinRoom',
-                roomCode: this.roomCode,
-                playerId: this.playerId,
-                playerAlias: this.playerAlias
-            }));
-        }
+        // Always use joinRoom (server creates room if needed)
+        console.log('Attempting to join room:', this.roomCode);
+        this.sendMessage({
+            type: 'joinRoom',
+            roomCode: this.roomCode,
+            playerId: this.playerId,
+            playerName: this.playerAlias
+        });
     }
     
     handleWebSocketMessage(message) {
         console.log('WebSocket message:', message.type);
         
         switch (message.type) {
-            case 'roomCreated':
-                console.log('Room created successfully');
-                this.connectedPlayers.add(this.playerId);
-                this.updatePlayerCount();
-                this.updateConnectionStatus('connected');
-                // Start periodic sync for host
-                this.startPeriodicSync();
-                // Start state validation
-                this.startStateValidation();
-                break;
-                
             case 'roomJoined':
                 console.log('Joined room successfully');
+                this.isHost = message.isHost || false;
                 this.connectedPlayers.add(this.playerId);
                 this.updatePlayerCount();
                 this.updateConnectionStatus('connected');
-                // Start state validation
-                this.startStateValidation();
-                // Request full state synchronization from host
-                if (!this.isHost) {
-                    this.sendMessage({
-                        type: 'requestFullState'
-                    });
+                
+                // Apply full state from server if provided
+                if (message.gameState) {
+                    this.applyGameState(message.gameState);
                 }
+                
+                // If server sends player list immediately, apply it (faster than waiting for broadcast)
+                if (message.players && Array.isArray(message.players)) {
+                    this.applyPlayerList(message.players);
+                } else {
+                    // Otherwise request full state and player list (fallback)
+                    this.requestFullState();
+                }
+                
+                // Update private hand display immediately with player list
+                if (this.game && typeof this.game.updatePrivateHandDisplay === 'function') {
+                    this.game.updatePrivateHandDisplay();
+                }
+                
                 // Add ourselves to the player list and broadcast it
                 this.broadcastPlayerList();
+                break;
+                
+            case 'fullState':
+                // Response to requestFullState
+                console.log('Received full state from server');
+                this.applyGameState(message.gameState);
+                if (message.players) {
+                    this.applyPlayerList(message.players);
+                }
                 break;
                 
             case 'playerJoined':
                 console.log('Player joined the room:', message.playerId);
                 this.connectedPlayers.add(message.playerId);
-                this.updatePlayerCount();
                 
-                // If we're the host, send our deck data and board state to the new player
-                if (this.isHost) {
-                    this.syncNewPlayer(message.playerId);
+                // Store player alias if provided
+                if (message.playerAlias && message.playerAlias !== message.playerId) {
+                    this.playerAliases.set(message.playerId, message.playerAlias);
                 }
                 
-                // Broadcast updated player list to all players
+                this.updatePlayerCount();
+                
+                // Note: Server already sends full state to new players in roomJoined,
+                // so we don't need to sync separately. Just ensure player list is updated.
+                
+                // Broadcast updated player list to all players immediately
                 this.broadcastPlayerList();
+                
+                // Update private hand display to show new player
+                if (this.game && typeof this.game.updatePrivateHandDisplay === 'function') {
+                    this.game.updatePrivateHandDisplay();
+                }
                 
                 // Automatically broadcast current deck to all players when someone joins
                 this.broadcastCurrentDeckToAll();
@@ -398,53 +556,174 @@ class WebSocketMultiplayerManager {
                 break;
                 
             case 'gameMessage':
-                try {
-                    this.handleIncomingMessage(message.data);
-                } catch (error) {
-                    console.error('❌ Error in handleIncomingMessage:', error);
+                // Server-validated state updates
+                if (message.data && message.data.type === 'cardState') {
+                    // cardState data is always an array (even for single cards)
+                    this.handleCardState(message.data.data, message.timestamp, message.sentBy);
+                } else if (message.data && message.data.type === 'deckChange') {
+                    this.handleDeckChange(message.data.data); // data is { deckId, deckData }
+                } else if (message.data && message.data.type === 'playerJoined') {
+                    this.handlePlayerJoin(message.data.data);
+                } else if (message.data && message.data.type === 'playerLeft') {
+                    const playerId = message.data.data?.playerId;
+                    if (playerId) {
+                        this.connectedPlayers.delete(playerId);
+                        this.updatePlayerCount();
+                    }
+                } else {
+                    // Fallback: try legacy handler
+                    try {
+                        this.handleIncomingMessage(message.data);
+                    } catch (error) {
+                        console.error('❌ Error in handleIncomingMessage:', error);
+                    }
+                }
+                break;
+                
+            case 'gameReset':
+                // Server broadcast game reset
+                if (message.gameState) {
+                    this.applyGameState(message.gameState);
+                }
+                if (this.game && typeof this.game.resetGame === 'function') {
+                    this.game.resetGame(false); // Don't broadcast (server already did)
                 }
                 break;
                 
             case 'error':
-                console.error('WebSocket error:', message.message);
-                alert('Error: ' + message.message);
-                this.updateConnectionStatus('offline');
+                this.handleServerError(message);
                 break;
         }
     }
     
     sendMessage(message) {
-        console.log('Sending message:', message);
-        
-        // Add unique message ID and acknowledgment requirement
-        const messageId = ++this.messageIdCounter;
-        const messageData = {
-            ...message,
-            playerId: this.playerId,
-            timestamp: Date.now(),
-            roomCode: this.roomCode,
-            messageId: messageId,
-            requiresAck: true
-        };
-        
-        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-            // If targetPlayerId is specified, this is a targeted message
-            if (message.targetPlayerId) {
-                this.socket.send(JSON.stringify({
-                    type: 'targetedMessage',
-                    data: messageData,
-                    targetPlayerId: message.targetPlayerId
-                }));
-            } else {
-                this.socket.send(JSON.stringify({
-                    type: 'gameMessage',
-                    data: messageData
-                }));
+        // If WebSocket not connected, queue message for later
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+            console.warn('WebSocket not connected, queuing message:', message.type);
+            this.messageQueue.push(message);
+            
+            // Attempt reconnection if not already attempting
+            if (this.connectionStatus !== 'connecting') {
+                this.handleConnectionLoss();
             }
-        } else {
-            console.error('WebSocket not connected, queuing message');
-            this.messageQueue.push(messageData);
+            return;
         }
+        
+        try {
+            // Control messages (joinRoom, requestFullState, etc.) should be sent directly
+            // Game messages (cardState, deckChange, etc.) should be wrapped in gameMessage
+            const controlMessageTypes = ['joinRoom', 'requestFullState', 'resetGame'];
+            const isControlMessage = controlMessageTypes.includes(message.type);
+            
+            if (isControlMessage) {
+                // Send control messages directly to server
+                const messageData = {
+                    ...message,
+                    playerId: this.playerId,
+                    roomCode: this.roomCode
+                };
+                this.socket.send(JSON.stringify(messageData));
+            } else {
+                // Wrap game messages
+                const messageId = ++this.messageIdCounter;
+                const messageData = {
+                    ...message,
+                    playerId: this.playerId,
+                    timestamp: Date.now(),
+                    roomCode: this.roomCode,
+                    messageId: messageId,
+                    requiresAck: true
+                };
+                
+                // If targetPlayerId is specified, this is a targeted message (legacy)
+                if (message.targetPlayerId) {
+                    this.socket.send(JSON.stringify({
+                        type: 'targetedMessage',
+                        data: messageData,
+                        targetPlayerId: message.targetPlayerId
+                    }));
+                } else {
+                    this.socket.send(JSON.stringify({
+                        type: 'gameMessage',
+                        data: messageData
+                    }));
+                }
+            }
+        } catch (error) {
+            console.error('Failed to send message:', error);
+            this.messageQueue.push(message);
+            this.handleConnectionLoss();
+        }
+    }
+    
+    // Enhanced error handling
+    handleServerError(error) {
+        console.error('Server error:', error);
+        
+        const errorMessage = error.message || 'An unknown error occurred';
+        const errorCode = error.code || 'UNKNOWN';
+        
+        // Show user-friendly error message
+        this.showErrorNotification(errorMessage);
+        
+        switch (errorCode) {
+            case 'ROOM_NOT_FOUND':
+                this.updateConnectionStatus('offline');
+                break;
+                
+            case 'PLAYER_NOT_IN_ROOM':
+                this.updateConnectionStatus('offline');
+                break;
+                
+            case 'INVALID_STATE':
+                // Request full state to resync
+                console.log('Invalid state detected, requesting full state...');
+                this.requestFullState();
+                break;
+                
+            default:
+                this.updateConnectionStatus('offline');
+                // Attempt reconnection for network errors
+                if (this.roomCode) {
+                    setTimeout(() => {
+                        this.handleConnectionLoss();
+                    }, 2000);
+                }
+        }
+    }
+    
+    // Show error notification to user
+    showErrorNotification(message) {
+        // Create or update error notification element
+        let errorDiv = document.getElementById('connection-error-notification');
+        if (!errorDiv) {
+            errorDiv = document.createElement('div');
+            errorDiv.id = 'connection-error-notification';
+            errorDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #f87171;
+                color: white;
+                padding: 12px 16px;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                z-index: 10000;
+                max-width: 300px;
+                font-size: 14px;
+            `;
+            document.body.appendChild(errorDiv);
+        }
+        
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            if (errorDiv) {
+                errorDiv.style.display = 'none';
+            }
+        }, 5000);
     }
     
     handleIncomingMessage(message) {
@@ -466,7 +745,8 @@ class WebSocketMultiplayerManager {
         
         switch (message.type) {
             case 'cardState':
-                this.handleCardState(message.data, message.playerId);
+                // Legacy handler - cardState now comes through gameMessage
+                this.handleCardState(message.data, message.timestamp, message.playerId);
                 break;
             case 'resetGame':
                 this.handleResetGame();
@@ -478,10 +758,7 @@ class WebSocketMultiplayerManager {
                 this.handleDeckChange(message.data);
                 break;
             case 'requestFullState':
-                // Host responds with full state
-                if (this.isHost) {
-                    this.broadcastAllCardStates();
-                }
+                // Request handled by server now - no client-side response needed
                 break;
             case 'stateValidation':
                 this.handleStateValidation(message.data);
@@ -495,15 +772,276 @@ class WebSocketMultiplayerManager {
         }
     }
     
-    // New cardState handler - handles complete card state synchronization
-    handleCardState(data, playerId = null) {
-        const { uniqueId, card, position, isFlipped, zIndex, privateTo, status } = data;
+    // ========== Server Request Methods ==========
+    
+    requestCardStateUpdate(cardStates) {
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+            console.error('WebSocket not connected');
+            return;
+        }
+        
+        // Ensure cardStates is always an array (supports single or multiple cards)
+        const cardStatesArray = Array.isArray(cardStates) ? cardStates : [cardStates];
+        
+        this.socket.send(JSON.stringify({
+            type: 'updateCardState',
+            playerId: this.playerId,
+            roomCode: this.roomCode,
+            cardStates: cardStatesArray // Always array format
+        }));
+        
+        // Don't apply changes locally yet - wait for server broadcast
+    }
+    
+    requestDeckUpdate(deckId, deckData) {
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+            console.error('WebSocket not connected');
+            return;
+        }
+        
+        this.socket.send(JSON.stringify({
+            type: 'updateDeck',
+            playerId: this.playerId,
+            roomCode: this.roomCode,
+            deckId: deckId,
+            deckData: deckData
+        }));
+    }
+    
+    requestShuffleDiscardPile(discardCardUniqueIds) {
+        const uniqueIdsArray = Array.isArray(discardCardUniqueIds) ? discardCardUniqueIds : [discardCardUniqueIds];
+        console.log('REQUESTING SHUFFLE DISCARD PILE:', uniqueIdsArray.length, 'cards', uniqueIdsArray);
+        
+        // If connected, send to server
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            // ShuffleDiscardPile is a control message, send directly (not wrapped in gameMessage)
+            this.socket.send(JSON.stringify({
+                type: 'shuffleDiscardPile',
+                playerId: this.playerId,
+                roomCode: this.roomCode,
+                discardCardUniqueIds: uniqueIdsArray
+            }));
+        } else {
+            // Not connected - handle shuffle locally using same logic as server
+            this.handleShuffleLocally(uniqueIdsArray);
+        }
+    }
+    
+    // Handle shuffle when offline - uses same logic flow as server response
+    handleShuffleLocally(discardCardUniqueIds) {
+        if (!this.game || !this.game.deck) {
+            console.error('Cannot shuffle: game or deck not available');
+            return;
+        }
+        
+        // Get card data before removal (same as server logic)
+        const cardsToAdd = [];
+        discardCardUniqueIds.forEach(uniqueId => {
+            const cardElement = document.querySelector(`[data-unique-id="${uniqueId}"]`);
+            if (cardElement) {
+                const card = this.game.getCardFromElement(cardElement);
+                if (card) {
+                    cardsToAdd.push(card);
+                }
+            }
+        });
+        
+        // Remove cards from DOM (simulate cardState with status='discarded')
+        discardCardUniqueIds.forEach(uniqueId => {
+            const cardElement = document.querySelector(`[data-unique-id="${uniqueId}"]`);
+            if (cardElement) {
+                if (cardElement._cleanupTooltip) {
+                    cardElement._cleanupTooltip();
+                }
+                cardElement.remove();
+            }
+        });
+        
+        // Broadcast card removals (simulate server response)
+        this.handleCardState(
+            discardCardUniqueIds.map(uniqueId => ({
+                uniqueId,
+                status: 'discarded',
+                timestamp: Date.now()
+            })),
+            Date.now(),
+            this.playerId
+        );
+        
+        // Add cards back to deck with size limit
+        const originalSize = this.game.originalDeckSize || this.game.deck.cards.length;
+        const currentSize = this.game.deck.cards.length;
+        const maxToAdd = Math.max(0, originalSize - currentSize);
+        const cardsToActuallyAdd = cardsToAdd.slice(0, maxToAdd);
+        
+        cardsToActuallyAdd.forEach(card => {
+            if (this.game.deck.cards.length < originalSize) {
+                this.game.deck.addCard(card);
+            }
+        });
+        
+        // Shuffle deck
+        this.game.deck.shuffle();
+        
+        // Ensure deck doesn't exceed original size
+        if (this.game.deck.cards.length > originalSize) {
+            this.game.deck.cards = this.game.deck.cards.slice(0, originalSize);
+        }
+        
+        // Broadcast deck change (simulate server response)
+        this.handleDeckChange({
+            deckId: this.game.deck.id || null,
+            deckData: {
+                id: this.game.deck.id || null,
+                name: this.game.deck.name || 'Deck',
+                cards: this.game.deck.cards
+            },
+            originalDeckSize: originalSize
+        });
+        
+        // Update UI
+        if (typeof this.game.renderDeck === 'function') {
+            this.game.renderDeck();
+        }
+        if (typeof this.game.updateDiscardPileCounter === 'function') {
+            this.game.updateDiscardPileCounter();
+        }
+    }
+    
+    requestFullState() {
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+            console.error('WebSocket not connected');
+            return;
+        }
+        
+        this.socket.send(JSON.stringify({
+            type: 'requestFullState',
+            playerId: this.playerId,
+            roomCode: this.roomCode
+        }));
+    }
+    
+    // ========== State Application Methods ==========
+    
+    applyGameState(gameState) {
+        if (!this.game) return;
+        
+        console.log('Applying game state from server', gameState);
+        
+        // Clear local state
+        if (typeof this.game.clearBoard === 'function') {
+            this.game.clearBoard();
+        }
+        
+        // Apply deck state
+        if (gameState.deckId && gameState.deckData) {
+            if (gameState.deckId === 'remote' || !this.game.isValidDeckId(gameState.deckId)) {
+                // Load as remote deck
+                if (typeof this.game.loadRemoteDeck === 'function') {
+                    this.game.loadRemoteDeck(gameState.deckData);
+                }
+            } else {
+                // Load deck by ID
+                if (typeof this.game.loadDeck === 'function') {
+                    this.game.loadDeck(gameState.deckId, false); // Don't broadcast
+                }
+                // Manually set deck data
+                if (this.game.deck && gameState.deckData) {
+                    this.game.deck.cards = gameState.deckData.cards || [];
+                    this.game.originalDeckSize = gameState.originalDeckSize || gameState.deckData.cards?.length || 0;
+                }
+            }
+        }
+        
+        // Apply all card states (gameState.cards is an object from serialized Map)
+        if (gameState.cards && typeof gameState.cards === 'object') {
+            const cardStates = Object.values(gameState.cards);
+            
+            // Process card states (always array format)
+            cardStates.forEach(cardState => {
+                this.processSingleCardState(cardState, null, true); // isServerUpdate = true
+            });
+            
+            // Update private hand display AFTER all cards are processed
+            // This ensures counts are accurate for all players
+            if (this.game && typeof this.game.updatePrivateHandDisplay === 'function') {
+                this.game.updatePrivateHandDisplay();
+            }
+        }
+        
+        // Update discard pile from state
+        if (Array.isArray(gameState.discardPile) && typeof this.game.updateDiscardPileFromState === 'function') {
+            this.game.updateDiscardPileFromState(gameState.discardPile);
+        }
+        
+        // Update deck display
+        if (typeof this.game.renderDeck === 'function') {
+            this.game.renderDeck();
+        }
+        
+        // Ensure private hand display is updated one more time after everything is synced
+        if (this.game && typeof this.game.updatePrivateHandDisplay === 'function') {
+            // Small delay to ensure all DOM updates are complete
+            setTimeout(() => {
+                if (this.game && typeof this.game.updatePrivateHandDisplay === 'function') {
+                    this.game.updatePrivateHandDisplay();
+                }
+            }, 100);
+        }
+        
+        console.log('✅ Full state synchronized from server');
+    }
+    
+    applyPlayerList(players) {
+        if (!Array.isArray(players)) return;
+        
+        // Update connected players
+        this.connectedPlayers.clear();
+        this.connectedPlayers.add(this.playerId); // Always include ourselves
+        
+        players.forEach(playerData => {
+            const playerId = playerData.playerId;
+            const playerName = playerData.playerName || playerData.playerAlias;
+            
+            if (playerId && playerId !== this.playerId) {
+                this.connectedPlayers.add(playerId);
+                if (playerName) {
+                    this.playerAliases.set(playerId, playerName);
+                }
+            }
+        });
+        
+        this.updatePlayerCount();
+        
+        // Update private hand display
+        if (this.game && typeof this.game.updatePrivateHandDisplay === 'function') {
+            this.game.updatePrivateHandDisplay();
+        }
+    }
+    
+    processSingleCardState(cardState, playerId = null, isServerUpdate = false) {
+        // This is the core method to process a single card state update
+        // Called from handleCardState which processes arrays
+        const { uniqueId, card, position, isFlipped, zIndex, privateTo, status } = cardState;
         
         // Handle card removal (discarded)
         if (status === 'discarded') {
-            // Find the card element by uniqueId
-            const cardElement = document.querySelector(`[data-unique-id="${uniqueId}"]`);
+            // Try multiple selector strategies - dataset.uniqueId becomes data-unique-id in HTML
+            let cardElement = document.querySelector(`[data-unique-id="${uniqueId}"]`);
+            if (!cardElement) {
+                // Try querying by dataset property directly
+                const allCards = document.querySelectorAll('.card');
+                for (const card of allCards) {
+                    if (card.dataset.uniqueId === uniqueId) {
+                        cardElement = card;
+                        break;
+                    }
+                }
+            }
+            
             if (cardElement) {
+                console.log('REMOVING CARD FROM DISCARD PILE (shuffled):', uniqueId);
+                
                 // Clean up any active tooltip before removing the card
                 if (cardElement._cleanupTooltip) {
                     cardElement._cleanupTooltip();
@@ -512,36 +1050,63 @@ class WebSocketMultiplayerManager {
                 // Remove the card from the DOM
                 cardElement.remove();
                 
-                // Update private hand display in case this affects card counts
+                // Update private hand display
                 if (this.game && typeof this.game.updatePrivateHandDisplay === 'function') {
                     this.game.updatePrivateHandDisplay();
                 }
                 
-                // Show shuffle feedback to indicate a card was shuffled back to deck
+                // Update discard pile counter after card removal - use setTimeout to ensure DOM is updated
+                if (this.game && typeof this.game.updateDiscardPileCounter === 'function') {
+                    setTimeout(() => {
+                        if (this.game && typeof this.game.updateDiscardPileCounter === 'function') {
+                            this.game.updateDiscardPileCounter();
+                        }
+                    }, 50);
+                }
+                
+                // Show shuffle feedback
                 if (this.game && typeof this.game.showShuffleFeedback === 'function') {
                     this.game.showShuffleFeedback();
                 }
+            } else {
+                console.warn('Card not found for removal:', uniqueId, 'Total cards in DOM:', document.querySelectorAll('.card').length);
             }
             return; // Exit early for removal
         }
         
-        // Find existing card by uniqueId (not instanceId)
+        // Find existing card by uniqueId
         let cardElement = document.querySelector(`[data-unique-id="${uniqueId}"]`);
         
         if (!cardElement) {
             // Card doesn't exist, create it
-            cardElement = this.game.createCardElement(this.game.deck, card);
-            if (!cardElement) {
-                console.error('Failed to create card element for card:', card);
+            if (this.game && typeof this.game.createCardElement === 'function') {
+                cardElement = this.game.createCardElement(this.game.deck || new cards.Deck(), card);
+                if (!cardElement) {
+                    console.error('Failed to create card element for card:', card);
+                    return;
+                }
+                // Set both uniqueId and instanceId
+                cardElement.dataset.uniqueId = uniqueId;
+                cardElement.dataset.instanceId = card.instanceId;
+                
+                // Determine initial container based on location
+                const cardTable = document.getElementById('card-table');
+                if (cardTable) {
+                    cardTable.appendChild(cardElement);
+                }
+                
+                if (this.game && typeof this.game.addCardInteractions === 'function') {
+                    this.game.addCardInteractions(cardElement, card);
+                }
+            } else {
                 return;
             }
-            // Set both uniqueId and instanceId for consistency
-            cardElement.dataset.uniqueId = uniqueId;
-            cardElement.dataset.instanceId = card.instanceId;
-            document.getElementById('card-table').appendChild(cardElement);
-            this.game.addCardInteractions(cardElement, card);
         }
         
+        // Mark as remote update to prevent feedback loops
+        if (isServerUpdate) {
+            cardElement.dataset.remoteUpdate = 'true';
+        }
         
         // Set privateTo and location dataset attributes
         if (privateTo !== undefined && privateTo !== null) {
@@ -551,23 +1116,65 @@ class WebSocketMultiplayerManager {
         }
         
         // Update card state
-        if (position) {
-            cardElement.style.left = position.x + 'px';
-            cardElement.style.top = position.y + 'px';
+        const location = cardState.location;
+        const isInDiscardPile = location === 'discardPile';
+        
+        // Ensure discard pile cards are face UP and positioned over discard area (not reparented)
+        if (isInDiscardPile) {
+            // Remove flipped class immediately
+            cardElement.classList.remove('flipped');
+            // Position card in discard pile via centralized helper (ignores server position)
+            if (this.game && typeof this.game.positionCardInDiscardPileElement === 'function') {
+                this.game.positionCardInDiscardPileElement(cardElement);
+            }
+        } else {
+            // Not in discard pile - handle flipped state
+            if (isFlipped !== undefined) {
+                if (isFlipped) {
+                    cardElement.classList.add('flipped');
+                } else {
+                    cardElement.classList.remove('flipped');
+                }
+            }
+            
+            // Handle positioning for non-discard-pile cards
+            // CRITICAL: Never apply server position if card is in discard pile container
+            // (even if location says 'table', if parent is discard pile, keep it there)
+            const isActuallyInDiscardContainer = cardElement.parentNode === this.game.discardPileContent;
+            
+            if (position && !isActuallyInDiscardContainer) {
+                // Move to card-table if needed
+                if (cardElement.parentNode === this.game.discardPileContent) {
+                    const cardTable = document.getElementById('card-table');
+                    if (cardTable) {
+                        if (cardElement.parentNode) {
+                            cardElement.parentNode.removeChild(cardElement);
+                        }
+                        cardTable.appendChild(cardElement);
+                    }
+                }
+                // Position relative to card-table
+                cardElement.style.position = 'absolute';
+                cardElement.style.left = position.x + 'px';
+                cardElement.style.top = position.y + 'px';
+            }
+        }
+        
+        // Ensure discard pile cards are draggable (interactions should already be set, but verify)
+        if (isInDiscardPile && this.game && typeof this.game.addCardInteractions === 'function') {
+            // Re-add interactions if card was just created or moved
+            if (!cardElement.hasAttribute('draggable')) {
+                const card = cardState.card || this.game.getCardFromElement(cardElement);
+                if (card) {
+                    this.game.addCardInteractions(cardElement, card);
+                }
+            }
         }
         
         if (zIndex !== undefined) {
             cardElement.style.zIndex = zIndex;
         }
         
-        // Update flipped state
-        if (isFlipped !== undefined) {
-            if (isFlipped) {
-                cardElement.classList.add('flipped');
-            } else {
-                cardElement.classList.remove('flipped');
-            }
-        }
         
         // Get player alias for highlighting
         const playerAlias = playerId ? this.playerAliases.get(playerId) : null;
@@ -593,30 +1200,79 @@ class WebSocketMultiplayerManager {
             cardElement.style.visibility = 'visible';
         }
         
-        
-        // Clear the remote update flag after a short delay to allow for user interactions
+        // Clear the remote update flag after a short delay
         setTimeout(() => {
             if (cardElement && cardElement.parentNode) {
                 cardElement.dataset.remoteUpdate = 'false';
             }
         }, 100);
         
-        // Update private hand display after card state changes
+        // Update displays
         if (this.game && this.game.updatePrivateHandDisplay) {
             this.game.updatePrivateHandDisplay();
         }
         
-        // Update deck count display
+        // Update discard pile counter when cards are synced
+        if (this.game && typeof this.game.updateDiscardPileCounter === 'function') {
+            // Small delay to ensure DOM is updated
+            setTimeout(() => {
+                if (this.game && typeof this.game.updateDiscardPileCounter === 'function') {
+                    this.game.updateDiscardPileCounter();
+                }
+            }, 50);
+        }
+        
         if (this.game && this.game.renderDeck) {
             this.game.renderDeck();
         }
+    }
+    
+    // Updated cardState handler - handles array of card states (always array format)
+    handleCardState(data, timestamp = null, sentBy = null) {
+        // data is always an array (even for single card updates)
+        // Server has already validated and stored this state
         
-        // Log successful card state update
-        console.log('Card state updated successfully:', {
-            uniqueId,
-            position: cardElement.style.left + ', ' + cardElement.style.top,
-            isFlipped: cardElement.classList.contains('flipped')
+        if (!Array.isArray(data)) {
+            console.warn('handleCardState received non-array data, converting:', data);
+            data = [data];
+        }
+        
+        // Check if this is a shuffle operation (all cards have status='discarded')
+        const isShuffleOperation = data.every(cs => cs.status === 'discarded') && data.length > 0;
+        
+        if (isShuffleOperation) {
+            console.log('SHUFFLE COMPLETE - Removing', data.length, 'cards from discard pile');
+        }
+        
+        // Process all card states in the array
+        data.forEach(cardState => {
+            this.processSingleCardState(cardState, sentBy, true); // isServerUpdate = true
         });
+        
+        // Update private hand display AFTER processing all cards
+        // This ensures counts are accurate for all players
+        if (this.game && typeof this.game.updatePrivateHandDisplay === 'function') {
+            // Small delay to ensure all DOM updates are complete
+            setTimeout(() => {
+                if (this.game && typeof this.game.updatePrivateHandDisplay === 'function') {
+                    this.game.updatePrivateHandDisplay();
+                }
+            }, 50);
+        }
+        
+        // Update discard pile counter after processing all card states
+        if (this.game && typeof this.game.updateDiscardPileCounter === 'function') {
+            setTimeout(() => {
+                if (this.game && typeof this.game.updateDiscardPileCounter === 'function') {
+                    this.game.updateDiscardPileCounter();
+                }
+            }, 100);
+        }
+        
+        // Update last known state timestamp
+        if (timestamp) {
+            this.lastServerStateTimestamp = timestamp;
+        }
     }
     
     
@@ -627,8 +1283,24 @@ class WebSocketMultiplayerManager {
     }
     
     handlePlayerJoin(data) {
-        this.connectedPlayers.add(data.playerId);
+        if (!data) return;
+        
+        const playerId = data.playerId;
+        const playerAlias = data.playerName || data.playerAlias;
+        
+        this.connectedPlayers.add(playerId);
+        
+        // Store player alias if provided
+        if (playerAlias && playerAlias !== playerId) {
+            this.playerAliases.set(playerId, playerAlias);
+        }
+        
         this.updatePlayerCount();
+        
+        // Update private hand display to show new player immediately
+        if (this.game && typeof this.game.updatePrivateHandDisplay === 'function') {
+            this.game.updatePrivateHandDisplay();
+        }
     }
     
     handlePlayerList(data) {
@@ -667,24 +1339,63 @@ class WebSocketMultiplayerManager {
     
     
     handleDeckChange(data) {
-        const { deckId, deckData } = data;
-        console.log('Handling deck change:', { deckId, deckData });
+        // data is { deckId, deckData, originalDeckSize? }
+        const { deckId, deckData, originalDeckSize } = data;
+        console.log('Handling deck change from server:', { deckId, deckData, originalDeckSize });
         
-        // Clear the local flag since we received a deck change from another player
+        // Clear the local flag since we received a deck change from server
         this.iLastBroadcastDeck = false;
         
-        // Clear the board first
-        if (this.game && typeof this.game.clearBoard === 'function') {
-            this.game.clearBoard();
+        // If this is a shuffle operation (deck changed but no board clear), don't clear board
+        // Only clear board if it's a new deck entirely
+        const isShuffle = deckData && this.game && this.game.deck && 
+                         this.game.deck.cards && deckData.cards &&
+                         deckData.cards.length > this.game.deck.cards.length;
+        
+        if (!isShuffle) {
+            // Clear the board first (new deck)
+            if (this.game && typeof this.game.clearBoard === 'function') {
+                this.game.clearBoard();
+            }
         }
         
         // Load the deck as a remote deck (prevents id duplicates) and use it as the active deck
         if (this.game && typeof this.game.loadRemoteDeck === 'function') {
             this.game.loadRemoteDeck(deckData);
+            // Set original deck size from server state (prioritize server value if provided)
+            if (originalDeckSize !== undefined) {
+                this.game.originalDeckSize = originalDeckSize;
+                console.log(`Updated originalDeckSize to ${originalDeckSize}`);
+            } else if (deckData && deckData.cards) {
+                this.game.originalDeckSize = deckData.cards.length;
+            }
+            
+            // Ensure deck doesn't exceed original size
+            if (this.game.deck && this.game.originalDeckSize > 0 && 
+                this.game.deck.cards.length > this.game.originalDeckSize) {
+                console.warn(`Deck size ${this.game.deck.cards.length} exceeds original ${this.game.originalDeckSize}, truncating`);
+                this.game.deck.cards = this.game.deck.cards.slice(0, this.game.originalDeckSize);
+            }
+            
+            // Update deck manager to refresh the UI (this updates the deck count display)
+            if (typeof this.game.updateDeckManager === 'function') {
+                this.game.updateDeckManager();
+            }
         }
         
-        // Show notification that we're using a remote deck
-        this.showRemoteDeckNotification(deckData.name);
+        // Update discard pile counter after deck change (cards may have been shuffled back)
+        if (this.game && typeof this.game.updateDiscardPileCounter === 'function') {
+            setTimeout(() => {
+                if (this.game && typeof this.game.updateDiscardPileCounter === 'function') {
+                    this.game.updateDiscardPileCounter();
+                }
+            }, 100);
+        }
+        
+        // Show notification that we're using a remote deck (only if it's a new deck, not a shuffle)
+        if (!isShuffle && deckData && deckData.name) {
+            this.showRemoteDeckNotification(deckData.name);
+        }
     }
     
     // Helper method to compare card content
@@ -741,16 +1452,22 @@ class WebSocketMultiplayerManager {
     }
     
     
-    // New cardState broadcast method - sends complete card state
+    // Legacy method: broadcastCardState - now wraps requestCardStateUpdate for backward compatibility
     broadcastCardState(cardElement, card, privateTo = null, status = null) {
-        // Update timestamp for state tracking
-        this.lastStateTimestamp = Date.now();
-        
-        // Use the unique ID from the DOM element, not the card object
-        const uniqueId = cardElement.dataset.uniqueId || card.uniqueId;
-        
-        const cardState = {
-            uniqueId: uniqueId,
+        // Use requestCardStateUpdate (converts to array format)
+        // Include location derived from current container to keep server discard membership authoritative
+        // Determine location by area (not container), since discard cards are positioned on table
+        let isInDiscard = false;
+        if (this.game && this.game.discardPileArea) {
+            const discardRect = this.game.discardPileArea.getBoundingClientRect();
+            const r = cardElement.getBoundingClientRect();
+            const cx = r.left + r.width / 2;
+            const cy = r.top + r.height / 2;
+            isInDiscard = cx >= discardRect.left && cx <= discardRect.right && cy >= discardRect.top && cy <= discardRect.bottom;
+        }
+        const location = isInDiscard ? 'discardPile' : 'table';
+        this.requestCardStateUpdate([{
+            uniqueId: cardElement.dataset.uniqueId || card.uniqueId,
             card: {
                 title: card.title,
                 emoji: card.emoji,
@@ -765,36 +1482,35 @@ class WebSocketMultiplayerManager {
                 x: parseInt(cardElement.style.left) || 0,
                 y: parseInt(cardElement.style.top) || 0
             },
-            isFlipped: cardElement.classList.contains('flipped'),
+            isFlipped: isInDiscard ? false : cardElement.classList.contains('flipped'),
+            location: location,
             privateTo: privateTo,
             zIndex: parseInt(cardElement.style.zIndex) || 0,
             status: status,
-            timestamp: this.lastStateTimestamp
-        };
-        
-        this.sendMessage({
-            type: 'cardState',
-            data: cardState
-        });
+            timestamp: Date.now()
+        }]);
     }
     
     // Public methods for game integration
     broadcastResetGame() {
-        this.sendMessage({
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+            console.error('WebSocket not connected');
+            return;
+        }
+        
+        this.socket.send(JSON.stringify({
             type: 'resetGame',
-            data: {}
-        });
+            playerId: this.playerId,
+            roomCode: this.roomCode
+        }));
     }
     
     
     broadcastDeckChange(deckId, deckData) {
+        // Use requestDeckUpdate instead
+        this.requestDeckUpdate(deckId, deckData);
         // Track that this player last broadcast deck change
         this.iLastBroadcastDeck = true;
-        
-        this.sendMessage({
-            type: 'deckChange',
-            data: { deckId, deckData }
-        });
     }
     
     // Broadcast current deck to all players when someone joins
@@ -1053,6 +1769,60 @@ class WebSocketMultiplayerManager {
                 this.connectToWebSocketServer();
             }, 2000);
         }
+    }
+    
+    onReconnection() {
+        console.log('Reconnected, requesting full state...');
+        
+        // Send join room message again (will receive full state)
+        this.roomCreationAttempted = false; // Reset to allow rejoin
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            // Send join room message
+            this.socket.send(JSON.stringify({
+                type: 'joinRoom',
+                roomCode: this.roomCode,
+                playerId: this.playerId,
+                playerName: this.playerAlias
+            }));
+            
+            // Send queued messages after a short delay
+            setTimeout(() => {
+                this.flushMessageQueue();
+            }, 1000);
+        }
+    }
+    
+    // Send queued messages when connection is restored
+    flushMessageQueue() {
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+            return;
+        }
+        
+        if (this.messageQueue.length === 0) {
+            return;
+        }
+        
+        console.log(`Flushing ${this.messageQueue.length} queued messages...`);
+        
+        while (this.messageQueue.length > 0) {
+            const message = this.messageQueue.shift();
+            try {
+                // Use direct socket send for queued messages
+                this.socket.send(JSON.stringify({
+                    ...message,
+                    playerId: this.playerId,
+                    roomCode: this.roomCode
+                }));
+            } catch (error) {
+                console.error('Failed to send queued message:', error);
+                // Put it back at the front of the queue
+                this.messageQueue.unshift(message);
+                break;
+            }
+        }
+        
+        // Request full state to ensure sync after sending queued messages
+        this.requestFullState();
     }
     
     // Cleanup method

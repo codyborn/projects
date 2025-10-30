@@ -22,6 +22,9 @@ const slackApp = new App({
 // Initialize Express app
 const expressApp = express()
 
+// Heroku/Proxies: trust X-Forwarded-For for rate limit keying
+expressApp.set('trust proxy', 1)
+
 // Middleware
 expressApp.use(helmet())
 expressApp.use(cors())
@@ -42,14 +45,91 @@ expressApp.get('/health', (req, res) => {
 })
 
 // Slack event handlers
+function containsGrassKeyword(text) {
+  const value = (text || '').toLowerCase()
+  if (!value) return false
+  return (
+    /(^|\s)#?grass(\s|$)/i.test(value) ||
+    value.includes('🌱') ||
+    value.includes(':seedling:') ||
+    value.includes(':grass:')
+  )
+}
+
 slackApp.message(async ({ message, client }) => {
   try {
-    // Check if message contains /grass command and has attachments
-    if (message.text && message.text.includes('/grass') && message.files && message.files.length > 0) {
+    // Award when a user posts a photo and the message includes a grass keyword
+    const baseText = (message.text || '')
+    const fileTexts = (message.files || []).flatMap(f => {
+      const initial = (f.initial_comment && f.initial_comment.comment) ? f.initial_comment.comment : ''
+      const title = f.title || ''
+      const name = f.name || ''
+      return [initial, title, name]
+    })
+    const combined = [baseText, ...fileTexts].join(' ')
+    const hasKeyword = containsGrassKeyword(combined)
+
+    // Slack sends subtype 'file_share' for uploads; ensure we handle that too
+    const hasFiles = Array.isArray(message.files) && message.files.length > 0
+
+    if (hasKeyword && hasFiles) {
       await handleGrassCommand(message, client)
     }
   } catch (error) {
     logger.error('Error processing message:', error)
+  }
+})
+
+// Handle file_shared events (some uploads arrive as file_shared, not message with files)
+slackApp.event('file_shared', async ({ event, client }) => {
+  try {
+    const fileId = event.file_id
+    if (!fileId) return
+
+    const info = await client.files.info({ file: fileId })
+    const file = info.file
+    if (!file) return
+
+    // Build combined text from initial comment/title/name
+    const initial = (file.initial_comment && file.initial_comment.comment) ? file.initial_comment.comment : ''
+    const title = file.title || ''
+    const name = file.name || ''
+    const combined = [initial, title, name].join(' ')
+    if (!containsGrassKeyword(combined)) return
+
+    // Find a channel where it was shared (public or private)
+    let channelId = undefined
+    if (file.shares) {
+      if (file.shares.public) {
+        const publicChannels = Object.keys(file.shares.public)
+        if (publicChannels.length > 0) channelId = publicChannels[0]
+      }
+      if (!channelId && file.shares.private) {
+        const privateChannels = Object.keys(file.shares.private)
+        if (privateChannels.length > 0) channelId = privateChannels[0]
+      }
+    }
+    if (!channelId && Array.isArray(file.channels) && file.channels.length > 0) {
+      channelId = file.channels[0]
+    }
+    if (!channelId) return
+
+    const messageLike = {
+      user: file.user,
+      channel: channelId,
+      ts: String(file.timestamp || file.created || Date.now() / 1000),
+      files: [
+        {
+          url_private: file.url_private,
+          permalink: file.permalink,
+          title: file.title
+        }
+      ]
+    }
+
+    await handleGrassCommand(messageLike, client)
+  } catch (error) {
+    logger.error('Error handling file_shared event:', error)
   }
 })
 
@@ -69,10 +149,10 @@ slackApp.event('app_mention', async ({ event, client }) => {
 // Slash command handlers
 slackApp.command('/grass', async ({ command, ack, respond, client }) => {
   await ack()
-  
+
   try {
     await respond({
-      text: 'Please attach a photo with your /grass tag to earn points!',
+      text: 'To earn points: post a photo and include "#grass" (or 🌱) in the same message. I’ll count it automatically!\n\nTip: You can also type "grass" anywhere in the caption.',
       response_type: 'ephemeral'
     })
   } catch (error) {

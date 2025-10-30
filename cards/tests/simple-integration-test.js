@@ -142,23 +142,80 @@ class SimpleIntegrationTest {
             }
         }
         
-        switch (message.type) {
-            case 'createRoom':
-                ws.send(JSON.stringify({
-                    type: 'roomCreated',
-                    roomCode: roomCode
-                }));
-                break;
+        // Use the actual server implementation if available, otherwise mock
+        if (typeof require !== 'undefined') {
+            try {
+                const SimpleWebSocketServer = require('../server/simple-websocket-server.js');
+                // Use real server if we can import it
+                if (!this.realServer) {
+                    this.realServer = new SimpleWebSocketServer(8082);
+                    this.realServer.server = this.server;
+                    this.realServer.wss = this.wss;
+                    this.realServer.rooms = this.rooms;
+                    this.realServer.connections = this.connections;
+                }
                 
+                // Route to real server handler
+                const connInfo = this.realServer.connections.get(ws) || { roomCode, playerId: null };
+                this.realServer.connections.set(ws, connInfo);
+                this.realServer.handleMessage(ws, message, roomCode);
+                return;
+            } catch (e) {
+                // Fall back to mock implementation
+                console.log('Using mock server implementation');
+            }
+        }
+        
+        // Mock implementation (fallback)
+        switch (message.type) {
             case 'joinRoom':
                 ws.send(JSON.stringify({
                     type: 'roomJoined',
-                    roomCode: roomCode
+                    roomCode: roomCode,
+                    isHost: this.rooms.get(roomCode)?.size === 0,
+                    gameState: {
+                        deckId: null,
+                        deckData: null,
+                        originalDeckSize: 0,
+                        cards: {},
+                        discardPile: [],
+                        dealtCards: []
+                    }
                 }));
                 this.broadcastToRoom(roomCode, {
-                    type: 'playerJoined',
-                    playerId: message.playerId || 'unknown',
-                    roomCode: roomCode
+                    type: 'gameMessage',
+                    data: {
+                        type: 'playerJoined',
+                        data: { playerId: message.playerId || 'unknown', playerName: message.playerName || message.playerAlias }
+                    }
+                }, ws);
+                break;
+                
+            case 'requestFullState':
+                ws.send(JSON.stringify({
+                    type: 'fullState',
+                    gameState: {
+                        deckId: null,
+                        deckData: null,
+                        originalDeckSize: 0,
+                        cards: {},
+                        discardPile: [],
+                        dealtCards: []
+                    },
+                    players: []
+                }));
+                break;
+                
+            case 'updateCardState':
+                // Mock: broadcast card state updates
+                this.broadcastToRoom(roomCode, {
+                    type: 'gameMessage',
+                    data: {
+                        type: 'cardState',
+                        data: message.cardStates
+                    },
+                    timestamp: Date.now(),
+                    sentBy: message.playerId
                 }, ws);
                 break;
                 

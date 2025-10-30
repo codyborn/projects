@@ -826,3 +826,106 @@ body {
     color: #4a7c59;
     font-weight: bold;
 }
+
+/* Discard Pile Styles */
+.discard-pile-area {
+    position: absolute;
+    top: 50%;
+    left: calc(50% + 100px);
+    transform: translate(-50%, -50%);
+    z-index: 900;
+}
+
+.discard-pile-container {
+    width: 76px;
+    height: 100px;
+    background: rgba(74, 124, 89, 0.3);
+    border: 2px dashed #4a7c59;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 8px;
+    box-sizing: border-box;
+}
+
+.discard-pile-label {
+    font-size: 12px;
+    color: #e8f5e8;
+    font-weight: bold;
+    text-align: center;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+    position: absolute;
+    left: 50%;
+    bottom: 100%;
+    transform: translateX(-50%) translateY(-6px);
+    pointer-events: none;
+}
+
+.discard-pile-content {
+    flex: 1;
+    width: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.discard-pile-content .card {
+    position: absolute;
+    /* Position will be set by JavaScript */
+    z-index: 1;
+}
+
+.discard-pile-content .card:nth-child(2) {
+    z-index: 2;
+}
+
+.discard-pile-content .card:nth-child(3),
+.discard-pile-content .card:nth-child(n+3) {
+    z-index: 3;
+}
+
+.discard-pile-counter {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #e8f5e8;
+    font-size: 14px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.discard-pile-counter:hover .shuffle-btn {
+    opacity: 1;
+    visibility: visible;
+}
+
+.shuffle-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid #4a7c59;
+    background: rgba(74, 124, 89, 0.8);
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    opacity: 0;
+    visibility: hidden;
+}
+
+.shuffle-btn:hover {
+    background: rgba(74, 124, 89, 1);
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}

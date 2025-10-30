@@ -1,1 +1,1 @@
-web: node scripts/simple-websocket-server.js
+web: node server/simple-websocket-server.js

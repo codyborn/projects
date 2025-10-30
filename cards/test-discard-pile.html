@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discard Pile Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f0f0f0;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .pass {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .fail {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Discard Pile Feature Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Instructions</h2>
+        <p>Open the main game at <a href="http://localhost:8000" target="_blank">http://localhost:8000</a> and test the following features:</p>
+        <ol>
+            <li><strong>Discard Pile UI:</strong> Check that the discard pile area appears to the right of the deck</li>
+            <li><strong>Right-click to Discard:</strong> Right-click on any card to discard it to the discard pile</li>
+            <li><strong>Drag to Discard:</strong> Drag cards near the discard pile to see the gravity well effect</li>
+            <li><strong>Multi-card Selection:</strong> Click and drag on empty table area to select multiple cards</li>
+            <li><strong>Group Dragging:</strong> After selecting cards, drag any selected card to move the group</li>
+            <li><strong>Shuffle Button:</strong> Hover over the discard pile counter to see the shuffle button</li>
+            <li><strong>Counter Updates:</strong> Verify the discard pile counter updates when cards are added/removed</li>
+        </ol>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="test-results">
+            <p>Run the tests manually and check each feature.</p>
+        </div>
+        <button onclick="runTests()">Run Automated Tests</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Feature Checklist</h2>
+        <div id="checklist">
+            <label><input type="checkbox" id="discard-pile-ui"> Discard pile UI visible</label><br>
+            <label><input type="checkbox" id="right-click-discard"> Right-click to discard works</label><br>
+            <label><input type="checkbox" id="gravity-well"> Gravity well effect works</label><br>
+            <label><input type="checkbox" id="multi-card-selection"> Multi-card selection works</label><br>
+            <label><input type="checkbox" id="group-dragging"> Group dragging works</label><br>
+            <label><input type="checkbox" id="shuffle-button"> Shuffle button appears on hover</label><br>
+            <label><input type="checkbox" id="counter-updates"> Counter updates correctly</label><br>
+            <label><input type="checkbox" id="multiplayer-sync"> Multiplayer synchronization works</label><br>
+        </div>
+    </div>
+
+    <script>
+        function runTests() {
+            const results = document.getElementById('test-results');
+            results.innerHTML = '<p>Automated tests would require a more complex setup. Please test manually using the checklist above.</p>';
+        }
+        
+        // Check if all checkboxes are checked
+        function checkAllTests() {
+            const checkboxes = document.querySelectorAll('#checklist input[type="checkbox"]');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            
+            if (allChecked) {
+                document.getElementById('test-results').innerHTML = 
+                    '<div class="test-result pass">✅ All tests passed! The discard pile feature is working correctly.</div>';
+            }
+        }
+        
+        // Add event listeners to checkboxes
+        document.querySelectorAll('#checklist input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', checkAllTests);
+        });
+    </script>
+</body>
+</html>

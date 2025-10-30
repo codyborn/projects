@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Event Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        .test-area {
+            width: 400px;
+            height: 300px;
+            border: 2px solid #333;
+            background-color: white;
+            position: relative;
+            margin: 20px 0;
+        }
+        .log {
+            background-color: #000;
+            color: #0f0;
+            padding: 10px;
+            font-family: monospace;
+            height: 200px;
+            overflow-y: auto;
+            border: 1px solid #333;
+        }
+        .card {
+            width: 60px;
+            height: 80px;
+            background-color: #fff;
+            border: 1px solid #333;
+            position: absolute;
+            cursor: move;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .selection-box {
+            position: absolute;
+            border: 2px solid #ff0000;
+            background: rgba(255, 0, 0, 0.1);
+            pointer-events: none;
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+    <h1>Multi-Event Test</h1>
+    <p>Test multi-event handling: mousedown, mousemove, mouseup for selection and dragging</p>
+    
+    <div class="test-area" id="test-area">
+        <div class="card" style="left: 50px; top: 50px;">A</div>
+        <div class="card" style="left: 150px; top: 100px;">B</div>
+        <div class="card" style="left: 250px; top: 150px;">C</div>
+    </div>
+    
+    <div class="log" id="log"></div>
+    
+    <script>
+        class MultiEventTest {
+            constructor() {
+                this.testArea = document.getElementById('test-area');
+                this.logElement = document.getElementById('log');
+                this.isSelecting = false;
+                this.isDragging = false;
+                this.selectionBox = null;
+                this.selectedCards = new Set();
+                this.dragCard = null;
+                this.dragOffset = { x: 0, y: 0 };
+                
+                this.setupEventListeners();
+                this.log('Multi-Event Test initialized');
+            }
+            
+            log(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                this.logElement.innerHTML += `[${timestamp}] ${message}<br>`;
+                this.logElement.scrollTop = this.logElement.scrollHeight;
+            }
+            
+            setupEventListeners() {
+                // Test area events
+                this.testArea.addEventListener('mousedown', (e) => {
+                    this.log(`mousedown: target=${e.target.className}, x=${e.clientX}, y=${e.clientY}`);
+                    
+                    if (e.target.classList.contains('card')) {
+                        // Start dragging a card
+                        this.startCardDrag(e);
+                    } else if (e.target === this.testArea) {
+                        // Start multi-selection
+                        this.startSelection(e);
+                    }
+                });
+                
+                document.addEventListener('mousemove', (e) => {
+                    if (this.isDragging) {
+                        this.updateCardDrag(e);
+                    } else if (this.isSelecting) {
+                        this.updateSelection(e);
+                    }
+                });
+                
+                document.addEventListener('mouseup', (e) => {
+                    this.log(`mouseup: x=${e.clientX}, y=${e.clientY}`);
+                    
+                    if (this.isDragging) {
+                        this.endCardDrag(e);
+                    } else if (this.isSelecting) {
+                        this.endSelection(e);
+                    }
+                });
+            }
+            
+            startCardDrag(e) {
+                this.isDragging = true;
+                this.dragCard = e.target;
+                
+                const rect = this.dragCard.getBoundingClientRect();
+                const areaRect = this.testArea.getBoundingClientRect();
+                
+                this.dragOffset.x = e.clientX - rect.left;
+                this.dragOffset.y = e.clientY - rect.top;
+                
+                this.dragCard.style.zIndex = '1000';
+                this.log(`Started dragging card: ${this.dragCard.textContent}`);
+            }
+            
+            updateCardDrag(e) {
+                if (!this.dragCard) return;
+                
+                const areaRect = this.testArea.getBoundingClientRect();
+                const newX = e.clientX - areaRect.left - this.dragOffset.x;
+                const newY = e.clientY - areaRect.top - this.dragOffset.y;
+                
+                this.dragCard.style.left = Math.max(0, Math.min(newX, this.testArea.offsetWidth - this.dragCard.offsetWidth)) + 'px';
+                this.dragCard.style.top = Math.max(0, Math.min(newY, this.testArea.offsetHeight - this.dragCard.offsetHeight)) + 'px';
+            }
+            
+            endCardDrag(e) {
+                this.log(`Ended dragging card: ${this.dragCard.textContent}`);
+                this.dragCard.style.zIndex = '';
+                this.isDragging = false;
+                this.dragCard = null;
+            }
+            
+            startSelection(e) {
+                this.isSelecting = true;
+                this.selectionStartX = e.clientX;
+                this.selectionStartY = e.clientY;
+                
+                // Create selection box
+                this.selectionBox = document.createElement('div');
+                this.selectionBox.className = 'selection-box';
+                this.testArea.appendChild(this.selectionBox);
+                
+                this.log('Started multi-selection');
+            }
+            
+            updateSelection(e) {
+                if (!this.selectionBox) return;
+                
+                const areaRect = this.testArea.getBoundingClientRect();
+                const startX = this.selectionStartX - areaRect.left;
+                const startY = this.selectionStartY - areaRect.top;
+                const currentX = e.clientX - areaRect.left;
+                const currentY = e.clientY - areaRect.top;
+                
+                const left = Math.min(startX, currentX);
+                const top = Math.min(startY, currentY);
+                const width = Math.abs(currentX - startX);
+                const height = Math.abs(currentY - startY);
+                
+                this.selectionBox.style.left = left + 'px';
+                this.selectionBox.style.top = top + 'px';
+                this.selectionBox.style.width = width + 'px';
+                this.selectionBox.style.height = height + 'px';
+                
+                // Update selected cards
+                this.updateSelectedCards(left, top, width, height);
+            }
+            
+            updateSelectedCards(left, top, width, height) {
+                const cards = this.testArea.querySelectorAll('.card');
+                cards.forEach(card => {
+                    const cardRect = card.getBoundingClientRect();
+                    const areaRect = this.testArea.getBoundingClientRect();
+                    const cardLeft = cardRect.left - areaRect.left;
+                    const cardTop = cardRect.top - areaRect.top;
+                    const cardRight = cardLeft + card.offsetWidth;
+                    const cardBottom = cardTop + card.offsetHeight;
+                    
+                    const isSelected = !(cardRight < left || cardLeft > left + width || cardBottom < top || cardTop > top + height);
+                    
+                    if (isSelected) {
+                        this.selectedCards.add(card);
+                        card.style.backgroundColor = '#ffff00';
+                    } else {
+                        this.selectedCards.delete(card);
+                        card.style.backgroundColor = '#fff';
+                    }
+                });
+            }
+            
+            endSelection(e) {
+                this.log(`Ended selection with ${this.selectedCards.size} cards selected`);
+                
+                if (this.selectionBox) {
+                    this.selectionBox.remove();
+                    this.selectionBox = null;
+                }
+                
+                this.isSelecting = false;
+            }
+        }
+        
+        // Initialize test when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new MultiEventTest();
+        });
+    </script>
+</body>
+</html>

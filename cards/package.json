@@ -6,18 +6,33 @@
   "scripts": {
     "start": "node server/simple-websocket-server.js",
     "test": "node tests/simple-integration-test.js",
+    "test:server-state": "node test-server-state.js",
+    "test:load": "node test-load.js",
+    "test:browser": "playwright test",
+    "test:browser:ui": "playwright test --ui",
+    "test:browser:headed": "playwright test --headed",
     "dev": "python3 -m http.server 3000",
     "serve": "python3 -m http.server 3000",
-    "deploy:heroku": "./deploy.sh heroku",
+    "test:server:discard": "node tests/server/discard-pile-state.test.js",
+    "test:server:reconnect": "node tests/server/full-state-reconnect.test.js",
+    "deploy:heroku": "npm run test:server:discard && HEROKU_APP_NAME=cards-websocket-server ./deploy.sh heroku",
     "deploy:railway": "./deploy.sh railway",
     "deploy:test": "./deploy.sh test",
     "deploy:local": "./deploy.sh local"
   },
-  "keywords": ["cards", "game", "multiplayer", "websocket"],
+  "keywords": [
+    "cards",
+    "game",
+    "multiplayer",
+    "websocket"
+  ],
   "author": "Cards Game Team",
   "license": "MIT",
   "dependencies": {
     "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1"
   },
   "engines": {
     "node": ">=14.0.0"

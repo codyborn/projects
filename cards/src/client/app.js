@@ -12,11 +12,16 @@ class CardGame {
         this.customDecks = new Map();
         this.currentDeckId = 'standard';
         this.editingDeckId = null;
+        this.originalDeckSize = 0; // Track original deck size for server state
         
         // Multiplayer
         this.multiplayer = null;
         this.cardIdCounter = 0;
         this.zIndexCounter = 0;
+        
+        // Discard pile elements (will be initialized if present in HTML)
+        this.discardPileArea = null;
+        this.discardPileContent = null;
         
         // Private hand system
         this.privateHandZone = null;
@@ -51,6 +56,52 @@ class CardGame {
         };
     }
 
+    // Centralized helper to position a card inside the discard pile container
+    positionCardInDiscardPileElement(cardElement, indexForStacking = null) {
+        // Position the card on the card-table centered over the discard pile area, with slight stacking offsets
+        if (!this.discardPileArea) return;
+        try {
+            cardElement.style.position = 'absolute';
+
+            // Count cards conceptually in the discard by area (not container)
+            let cardCount = indexForStacking;
+            if (cardCount === null) {
+                const discardRect = this.discardPileArea.getBoundingClientRect();
+                cardCount = Array.from(document.querySelectorAll('.card')).filter((c) => {
+                    const r = c.getBoundingClientRect();
+                    const cx = r.left + r.width / 2;
+                    const cy = r.top + r.height / 2;
+                    return cx >= discardRect.left && cx <= discardRect.right && cy >= discardRect.top && cy <= discardRect.bottom;
+                }).length;
+            }
+
+            const cardWidth = 76;
+            const cardHeight = 100;
+            // No stacking offset; keep all discarded cards perfectly aligned
+            const offsetX = 0;
+            const offsetY = 0;
+
+            const containerRect = this.discardPileArea.getBoundingClientRect();
+            const containerWidth = containerRect.width || 80;
+            const containerHeight = containerRect.height || 120;
+
+            const centerX = Math.max(0, (containerWidth - cardWidth) / 2);
+            const centerY = Math.max(0, (containerHeight - cardHeight) / 2);
+            const relativeX = Math.max(0, centerX + offsetX);
+            const relativeY = Math.max(0, centerY + offsetY);
+
+            // Convert discard area coordinates to table-relative
+            const table = document.getElementById('card-table');
+            const tableRect = table.getBoundingClientRect();
+            const absoluteX = (containerRect.left - tableRect.left) + relativeX;
+            const absoluteY = (containerRect.top - tableRect.top) + relativeY;
+
+            cardElement.style.left = absoluteX + 'px';
+            cardElement.style.top = absoluteY + 'px';
+        } catch (_) {
+            // no-op; positioning is best-effort
+        }
+    }
     init() {
         // Initialize our custom card system
         cards.init({ table: '#card-table' });
@@ -71,6 +122,15 @@ class CardGame {
         // Initialize private hand system
         this.initializePrivateHand();
         
+        // Initialize discard pile elements if present
+        this.discardPileArea = document.getElementById('discard-pile-area');
+        this.discardPileContent = document.getElementById('discard-pile-content');
+        
+        // Setup discard pile button listeners
+        this.setupDiscardPileListeners();
+        
+        // Discard pile cards are enforced server-side; no client observer needed
+        
         // Setup player name controls after multiplayer is initialized
         this.setupPlayerNameControls();
         
@@ -85,12 +145,21 @@ class CardGame {
         // Try to restore the last selected deck
         const lastDeckId = this.getLastSelectedDeck();
         if (lastDeckId && this.isValidDeckId(lastDeckId)) {
-            this.loadDeck(lastDeckId);
+            this.loadDeck(lastDeckId, false); // Don't broadcast on initial load
         } else {
             // Default to standard deck
             this.deck = new StandardDeck();
+            // IMPORTANT: Set originalDeckSize BEFORE shuffling/dealing
+            this.originalDeckSize = this.deck.cards.length;
+            console.log(`[DECK] Setup deck with ${this.originalDeckSize} cards`);
             this.deck.shuffle();
             this.currentDeckId = 'standard';
+        }
+        
+        // Ensure originalDeckSize is always set
+        if (this.deck && this.originalDeckSize === 0) {
+            this.originalDeckSize = this.deck.cards.length;
+            console.log(`[DECK] originalDeckSize was 0, setting to ${this.originalDeckSize}`);
         }
     }
 
@@ -115,9 +184,17 @@ class CardGame {
     }
 
     getTotalDeckSize() {
-        // Get the original deck size from the deck's total cards
-        // This includes both remaining cards and dealt cards
-        return this.deck.cards.length + this.dealtCards.length;
+        // Use originalDeckSize if available (most accurate)
+        if (this.originalDeckSize && this.originalDeckSize > 0) {
+            return this.originalDeckSize;
+        }
+        // Fallback: Get the original deck size from the deck's total cards
+        // This includes both remaining cards and dealt cards (but not discarded cards)
+        // Cards in discard pile should not be counted as they're removed from the game flow
+        const cardsOnBoard = document.querySelectorAll('.card').length;
+        const remainingInDeck = this.deck ? this.deck.cards.length : 0;
+        // Estimate: if we have cards on board and in deck, original was at least that much
+        return Math.max(cardsOnBoard + remainingInDeck, 52); // Default to 52 for standard deck
     }
 
     renderDeck() {
@@ -211,9 +288,20 @@ class CardGame {
         // Update private hand display to reflect the new card
         this.updatePrivateHandDisplay();
         
-        // Broadcast card deal to other players
+        // Request card state update to server
         if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
-            this.multiplayer.broadcastCardState(cardElement, card, this.multiplayer.playerId);
+            this.multiplayer.requestCardStateUpdate([{
+                uniqueId: cardElement.dataset.uniqueId,
+                card: card,
+                position: {
+                    x: parseInt(cardElement.style.left) || 0,
+                    y: parseInt(cardElement.style.top) || 0
+                },
+                isFlipped: cardElement.classList.contains('flipped'),
+                privateTo: this.multiplayer.playerId,
+                zIndex: parseInt(cardElement.style.zIndex) || 0,
+                timestamp: Date.now()
+            }]);
         }
     }
     
@@ -269,24 +357,37 @@ class CardGame {
 
     // Highlight a card to show it has moved or been placed
     highlightCard(cardElement, playerAlias = null) {
+        // Generate color based on player alias (use current player if not provided)
+        if (!playerAlias && this.multiplayer) {
+            playerAlias = this.multiplayer.playerAlias;
+        }
+        const highlightColor = this.generatePlayerColor(playerAlias);
+        
+        // Set CSS custom property for the highlight color BEFORE removing class
+        // This ensures the variable is set before the animation starts
+        cardElement.style.setProperty('--highlight-color', highlightColor);
+        
+        // Force a reflow to ensure the CSS variable is set
+        cardElement.offsetHeight;
+        
         // Remove any existing highlight class
         cardElement.classList.remove('card-highlight');
         
-        // Force a reflow to ensure the class removal takes effect
+        // Force another reflow to ensure the class removal takes effect
         cardElement.offsetHeight;
         
-        // Generate color based on player alias
-        const highlightColor = this.generatePlayerColor(playerAlias);
-        
-        // Set CSS custom property for the highlight color
-        cardElement.style.setProperty('--highlight-color', highlightColor);
-        
         // Add the highlight class to trigger the animation
+        // The CSS variable is already set, so it will use that color throughout
         cardElement.classList.add('card-highlight');
         
-        // Remove the class after animation completes
+        // Remove the class after animation completes, but keep the CSS variable
+        // until animation is done to prevent fallback to yellow
         setTimeout(() => {
             cardElement.classList.remove('card-highlight');
+            // Keep the CSS variable for a bit longer to ensure animation completes
+            setTimeout(() => {
+                cardElement.style.removeProperty('--highlight-color');
+            }, 100);
         }, 1500);
     }
 
@@ -417,9 +518,20 @@ class CardGame {
         // Highlight the newly dealt card
         this.highlightCard(cardElement, this.multiplayer ? this.multiplayer.playerAlias : null);
         
-        // Broadcast card deal to other players
+        // Request card state update to server
         if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
-            this.multiplayer.broadcastCardState(cardElement, card);
+            this.multiplayer.requestCardStateUpdate([{
+                uniqueId: cardElement.dataset.uniqueId,
+                card: card,
+                position: {
+                    x: parseInt(cardElement.style.left) || 0,
+                    y: parseInt(cardElement.style.top) || 0
+                },
+                isFlipped: cardElement.classList.contains('flipped'),
+                privateTo: null,
+                zIndex: parseInt(cardElement.style.zIndex) || 0,
+                timestamp: Date.now()
+            }]);
         }
     }
 
@@ -538,6 +650,7 @@ class CardGame {
         let dragThreshold = 5; // Minimum distance to start dragging
         let mouseDownTime = 0;
         let offsetX = 0, offsetY = 0; // Offset from mouse to card corner
+        let mouseButton = 0; // 0=left,1=middle,2=right
 
         // Mouse events
         cardElement.addEventListener('mousedown', (e) => {
@@ -549,6 +662,7 @@ class CardGame {
             startX = e.clientX;
             startY = e.clientY;
             mouseDownTime = Date.now();
+            mouseButton = e.button || 0;
             
             // Get current card position relative to table
             const table = document.getElementById('card-table');
@@ -563,8 +677,10 @@ class CardGame {
             offsetX = e.clientX - cardRect.left;
             offsetY = e.clientY - cardRect.top;
             
-            // Bring card to front when starting to drag
-            cardElement.style.zIndex = ++this.zIndexCounter;
+            // Bring card to front when starting to drag (ensure above discard visuals)
+            const DRAG_Z_BASE = 10000;
+            this.zIndexCounter = Math.max(this.zIndexCounter + 1, DRAG_Z_BASE);
+            cardElement.style.zIndex = this.zIndexCounter;
         });
 
         // Use document mousemove to track mouse even outside card
@@ -642,22 +758,78 @@ class CardGame {
                         delete cardElement.dataset.privateTo;
                     }
                     
-                    // Broadcast complete card state to other players (only if not a remote update)
-                    if (this.multiplayer && this.multiplayer.connectionStatus === 'connected' && cardElement.dataset.remoteUpdate !== 'true' && !cardElement.dataset.beingRemoved) {
-                        const card = this.getCardFromElement(cardElement);
-                        const privateTo = isInPrivateZone ? this.multiplayer.playerId : undefined;
-                        this.multiplayer.broadcastCardState(cardElement, card, privateTo);
+                    // Check for drop into discard pile area; if so, move into discard container and enforce face-up
+                    let handledByDiscardDrop = false;
+                    if (this.discardPileArea && this.discardPileContent) {
+                        const discardRect = this.discardPileArea.getBoundingClientRect();
+                        const isInDiscardArea = cardCenterX >= discardRect.left && cardCenterX <= discardRect.right &&
+                                                cardCenterY >= discardRect.top && cardCenterY <= discardRect.bottom;
+                        if (isInDiscardArea && cardElement.parentNode !== this.discardPileContent) {
+                            this.addCardToDiscardPile(cardElement, card);
+                            handledByDiscardDrop = true;
+                        }
+                    }
+
+                    // Determine discard area membership and handle transitions by area (not container)
+                    if (this.discardPileArea) {
+                        const discardPileRect = this.discardPileArea.getBoundingClientRect();
+                        const inDiscardArea = cardCenterX >= discardPileRect.left && cardCenterX <= discardPileRect.right &&
+                                               cardCenterY >= discardPileRect.top && cardCenterY <= discardPileRect.bottom;
+
+                        if (inDiscardArea) {
+                            // Snap into discard visuals and broadcast discard state
+                            this.addCardToDiscardPile(cardElement, card);
+                        } else {
+                            // Ensure it's considered on table and broadcast position/location
+                            if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
+                                const table = document.getElementById('card-table');
+                                const tableRect = table.getBoundingClientRect();
+                                // Send top-left coordinates to avoid visual shift on reapply
+                                const newX = cardRect.left - tableRect.left;
+                                const newY = cardRect.top - tableRect.top;
+                                this.multiplayer.requestCardStateUpdate([{
+                                    uniqueId: cardElement.dataset.uniqueId,
+                                    position: { x: newX, y: newY },
+                                    location: 'table',
+                                    isFlipped: cardElement.classList.contains('flipped'),
+                                    privateTo: cardElement.dataset.privateTo || null,
+                                    zIndex: parseInt(cardElement.style.zIndex || '0', 10),
+                                    timestamp: Date.now()
+                                }]);
+                            }
+                        }
+                    }
+                    
+                    // Request card state update to server (only if not a remote update)
+                    if (!handledByDiscardDrop && this.multiplayer && this.multiplayer.connectionStatus === 'connected' && cardElement.dataset.remoteUpdate !== 'true' && !cardElement.dataset.beingRemoved) {
+                        // Determine location based on current parent
+                        const location = (cardElement.parentNode === this.discardPileContent) ? 'discardPile' : 'table';
+                        
+                        // Calculate position relative to table
+                        const table = document.getElementById('card-table');
+                        const tableRect = table ? table.getBoundingClientRect() : { left: 0, top: 0 };
+                        const cardRect = cardElement.getBoundingClientRect();
+                        // Send top-left coordinates to avoid post-drop drift
+                        const newX = cardRect.left - tableRect.left;
+                        const newY = cardRect.top - tableRect.top;
+                        
+                        // Use multi-card API (single card as array) with explicit location
+                        this.moveCards([cardElement], [{
+                            x: newX,
+                            y: newY
+                        }]);
                         // Update display after state change
                         this.updatePrivateHandDisplay();
                     }
                     
+                    // Update discard pile counter after card move
+                    this.updateDiscardPileCounter();
+                    
                     // Highlight the card to show it has moved
                     this.highlightCard(cardElement, this.multiplayer ? this.multiplayer.playerAlias : null);
                     
-                    // Ensure z-index is maintained after drag ends
-                    if (!isInPrivateZone) {
-                        cardElement.style.zIndex = this.zIndexCounter;
-                    }
+                    // Ensure z-index remains above board content immediately after drop
+                    cardElement.style.zIndex = Math.max(parseInt(cardElement.style.zIndex || '0', 10), this.zIndexCounter);
                     
                     // Prevent table click event after dragging
                     e.preventDefault();
@@ -667,7 +839,7 @@ class CardGame {
                     setTimeout(() => {
                         this.preventTableClick = false;
                     }, 100);
-                } else if (clickDuration < 200) { // Short click without drag
+                } else if (clickDuration < 200 && mouseButton === 0) { // Short left-click without drag
                     // Click without drag - flip card
                     this.flipCard(cardElement);
                 }
@@ -675,6 +847,7 @@ class CardGame {
                 // Reset tracking variables
                 startX = undefined;
                 startY = undefined;
+                mouseButton = 0;
             }
         });
 
@@ -852,61 +1025,120 @@ class CardGame {
         };
     }
 
-    flipCard(cardElement) {
-        // Add flip animation
-        cardElement.classList.add('card-flipping');
+    // Multi-card flip method (accepts array)
+    flipCards(cardElements, isFlipped = null) {
+        // Normalize to array
+        const cardElementsArray = Array.isArray(cardElements) ? cardElements : [cardElements];
         
-        // Wait until animation reaches 50% (width = 0%) before changing content
-        setTimeout(() => {
-            cardElement.classList.toggle('flipped');
+        // If isFlipped is null, toggle each card; otherwise set to specified state
+        const cardStates = cardElementsArray.map(cardElement => {
+            const currentFlipped = cardElement.classList.contains('flipped');
+            const newFlipped = isFlipped !== null ? isFlipped : !currentFlipped;
             
-            // Broadcast complete card state to other players AFTER the flip (only if not a remote update)
-            if (this.multiplayer && this.multiplayer.connectionStatus === 'connected' && cardElement.dataset.remoteUpdate !== 'true' && !cardElement.dataset.beingRemoved) {
-                const card = this.getCardFromElement(cardElement);
-                const privateTo = cardElement.dataset.privateTo;
-                this.multiplayer.broadcastCardState(cardElement, card, privateTo);
-            }
+            // Add flip animation
+            cardElement.classList.add('card-flipping');
             
+            // Wait until animation reaches 50% before changing content
+            setTimeout(() => {
+                if (newFlipped) {
+                    cardElement.classList.add('flipped');
+                } else {
+                    cardElement.classList.remove('flipped');
+                }
+                cardElement.classList.remove('card-flipping');
+            }, 200); // 50% of 400ms animation
+            
+            const card = this.getCardFromElement(cardElement);
+            const privateTo = cardElement.dataset.privateTo || null;
+            
+            return {
+                uniqueId: cardElement.dataset.uniqueId,
+                card: card,
+                position: {
+                    x: parseInt(cardElement.style.left) || 0,
+                    y: parseInt(cardElement.style.top) || 0
+                },
+                isFlipped: newFlipped,
+                privateTo: privateTo,
+                zIndex: parseInt(cardElement.style.zIndex) || 0,
+                timestamp: Date.now()
+            };
+        });
+        
+        // Send all flip operations in single array update
+        if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
+            // Wait for animations to start, then send update
+            setTimeout(() => {
+                this.multiplayer.requestCardStateUpdate(cardStates);
+            }, 250); // After flip animations have started
+        }
+        
+        // Highlight all flipped cards
+        cardElementsArray.forEach(cardElement => {
             this.highlightCard(cardElement, this.multiplayer ? this.multiplayer.playerAlias : null);
-        }, 200); // 50% of 400ms animation
-        
-        // Remove animation class when complete
-        setTimeout(() => {
-            cardElement.classList.remove('card-flipping');
-        }, 400);
+        });
+    }
+    
+    // Convenience wrapper for single card flip (uses multi-card method)
+    flipCard(cardElement) {
+        this.flipCards([cardElement]);
     }
 
     shuffleCardBackToDeck(cardElement, card) {
-        // Clean up any active tooltip before removing the card
-        if (cardElement._cleanupTooltip) {
-            cardElement._cleanupTooltip();
+        // This method is for right-click to discard - redirect to discard pile
+        // Re-check discard pile elements if needed
+        if (!this.discardPileContent) {
+            this.discardPileContent = document.getElementById('discard-pile-content');
+            this.discardPileArea = document.getElementById('discard-pile-area');
         }
         
-        // Mark the card as being removed to prevent other broadcasts
-        cardElement.dataset.beingRemoved = 'true';
-        
-        // Broadcast card state with "discarded" status to other players
-        if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
-            const uniqueId = cardElement.dataset.uniqueId;
-            if (uniqueId) {
-                this.multiplayer.broadcastCardState(cardElement, card, null, 'discarded');
+        if (this.discardPileContent) {
+            this.addCardToDiscardPile(cardElement, card);
+        } else {
+            // Fallback: shuffle back to deck
+            // Clean up any active tooltip before removing the card
+            if (cardElement._cleanupTooltip) {
+                cardElement._cleanupTooltip();
             }
+            
+            // Mark the card as being removed to prevent other broadcasts
+            cardElement.dataset.beingRemoved = 'true';
+            
+            // Request card removal (discarded status) to server
+            if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
+                const uniqueId = cardElement.dataset.uniqueId;
+                if (uniqueId) {
+                    this.multiplayer.requestCardStateUpdate([{
+                        uniqueId: uniqueId,
+                        card: card,
+                        position: {
+                            x: parseInt(cardElement.style.left) || 0,
+                            y: parseInt(cardElement.style.top) || 0
+                        },
+                        isFlipped: cardElement.classList.contains('flipped'),
+                        privateTo: null,
+                        zIndex: parseInt(cardElement.style.zIndex) || 0,
+                        status: 'discarded',
+                        timestamp: Date.now()
+                    }]);
+                }
+            }
+            
+            // Add the card back to the deck
+            this.deck.addCard(card);
+            
+            // Shuffle the deck to randomize the card's position
+            this.deck.shuffle();
+            
+            // Remove the card from the table
+            cardElement.remove();
+            
+            // Update the deck display
+            this.renderDeck();
+            
+            // Show a brief visual feedback
+            this.showShuffleFeedback();
         }
-        
-        // Add the card back to the deck
-        this.deck.addCard(card);
-        
-        // Shuffle the deck to randomize the card's position
-        this.deck.shuffle();
-        
-        // Remove the card from the table
-        cardElement.remove();
-        
-        // Update the deck display
-        this.renderDeck();
-        
-        // Show a brief visual feedback
-        this.showShuffleFeedback();
     }
 
     showShuffleFeedback() {
@@ -954,9 +1186,10 @@ class CardGame {
         this.renderDeck();
         console.log('Deck shuffled!');
         
-        // Broadcast deck shuffle to other players
+        // Update deck on server (deck is shuffled locally, server needs to know)
         if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
-            this.multiplayer.broadcastDeckShuffle();
+            const deckData = this.deck.exportToJSON();
+            this.multiplayer.requestDeckUpdate(this.currentDeckId, deckData);
         }
     }
 
@@ -975,7 +1208,7 @@ class CardGame {
         // Re-render deck
         this.renderDeck();
         
-        // Broadcast reset game to other players (only if this is a user-initiated reset)
+        // Request reset game to server (only if this is a user-initiated reset)
         if (shouldBroadcast && this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
             this.multiplayer.broadcastResetGame();
         }
@@ -983,6 +1216,241 @@ class CardGame {
         console.log('Game reset!');
     }
 
+    // ===== MULTI-CARD APIs =====
+    
+    // Primary multi-card movement method (accepts arrays)
+    moveCards(cardElements, positions) {
+        // Normalize inputs to arrays
+        const cardElementsArray = Array.isArray(cardElements) ? cardElements : [cardElements];
+        const positionsArray = Array.isArray(positions) ? positions : [positions];
+        
+        const cardStates = cardElementsArray.map((cardElement, index) => {
+            const card = this.getCardFromElement(cardElement);
+            const position = positionsArray[index] || positionsArray[0];
+            
+            // Determine location based on current parent
+            const location = (cardElement.parentNode === this.discardPileContent) ? 'discardPile' : 'table';
+            
+            return {
+                uniqueId: cardElement.dataset.uniqueId,
+                card: card,
+                position: position,
+                location: location, // Explicit location property
+                isFlipped: cardElement.classList.contains('flipped'),
+                privateTo: cardElement.dataset.privateTo || null,
+                zIndex: parseInt(cardElement.style.zIndex) || 0,
+                timestamp: Date.now()
+            };
+        });
+        
+        // Send all card movements in single array update
+        if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
+            this.multiplayer.requestCardStateUpdate(cardStates);
+        }
+    }
+    
+    // Convenience wrapper for single card movement
+    onCardMove(cardElement, newX, newY) {
+        this.moveCards([cardElement], [{x: newX, y: newY}]);
+    }
+    
+    // Multi-card discard method (accepts arrays)
+    addCardsToDiscardPile(cardElements, cards) {
+        // Ensure discard pile is initialized (re-check if needed)
+        if (!this.discardPileContent || !this.discardPileArea) {
+            this.discardPileArea = document.getElementById('discard-pile-area');
+            this.discardPileContent = document.getElementById('discard-pile-content');
+        }
+        
+        if (!this.discardPileContent || !this.discardPileArea) {
+            console.error('Discard pile not initialized - elements not found in DOM');
+            return;
+        }
+        
+        
+        // Normalize inputs to arrays
+        const cardElementsArray = Array.isArray(cardElements) ? cardElements : [cardElements];
+        const cardsArray = Array.isArray(cards) ? cards : [cards];
+        
+        const table = document.getElementById('card-table');
+        const tableRect = table.getBoundingClientRect();
+        
+        // Get current discard pile count (count cards in the discard pile container)
+        let cardCount = this.discardPileContent.querySelectorAll('.card').length;
+        
+        
+        const cardStates = cardElementsArray.map((cardElement, index) => {
+            const card = cardsArray[index];
+            
+            // Position and style card in discard pile (on table over the discard area)
+            cardElement.style.position = 'absolute';
+            cardElement.classList.remove('flipped');
+            delete cardElement.dataset.privateTo;
+            
+            // Position the card using centralized helper (positions over area with stacking)
+            this.positionCardInDiscardPileElement(cardElement, cardCount);
+            
+            // After helper positioned, read absolute left/top off the element (already table-relative)
+            const absoluteX = parseInt(cardElement.style.left, 10) || 0;
+            const absoluteY = parseInt(cardElement.style.top, 10) || 0;
+            
+            // Increment counter for next card
+            const currentIndex = cardCount;
+            cardCount++;
+            
+            return {
+                uniqueId: cardElement.dataset.uniqueId,
+                card: card,
+                position: { x: absoluteX, y: absoluteY },
+                location: 'discardPile', // Explicitly mark as discard pile card
+                isFlipped: false, // Discard pile cards should be face UP
+                privateTo: null,
+                zIndex: 1000 + currentIndex + 1, // Use currentIndex to ensure proper stacking
+                timestamp: Date.now()
+            };
+        });
+        
+        // Only send if we have valid card states
+        if (cardStates.length > 0) {
+            // Send all discarded cards in single array update
+            if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
+                this.multiplayer.requestCardStateUpdate(cardStates);
+            }
+        } else {
+            console.warn('No valid card states to send - all cards failed to add to discard pile');
+        }
+        
+        // Update discard pile counter
+        this.updateDiscardPileCounter();
+        
+    }
+    
+    // Convenience wrapper for single card discard
+    addCardToDiscardPile(cardElement, card) {
+        this.addCardsToDiscardPile([cardElement], [card]);
+    }
+    
+    // Update discard pile counter display
+    updateDiscardPileCounter() {
+        const countElement = document.getElementById('discard-pile-count');
+        if (!countElement) {
+            return;
+        }
+        
+        const count = this.getDiscardPileCount();
+        countElement.textContent = count.toString();
+    }
+    
+    // Shuffle discard pile back to deck
+    shuffleDiscardPileBackToDeck() {
+        if (!this.discardPileContent || !this.discardPileArea) {
+            console.warn('Discard pile not initialized, cannot shuffle');
+            return;
+        }
+        
+        console.log('SHUFFLING DISCARD PILE BACK TO DECK');
+        
+        // Find all cards in discard pile area - check both discard pile content container and by position
+        const discardPileRect = this.discardPileArea.getBoundingClientRect();
+        
+        // First, get cards from discard pile container
+        const discardPileContainerCards = Array.from(this.discardPileContent.querySelectorAll('.card'));
+        
+        // Also check cards by position (in case some aren't in container yet)
+        const discardCardElementsByPosition = Array.from(document.querySelectorAll('.card')).filter(card => {
+            // Skip if already found in container
+            if (discardPileContainerCards.includes(card)) {
+                return false;
+            }
+            const cardRect = card.getBoundingClientRect();
+            const cardCenterX = cardRect.left + cardRect.width / 2;
+            const cardCenterY = cardRect.top + cardRect.height / 2;
+            return cardCenterX >= discardPileRect.left && cardCenterX <= discardPileRect.right &&
+                   cardCenterY >= discardPileRect.top && cardCenterY <= discardPileRect.bottom;
+        });
+        
+        // Combine both sets
+        const allDiscardCards = [...discardPileContainerCards, ...discardCardElementsByPosition];
+        const discardCardUniqueIds = allDiscardCards.map(card => card.dataset.uniqueId).filter(Boolean);
+        
+        console.log('DISCARD PILE CARDS TO SHUFFLE:', discardCardUniqueIds.length, discardCardUniqueIds);
+        
+        if (discardCardUniqueIds.length === 0) {
+            console.log('No cards in discard pile to shuffle');
+            return;
+        }
+        
+        // Always request shuffle through multiplayer manager
+        // When connected, it sends to server. When offline, it handles locally via same handlers
+        if (this.multiplayer) {
+            this.multiplayer.requestShuffleDiscardPile(discardCardUniqueIds);
+        } else {
+            console.error('Multiplayer manager not available, cannot shuffle');
+        }
+    }
+    
+    // Update discard pile from server state
+    updateDiscardPileFromState(discardPileUniqueIds) {
+        // Server tracks discard pile by uniqueIds, but we position cards based on UI
+        // This method ensures cards in discard pile are properly positioned
+        if (!Array.isArray(discardPileUniqueIds) || !this.discardPileArea || !this.discardPileContent) {
+            return;
+        }
+
+        // Move and position each card listed in the state over the discard area on the table
+        // Always enforce face up and centralized positioning logic
+        let stackIndex = 0;
+
+        discardPileUniqueIds.forEach((uniqueId) => {
+            const cardElement = document.querySelector(`[data-unique-id="${uniqueId}"]`);
+            if (!cardElement) return;
+
+            // Ensure face up
+            cardElement.classList.remove('flipped');
+
+            // Position using centralized helper (positions on table over discard area)
+            this.positionCardInDiscardPileElement(cardElement, stackIndex);
+            stackIndex += 1;
+        });
+
+        // Update counter
+        this.updateDiscardPileCounter();
+    }
+    
+    getDiscardPileCount() {
+        if (!this.discardPileArea || !this.discardPileContent) {
+            return 0;
+        }
+        
+        // Primary method: Count cards directly in the discard pile container
+        // This is the most reliable method as cards should always be in the container
+        const cardsInContainer = this.discardPileContent.querySelectorAll('.card').length;
+        
+        if (cardsInContainer > 0) {
+            return cardsInContainer;
+        }
+        
+        // Fallback: Count by position if container is empty but cards might be positioned there
+        const discardPileRect = this.discardPileArea.getBoundingClientRect();
+        let count = 0;
+        
+        document.querySelectorAll('.card').forEach(card => {
+            // Skip cards in private hand zones
+            if (card.dataset.privateTo) {
+                return;
+            }
+            const cardRect = card.getBoundingClientRect();
+            const cardCenterX = cardRect.left + cardRect.width / 2;
+            const cardCenterY = cardRect.top + cardRect.height / 2;
+            if (cardCenterX >= discardPileRect.left && cardCenterX <= discardPileRect.right &&
+                cardCenterY >= discardPileRect.top && cardCenterY <= discardPileRect.bottom) {
+                count++;
+            }
+        });
+        
+        return count;
+    }
+    
     // ===== MULTIPLAYER METHODS =====
     
     initializeMultiplayer() {
@@ -1011,6 +1479,19 @@ class CardGame {
         // Click outside to close
         document.getElementById('modal-overlay').addEventListener('click', () => this.closeDeckEditor());
     }
+    
+    setupDiscardPileListeners() {
+        const shuffleBtn = document.getElementById('shuffle-discard-btn');
+        if (shuffleBtn) {
+            shuffleBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.shuffleDiscardPileBackToDeck();
+            });
+        }
+    }
+    
+    
     
     setupPlayerNameControls() {
         const playerNameInput = document.getElementById('player-name-input');
@@ -1183,6 +1664,8 @@ class CardGame {
         }
         
         this.currentDeckId = deckId;
+        // IMPORTANT: Set originalDeckSize BEFORE shuffling/dealing (this is the true original size)
+        this.originalDeckSize = this.deck.cards.length;
         this.deck.shuffle();
         this.dealtCards = [];
         this.renderDeck();
@@ -1191,17 +1674,18 @@ class CardGame {
         // Store the last selected deck in localStorage
         this.saveLastSelectedDeck(deckId);
         
-        // Broadcast deck change to other players
+        // Update deck on server
         if (shouldBroadcast && this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
             const deckData = this.deck.exportToJSON();
-            this.multiplayer.broadcastDeckChange(deckId, deckData);
+            // originalDeckSize is already set above - don't overwrite with current size
+            this.multiplayer.requestDeckUpdate(deckId, deckData);
         }
         
-        console.log(`Loaded deck: ${this.deck.name}`);
+        console.log(`Loaded deck: ${this.deck.name}, original size: ${this.originalDeckSize}`);
     }
     
     loadRemoteDeck(deckData) {
-        console.log('Loading remote deck from host:', deckData.name);
+        console.log('Loading remote deck from server:', deckData.name);
         
         // Clear any existing cards from the board
         this.clearBoard();
@@ -1209,8 +1693,10 @@ class CardGame {
         // Create deck from remote data
         this.deck = new cards.Deck(deckData);
         this.currentDeckId = 'remote';
-        this.deck.shuffle();
+        // Don't shuffle - server maintains deck state
+        // this.deck.shuffle();
         this.dealtCards = [];
+        this.originalDeckSize = deckData.cards?.length || 0;
         this.renderDeck();
         this.updateDeckManager();
         

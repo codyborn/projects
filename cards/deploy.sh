@@ -34,7 +34,7 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# Function to deploy to Heroku
+# Function to deploy to Heroku (without interfering with git)
 deploy_heroku() {
     print_status "Deploying to Heroku..."
     
@@ -43,25 +43,111 @@ deploy_heroku() {
         exit 1
     fi
     
-    # Check if we're in a git repository
-    if [ ! -d ".git" ]; then
-        print_error "Not in a git repository. Please initialize git first."
-        exit 1
+    # Get Heroku app name from environment or prompt
+    if [ -z "$HEROKU_APP_NAME" ]; then
+        read -p "Enter your Heroku app name: " HEROKU_APP_NAME
     fi
     
-    # Check if Heroku remote exists
-    if ! git remote | grep -q heroku; then
-        print_status "Adding Heroku remote..."
-        read -p "Enter your Heroku app name: " app_name
-        heroku git:remote -a "$app_name"
+    # Method 1: Direct push using temporary remote (cleanest - doesn't modify your git config)
+    if [ -d ".git" ]; then
+        CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "main")
+        
+        print_status "Deploying from git (using temporary remote)..."
+        
+        # Get Heroku git URL directly (no need to add remote permanently)
+        HEROKU_GIT_URL="https://git.heroku.com/${HEROKU_APP_NAME}.git"
+        
+        # Push directly to Heroku without adding remote
+        print_status "Pushing ${CURRENT_BRANCH} to Heroku..."
+        git push "$HEROKU_GIT_URL" "${CURRENT_BRANCH}:main" || {
+            # If direct push fails, try with force (use carefully)
+            print_warning "Direct push failed, trying with force..."
+            read -p "Force push to Heroku? (y/N): " FORCE_PUSH
+            if [ "$FORCE_PUSH" = "y" ] || [ "$FORCE_PUSH" = "Y" ]; then
+                git push "$HEROKU_GIT_URL" "${CURRENT_BRANCH}:main" --force
+            else
+                print_error "Deployment cancelled"
+                exit 1
+            fi
+        }
+    else
+        # Method 2: Use Heroku API (no git required)
+        print_status "Not in git repo. Using Heroku API..."
+        print_warning "This requires HEROKU_API_KEY environment variable."
+        
+        if [ -z "$HEROKU_API_KEY" ]; then
+            print_error "HEROKU_API_KEY not set."
+            print_status "Get your API key from: https://dashboard.heroku.com/account"
+            print_status "Then set it: export HEROKU_API_KEY=your-key-here"
+            exit 1
+        fi
+        
+        # Create tarball of just the server files
+        TEMP_DIR=$(mktemp -d)
+        trap "rm -rf $TEMP_DIR; exit" INT TERM EXIT
+        
+        print_status "Creating deployment package..."
+        mkdir -p "$TEMP_DIR/server"
+        cp server/simple-websocket-server.js "$TEMP_DIR/server/" 2>/dev/null || true
+        cp package.json "$TEMP_DIR/" 2>/dev/null || true
+        cp Procfile "$TEMP_DIR/" 2>/dev/null || true
+        [ -f package-lock.json ] && cp package-lock.json "$TEMP_DIR/" 2>/dev/null || true
+        
+        cd "$TEMP_DIR"
+        tar czf ../heroku-deploy.tar.gz .
+        cd - > /dev/null
+        
+        # Get upload URL
+        print_status "Getting upload URL from Heroku..."
+        UPLOAD_RESPONSE=$(curl -s -X POST "https://api.heroku.com/apps/${HEROKU_APP_NAME}/sources" \
+            -H "Accept: application/vnd.heroku+json; version=3" \
+            -H "Authorization: Bearer $HEROKU_API_KEY")
+        
+        SOURCE_URL=$(echo "$UPLOAD_RESPONSE" | grep -o '"get_url":"[^"]*' | cut -d'"' -f4)
+        PUT_URL=$(echo "$UPLOAD_RESPONSE" | grep -o '"put_url":"[^"]*' | cut -d'"' -f4)
+        
+        if [ -z "$PUT_URL" ]; then
+            print_error "Failed to get upload URL"
+            exit 1
+        fi
+        
+        # Upload
+        print_status "Uploading to Heroku..."
+        curl "$PUT_URL" --request PUT --header "Content-Type:" --data-binary @heroku-deploy.tar.gz --progress-bar
+        
+        # Trigger build
+        print_status "Triggering build..."
+        BUILD_RESPONSE=$(curl -s -X POST "https://api.heroku.com/apps/${HEROKU_APP_NAME}/builds" \
+            -H "Accept: application/vnd.heroku+json; version=3" \
+            -H "Authorization: Bearer $HEROKU_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"source_blob\":{\"url\":\"$SOURCE_URL\"}}")
+        
+        BUILD_ID=$(echo "$BUILD_RESPONSE" | grep -o '"id":"[^"]*' | head -1 | cut -d'"' -f4)
+        
+        if [ -n "$BUILD_ID" ]; then
+            print_status "Build started: $BUILD_ID"
+            print_status "Monitor build: heroku builds:info $BUILD_ID -a $HEROKU_APP_NAME"
+        fi
+        
+        rm -f heroku-deploy.tar.gz
     fi
     
-    # Deploy
-    print_status "Pushing to Heroku..."
-    git push heroku main
+    print_success "Deployed to Heroku!"
     
-    print_success "Deployed to Heroku! Opening app..."
-    heroku open
+    # Check server status (non-blocking, limited output)
+    print_status "Verifying server startup..."
+    sleep 3
+    (heroku logs --num 20 -a "$HEROKU_APP_NAME" 2>&1 | grep -E "(Server-Authoritative|Server starting|running on port|error|Error)" | head -5 &)
+    LOG_PID=$!
+    sleep 8
+    kill $LOG_PID 2>/dev/null || true
+    
+    print_status "Server deployed. Check status with: heroku ps -a $HEROKU_APP_NAME"
+    print_status "View logs with: heroku logs --num 50 -a $HEROKU_APP_NAME"
+    
+    print_status "Opening app..."
+    heroku open -a "$HEROKU_APP_NAME" 2>/dev/null || true
 }
 
 # Function to deploy to Railway

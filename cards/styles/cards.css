@@ -211,15 +211,16 @@
 
 @keyframes deckHighlight {
     0% {
-        box-shadow: 0 0 0 0 var(--highlight-color, #FFD700), 0 0 0 0 var(--highlight-color, #FFD700);
+        /* Use the CSS variable directly, no fallback - the JS sets it before animation */
+        box-shadow: 0 0 0 0 var(--highlight-color), 0 0 0 0 var(--highlight-color);
         transform: translate(-50%, -50%) scale(1.1);
     }
     20% {
-        box-shadow: 0 0 0 8px var(--highlight-color, #FFD700), 0 0 0 16px var(--highlight-color, #FFD700);
+        box-shadow: 0 0 0 8px var(--highlight-color), 0 0 0 16px var(--highlight-color);
         transform: translate(-50%, -50%) scale(1.15);
     }
     50% {
-        box-shadow: 0 0 0 12px var(--highlight-color, #FFD700), 0 0 0 24px var(--highlight-color, #FFD700);
+        box-shadow: 0 0 0 12px var(--highlight-color), 0 0 0 24px var(--highlight-color);
         transform: translate(-50%, -50%) scale(1.1);
     }
     100% {
@@ -236,15 +237,16 @@
 
 @keyframes cardHighlight {
     0% {
-        box-shadow: 0 0 0 0 var(--highlight-color, #FFD700), 0 0 0 0 var(--highlight-color, #FFD700);
+        /* Use the CSS variable directly, no fallback - the JS sets it before animation */
+        box-shadow: 0 0 0 0 var(--highlight-color), 0 0 0 0 var(--highlight-color);
         transform: scale(1.1);
     }
     20% {
-        box-shadow: 0 0 0 8px var(--highlight-color, #FFD700), 0 0 0 16px var(--highlight-color, #FFD700);
+        box-shadow: 0 0 0 8px var(--highlight-color), 0 0 0 16px var(--highlight-color);
         transform: scale(1.15);
     }
     50% {
-        box-shadow: 0 0 0 12px var(--highlight-color, #FFD700), 0 0 0 24px var(--highlight-color, #FFD700);
+        box-shadow: 0 0 0 12px var(--highlight-color), 0 0 0 24px var(--highlight-color);
         transform: scale(1.1);
     }
     100% {
