@@ -66,6 +66,19 @@ async function getDiscardPileCount(page) {
 }
 
 /**
+ * Load a deck on the server (ensures deck is initialized before dealing)
+ */
+async function loadDeck(page, deckId = 'standard') {
+  await page.evaluate((id) => {
+    if (window.cardGame) {
+      window.cardGame.loadDeck(id, true); // shouldBroadcast = true
+    }
+  }, deckId);
+  // Wait for deck to load and sync to server
+  await page.waitForTimeout(1000);
+}
+
+/**
  * Get deck count
  */
 async function getDeckCount(page) {
@@ -403,6 +416,7 @@ module.exports = {
   waitForGameInit,
   dealCard,
   dealCards,
+  loadDeck,
   discardCard,
   getDiscardPileCount,
   getDeckCount,

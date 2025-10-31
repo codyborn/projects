@@ -38,6 +38,11 @@ class CardGame {
         this.init();
     }
     
+    // Check if connected to multiplayer (helper method to reduce duplication)
+    isConnected() {
+        return !this.multiplayer || this.multiplayer.connectionStatus === 'connected';
+    }
+    
     // Get card object from card element
     getCardFromElement(cardElement) {
         // Extract emoji from the card face innerHTML
@@ -65,6 +70,59 @@ class CardGame {
         };
     }
 
+    // Check if card is in discard area (centralized helper)
+    isCardInDiscardArea(cardElement) {
+        // Lazy initialization
+        if (!this.discardPileArea) {
+            this.discardPileArea = document.getElementById('discard-pile-area');
+        }
+        if (!this.discardPileContent) {
+            this.discardPileContent = document.getElementById('discard-pile-content');
+        }
+        
+        if (!this.discardPileArea) return false;
+        
+        // Check container first (fastest)
+        if (this.discardPileContent && cardElement.parentNode === this.discardPileContent) {
+            return true;
+        }
+        
+        // Fallback to area bounds check
+        const cardRect = cardElement.getBoundingClientRect();
+        const cardCenterX = cardRect.left + cardRect.width / 2;
+        const cardCenterY = cardRect.top + cardRect.height / 2;
+        const discardRect = this.discardPileArea.getBoundingClientRect();
+        
+        return cardCenterX >= discardRect.left && cardCenterX <= discardRect.right &&
+               cardCenterY >= discardRect.top && cardCenterY <= discardRect.bottom;
+    }
+    
+    // Create card state object from element (helper to reduce duplication)
+    createCardStateFromElement(cardElement, overrides = {}) {
+        const card = this.getCardFromElement(cardElement);
+        const cardRect = cardElement.getBoundingClientRect();
+        const table = document.getElementById('card-table');
+        const tableRect = table ? table.getBoundingClientRect() : { left: 0, top: 0 };
+        
+        // Determine location based on discard area check
+        const location = this.isCardInDiscardArea(cardElement) ? 'discardPile' : 'table';
+        
+        return {
+            uniqueId: cardElement.dataset.uniqueId,
+            card: card,
+            position: {
+                x: cardRect.left - tableRect.left,
+                y: cardRect.top - tableRect.top
+            },
+            location: location,
+            isFlipped: cardElement.classList.contains('flipped'),
+            privateTo: cardElement.dataset.privateTo || null,
+            zIndex: parseInt(cardElement.style.zIndex) || 0,
+            timestamp: Date.now(),
+            ...overrides
+        };
+    }
+    
     // Centralized helper to position a card inside the discard pile container
     positionCardInDiscardPileElement(cardElement, indexForStacking = null) {
         // Position the card on the card-table centered over the discard pile area, with slight stacking offsets
@@ -265,8 +323,7 @@ class CardGame {
                 // If single click (no drag), handle table click
                 if (deltaX < this.dragThreshold && deltaY < this.dragThreshold) {
                     // Single click on empty table - deal card if connected
-                    const isConnected = !this.multiplayer || this.multiplayer.connectionStatus === 'connected';
-                    if (isConnected && e.target.id === 'card-table' && !this.isDragging && !this.preventTableClick && !e.defaultPrevented) {
+                    if (this.isConnected() && e.target.id === 'card-table' && !this.isDragging && !this.preventTableClick && !e.defaultPrevented) {
                         this.dealCardToPosition(e.clientX, e.clientY);
                     }
                 }
@@ -350,81 +407,35 @@ class CardGame {
         deckElement.style.cursor = 'pointer'; // Show it's clickable
         
         // Add click handler for dealing
-        deckElement.addEventListener('click', () => this.dealCard());
+        deckElement.addEventListener('click', (e) => {
+            console.log('[DEAL] Deck clicked', { 
+                multiplayer: !!this.multiplayer, 
+                connectionStatus: this.multiplayer?.connectionStatus,
+                deckExists: !!this.deck,
+                deckLength: this.deck?.cards?.length || 0
+            });
+            this.dealCard();
+        });
         
         table.appendChild(deckElement);
     }
 
     dealCard() {
-        // Prevent dealing when not connected
-        const isConnected = !this.multiplayer || this.multiplayer.connectionStatus === 'connected';
-        if (!isConnected) {
+        // Require connection to deal cards (server is authoritative)
+        if (!this.isConnected()) {
             return;
         }
         
-        if (this.deck.cards.length === 0) {
-            alert('No more cards in deck!');
-            return;
-        }
-
-        const card = this.deck.cards.pop();
-        this.dealtCards.push(card);
+        console.log('[DEAL] dealCard() called', {
+            hasMultiplayer: !!this.multiplayer,
+            connectionStatus: this.multiplayer?.connectionStatus,
+            hasDeck: !!this.deck,
+            deckLength: this.deck?.cards?.length || 0
+        });
         
-        // Create card element
-        const cardElement = this.createCardElement(this.deck, card);
-        
-        // Position card in private hand zone with smart positioning
-        const privateHandZone = document.getElementById('private-hand-zone');
-        if (!privateHandZone) {
-            console.error('Private hand zone not found!');
-            return;
-        }
-        
-        const zoneRect = privateHandZone.getBoundingClientRect();
-        const table = document.getElementById('card-table');
-        const tableRect = table.getBoundingClientRect();
-        
-        // Find a good position for the new card
-        const position = this.findBestPositionInPrivateZone(zoneRect, tableRect);
-        
-        cardElement.style.left = position.x + 'px';
-        cardElement.style.top = position.y + 'px';
-        
-        // Set as private to current player
-        cardElement.dataset.privateTo = this.multiplayer ? this.multiplayer.playerId : 'local';
-        
-        // Make the card face up (remove flipped class to show the front)
-        cardElement.classList.remove('flipped');
-        
-        table.appendChild(cardElement);
-        
-        // Update deck display
-        this.renderDeck();
-        
-        // Add interaction handlers
-        this.addCardInteractions(cardElement, card);
-        
-        // Highlight the deck with player's color
-        this.highlightDeck();
-        
-        // Update private hand display to reflect the new card
-        this.updatePrivateHandDisplay();
-        
-        // Request card state update to server
-        if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
-            this.multiplayer.requestCardStateUpdate([{
-                uniqueId: cardElement.dataset.uniqueId,
-                card: card,
-                position: {
-                    x: parseInt(cardElement.style.left) || 0,
-                    y: parseInt(cardElement.style.top) || 0
-                },
-                isFlipped: cardElement.classList.contains('flipped'),
-                privateTo: this.multiplayer.playerId,
-                zIndex: parseInt(cardElement.style.zIndex) || 0,
-                timestamp: Date.now()
-            }]);
-        }
+        // Request card from server (server is authoritative)
+        console.log('[DEAL] Requesting card from server');
+        this.multiplayer.requestDealCard();
     }
     
     positionCardElement(cardElement) {
@@ -537,7 +548,8 @@ class CardGame {
         // Get all existing cards in private hand zone
         const existingCards = Array.from(document.querySelectorAll('.card')).filter(card => {
             const privateTo = card.dataset.privateTo;
-            const currentPlayerId = this.multiplayer ? this.multiplayer.playerId : 'local';
+            const currentPlayerId = this.multiplayer?.playerId;
+            if (!currentPlayerId) return false; // Require multiplayer
             return privateTo === currentPlayerId;
         });
         
@@ -598,7 +610,8 @@ class CardGame {
         deckElement.offsetHeight;
         
         // Generate color based on current player's alias
-        const playerAlias = this.multiplayer ? this.multiplayer.playerAlias : 'local';
+        const playerAlias = this.multiplayer?.playerAlias;
+        if (!playerAlias) return; // Require multiplayer
         const highlightColor = this.generatePlayerColor(playerAlias);
         
         // Set CSS custom property for the highlight color
@@ -615,19 +628,26 @@ class CardGame {
 
     dealCardToPosition(x, y) {
         // Prevent dealing when not connected
-        const isConnected = !this.multiplayer || this.multiplayer.connectionStatus === 'connected';
-        if (!isConnected) {
+        if (!this.isConnected()) {
             return;
         }
         
-        if (this.deck.cards.length === 0) {
+        if (!this.deck || !this.deck.cards || this.deck.cards.length === 0) {
             alert('No more cards in deck!');
             return;
         }
 
-        const card = this.deck.cards.pop();
-        this.dealtCards.push(card);
+        // Get the top card from deck without popping it yet
+        // The server will handle removing it from the deck when we send the update
+        // This prevents the deck length mismatch that causes board clearing
+        const card = this.deck.cards[this.deck.cards.length - 1];
+        if (!card) {
+            alert('No more cards in deck!');
+            return;
+        }
         
+        // Create card element with a temporary unique ID
+        // The server will assign the real uniqueId when processing
         const cardElement = this.createCardElement(this.deck, card);
         const table = document.getElementById('card-table');
         const tableRect = table.getBoundingClientRect();
@@ -641,26 +661,29 @@ class CardGame {
         
         table.appendChild(cardElement);
         this.addCardInteractions(cardElement, card);
-        this.renderDeck();
+        
+        // Don't update deck display yet - server will handle it via deckChange
+        // this.renderDeck(); // Removed - let server handle deck update
         
         // Highlight the newly dealt card
         this.highlightCard(cardElement, this.multiplayer ? this.multiplayer.playerAlias : null);
         
         // Request card state update to server
-        if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
-            this.multiplayer.requestCardStateUpdate([{
-                uniqueId: cardElement.dataset.uniqueId,
-                card: card,
-                position: {
-                    x: parseInt(cardElement.style.left) || 0,
-                    y: parseInt(cardElement.style.top) || 0
-                },
-                isFlipped: cardElement.classList.contains('flipped'),
-                privateTo: null,
-                zIndex: parseInt(cardElement.style.zIndex) || 0,
-                timestamp: Date.now()
-            }]);
-        }
+        // Server will remove card from deck and broadcast deckChange
+        // Client will receive cardState update and deckChange, then update local deck
+        this.multiplayer.requestCardStateUpdate([{
+            uniqueId: cardElement.dataset.uniqueId,
+            card: card,
+            position: {
+                x: parseInt(cardElement.style.left) || 0,
+                y: parseInt(cardElement.style.top) || 0
+            },
+            location: 'table', // Explicitly set location to table
+            isFlipped: cardElement.classList.contains('flipped'),
+            privateTo: null,
+            zIndex: parseInt(cardElement.style.zIndex) || 0,
+            timestamp: Date.now()
+        }]);
     }
 
     createCardElement(deck, card) {
@@ -782,8 +805,7 @@ class CardGame {
 
         // Mouse events
         cardElement.addEventListener('mousedown', (e) => {
-            const isConnected = !this.multiplayer || this.multiplayer.connectionStatus === 'connected';
-            if (!isConnected) {
+            if (!this.isConnected()) {
                 e.preventDefault();
                 e.stopPropagation();
                 return;
@@ -942,37 +964,31 @@ class CardGame {
                     }
 
                     // Determine discard area membership and handle transitions by area (not container)
-                    if (this.discardPileArea) {
-                        const discardPileRect = this.discardPileArea.getBoundingClientRect();
-                        const inDiscardArea = cardCenterX >= discardPileRect.left && cardCenterX <= discardPileRect.right &&
-                                               cardCenterY >= discardPileRect.top && cardCenterY <= discardPileRect.bottom;
-
-                        if (inDiscardArea) {
-                            // Snap into discard visuals and broadcast discard state
-                            this.addCardToDiscardPile(cardElement, card);
-                        } else {
-                            // Ensure it's considered on table and broadcast position/location
-                            if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
-                                const table = document.getElementById('card-table');
-                                const tableRect = table.getBoundingClientRect();
-                                // Send top-left coordinates to avoid visual shift on reapply
-                                const newX = cardRect.left - tableRect.left;
-                                const newY = cardRect.top - tableRect.top;
-                                this.multiplayer.requestCardStateUpdate([{
-                                    uniqueId: cardElement.dataset.uniqueId,
-                                    position: { x: newX, y: newY },
-                                    location: 'table',
-                                    isFlipped: cardElement.classList.contains('flipped'),
-                                    privateTo: cardElement.dataset.privateTo || null,
-                                    zIndex: parseInt(cardElement.style.zIndex || '0', 10),
-                                    timestamp: Date.now()
-                                }]);
-                            }
+                    if (this.isCardInDiscardArea(cardElement)) {
+                        // Snap into discard visuals and broadcast discard state
+                        this.addCardToDiscardPile(cardElement, card);
+                    } else {
+                        // Ensure it's considered on table and broadcast position/location
+                        if (this.isConnected()) {
+                            const table = document.getElementById('card-table');
+                            const tableRect = table.getBoundingClientRect();
+                            // Send top-left coordinates to avoid visual shift on reapply
+                            const newX = cardRect.left - tableRect.left;
+                            const newY = cardRect.top - tableRect.top;
+                            this.multiplayer.requestCardStateUpdate([{
+                                uniqueId: cardElement.dataset.uniqueId,
+                                position: { x: newX, y: newY },
+                                location: 'table',
+                                isFlipped: cardElement.classList.contains('flipped'),
+                                privateTo: cardElement.dataset.privateTo || null,
+                                zIndex: parseInt(cardElement.style.zIndex || '0', 10),
+                                timestamp: Date.now()
+                            }]);
                         }
                     }
                     
                     // Request card state update to server (only if not a remote update)
-                    if (!handledByDiscardDrop && this.multiplayer && this.multiplayer.connectionStatus === 'connected' && cardElement.dataset.remoteUpdate !== 'true' && !cardElement.dataset.beingRemoved) {
+                    if (!handledByDiscardDrop && this.isConnected() && cardElement.dataset.remoteUpdate !== 'true' && !cardElement.dataset.beingRemoved) {
                         // Determine location based on current parent
                         const location = (cardElement.parentNode === this.discardPileContent) ? 'discardPile' : 'table';
                         
@@ -1030,8 +1046,7 @@ class CardGame {
 
         // Right-click to discard card(s)
         cardElement.addEventListener('contextmenu', (e) => {
-            const isConnected = !this.multiplayer || this.multiplayer.connectionStatus === 'connected';
-            if (!isConnected) {
+            if (!this.isConnected()) {
                 e.preventDefault();
                 e.stopPropagation();
                 return;
@@ -1058,8 +1073,7 @@ class CardGame {
 
         // Touch events for mobile
         cardElement.addEventListener('touchstart', (e) => {
-            const isConnected = !this.multiplayer || this.multiplayer.connectionStatus === 'connected';
-            if (!isConnected) {
+            if (!this.isConnected()) {
                 e.preventDefault();
                 e.stopPropagation();
                 return;
@@ -1275,7 +1289,7 @@ class CardGame {
         });
         
         // Send all flip operations in single array update
-        if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
+        if (this.isConnected()) {
             // Wait for animations to start, then send update
             setTimeout(() => {
                 this.multiplayer.requestCardStateUpdate(cardStates);
@@ -1314,7 +1328,7 @@ class CardGame {
             cardElement.dataset.beingRemoved = 'true';
             
             // Request card removal (discarded status) to server
-            if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
+            if (this.isConnected()) {
                 const uniqueId = cardElement.dataset.uniqueId;
                 if (uniqueId) {
                     this.multiplayer.requestCardStateUpdate([{
@@ -1396,7 +1410,7 @@ class CardGame {
         console.log('Deck shuffled!');
         
         // Update deck on server (deck is shuffled locally, server needs to know)
-        if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
+        if (this.isConnected()) {
             const deckData = this.deck.exportToJSON();
             this.multiplayer.requestDeckUpdate(this.currentDeckId, deckData);
         }
@@ -1418,7 +1432,7 @@ class CardGame {
         this.renderDeck();
         
         // Request reset game to server (only if this is a user-initiated reset)
-        if (shouldBroadcast && this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
+        if (shouldBroadcast && this.isConnected()) {
             this.multiplayer.broadcastResetGame();
         }
         
@@ -1434,26 +1448,12 @@ class CardGame {
         const positionsArray = Array.isArray(positions) ? positions : [positions];
         
         const cardStates = cardElementsArray.map((cardElement, index) => {
-            const card = this.getCardFromElement(cardElement);
             const position = positionsArray[index] || positionsArray[0];
-            
-            // Determine location based on current parent
-            const location = (cardElement.parentNode === this.discardPileContent) ? 'discardPile' : 'table';
-            
-            return {
-                uniqueId: cardElement.dataset.uniqueId,
-                card: card,
-                position: position,
-                location: location, // Explicit location property
-                isFlipped: cardElement.classList.contains('flipped'),
-                privateTo: cardElement.dataset.privateTo || null,
-                zIndex: parseInt(cardElement.style.zIndex) || 0,
-                timestamp: Date.now()
-            };
+            return this.createCardStateFromElement(cardElement, { position });
         });
         
         // Send all card movements in single array update
-        if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
+        if (this.isConnected()) {
             this.multiplayer.requestCardStateUpdate(cardStates);
         }
     }
@@ -1522,7 +1522,7 @@ class CardGame {
         // Only send if we have valid card states
         if (cardStates.length > 0) {
             // Send all discarded cards in single array update
-            if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
+            if (this.isConnected()) {
                 this.multiplayer.requestCardStateUpdate(cardStates);
             }
         } else {
@@ -1571,11 +1571,7 @@ class CardGame {
             if (discardPileContainerCards.includes(card)) {
                 return false;
             }
-            const cardRect = card.getBoundingClientRect();
-            const cardCenterX = cardRect.left + cardRect.width / 2;
-            const cardCenterY = cardRect.top + cardRect.height / 2;
-            return cardCenterX >= discardPileRect.left && cardCenterX <= discardPileRect.right &&
-                   cardCenterY >= discardPileRect.top && cardCenterY <= discardPileRect.bottom;
+            return this.isCardInDiscardArea(card);
         });
         
         // Combine both sets
@@ -1589,8 +1585,12 @@ class CardGame {
             return;
         }
         
-        // Always request shuffle through multiplayer manager
-        // When connected, it sends to server. When offline, it handles locally via same handlers
+        // Require connection to shuffle (server is authoritative)
+        if (!this.isConnected()) {
+            return;
+        }
+        
+        // Request shuffle through multiplayer manager (server is authoritative)
         if (this.multiplayer) {
             this.multiplayer.requestShuffleDiscardPile(discardCardUniqueIds);
         } else {
@@ -1640,7 +1640,6 @@ class CardGame {
         }
         
         // Fallback: Count by position if container is empty but cards might be positioned there
-        const discardPileRect = this.discardPileArea.getBoundingClientRect();
         let count = 0;
         
         document.querySelectorAll('.card').forEach(card => {
@@ -1648,11 +1647,7 @@ class CardGame {
             if (card.dataset.privateTo) {
                 return;
             }
-            const cardRect = card.getBoundingClientRect();
-            const cardCenterX = cardRect.left + cardRect.width / 2;
-            const cardCenterY = cardRect.top + cardRect.height / 2;
-            if (cardCenterX >= discardPileRect.left && cardCenterX <= discardPileRect.right &&
-                cardCenterY >= discardPileRect.top && cardCenterY <= discardPileRect.bottom) {
+            if (this.isCardInDiscardArea(card)) {
                 count++;
             }
         });
@@ -1665,20 +1660,14 @@ class CardGame {
     // Check if a card can be selected
     isCardSelectable(cardElement) {
         // Exclude discard pile cards
-        if (this.discardPileArea) {
-            const cardRect = cardElement.getBoundingClientRect();
-            const cardCenterX = cardRect.left + cardRect.width / 2;
-            const cardCenterY = cardRect.top + cardRect.height / 2;
-            const discardRect = this.discardPileArea.getBoundingClientRect();
-            if (cardCenterX >= discardRect.left && cardCenterX <= discardRect.right &&
-                cardCenterY >= discardRect.top && cardCenterY <= discardRect.bottom) {
-                return false;
-            }
+        if (this.isCardInDiscardArea(cardElement)) {
+            return false;
         }
         
         // Exclude other players' private cards
         const privateTo = cardElement.dataset.privateTo;
-        const currentPlayerId = this.multiplayer ? this.multiplayer.playerId : 'local';
+        const currentPlayerId = this.multiplayer?.playerId;
+        if (!currentPlayerId) return false; // Require multiplayer
         if (privateTo && privateTo !== currentPlayerId) {
             return false;
         }
@@ -1753,7 +1742,8 @@ class CardGame {
     
     // Select cards
     selectCards(cardElements) {
-        const playerAlias = this.multiplayer ? this.multiplayer.playerAlias : 'local';
+        const playerAlias = this.multiplayer?.playerAlias;
+        if (!playerAlias) return; // Require multiplayer
         const selectionColor = this.generatePlayerColor(playerAlias);
         
         // Convert to RGB for rgba()
@@ -1854,8 +1844,7 @@ class CardGame {
     
     // Start selection rectangle
     startSelection(e) {
-        const isConnected = !this.multiplayer || this.multiplayer.connectionStatus === 'connected';
-        if (!isConnected) {
+        if (!this.isConnected()) {
             return;
         }
         
@@ -1968,8 +1957,7 @@ class CardGame {
     
     // Start group drag
     startGroupDrag(e, cardElement) {
-        const isConnected = !this.multiplayer || this.multiplayer.connectionStatus === 'connected';
-        if (!isConnected) {
+        if (!this.isConnected()) {
             return false;
         }
         
@@ -2090,7 +2078,8 @@ class CardGame {
             
             if (isInPrivateZone) {
                 // Drop in private zone - organize cards
-                const currentPlayerId = this.multiplayer ? this.multiplayer.playerId : 'local';
+                const currentPlayerId = this.multiplayer?.playerId;
+                if (!currentPlayerId) return; // Require multiplayer
                 
                 // Organize cards one by one to ensure unique positions
                 // Set privateTo first, then find position (so findBestPositionInPrivateZone can check for overlaps)
@@ -2106,21 +2095,10 @@ class CardGame {
                 });
                 
                 // Send update to server
-                if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
-                    const cardStates = selectedCards.map(cardElement => {
-                        return {
-                            uniqueId: cardElement.dataset.uniqueId,
-                            card: this.getCardFromElement(cardElement),
-                            position: {
-                                x: parseInt(cardElement.style.left) || 0,
-                                y: parseInt(cardElement.style.top) || 0
-                            },
-                            isFlipped: cardElement.classList.contains('flipped'),
-                            privateTo: currentPlayerId,
-                            zIndex: parseInt(cardElement.style.zIndex) || 0,
-                            timestamp: Date.now()
-                        };
-                    });
+                if (this.isConnected()) {
+                    const cardStates = selectedCards.map(cardElement => 
+                        this.createCardStateFromElement(cardElement, { privateTo: currentPlayerId })
+                    );
                     this.multiplayer.requestCardStateUpdate(cardStates);
                 }
                 
@@ -2147,27 +2125,21 @@ class CardGame {
             }
         }
         
-        // Drop on table - maintain positions
-        const cardStates = selectedCards.map(cardElement => {
-            return {
-                uniqueId: cardElement.dataset.uniqueId,
-                card: this.getCardFromElement(cardElement),
-                position: {
-                    x: parseInt(cardElement.style.left) || 0,
-                    y: parseInt(cardElement.style.top) || 0
-                },
-                isFlipped: cardElement.classList.contains('flipped'),
-                privateTo: cardElement.dataset.privateTo || null,
-                zIndex: parseInt(cardElement.style.zIndex) || 0,
-                timestamp: Date.now()
-            };
+        // Drop on table - maintain positions and make cards visible to all players
+        // Clear privateTo for all cards when dropping on table
+        selectedCards.forEach(cardElement => {
+            cardElement.dataset.privateTo = null;
         });
+        
+        const cardStates = selectedCards.map(cardElement => 
+            this.createCardStateFromElement(cardElement, { privateTo: null })
+        );
         
         // Clear selection
         this.clearSelection();
         
         // Send update to server
-        if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
+        if (this.isConnected()) {
             this.multiplayer.requestCardStateUpdate(cardStates);
         }
         
@@ -2404,7 +2376,7 @@ class CardGame {
         this.saveLastSelectedDeck(deckId);
         
         // Update deck on server
-        if (shouldBroadcast && this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
+        if (shouldBroadcast && this.isConnected()) {
             const deckData = this.deck.exportToJSON();
             // originalDeckSize is already set above - don't overwrite with current size
             this.multiplayer.requestDeckUpdate(deckId, deckData);
@@ -2577,7 +2549,8 @@ class CardGame {
         
         // Update your own hand count
         const yourHandCount = document.getElementById('your-hand-count');
-        const currentPlayerId = this.multiplayer ? this.multiplayer.playerId : 'local';
+        const currentPlayerId = this.multiplayer?.playerId;
+        if (!currentPlayerId) return; // Require multiplayer
         if (yourHandCount) {
             yourHandCount.textContent = cardCounts.get(currentPlayerId) || 0;
         }

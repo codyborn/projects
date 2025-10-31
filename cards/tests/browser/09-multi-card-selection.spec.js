@@ -1297,5 +1297,138 @@ test.describe('Multi-Card Selection Tests', () => {
     // At least some cards should be in discard pile
     expect(discardedCardsStillVisible).toBe(true);
   });
+
+  test('Test 16: Drag selected card to discard pile discards all selected cards', async ({ page }) => {
+    // Get initial counts
+    const initialCount = await getAllCardsCount(page);
+    const initialDiscardCount = await getDiscardPileCount(page);
+    
+    // Deal a few cards
+    await dealCards(page, 3);
+    await page.waitForTimeout(1000);
+    
+    // Wait for new cards to appear
+    const cards = page.locator('.card');
+    await page.waitForFunction(
+      (expectedCount) => {
+        const count = document.querySelectorAll('.card').length;
+        return count >= expectedCount;
+      },
+      initialCount + 3,
+      { timeout: 5000 }
+    );
+    
+    // Get the newly dealt cards (last 3 cards)
+    const allCards = await cards.all();
+    const newCards = allCards.slice(-3);
+    
+    // Select all cards with selection rectangle
+    const cardTable = page.locator('#card-table');
+    const tableBox = await cardTable.boundingBox();
+    const discardPileArea = page.locator('#discard-pile-area');
+    const areaBox = await discardPileArea.boundingBox();
+    
+    if (!tableBox || !areaBox) {
+      throw new Error('Table or discard pile area not found');
+    }
+    
+    // Get bounding boxes for all new cards to calculate proper selection rectangle
+    const allCardBoxes = [];
+    for (const card of newCards) {
+      const box = await card.boundingBox();
+      if (box) allCardBoxes.push(box);
+    }
+    
+    if (allCardBoxes.length === 0) {
+      throw new Error('No cards found to select');
+    }
+    
+    // Calculate bounding box for all cards
+    const minX = Math.min(...allCardBoxes.map(b => b.x));
+    const maxX = Math.max(...allCardBoxes.map(b => b.x + b.width));
+    const minY = Math.min(...allCardBoxes.map(b => b.y));
+    const maxY = Math.max(...allCardBoxes.map(b => b.y + b.height));
+    
+    // Create selection rectangle that covers all cards
+    const startX = minX - tableBox.x - 10;
+    const startY = minY - tableBox.y - 10;
+    const endX = maxX - tableBox.x + 10;
+    const endY = maxY - tableBox.y + 10;
+    
+    await createSelectionRectangle(page, startX, startY, endX, endY);
+    await page.waitForTimeout(500);
+    
+    // Verify cards are selected (at least 2 should be selected for the test to be meaningful)
+    let selectedCards = await getSelectedCards(page);
+    expect(selectedCards.length).toBeGreaterThanOrEqual(2);
+    
+    const selectedCount = selectedCards.length;
+    
+    // Get unique IDs of selected cards for verification
+    const selectedUniqueIds = await page.evaluate(() => {
+      const selected = document.querySelectorAll('.card.card-selected');
+      return Array.from(selected).map(card => card.dataset.uniqueId);
+    });
+    
+    // Drag ONE selected card to discard pile (not using group drag - just dragging the card itself)
+    // This should discard all selected cards, not just the one being dragged
+    const cardToDrag = newCards[0];
+    const cardUniqueId = await cardToDrag.getAttribute('data-unique-id');
+    
+    // Get discard pile center position (absolute)
+    const discardCenterX = areaBox.x + areaBox.width / 2;
+    const discardCenterY = areaBox.y + areaBox.height / 2;
+    
+    // Drag the card using the card element's bounding box
+    // This will properly trigger the card's mousedown handler
+    const cardBox = await cardToDrag.boundingBox();
+    if (!cardBox) {
+      throw new Error('Card box not found');
+    }
+    
+    // Use dragTo which should trigger the card's event handlers
+    // But first ensure we're clicking on the card itself
+    await cardToDrag.hover();
+    await page.mouse.down();
+    await page.waitForTimeout(50);
+    await page.mouse.move(discardCenterX, discardCenterY);
+    await page.waitForTimeout(50);
+    await page.mouse.up();
+    await page.waitForTimeout(1000);
+    
+    // Wait for discard operation to complete
+    await page.waitForTimeout(1000);
+    
+    // Verify all selected cards were discarded
+    const finalDiscardCount = await getDiscardPileCount(page);
+    expect(finalDiscardCount).toBeGreaterThanOrEqual(initialDiscardCount + selectedCount);
+    
+    // Verify selection was cleared
+    const finalSelectedCards = await getSelectedCards(page);
+    expect(finalSelectedCards.length).toBe(0);
+    
+    // Verify the discarded cards are in discard pile area
+    const discardedCardsInPile = await page.evaluate((ids) => {
+      const discardArea = document.getElementById('discard-pile-area');
+      if (!discardArea) return 0;
+      const discardRect = discardArea.getBoundingClientRect();
+      let count = 0;
+      for (const id of ids) {
+        const card = document.querySelector(`[data-unique-id="${id}"]`);
+        if (!card) continue;
+        const cardRect = card.getBoundingClientRect();
+        const cardCenterX = cardRect.left + cardRect.width / 2;
+        const cardCenterY = cardRect.top + cardRect.height / 2;
+        if (cardCenterX >= discardRect.left && cardCenterX <= discardRect.right &&
+            cardCenterY >= discardRect.top && cardCenterY <= discardRect.bottom) {
+          count++;
+        }
+      }
+      return count;
+    }, selectedUniqueIds);
+    
+    // All selected cards should be in discard pile
+    expect(discardedCardsInPile).toBe(selectedCount);
+  });
 });
 

@@ -63,6 +63,11 @@ class WebSocketMultiplayerManager {
         window.validateState = () => this.validateAndCorrectState();
     }
     
+    // Check if socket is ready (helper to reduce duplication)
+    isSocketReady() {
+        return this.socket && this.socket.readyState === WebSocket.OPEN;
+    }
+    
     generatePlayerId() {
         // Generate a unique ID for each browser session
         // Don't use localStorage to avoid conflicts between multiple browser tabs
@@ -606,6 +611,17 @@ class WebSocketMultiplayerManager {
                 
                 // Add ourselves to the player list and broadcast it
                 this.broadcastPlayerList();
+                
+                // Sync local deck to server if server doesn't have one
+                // This ensures the server has a deck for dealing cards
+                if (this.game && this.game.deck && this.game.currentDeckId) {
+                    const serverHasDeck = message.gameState && message.gameState.deckData && message.gameState.deckData.cards && message.gameState.deckData.cards.length > 0;
+                    if (!serverHasDeck) {
+                        console.log('[DEAL] Server has no deck, syncing local deck to server');
+                        const deckData = this.game.deck.exportToJSON();
+                        this.requestDeckUpdate(this.game.currentDeckId, deckData);
+                    }
+                }
                 break;
                 
             case 'fullState':
@@ -614,6 +630,17 @@ class WebSocketMultiplayerManager {
                 this.applyGameState(message.gameState);
                 if (message.players) {
                     this.applyPlayerList(message.players);
+                }
+                
+                // Sync local deck to server if server doesn't have one
+                // This ensures the server has a deck for dealing cards
+                if (this.game && this.game.deck && this.game.currentDeckId) {
+                    const serverHasDeck = message.gameState && message.gameState.deckData && message.gameState.deckData.cards && message.gameState.deckData.cards.length > 0;
+                    if (!serverHasDeck) {
+                        console.log('[DEAL] Server has no deck (from fullState), syncing local deck to server');
+                        const deckData = this.game.deck.exportToJSON();
+                        this.requestDeckUpdate(this.game.currentDeckId, deckData);
+                    }
                 }
                 break;
                 
@@ -654,6 +681,9 @@ class WebSocketMultiplayerManager {
                 if (message.data && message.data.type === 'cardState') {
                     // cardState data is always an array (even for single cards)
                     this.handleCardState(message.data.data, message.timestamp, message.sentBy);
+                } else if (message.data && message.data.type === 'cardDealt') {
+                    // Handle server-dealt card
+                    this.handleCardDealt(message.data.data, message.timestamp, message.sentBy);
                 } else if (message.data && message.data.type === 'deckChange') {
                     this.handleDeckChange(message.data.data); // data is { deckId, deckData }
                 } else if (message.data && message.data.type === 'playerJoined') {
@@ -692,7 +722,7 @@ class WebSocketMultiplayerManager {
     
     sendMessage(message) {
         // If WebSocket not connected, queue message for later
-        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+        if (!this.isSocketReady()) {
             console.warn('WebSocket not connected, queuing message:', message.type);
             this.messageQueue.push(message);
             
@@ -871,8 +901,34 @@ class WebSocketMultiplayerManager {
     
     // ========== Server Request Methods ==========
     
+    requestDealCard() {
+        console.log('[DEAL] requestDealCard() called', {
+            hasSocket: !!this.socket,
+            socketState: this.socket?.readyState,
+            isOpen: this.isSocketReady(),
+            playerId: this.playerId,
+            roomCode: this.roomCode
+        });
+        
+        if (!this.isSocketReady()) {
+            console.error('[DEAL] WebSocket not connected - cannot request card from server');
+            return;
+        }
+        
+        const message = {
+            type: 'dealCard',
+            playerId: this.playerId,
+            roomCode: this.roomCode
+        };
+        
+        console.log('[DEAL] Sending dealCard request to server:', message);
+        this.socket.send(JSON.stringify(message));
+        
+        // Wait for server response - card will be created via handleCardDealt
+    }
+    
     requestCardStateUpdate(cardStates) {
-        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+        if (!this.isSocketReady()) {
             console.error('WebSocket not connected');
             return;
         }
@@ -891,7 +947,7 @@ class WebSocketMultiplayerManager {
     }
     
     requestDeckUpdate(deckId, deckData) {
-        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+        if (!this.isSocketReady()) {
             console.error('WebSocket not connected');
             return;
         }
@@ -910,7 +966,7 @@ class WebSocketMultiplayerManager {
         console.log('REQUESTING SHUFFLE DISCARD PILE:', uniqueIdsArray.length, 'cards', uniqueIdsArray);
         
         // If connected, send to server
-        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        if (this.isSocketReady()) {
             // ShuffleDiscardPile is a control message, send directly (not wrapped in gameMessage)
             this.socket.send(JSON.stringify({
                 type: 'shuffleDiscardPile',
@@ -1006,7 +1062,7 @@ class WebSocketMultiplayerManager {
     }
     
     requestFullState() {
-        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+        if (!this.isSocketReady()) {
             console.error('WebSocket not connected');
             return;
         }
@@ -1121,6 +1177,15 @@ class WebSocketMultiplayerManager {
         // Called from handleCardState which processes arrays
         const { uniqueId, card, position, isFlipped, zIndex, privateTo, status } = cardState;
         
+        console.log('[DEAL] processSingleCardState called', {
+            uniqueId,
+            hasCard: !!card,
+            position,
+            privateTo,
+            status,
+            isServerUpdate
+        });
+        
         // Handle card removal (discarded)
         if (status === 'discarded') {
             // Try multiple selector strategies - dataset.uniqueId becomes data-unique-id in HTML
@@ -1176,12 +1241,22 @@ class WebSocketMultiplayerManager {
         
         if (!cardElement) {
             // Card doesn't exist, create it
+            console.log('[DEAL] Card does not exist, creating new card element', { uniqueId, hasCard: !!card });
+            
             if (this.game && typeof this.game.createCardElement === 'function') {
-                cardElement = this.game.createCardElement(this.game.deck || new cards.Deck(), card);
-                if (!cardElement) {
-                    console.error('Failed to create card element for card:', card);
+                if (!card) {
+                    console.error('[DEAL] Cannot create card element: card data is missing', { uniqueId, cardState });
                     return;
                 }
+                
+                cardElement = this.game.createCardElement(this.game.deck || new cards.Deck(), card);
+                if (!cardElement) {
+                    console.error('[DEAL] Failed to create card element for card:', card);
+                    return;
+                }
+                
+                console.log('[DEAL] Card element created successfully', { uniqueId, cardElement: !!cardElement });
+                
                 // Set both uniqueId and instanceId
                 cardElement.dataset.uniqueId = uniqueId;
                 cardElement.dataset.instanceId = card.instanceId;
@@ -1190,14 +1265,21 @@ class WebSocketMultiplayerManager {
                 const cardTable = document.getElementById('card-table');
                 if (cardTable) {
                     cardTable.appendChild(cardElement);
+                    console.log('[DEAL] Card element appended to card-table', { uniqueId, parent: cardElement.parentElement?.id });
+                } else {
+                    console.error('[DEAL] card-table not found, cannot append card');
+                    return;
                 }
                 
                 if (this.game && typeof this.game.addCardInteractions === 'function') {
                     this.game.addCardInteractions(cardElement, card);
                 }
             } else {
+                console.error('[DEAL] Game instance or createCardElement function not available');
                 return;
             }
+        } else {
+            console.log('[DEAL] Card already exists in DOM', { uniqueId });
         }
         
         // Mark as remote update to prevent feedback loops
@@ -1287,14 +1369,27 @@ class WebSocketMultiplayerManager {
             if (privateTo === this.playerId) {
                 cardElement.style.display = 'block';
                 cardElement.style.visibility = 'visible';
+                console.log('[DEAL] Card visibility set to visible (private to current player)', {
+                    uniqueId,
+                    privateTo,
+                    playerId: this.playerId,
+                    display: cardElement.style.display,
+                    visibility: cardElement.style.visibility
+                });
             } else {
                 cardElement.style.display = 'none';
                 cardElement.style.visibility = 'hidden';
+                console.log('[DEAL] Card visibility set to hidden (private to other player)', {
+                    uniqueId,
+                    privateTo,
+                    playerId: this.playerId
+                });
             }
         } else {
             // Default: show to all players (non-private cards)
             cardElement.style.display = 'block';
             cardElement.style.visibility = 'visible';
+            console.log('[DEAL] Card visibility set to visible (public card)', { uniqueId });
         }
         
         // Clear the remote update flag after a short delay
@@ -1434,49 +1529,166 @@ class WebSocketMultiplayerManager {
         }
     }
     
+    handleCardDealt(cardState, timestamp = null, sentBy = null) {
+        // Handle a card dealt by the server
+        // This is called when we receive a cardDealt message (only to the requesting player)
+        // Use the same logic as handleCardState to ensure consistency
+        
+        console.log('[DEAL] handleCardDealt() called', {
+            hasGame: !!this.game,
+            cardState: cardState ? {
+                uniqueId: cardState.uniqueId,
+                privateTo: cardState.privateTo,
+                hasCard: !!cardState.card,
+                position: cardState.position
+            } : null
+        });
+        
+        if (!this.game) {
+            console.error('[DEAL] handleCardDealt: game instance not available');
+            return;
+        }
+        
+        // Position card in private hand zone with smart positioning
+        const privateHandZone = document.getElementById('private-hand-zone');
+        if (!privateHandZone) {
+            console.error('Private hand zone not found!');
+            return;
+        }
+        
+        const zoneRect = privateHandZone.getBoundingClientRect();
+        const table = document.getElementById('card-table');
+        const tableRect = table.getBoundingClientRect();
+        
+        // Find a good position for the new card
+        if (this.game && typeof this.game.findBestPositionInPrivateZone === 'function') {
+            const bestPosition = this.game.findBestPositionInPrivateZone(zoneRect, tableRect);
+            cardState.position = bestPosition; // Update position for card creation
+        }
+        
+        // Use handleCardState to process the card (wraps in array format)
+        // This ensures consistent handling with broadcast cardState messages
+        this.handleCardState([cardState], timestamp, sentBy);
+        
+        // Update deck display (server already updated, but ensure UI reflects it)
+        if (this.game && typeof this.game.renderDeck === 'function') {
+            this.game.renderDeck();
+        }
+        
+        // Highlight the deck with player's color
+        if (this.game && typeof this.game.highlightDeck === 'function') {
+            this.game.highlightDeck();
+        }
+        
+        // Update private hand display to reflect the new card
+        if (this.game && typeof this.game.updatePrivateHandDisplay === 'function') {
+            this.game.updatePrivateHandDisplay();
+        }
+    }
+    
     
     handleDeckChange(data) {
         // data is { deckId, deckData, originalDeckSize? }
         const { deckId, deckData, originalDeckSize } = data;
-        console.log('Handling deck change from server:', { deckId, deckData, originalDeckSize });
+        console.log('[DEAL] Handling deck change from server:', {
+            deckId,
+            hasDeckData: !!deckData,
+            deckDataLength: deckData?.cards?.length || 0,
+            localDeckLength: this.game?.deck?.cards?.length || 0,
+            currentDeckId: this.game?.currentDeckId,
+            originalDeckSize
+        });
         
         // Clear the local flag since we received a deck change from server
         this.iLastBroadcastDeck = false;
         
-        // If this is a shuffle operation (deck changed but no board clear), don't clear board
-        // Only clear board if it's a new deck entirely
+        // Check if this is a shuffle operation (deck size increased - cards added back)
         const isShuffle = deckData && this.game && this.game.deck && 
                          this.game.deck.cards && deckData.cards &&
                          deckData.cards.length > this.game.deck.cards.length;
         
-        if (!isShuffle) {
+        // Check if this is a card deal (deck size decreased by 1, same deck ID)
+        // This happens when the server removes a card from the deck after dealing
+        // Note: deckId might be 'standard' while currentDeckId is 'remote' (loaded via loadRemoteDeck)
+        // So we check if they match OR if the deck name matches (if available)
+        const deckIdsMatch = deckId === this.game.currentDeckId || 
+                            (deckId && this.game.currentDeckId === 'remote' && deckData?.name === this.game.deck?.name);
+        const isCardDeal = deckData && this.game && this.game.deck && 
+                          this.game.deck.cards && deckData.cards &&
+                          this.game.deck.cards.length === deckData.cards.length + 1 &&
+                          deckIdsMatch; // Same deck, not a new one
+        
+        console.log('[DEAL] Deck change analysis:', {
+            isShuffle,
+            isCardDeal,
+            localLength: this.game?.deck?.cards?.length || 0,
+            serverLength: deckData?.cards?.length || 0,
+            deckId,
+            currentDeckId: this.game?.currentDeckId,
+            deckIdsMatch,
+            deckNameMatch: deckData?.name === this.game?.deck?.name,
+            localDeckName: this.game?.deck?.name,
+            serverDeckName: deckData?.name
+        });
+        
+        // Only clear board if it's a new deck entirely (not shuffle, not card deal)
+        if (!isShuffle && !isCardDeal) {
             // Clear the board first (new deck)
+            console.log('[DEAL] Clearing board (new deck detected)');
             if (this.game && typeof this.game.clearBoard === 'function') {
+                const cardCountBefore = document.querySelectorAll('.card').length;
                 this.game.clearBoard();
+                const cardCountAfter = document.querySelectorAll('.card').length;
+                console.log('[DEAL] Board cleared - cards before:', cardCountBefore, 'after:', cardCountAfter);
             }
+        } else {
+            console.log('[DEAL] NOT clearing board (card deal or shuffle detected)');
         }
         
         // Load the deck as a remote deck (prevents id duplicates) and use it as the active deck
+        // But for card deals, just update the deck without calling loadRemoteDeck (which clears the board)
         if (this.game && typeof this.game.loadRemoteDeck === 'function') {
-            this.game.loadRemoteDeck(deckData);
-            // Set original deck size from server state (prioritize server value if provided)
-            if (originalDeckSize !== undefined) {
-                this.game.originalDeckSize = originalDeckSize;
-                console.log(`Updated originalDeckSize to ${originalDeckSize}`);
-            } else if (deckData && deckData.cards) {
-                this.game.originalDeckSize = deckData.cards.length;
-            }
-            
-            // Ensure deck doesn't exceed original size
-            if (this.game.deck && this.game.originalDeckSize > 0 && 
-                this.game.deck.cards.length > this.game.originalDeckSize) {
-                console.warn(`Deck size ${this.game.deck.cards.length} exceeds original ${this.game.originalDeckSize}, truncating`);
-                this.game.deck.cards = this.game.deck.cards.slice(0, this.game.originalDeckSize);
-            }
-            
-            // Update deck manager to refresh the UI (this updates the deck count display)
-            if (typeof this.game.updateDeckManager === 'function') {
-                this.game.updateDeckManager();
+            if (isCardDeal) {
+                // For card deals, just update the deck data directly without clearing board
+                // This preserves the card that was just dealt
+                if (deckData && this.game.deck) {
+                    // Only update if we actually have a deck - don't create a new one
+                    if (this.game.deck.cards) {
+                        this.game.deck.cards = deckData.cards || [];
+                        this.game.renderDeck();
+                        console.log('Updated deck after card deal, deck size:', this.game.deck.cards.length);
+                    } else {
+                        // Deck doesn't exist yet, just skip updating (server will handle it)
+                        console.log('Deck not initialized yet, skipping deck update after card deal');
+                    }
+                    
+                    // Update deck manager to refresh the UI
+                    if (typeof this.game.updateDeckManager === 'function') {
+                        this.game.updateDeckManager();
+                    }
+                }
+            } else {
+                // For new decks or shuffles, use the full loadRemoteDeck method
+                this.game.loadRemoteDeck(deckData);
+                // Set original deck size from server state (prioritize server value if provided)
+                if (originalDeckSize !== undefined) {
+                    this.game.originalDeckSize = originalDeckSize;
+                    console.log(`Updated originalDeckSize to ${originalDeckSize}`);
+                } else if (deckData && deckData.cards) {
+                    this.game.originalDeckSize = deckData.cards.length;
+                }
+                
+                // Ensure deck doesn't exceed original size
+                if (this.game.deck && this.game.originalDeckSize > 0 && 
+                    this.game.deck.cards.length > this.game.originalDeckSize) {
+                    console.warn(`Deck size ${this.game.deck.cards.length} exceeds original ${this.game.originalDeckSize}, truncating`);
+                    this.game.deck.cards = this.game.deck.cards.slice(0, this.game.originalDeckSize);
+                }
+                
+                // Update deck manager to refresh the UI (this updates the deck count display)
+                if (typeof this.game.updateDeckManager === 'function') {
+                    this.game.updateDeckManager();
+                }
             }
         }
         
@@ -1489,8 +1701,8 @@ class WebSocketMultiplayerManager {
             }, 100);
         }
         
-        // Show notification that we're using a remote deck (only if it's a new deck, not a shuffle)
-        if (!isShuffle && deckData && deckData.name) {
+        // Show notification that we're using a remote deck (only if it's a new deck, not a shuffle, not a card deal)
+        if (!isShuffle && !isCardDeal && deckData && deckData.name) {
             this.showRemoteDeckNotification(deckData.name);
         }
     }
@@ -1590,7 +1802,7 @@ class WebSocketMultiplayerManager {
     
     // Public methods for game integration
     broadcastResetGame() {
-        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+        if (!this.isSocketReady()) {
             console.error('WebSocket not connected');
             return;
         }
@@ -1886,7 +2098,7 @@ class WebSocketMultiplayerManager {
     }
     
     sendPing() {
-        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+        if (!this.isSocketReady()) {
             return;
         }
         
@@ -2023,7 +2235,7 @@ class WebSocketMultiplayerManager {
     
     // Send queued messages when connection is restored
     flushMessageQueue() {
-        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+        if (!this.isSocketReady()) {
             return;
         }
         

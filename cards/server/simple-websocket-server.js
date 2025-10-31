@@ -129,6 +129,10 @@ class SimpleWebSocketServer {
                 this.updateDeck(message.roomCode || roomCode, playerId, message.deckId, message.deckData);
                 break;
                 
+            case 'dealCard':
+                this.dealCard(ws, message.roomCode || roomCode, playerId);
+                break;
+                
             case 'shuffleDiscardPile':
                 this.shuffleDiscardPile(message.roomCode || roomCode, playerId, message.discardCardUniqueIds || []);
                 break;
@@ -259,48 +263,26 @@ class SimpleWebSocketServer {
     }
     
     updateCardState(roomCode, playerId, cardStates) {
-        const roomState = this.rooms.get(roomCode);
-        if (!roomState) {
-            const errorMsg = `Room ${roomCode} not found`;
-            console.error(errorMsg);
-            // Find the connection for this player to send error
-            const connInfo = Array.from(this.connections.entries()).find(
-                ([ws, info]) => info.playerId === playerId && info.roomCode === roomCode
-            );
-            if (connInfo && connInfo[0]) {
-                this.sendError(connInfo[0], errorMsg, 'ROOM_NOT_FOUND');
-            }
-            return;
-        }
-        
         // Validate: cardStates must always be an array
         if (!Array.isArray(cardStates)) {
             const errorMsg = 'Invalid cardStates: must be an array';
             console.error(errorMsg);
-            const connInfo = Array.from(this.connections.entries()).find(
-                ([ws, info]) => info.playerId === playerId && info.roomCode === roomCode
-            );
-            if (connInfo && connInfo[0]) {
-                this.sendError(connInfo[0], errorMsg, 'INVALID_STATE');
+            const ws = this.findPlayerConnection(playerId, roomCode);
+            if (ws) {
+                this.sendError(ws, errorMsg, 'INVALID_STATE');
             }
             return;
         }
         
-        // Verify player is in room
-        if (!roomState.players.has(playerId)) {
-            const errorMsg = `Player ${playerId} not in room ${roomCode}`;
-            console.error(errorMsg);
-            const connInfo = Array.from(this.connections.entries()).find(
-                ([ws, info]) => info.playerId === playerId && info.roomCode === roomCode
-            );
-            if (connInfo && connInfo[0]) {
-                this.sendError(connInfo[0], errorMsg, 'PLAYER_NOT_IN_ROOM');
-            }
+        const ws = this.findPlayerConnection(playerId, roomCode);
+        if (!ws) {
             return;
         }
         
-        roomState.lastActivity = Date.now();
-        roomState.players.get(playerId).lastActivity = Date.now();
+        const roomState = this.validateRoomAndPlayer(ws, roomCode, playerId);
+        if (!roomState) {
+            return;
+        }
         
         // Apply updates to server state
         console.log(`[STATE][${roomCode}] Before updateCardState: discardPile=${JSON.stringify(roomState.gameState.discardPile)} size=${roomState.gameState.discardPile.length}`);
@@ -316,6 +298,7 @@ class SimpleWebSocketServer {
                 }
             } else {
                 // Update or add card state (preserve existing fields like location unless explicitly provided)
+                const wasCardAlreadyInState = roomState.gameState.cards.has(cardState.uniqueId);
                 const existing = roomState.gameState.cards.get(cardState.uniqueId) || {};
                 const hasLocationField = Object.prototype.hasOwnProperty.call(cardState, 'location');
                 // If explicitly moving to discard pile, enforce face-up at server
@@ -332,28 +315,36 @@ class SimpleWebSocketServer {
                 }
                 roomState.gameState.cards.set(cardState.uniqueId, merged);
                 
-                // Update discard pile tracking only if location is explicitly provided
-                // (recompute hasLocationField with local scope if needed)
-                if (hasLocationField) {
-                    const isInDiscardPile = cardState.location === 'discardPile';
-                    if (isInDiscardPile) {
-                        if (!roomState.gameState.discardPile.includes(cardState.uniqueId)) {
-                            roomState.gameState.discardPile.push(cardState.uniqueId);
+                // If this is a newly dealt card (not in state before), remove it from deck
+                if (!wasCardAlreadyInState && cardState.card && cardState.uniqueId) {
+                    // This is a new card being dealt - remove it from the deck
+                    if (roomState.gameState.deckData && roomState.gameState.deckData.cards) {
+                        const deckCards = roomState.gameState.deckData.cards;
+                        // Find and remove the card with matching uniqueId
+                        const initialDeckSize = deckCards.length;
+                        const cardIndex = deckCards.findIndex(card => card.uniqueId === cardState.uniqueId);
+                        if (cardIndex !== -1) {
+                            deckCards.splice(cardIndex, 1);
+                            console.log(`[DECK][${roomCode}] Removed dealt card ${cardState.uniqueId} from deck. Deck size: ${initialDeckSize} -> ${deckCards.length}`);
+                            
+                            // Only broadcast deck update if we have valid deck data
+                            if (roomState.gameState.deckData && roomState.gameState.deckId) {
+                                // Broadcast deck update to all players
+                                this.broadcastDeckUpdate(roomCode, playerId);
+                            } else {
+                                console.log(`[DECK][${roomCode}] Not broadcasting deck update - deck data not initialized yet`);
+                            }
+                        } else {
+                            console.log(`[DECK][${roomCode}] Card ${cardState.uniqueId} not found in deck (deck size: ${deckCards.length}). Card data:`, cardState.card ? 'has card data' : 'no card data');
                         }
-                        const stored = roomState.gameState.cards.get(cardState.uniqueId);
-                        if (stored) stored.location = 'discardPile';
                     } else {
-                        const discardIndex = roomState.gameState.discardPile.indexOf(cardState.uniqueId);
-                        if (discardIndex > -1) {
-                            roomState.gameState.discardPile.splice(discardIndex, 1);
-                        }
-                        const storedCardState = roomState.gameState.cards.get(cardState.uniqueId);
-                        if (storedCardState && storedCardState.location === 'discardPile') {
-                            storedCardState.location = cardState.location || 'table';
-                        } else if (storedCardState && hasLocationField) {
-                            storedCardState.location = cardState.location || storedCardState.location || 'table';
-                        }
+                        console.log(`[DECK][${roomCode}] No deck data available to remove card from - deck will be synced when player loads a deck`);
                     }
+                }
+                
+                // Update discard pile tracking only if location is explicitly provided
+                if (hasLocationField) {
+                    this.updateDiscardPileTracking(roomState, cardState);
                 }
             }
         });
@@ -371,27 +362,77 @@ class SimpleWebSocketServer {
         });
     }
     
-    updateDeck(roomCode, playerId, deckId, deckData) {
-        const roomState = this.rooms.get(roomCode);
+    dealCard(ws, roomCode, playerId) {
+        const roomState = this.validateRoomAndPlayer(ws, roomCode, playerId);
         if (!roomState) {
-            const ws = this.findPlayerConnection(playerId, roomCode);
-            if (ws) {
-                this.sendError(ws, `Room ${roomCode} not found`, 'ROOM_NOT_FOUND');
-            }
             return;
         }
         
-        // Verify player is in room
-        if (!roomState.players.has(playerId)) {
-            const ws = this.findPlayerConnection(playerId, roomCode);
-            if (ws) {
-                this.sendError(ws, `Player not in room ${roomCode}`, 'PLAYER_NOT_IN_ROOM');
-            }
+        // Check if deck exists and has cards
+        if (!roomState.gameState.deckData || !roomState.gameState.deckData.cards || roomState.gameState.deckData.cards.length === 0) {
+            this.sendError(ws, 'No cards available in deck', 'DECK_EMPTY');
             return;
         }
         
-        roomState.lastActivity = Date.now();
-        roomState.players.get(playerId).lastActivity = Date.now();
+        // Pop a card from the deck (server is authoritative)
+        const card = roomState.gameState.deckData.cards.pop();
+        if (!card) {
+            this.sendError(ws, 'Failed to deal card', 'DEAL_FAILED');
+            return;
+        }
+        
+        console.log(`[DEAL][${roomCode}] Player ${playerId} dealt card ${card.uniqueId}. Deck size: ${roomState.gameState.deckData.cards.length + 1} -> ${roomState.gameState.deckData.cards.length}`);
+        
+        // Create card state for the dealt card
+        const cardState = {
+            uniqueId: card.uniqueId,
+            card: card,
+            position: { x: 0, y: 0 }, // Client will position in private hand zone
+            isFlipped: false, // Cards dealt to private hand are face-up
+            privateTo: playerId, // Card goes to the requesting player's private hand
+            zIndex: Date.now(), // Use timestamp for z-index
+            timestamp: Date.now()
+        };
+        
+        // Store card in game state
+        roomState.gameState.cards.set(cardState.uniqueId, cardState);
+        
+        // Send card to requesting player
+        this.sendToClient(ws, {
+            type: 'gameMessage',
+            data: {
+                type: 'cardDealt',
+                data: cardState
+            },
+            timestamp: Date.now(),
+            sentBy: playerId
+        });
+        
+        // Broadcast deck update to all players (reduced deck size)
+        this.broadcastDeckUpdate(roomCode, playerId);
+        
+        // Broadcast card state to all players (so they see it, but it's private)
+        this.broadcastToRoom(roomCode, {
+            type: 'gameMessage',
+            data: {
+                type: 'cardState',
+                data: [cardState] // Always array format
+            },
+            timestamp: Date.now(),
+            sentBy: playerId
+        }, ws); // Exclude the requesting player (already sent via cardDealt)
+    }
+    
+    updateDeck(roomCode, playerId, deckId, deckData) {
+        const ws = this.findPlayerConnection(playerId, roomCode);
+        if (!ws) {
+            return;
+        }
+        
+        const roomState = this.validateRoomAndPlayer(ws, roomCode, playerId);
+        if (!roomState) {
+            return;
+        }
         
         // Update deck state
         roomState.gameState.deckId = deckId;
@@ -418,26 +459,15 @@ class SimpleWebSocketServer {
     shuffleDiscardPile(roomCode, playerId, discardCardUniqueIds) {
         console.log(`[SHUFFLE] Player ${playerId} shuffling discard pile in room ${roomCode} with ${discardCardUniqueIds.length} cards:`, discardCardUniqueIds);
         
-        const roomState = this.rooms.get(roomCode);
+        const ws = this.findPlayerConnection(playerId, roomCode);
+        if (!ws) {
+            return;
+        }
+        
+        const roomState = this.validateRoomAndPlayer(ws, roomCode, playerId);
         if (!roomState) {
-            const ws = this.findPlayerConnection(playerId, roomCode);
-            if (ws) {
-                this.sendError(ws, `Room ${roomCode} not found`, 'ROOM_NOT_FOUND');
-            }
             return;
         }
-        
-        // Verify player is in room
-        if (!roomState.players.has(playerId)) {
-            const ws = this.findPlayerConnection(playerId, roomCode);
-            if (ws) {
-                this.sendError(ws, `Player not in room ${roomCode}`, 'PLAYER_NOT_IN_ROOM');
-            }
-            return;
-        }
-        
-        roomState.lastActivity = Date.now();
-        roomState.players.get(playerId).lastActivity = Date.now();
         
         // Collect card data from cards being shuffled BEFORE deletion
         const cardsToAdd = [];
@@ -513,43 +543,20 @@ class SimpleWebSocketServer {
             }
             
             // Broadcast deck update
-            this.broadcastToRoom(roomCode, {
-                type: 'gameMessage',
-                data: {
-                    type: 'deckChange',
-                    data: {
-                        deckId: roomState.gameState.deckId,
-                        deckData: roomState.gameState.deckData,
-                        originalDeckSize: roomState.gameState.originalDeckSize
-                    }
-                },
-                timestamp: Date.now(),
-                sentBy: playerId
-            });
+            this.broadcastDeckUpdate(roomCode, playerId);
         }
     }
     
     resetGame(roomCode, playerId) {
-        const roomState = this.rooms.get(roomCode);
+        const ws = this.findPlayerConnection(playerId, roomCode);
+        if (!ws) {
+            return;
+        }
+        
+        const roomState = this.validateRoomAndPlayer(ws, roomCode, playerId);
         if (!roomState) {
-            const ws = this.findPlayerConnection(playerId, roomCode);
-            if (ws) {
-                this.sendError(ws, `Room ${roomCode} not found`, 'ROOM_NOT_FOUND');
-            }
             return;
         }
-        
-        // Verify player is in room
-        if (!roomState.players.has(playerId)) {
-            const ws = this.findPlayerConnection(playerId, roomCode);
-            if (ws) {
-                this.sendError(ws, `Player not in room ${roomCode}`, 'PLAYER_NOT_IN_ROOM');
-            }
-            return;
-        }
-        
-        roomState.lastActivity = Date.now();
-        roomState.players.get(playerId).lastActivity = Date.now();
         
         // Reset game state (keep deck, clear cards)
         roomState.gameState.cards.clear();
@@ -633,6 +640,69 @@ class SimpleWebSocketServer {
             type: 'error',
             message: message,
             code: code
+        });
+    }
+    
+    // Validate room and player (helper to reduce duplication)
+    validateRoomAndPlayer(ws, roomCode, playerId) {
+        const roomState = this.rooms.get(roomCode);
+        if (!roomState) {
+            this.sendError(ws, `Room ${roomCode} not found`, 'ROOM_NOT_FOUND');
+            return null;
+        }
+        
+        if (!roomState.players.has(playerId)) {
+            this.sendError(ws, `Player not in room ${roomCode}`, 'PLAYER_NOT_IN_ROOM');
+            return null;
+        }
+        
+        roomState.lastActivity = Date.now();
+        roomState.players.get(playerId).lastActivity = Date.now();
+        
+        return roomState;
+    }
+    
+    // Update discard pile tracking (extracted from updateCardState for clarity)
+    updateDiscardPileTracking(roomState, cardState) {
+        const isInDiscardPile = cardState.location === 'discardPile';
+        const stored = roomState.gameState.cards.get(cardState.uniqueId);
+        
+        if (isInDiscardPile) {
+            // Add to discard pile array
+            if (!roomState.gameState.discardPile.includes(cardState.uniqueId)) {
+                roomState.gameState.discardPile.push(cardState.uniqueId);
+            }
+            if (stored) stored.location = 'discardPile';
+        } else {
+            // Remove from discard pile array
+            const discardIndex = roomState.gameState.discardPile.indexOf(cardState.uniqueId);
+            if (discardIndex > -1) {
+                roomState.gameState.discardPile.splice(discardIndex, 1);
+            }
+            // Update stored location
+            if (stored) {
+                stored.location = cardState.location || stored.location || 'table';
+            }
+        }
+    }
+    
+    // Broadcast deck update (helper to reduce duplication)
+    broadcastDeckUpdate(roomCode, playerId) {
+        const roomState = this.rooms.get(roomCode);
+        if (!roomState || !roomState.gameState.deckData) return;
+        
+        this.broadcastToRoom(roomCode, {
+            type: 'gameMessage',
+            data: {
+                type: 'deckChange',
+                data: {
+                    deckId: roomState.gameState.deckId,
+                    deckData: roomState.gameState.deckData,
+                    originalDeckSize: roomState.gameState.originalDeckSize
+                }
+            },
+            timestamp: Date.now(),
+            sentBy: playerId
         });
     }
     
