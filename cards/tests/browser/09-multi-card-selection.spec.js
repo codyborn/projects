@@ -1195,5 +1195,107 @@ test.describe('Multi-Card Selection Tests', () => {
     const selectedCards = await getSelectedCards(page);
     expect(selectedCards).not.toContain(uniqueId);
   });
+
+  test('Test 15: Right-click on selected group discards all selected cards', async ({ page }) => {
+    // Get initial counts
+    const initialCount = await getAllCardsCount(page);
+    const initialDiscardCount = await getDiscardPileCount(page);
+    
+    // Deal a few cards
+    await dealCards(page, 3);
+    await page.waitForTimeout(1000);
+    
+    // Wait for new cards to appear
+    const cards = page.locator('.card');
+    await page.waitForFunction(
+      (expectedCount) => {
+        const count = document.querySelectorAll('.card').length;
+        return count >= expectedCount;
+      },
+      initialCount + 3,
+      { timeout: 5000 }
+    );
+    
+    // Get the newly dealt cards (last 3 cards)
+    const allCards = await cards.all();
+    const newCards = allCards.slice(-3);
+    
+    // Select all cards with selection rectangle
+    const firstCard = newCards[0];
+    const firstCardBox = await firstCard.boundingBox();
+    
+    if (!firstCardBox) {
+      throw new Error('First card not found');
+    }
+    
+    const cardTable = page.locator('#card-table');
+    const tableBox = await cardTable.boundingBox();
+    
+    if (!tableBox) {
+      throw new Error('Card table not found');
+    }
+    
+    // Create selection rectangle to select all 3 cards
+    const startX = firstCardBox.x - tableBox.x - 20;
+    const startY = firstCardBox.y - tableBox.y - 20;
+    const endX = startX + 300; // Large enough to cover all cards
+    const endY = startY + 200;
+    
+    await createSelectionRectangle(page, startX, startY, endX, endY);
+    await page.waitForTimeout(300);
+    
+    // Verify cards are selected
+    let selectedCards = await getSelectedCards(page);
+    expect(selectedCards.length).toBeGreaterThanOrEqual(3);
+    
+    // Get unique IDs of selected cards for verification
+    const selectedUniqueIds = await page.evaluate(() => {
+      const selected = document.querySelectorAll('.card.card-selected');
+      return Array.from(selected).map(card => card.dataset.uniqueId);
+    });
+    
+    // Right-click on one of the selected cards
+    const cardToRightClick = newCards[0];
+    const cardUniqueId = await cardToRightClick.getAttribute('data-unique-id');
+    
+    // Right-click the card
+    await cardToRightClick.click({ button: 'right' });
+    await page.waitForTimeout(500);
+    
+    // Wait for discard operation to complete
+    await page.waitForTimeout(1000);
+    
+    // Verify all selected cards were discarded
+    const finalDiscardCount = await getDiscardPileCount(page);
+    expect(finalDiscardCount).toBeGreaterThanOrEqual(initialDiscardCount + 3);
+    
+    // Verify selection was cleared
+    const finalSelectedCards = await getSelectedCards(page);
+    expect(finalSelectedCards.length).toBe(0);
+    
+    // Verify the discarded cards are no longer selectable (they're in discard pile)
+    const discardedCardsStillVisible = await page.evaluate((ids) => {
+      for (const id of ids) {
+        const card = document.querySelector(`[data-unique-id="${id}"]`);
+        if (!card) continue;
+        // Check if card is in discard pile area
+        const cardRect = card.getBoundingClientRect();
+        const discardArea = document.getElementById('discard-pile-area');
+        if (discardArea) {
+          const discardRect = discardArea.getBoundingClientRect();
+          const cardCenterX = cardRect.left + cardRect.width / 2;
+          const cardCenterY = cardRect.top + cardRect.height / 2;
+          if (cardCenterX >= discardRect.left && cardCenterX <= discardRect.right &&
+              cardCenterY >= discardRect.top && cardCenterY <= discardRect.bottom) {
+            return true; // Card is in discard area
+          }
+        }
+      }
+      return false;
+    }, selectedUniqueIds);
+    
+    // At least some cards should be in discard pile
+    expect(discardedCardsStillVisible).toBe(true);
+  });
 });
 

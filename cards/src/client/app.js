@@ -1028,7 +1028,7 @@ class CardGame {
             }
         });
 
-        // Right-click to shuffle card back into deck
+        // Right-click to discard card(s)
         cardElement.addEventListener('contextmenu', (e) => {
             const isConnected = !this.multiplayer || this.multiplayer.connectionStatus === 'connected';
             if (!isConnected) {
@@ -1039,8 +1039,21 @@ class CardGame {
             e.preventDefault();
             e.stopPropagation();
             
-            // Shuffle the card back into the deck
-            this.shuffleCardBackToDeck(cardElement, card);
+            // Check if card is part of a selection
+            if (this.selectedCards.length > 0 && this.selectedCards.includes(cardElement)) {
+                // Discard all selected cards
+                const selectedCards = [...this.selectedCards];
+                const selectedCardData = selectedCards.map(cardEl => this.getCardFromElement(cardEl));
+                
+                // Discard all selected cards
+                this.addCardsToDiscardPile(selectedCards, selectedCardData);
+                
+                // Clear selection after discarding
+                this.clearSelection();
+            } else {
+                // Discard single card
+                this.shuffleCardBackToDeck(cardElement, card);
+            }
         });
 
         // Touch events for mobile
