@@ -53,6 +53,22 @@
     font-weight: bold;
 }
 
+/* Card title styling - smaller font and wraps */
+.card-face > div:first-child,
+.card-face > div:last-child {
+    font-size: 11px !important;
+    hyphens: auto;
+    text-align: center;
+    max-width: 100%;
+    white-space: normal;
+    overflow: hidden;
+}
+
+/* Card emoji/symbol styling - smaller */
+.card-face > div:nth-child(2) {
+    font-size: 20px !important;
+}
+
 .card-back {
     display: flex;
     align-items: center;

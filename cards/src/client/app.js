@@ -165,6 +165,12 @@ class CardGame {
 
             cardElement.style.left = absoluteX + 'px';
             cardElement.style.top = absoluteY + 'px';
+            
+            // Set highest z-index for discard pile cards so they always appear on top
+            // Increment zIndexCounter and set it with !important to ensure it's highest
+            const DRAG_Z_BASE = 10000;
+            this.zIndexCounter = Math.max((this.zIndexCounter || DRAG_Z_BASE) + 1, DRAG_Z_BASE);
+            cardElement.style.setProperty('z-index', this.zIndexCounter.toString(), 'important');
         } catch (_) {
             // no-op; positioning is best-effort
         }
@@ -323,9 +329,10 @@ class CardGame {
                 // If single click (no drag), handle table click
                 if (deltaX < this.dragThreshold && deltaY < this.dragThreshold) {
                     // Single click on empty table - deal card if connected
-                    if (this.isConnected() && e.target.id === 'card-table' && !this.isDragging && !this.preventTableClick && !e.defaultPrevented) {
-                        this.dealCardToPosition(e.clientX, e.clientY);
-                    }
+                    // FEATURE DISABLED: Commented out table-click-to-deal feature (might want it back in future)
+                    // if (this.isConnected() && e.target.id === 'card-table' && !this.isDragging && !this.preventTableClick && !e.defaultPrevented) {
+                    //     this.dealCardToPosition(e.clientX, e.clientY);
+                    // }
                 }
                 
                 tableMouseDown = false;
@@ -635,25 +642,26 @@ class CardGame {
         }, 1500);
     }
 
-    dealCardToPosition(x, y) {
-        // Prevent dealing when not connected
-        if (!this.isConnected()) {
-            return;
-        }
-        
-        // Use server-authoritative dealing - don't touch local deck
-        // Server will handle card selection and deck removal
-        const table = document.getElementById('card-table');
-        const tableRect = table.getBoundingClientRect();
-        
-        // Calculate position relative to table
-        const relativeX = x - tableRect.left;
-        const relativeY = y - tableRect.top;
-        
-        // Request server to deal card to table at specified position
-        // Server is authoritative - it will pick the card and remove it from deck
-        this.multiplayer.requestDealCardToTable(relativeX, relativeY);
-    }
+    // FEATURE DISABLED: Commented out table-click-to-deal feature (might want it back in future)
+    // dealCardToPosition(x, y) {
+    //     // Prevent dealing when not connected
+    //     if (!this.isConnected()) {
+    //         return;
+    //     }
+    //     
+    //     // Use server-authoritative dealing - don't touch local deck
+    //     // Server will handle card selection and deck removal
+    //     const table = document.getElementById('card-table');
+    //     const tableRect = table.getBoundingClientRect();
+    //     
+    //     // Calculate position relative to table
+    //     const relativeX = x - tableRect.left;
+    //     const relativeY = y - tableRect.top;
+    //     
+    //     // Request server to deal card to table at specified position
+    //     // Server is authoritative - it will pick the card and remove it from deck
+    //     this.multiplayer.requestDealCardToTable(relativeX, relativeY);
+    // }
 
     createCardElement(deck, card) {
         // Defensive programming - ensure card has required properties
@@ -1530,11 +1538,16 @@ class CardGame {
             delete cardElement.dataset.privateTo;
             
             // Position the card using centralized helper (positions over area with stacking)
+            // This also sets the highest z-index on the element
             this.positionCardInDiscardPileElement(cardElement, cardCount);
             
             // After helper positioned, read absolute left/top off the element (already table-relative)
             const absoluteX = parseInt(cardElement.style.left, 10) || 0;
             const absoluteY = parseInt(cardElement.style.top, 10) || 0;
+            
+            // Get the z-index that was set on the element (from positionCardInDiscardPileElement)
+            // This ensures the discard pile card has the highest z-index
+            const zIndexValue = parseInt(cardElement.style.zIndex || '0', 10) || (this.zIndexCounter || 10000);
             
             // Increment counter for next card
             const currentIndex = cardCount;
@@ -1547,7 +1560,7 @@ class CardGame {
                 location: 'discardPile', // Explicitly mark as discard pile card
                 isFlipped: false, // Discard pile cards should be face UP
                 privateTo: null,
-                zIndex: 1000 + currentIndex + 1, // Use currentIndex to ensure proper stacking
+                zIndex: zIndexValue, // Use the z-index set on the element (highest)
                 timestamp: Date.now()
             };
         });

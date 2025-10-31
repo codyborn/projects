@@ -15,8 +15,7 @@ class WebSocketMultiplayerManager {
         this.playerAlias = this.generatePlayerAlias();
         this.connectionStatus = 'offline';
         
-        // Track deck broadcasting for new player synchronization
-        this.iLastBroadcastDeck = false; // whether this player last broadcast a deck change
+        // Server is authoritative for deck state - clients don't need to track last broadcaster
         this.testMode = false;
         this.roomCreationAttempted = false;
         
@@ -284,7 +283,6 @@ class WebSocketMultiplayerManager {
         
         this.roomCode = this.generateRoomCode();
         this.isHost = true;
-        this.iLastBroadcastDeck = true;
         this.updateConnectionStatus('connecting');
         
         console.log('Room created:', this.roomCode);
@@ -624,6 +622,7 @@ class WebSocketMultiplayerManager {
                 this.updatePlayerCount();
                 this.updateConnectionStatus('connected');
                 
+                
                 // Apply full state from server if provided
                 if (message.gameState) {
                     this.applyGameState(message.gameState);
@@ -699,8 +698,8 @@ class WebSocketMultiplayerManager {
                     this.game.updatePrivateHandDisplay();
                 }
                 
-                // Automatically broadcast current deck to all players when someone joins
-                this.broadcastCurrentDeckToAll();
+                // Server already sends full state in roomJoined, no need to broadcast deck
+                // If someone needs the deck, they'll get it from the server state
                 break;
                 
             case 'playerLeft':
@@ -1482,15 +1481,35 @@ class WebSocketMultiplayerManager {
         if (this.game && typeof this.game.highlightCard === 'function') {
             this.game.highlightCard(cardElement, playerAlias);
             
-            // Set z-index with !important AFTER adding highlight class
-            // This ensures our !important rule comes after the CSS class's !important rule
-            // In CSS, when specificity is equal, the last !important declaration wins
-            if (normalizedZIndex !== null) {
+            // For discard pile cards, positionCardInDiscardPileElement already set the highest z-index
+            // Don't override it with a potentially lower server z-index
+            // For other cards, use the normalized z-index
+            if (normalizedZIndex !== null && !isInDiscardPile) {
                 cardElement.style.setProperty('z-index', normalizedZIndex.toString(), 'important');
+            } else if (normalizedZIndex !== null && isInDiscardPile) {
+                // For discard pile cards, ensure we're using the highest z-index (already set by positionCardInDiscardPileElement)
+                const currentZIndex = parseInt(cardElement.style.zIndex || '0', 10);
+                if (currentZIndex > 0) {
+                    // Keep the highest z-index that was set
+                    cardElement.style.setProperty('z-index', currentZIndex.toString(), 'important');
+                } else {
+                    // Fallback: use normalized z-index if somehow not set
+                    cardElement.style.setProperty('z-index', normalizedZIndex.toString(), 'important');
+                }
             }
         } else if (normalizedZIndex !== null) {
-            // If no highlight, just set z-index normally
-            cardElement.style.zIndex = normalizedZIndex.toString();
+            // If no highlight, just set z-index normally (but preserve discard pile highest z-index)
+            if (!isInDiscardPile) {
+                cardElement.style.zIndex = normalizedZIndex.toString();
+            } else {
+                // For discard pile cards, preserve the highest z-index already set
+                const currentZIndex = parseInt(cardElement.style.zIndex || '0', 10);
+                if (currentZIndex > 0) {
+                    cardElement.style.setProperty('z-index', currentZIndex.toString(), 'important');
+                } else {
+                    cardElement.style.zIndex = normalizedZIndex.toString();
+                }
+            }
         }
         
         // Update visibility based on privateTo field
@@ -1765,8 +1784,7 @@ class WebSocketMultiplayerManager {
             originalDeckSize
         });
         
-        // Clear the local flag since we received a deck change from server
-        this.iLastBroadcastDeck = false;
+        // Server is authoritative - this is either an explicit deck change or state sync
         
         // Check if this is a shuffle operation (deck size increased - cards added back)
         const isShuffle = deckData && this.game && this.game.deck && 
@@ -1784,9 +1802,16 @@ class WebSocketMultiplayerManager {
                           this.game.deck.cards.length === deckData.cards.length + 1 &&
                           deckIdsMatch; // Same deck, not a new one
         
+        // Check if this is an explicit deck change (different deckId/name)
+        // Only explicit deck changes should clear the board
+        // Card deals, shuffles, and state syncs (same deck) should not clear the board
+        const isExplicitDeckChange = deckId !== this.game?.currentDeckId && 
+                                     !(deckId && this.game?.currentDeckId === 'remote' && deckData?.name === this.game?.deck?.name);
+        
         console.log('[DEAL] Deck change analysis:', {
             isShuffle,
             isCardDeal,
+            isExplicitDeckChange,
             localLength: this.game?.deck?.cards?.length || 0,
             serverLength: deckData?.cards?.length || 0,
             deckId,
@@ -1797,8 +1822,9 @@ class WebSocketMultiplayerManager {
             serverDeckName: deckData?.name
         });
         
-        // Only clear board if it's a new deck entirely (not shuffle, not card deal)
-        if (!isShuffle && !isCardDeal) {
+        // Only clear board if it's an explicit deck change (different deckId/name)
+        // Don't clear for shuffles or card deals (these are same deck operations)
+        if (isExplicitDeckChange) {
             // Clear the board first (new deck)
             console.log('[DEAL] Clearing board (new deck detected)');
             if (this.game && typeof this.game.clearBoard === 'function') {
@@ -1808,7 +1834,7 @@ class WebSocketMultiplayerManager {
                 console.log('[DEAL] Board cleared - cards before:', cardCountBefore, 'after:', cardCountAfter);
             }
         } else {
-            console.log('[DEAL] NOT clearing board (card deal or shuffle detected)');
+            console.log('[DEAL] NOT clearing board (card deal, shuffle, or same deck detected)');
         }
         
         // Load the deck as a remote deck (prevents id duplicates) and use it as the active deck
@@ -1869,7 +1895,7 @@ class WebSocketMultiplayerManager {
         }
         
         // Show notification that we're using a remote deck (only if it's a new deck, not a shuffle, not a card deal)
-        if (!isShuffle && !isCardDeal && deckData && deckData.name) {
+        if (!isShuffle && !isCardDeal && isExplicitDeckChange && deckData && deckData.name) {
             this.showRemoteDeckNotification(deckData.name);
         }
     }
@@ -1983,28 +2009,8 @@ class WebSocketMultiplayerManager {
     
     
     broadcastDeckChange(deckId, deckData) {
-        // Use requestDeckUpdate instead
+        // Server is authoritative - just request update, server will broadcast to all
         this.requestDeckUpdate(deckId, deckData);
-        // Track that this player last broadcast deck change
-        this.iLastBroadcastDeck = true;
-    }
-    
-    // Broadcast current deck to all players when someone joins
-    broadcastCurrentDeckToAll() {
-        // Only broadcast if this player was the last to broadcast a deck change
-        if (this.iLastBroadcastDeck && this.game && this.game.deck && this.game.currentDeckId) {
-            console.log('Broadcasting current deck (I was the last broadcaster) to all players');
-            const deckData = this.game.deck.exportToJSON();
-            this.sendMessage({
-                type: 'deckChange',
-                data: {
-                    deckId: this.game.currentDeckId,
-                    deckData: deckData
-                }
-            });
-        } else {
-            console.log('Not broadcasting deck - someone else was the last broadcaster, they will handle it');
-        }
     }
     
     // Broadcast all current card states for initial synchronization
