@@ -2,9 +2,10 @@ const { query } = require('../database/connection')
 const logger = require('../utils/logger')
 
 class UserService {
-  async createOrUpdateUser(slackUserData) {
+  async createOrUpdateUser (slackUserData) {
+    // eslint-disable-next-line camelcase
     const { slack_user_id, slack_username, display_name } = slackUserData
-    
+
     try {
       // Try to insert new user, or update if exists
       const result = await query(`
@@ -17,7 +18,8 @@ class UserService {
           updated_at = NOW()
         RETURNING *
       `, [slack_user_id, slack_username, display_name])
-      
+
+      // eslint-disable-next-line camelcase
       logger.info(`User created/updated: ${slack_user_id}`)
       return result.rows[0]
     } catch (error) {
@@ -26,13 +28,13 @@ class UserService {
     }
   }
 
-  async getUserBySlackId(slackUserId) {
+  async getUserBySlackId (slackUserId) {
     try {
       const result = await query(
         'SELECT * FROM users WHERE slack_user_id = $1',
         [slackUserId]
       )
-      
+
       return result.rows[0] || null
     } catch (error) {
       logger.error('Error getting user by Slack ID:', error)
@@ -40,7 +42,7 @@ class UserService {
     }
   }
 
-  async incrementUserPoints(userId, points = 1) {
+  async incrementUserPoints (userId, points = 1) {
     try {
       const result = await query(`
         UPDATE users 
@@ -50,11 +52,11 @@ class UserService {
         WHERE id = $2
         RETURNING *
       `, [points, userId])
-      
+
       if (result.rows.length === 0) {
         throw new Error(`User with ID ${userId} not found`)
       }
-      
+
       logger.info(`User ${userId} points incremented by ${points}`)
       return result.rows[0]
     } catch (error) {
@@ -63,7 +65,7 @@ class UserService {
     }
   }
 
-  async getAllUsers() {
+  async getAllUsers () {
     try {
       const result = await query('SELECT * FROM users ORDER BY total_points DESC')
       return result.rows
@@ -73,14 +75,14 @@ class UserService {
     }
   }
 
-  async getTopUsers(limit = 10) {
+  async getTopUsers (limit = 10) {
     try {
       const result = await query(`
         SELECT * FROM users 
         ORDER BY total_points DESC, total_photos DESC, created_at ASC
         LIMIT $1
       `, [limit])
-      
+
       return result.rows
     } catch (error) {
       logger.error('Error getting top users:', error)

@@ -4,7 +4,7 @@ const logger = require('../utils/logger')
 
 let pool = null
 
-async function setupDatabase() {
+async function setupDatabase () {
   try {
     pool = new Pool({
       connectionString: config.database.url,
@@ -23,14 +23,14 @@ async function setupDatabase() {
   }
 }
 
-function getPool() {
+function getPool () {
   if (!pool) {
     throw new Error('Database not initialized. Call setupDatabase() first.')
   }
   return pool
 }
 
-async function query(text, params) {
+async function query (text, params) {
   const pool = getPool()
   const start = Date.now()
   try {
@@ -44,12 +44,12 @@ async function query(text, params) {
   }
 }
 
-async function getClient() {
+async function getClient () {
   const pool = getPool()
   return await pool.connect()
 }
 
-async function closeDatabase() {
+async function closeDatabase () {
   if (pool) {
     await pool.end()
     pool = null

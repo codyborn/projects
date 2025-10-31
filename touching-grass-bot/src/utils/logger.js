@@ -9,19 +9,23 @@ const logger = winston.createLogger({
   ),
   defaultMeta: { service: 'touching-grass-bot' },
   transports: [
-    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'logs/combined.log' })
+    // Always log to console (needed for Heroku/cloud platforms)
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.simple(),
+        winston.format.printf(({ level, message, timestamp, ...meta }) => {
+          const metaStr = Object.keys(meta).length ? JSON.stringify(meta) : ''
+          return `${timestamp} [${level}]: ${message} ${metaStr}`
+        })
+      )
+    })
   ]
 })
 
-// If we're not in production, log to the console as well
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.simple()
-    )
-  }))
+// Also log to files if not on Heroku (has writable filesystem)
+if (process.env.NODE_ENV !== 'production' || !process.env.DYNO) {
+  logger.add(new winston.transports.File({ filename: 'logs/error.log', level: 'error' }))
+  logger.add(new winston.transports.File({ filename: 'logs/combined.log' }))
 }
 
 module.exports = logger

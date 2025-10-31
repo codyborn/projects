@@ -1,9 +1,8 @@
 const OpenAI = require('openai')
 const logger = require('../utils/logger')
-const config = require('../config/config')
 
 class AIService {
-  constructor() {
+  constructor () {
     this.client = null
     if (process.env.OPENAI_API_KEY) {
       this.client = new OpenAI({
@@ -12,7 +11,7 @@ class AIService {
     }
   }
 
-  async analyzePhoto(imageUrl, botToken, userName = '', userComment = '') {
+  async analyzePhoto (imageUrl, botToken, userName = '', userComment = '') {
     try {
       if (!this.client) {
         logger.warn('OpenAI API key not configured, skipping AI analysis')
@@ -22,7 +21,7 @@ class AIService {
       // Fetch the image from Slack with authentication
       const imageResponse = await fetch(imageUrl, {
         headers: {
-          'Authorization': `Bearer ${botToken}`
+          Authorization: `Bearer ${botToken}`
         }
       })
 
@@ -35,14 +34,15 @@ class AIService {
       const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
 
       // Build prompt with user's name and comment if available
-      let prompt = 'Look at this outdoor/workout photo someone posted. Write a fun, playful comment (2-3 sentences max) with light, good-natured teasing - like joking with a close friend. Be encouraging and positive, but add playful humor. Maybe gently poke fun at something minor (like being overly dramatic about a simple walk, or finally getting off the couch). Keep it supportive, uplifting, and specific about what you see. Use emojis sparingly. Keep it casual and friendly. The goal is to make them laugh while still celebrating their outdoor activity.'
-      
+      // Make it spicy, witty, and genuinely funny - the kind of comment that makes people want to post more
+      let prompt = 'Write a hilarious, clever comment (2-3 sentences) about this outdoor photo. Be witty, make clever observations, and throw in some gentle roasting if it fits. Think of yourself as that funny friend who always has the perfect quip - sharp but supportive. Make it memorable and make people laugh. Use emojis sparingly (1-2 max).'
+
       if (userName && userComment) {
-        prompt = `Look at this outdoor/workout photo posted by ${userName}. They wrote: "${userComment}". Write a fun, playful comment (2-3 sentences max) with light, good-natured teasing - like joking with a close friend. Address ${userName} directly with gentle humor. Reference their comment playfully if relevant (maybe gently tease about being dramatic, or make a light joke about the activity). Be encouraging and positive, but add playful humor. Keep it supportive and uplifting. Be specific about what you see. Use emojis sparingly. Keep it casual and friendly. The goal is to make them laugh while still celebrating their outdoor activity.`
+        prompt = `Write a hilarious, clever comment (1-2 sentences) about this outdoor photo posted by ${userName}. They wrote: "${userComment}". Address ${userName} directly with witty banter and clever observations. Reference their comment with humor - maybe playfully roast it if there's something funny to call out. Be sharp, clever, and make them (and everyone reading) laugh. Think of yourself as that friend who always has the perfect zinger - supportive but with personality. Use emojis sparingly (1-2 max).`
       } else if (userName) {
-        prompt = `Look at this outdoor/workout photo posted by ${userName}. Write a fun, playful comment (2-3 sentences max) with light, good-natured teasing - like joking with a close friend. Address ${userName} directly with gentle humor (maybe gently poke fun at something minor, like being overly dramatic or finally getting off the couch). Be encouraging and positive, but add playful humor. Keep it supportive and uplifting. Be specific about what you see. Use emojis sparingly. Keep it casual and friendly. The goal is to make them laugh while still celebrating their outdoor activity.`
+        prompt = `Write a hilarious, clever comment (1-2 sentences) about this outdoor photo posted by ${userName}. Address ${userName} directly with witty banter, clever observations, and some gentle roasting if appropriate. Be sharp, funny, and make them (and everyone reading) laugh. Think of yourself as that friend who always has the perfect quip - supportive but with edge. Use emojis sparingly (1-2 max).`
       } else if (userComment) {
-        prompt = `Look at this outdoor/workout photo someone posted. They wrote: "${userComment}". Write a fun, playful comment (2-3 sentences max) with light, good-natured teasing - like joking with a close friend. Reference their comment playfully if relevant. Be encouraging and positive, but add playful humor. Keep it supportive and uplifting. Be specific about what you see. Use emojis sparingly. Keep it casual and friendly. The goal is to make them laugh while still celebrating their outdoor activity.`
+        prompt = `Write a hilarious, clever comment (1-2 sentences) about this outdoor photo. They wrote: "${userComment}". Reference their comment with humor - playfully roast it or find the funny angle. Make clever observations about what you see. Be sharp, witty, and make people laugh. Think of yourself as that funny friend who always has the perfect zinger. Use emojis sparingly (1-2 max).`
       }
 
       // Analyze the image with OpenAI
@@ -65,11 +65,12 @@ class AIService {
             ]
           }
         ],
-        max_tokens: 150
+        max_tokens: 200,
+        temperature: 0.8
       })
 
       const comment = response.choices[0]?.message?.content?.trim()
-      
+
       if (!comment) {
         logger.warn('OpenAI returned empty comment')
         return null
@@ -77,7 +78,6 @@ class AIService {
 
       logger.info('AI comment generated successfully')
       return comment
-
     } catch (error) {
       logger.error('Error analyzing photo with AI:', error)
       return null
@@ -86,4 +86,3 @@ class AIService {
 }
 
 module.exports = new AIService()
-

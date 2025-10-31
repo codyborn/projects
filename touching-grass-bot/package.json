@@ -20,7 +20,10 @@
     "test:db:migrate": "NODE_ENV=test node src/database/migrate.js",
     "test:deployed": "node test-deployed-server.js",
     "test:ai": "node test-ai-comment.js",
-    "logs": "heroku logs --tail --app touching-grass-bot"
+    "logs": "heroku logs --tail --app touching-grass-bot",
+    "pre-deploy": "node scripts/pre-deploy-check.js",
+    "check": "npm run lint && npm run test && node scripts/pre-deploy-check.js",
+    "syntax-check": "node -c src/app.js && find src -name '*.js' -exec node -c {} \\;"
   },
   "keywords": [
     "slack",
@@ -43,6 +46,7 @@
     "node-cron": "^3.0.3",
     "openai": "^4.104.0",
     "pg": "^8.11.3",
+    "sharp": "^0.34.4",
     "winston": "^3.11.0"
   },
   "devDependencies": {

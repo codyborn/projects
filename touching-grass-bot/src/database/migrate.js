@@ -3,7 +3,7 @@ const path = require('path')
 const { query } = require('./connection')
 const logger = require('../utils/logger')
 
-async function runMigrations() {
+async function runMigrations () {
   try {
     const migrationsDir = path.join(__dirname, 'migrations')
     const migrationFiles = fs.readdirSync(migrationsDir)
@@ -15,7 +15,7 @@ async function runMigrations() {
     for (const file of migrationFiles) {
       const migrationPath = path.join(migrationsDir, file)
       const migrationSQL = fs.readFileSync(migrationPath, 'utf8')
-      
+
       logger.info(`Running migration: ${file}`)
       await query(migrationSQL)
       logger.info(`Completed migration: ${file}`)
@@ -30,8 +30,8 @@ async function runMigrations() {
 
 if (require.main === module) {
   const { setupDatabase } = require('./connection')
-  
-  async function migrate() {
+
+  async function migrate () {
     try {
       await setupDatabase()
       await runMigrations()
@@ -41,7 +41,7 @@ if (require.main === module) {
       process.exit(1)
     }
   }
-  
+
   migrate()
 }
 

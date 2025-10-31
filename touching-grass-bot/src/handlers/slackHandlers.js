@@ -5,14 +5,14 @@ const aiService = require('../services/aiService')
 const logger = require('../utils/logger')
 const config = require('../config/config')
 
-async function handleGrassCommand(message, client) {
+async function handleGrassCommand (message, client) {
   try {
     const { user: slackUserId, channel, ts: messageTs, files } = message
 
     // Validate that we have an image attachment
     if (!files || files.length === 0) {
       await client.chat.postMessage({
-        channel: channel,
+        channel,
         text: 'Please attach a photo with your `grass` tag to earn points! 📸',
         thread_ts: messageTs
       })
@@ -34,7 +34,7 @@ async function handleGrassCommand(message, client) {
     const existingPhoto = await photoService.getPhotoByMessageTs(messageTs)
     if (existingPhoto) {
       await client.chat.postMessage({
-        channel: channel,
+        channel,
         text: 'This photo has already been counted! :grass:',
         thread_ts: messageTs
       })
@@ -58,16 +58,25 @@ async function handleGrassCommand(message, client) {
     const userRank = await leaderboardService.getUserRank(slackUserId)
 
     // Helper function to check for grass keywords
-    function containsGrassKeyword(text) {
+    function containsGrassKeyword (text) {
       const value = (text || '').toLowerCase()
       return (
-        /(^|\s)#?grass(\s|$)/i.test(value) ||
+        /(^|[\s\(\[\{'"`])#?grass([\s\)\]\}'"`]|$)/i.test(value) ||
         value.includes(':grass:')
       )
     }
 
+    // Helper function to check if text looks like a filename
+    function isFilename (text) {
+      if (!text) return false
+      const trimmed = text.trim()
+      // Match common filename patterns: IMG_1234.jpg, photo.png, DSC_001.JPG, etc.
+      const filenamePattern = /^[A-Z0-9_\-]+\.(jpg|jpeg|png|gif|webp|heic|heif)$/i
+      return filenamePattern.test(trimmed)
+    }
+
     // Extract user's first name from display name or username
-    function getFirstName(name) {
+    function getFirstName (name) {
       if (!name) return ''
       // Split by space and take the first part
       const parts = name.trim().split(/\s+/)
@@ -76,14 +85,18 @@ async function handleGrassCommand(message, client) {
 
     const userFirstName = getFirstName(slackUserData.display_name || slackUserData.slack_username)
 
-    // Extract user's comment/caption from message (excluding grass keywords)
+    // Extract user's comment/caption from message (excluding grass keywords and filenames)
     const baseText = (message.text || '').trim()
     const fileTexts = (message.files || []).flatMap(f => {
       const initial = (f.initial_comment && f.initial_comment.comment) ? f.initial_comment.comment : ''
       const title = f.title || ''
-      return [initial, title].filter(t => t && !containsGrassKeyword(t)).join(' ')
+      // Filter out grass keywords and filenames
+      const filtered = [initial, title]
+        .filter(t => t && !containsGrassKeyword(t) && !isFilename(t))
+        .join(' ')
+      return filtered
     })
-    const userComment = [baseText, ...fileTexts].filter(t => t && !containsGrassKeyword(t)).join(' ').trim()
+    const userComment = [baseText, ...fileTexts].filter(t => t && !containsGrassKeyword(t) && !isFilename(t)).join(' ').trim()
 
     // Try to get AI comment on the photo
     let aiComment = null
@@ -101,17 +114,18 @@ async function handleGrassCommand(message, client) {
     // Build response message with user's name
     const userName = slackUserData.display_name || slackUserData.slack_username
     const pointsText = updatedUser.total_points === 1 ? 'point' : 'points'
-    const photosText = updatedUser.total_photos === 1 ? 'photo' : 'photos'
-    
-    let responseText = `:grass: Great job touching grass, ${userName}! You now have ${updatedUser.total_points} ${pointsText} from ${updatedUser.total_photos} ${photosText}. You're currently ranked #${userRank}!`
-    
+
+    let responseText = ''
+
     // Add AI comment if available
     if (aiComment) {
-      responseText += `\n\n ${aiComment}`
+      responseText += `${aiComment}`
     }
-    
+
+    responseText += `\n\n:grass: Great job touching grass, ${userName}! You now have ${updatedUser.total_points} ${pointsText}. You're currently ranked #${userRank}!`
+
     await client.chat.postMessage({
-      channel: channel,
+      channel,
       text: responseText,
       thread_ts: messageTs
     })
@@ -119,7 +133,7 @@ async function handleGrassCommand(message, client) {
     logger.info(`Photo submitted by ${slackUserData.slack_username}: ${updatedUser.total_points} points`)
   } catch (error) {
     logger.error('Error handling grass command:', error)
-    
+
     try {
       await client.chat.postMessage({
         channel: message.channel,
@@ -132,32 +146,126 @@ async function handleGrassCommand(message, client) {
   }
 }
 
-async function handleLeaderboardCommand(command, respond, client) {
+async function handleLeaderboardCommand (command, respond) {
   try {
     // Parse period from command text (default to 'all')
     const commandText = (command.text || '').toLowerCase().trim()
     let period = 'all'
-    
+
     if (commandText === 'weekly' || commandText === 'week') {
       period = 'weekly'
+    } else if (commandText === 'last_week' || commandText === 'lastweek' || commandText === 'last-week' || commandText === 'last week') {
+      period = 'last_week'
     } else if (commandText === 'monthly' || commandText === 'month') {
       period = 'monthly'
     } else if (commandText === 'all' || commandText === 'alltime' || commandText === 'all-time') {
       period = 'all'
     }
-    
-    const leaderboardData = await leaderboardService.getLeaderboardByPeriod(period, 10)
-    const blocks = leaderboardService.getLeaderboardBlocks(leaderboardData, period)
-    
+
+    // Get both leaderboards - handle errors gracefully
+    let leaderboardData
+    let popularPosts = []
+
+    try {
+      leaderboardData = await leaderboardService.getLeaderboardByPeriod(period, 10)
+    } catch (error) {
+      logger.error('Error getting main leaderboard:', error)
+      await respond({
+        text: 'Sorry, there was an error retrieving the leaderboard. Please try again.',
+        response_type: 'ephemeral'
+      })
+      return
+    }
+
+    try {
+      popularPosts = await leaderboardService.getPopularPostsLeaderboard(period, 10)
+    } catch (error) {
+      // Popular posts is optional, log but continue
+      logger.warn('Error getting popular posts leaderboard:', error)
+      popularPosts = { period, posts: [] }
+    }
+
+    // Build blocks for both leaderboards
+    const blocks = [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: leaderboardService.formatLeaderboardForSlack(leaderboardData.leaderboard, leaderboardData.periodKey || period)
+        }
+      },
+      {
+        type: 'divider'
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: leaderboardService.formatPopularPostsLeaderboard(popularPosts, period)
+        }
+      }
+    ]
+
+    // Add action buttons
+    blocks.push({
+      type: 'actions',
+      elements: [
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: '📅 This Week'
+          },
+          value: 'weekly',
+          action_id: 'leaderboard_weekly'
+        },
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: '↩️ Last Week'
+          },
+          value: 'last_week',
+          action_id: 'leaderboard_last_week'
+        },
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: '🎖️ This Month'
+          },
+          value: 'monthly',
+          action_id: 'leaderboard_monthly'
+        },
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: '🏆 All Time'
+          },
+          value: 'all',
+          action_id: 'leaderboard_all'
+        }
+      ]
+    })
+
     await respond({
-      blocks: blocks,
+      blocks,
       response_type: 'in_channel'
     })
 
     logger.info(`Leaderboard displayed: ${period}`)
   } catch (error) {
     logger.error('Error handling leaderboard command:', error)
-    throw error
+    // Try to respond with error message
+    try {
+      await respond({
+        text: 'Sorry, there was an error retrieving the leaderboard. Please try again.',
+        response_type: 'ephemeral'
+      })
+    } catch (respondError) {
+      logger.error('Error sending error response:', respondError)
+    }
   }
 }
 
