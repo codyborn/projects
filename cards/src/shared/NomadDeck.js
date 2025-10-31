@@ -10,8 +10,8 @@ class NomadDeck extends Deck {
         <br>
         <h4>How to Play</h4>
         <ul>
-          <li><strong>Each turn:</strong> Play 1 card (City, Income, Skill, or Event) <em>or</em> discard any number of cards, then draw to your until you have3 cards.</li>
-          <li><strong>Travel:</strong> Your first City is free (starting point). New City cost = <strong>$3,000 + $1,000 × continent hops</strong> on the mini-map. Cities on the same continent are <strong>free</strong>.</li>
+          <li><strong>Each turn:</strong> Play 1 card (City, Income, Skill, or Event) <em>or</em> discard any number of cards, then draw until you have3 cards.</li>
+          <li><strong>Travel:</strong> Your first City is free (starting point). Traveling to a new continent costs = <strong>$3,000 + $1,000 × continent hops</strong> on the mini-map. Cities on the same continent are <strong>free</strong>.</li>
           <li><strong>Scoring:</strong> +1 point per City you visit. First to all 7 continents gains <strong>+5 points</strong> and ends the game.</li>
         </ul>
         <br>
@@ -36,8 +36,8 @@ class NomadDeck extends Deck {
       // ---------- CITY CARDS (6 per continent = 42 total) ----------
       // Color palette per continent
       const C = {
-        NA: '#1E90FF', SA: '#2E8B57', EU: '#8A2BE2',
-        AS: '#DC143C', AF: '#DAA520', OC: '#20B2AA', AN: '#A9A9A9'
+        NA: '#f9b21d', SA: '#66bb37', EU: '#39bfc4',
+        AS: '#f2719d', AF: '#ff9426', OC: '#0c57d1', AN: '#e91e46'
       };
   
       // North America

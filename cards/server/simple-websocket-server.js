@@ -436,13 +436,15 @@ class SimpleWebSocketServer {
             timestamp: Date.now()
         };
         
-        // Only include location field if it's 'table' (to avoid undefined in JSON)
-        // IMPORTANT: Explicitly set location field to ensure it's in the response
+        // Always explicitly set location field for table cards to ensure it's in the response
+        // This prevents issues with undefined properties being dropped in JSON serialization
+        // For private cards, don't set location property at all (it will be undefined)
         if (location === 'table') {
             cardState.location = 'table';
             console.log(`[DEAL][${roomCode}] Setting cardState.location = 'table'`, { cardStateLocation: cardState.location });
         } else {
             // Explicitly do not set location for private cards to ensure clean state
+            // JSON.stringify will drop undefined properties, which is fine
             console.log(`[DEAL][${roomCode}] Not setting location (private card)`, { location, locationType: typeof location });
         }
         

@@ -1682,20 +1682,27 @@ class WebSocketMultiplayerManager {
         
         // Only position in private hand zone if it's a private card (not a table card)
         // Table cards already have their position set by the server
-        // Check explicitly for location === 'table' to handle undefined/null cases
-        const isTableCard = cardState.location === 'table';
+        // CRITICAL: When dealing to table, location should be 'table' and privateTo should be null/undefined
+        // If location is undefined/null, check if position is provided and privateTo is null - this indicates a table card
+        const hasPosition = cardState.position && 
+                            cardState.position.x !== undefined && 
+                            cardState.position.y !== undefined &&
+                            (cardState.position.x !== 0 || cardState.position.y !== 0); // Not (0,0) default position
+        const isTableCard = cardState.location === 'table' || (!cardState.location && hasPosition && (!cardState.privateTo || cardState.privateTo === null));
         const isPrivateCard = cardState.privateTo && cardState.privateTo !== null && cardState.privateTo !== 'null';
         
         console.log('[DEAL] handleCardDealt: Checking card state', { 
             location: cardState.location, 
             privateTo: cardState.privateTo, 
             position: cardState.position,
+            hasPosition,
             isTableCard,
             isPrivateCard,
             shouldPositionPrivate: !isTableCard && isPrivateCard
         });
         
         // Only position in private hand if it's NOT a table card AND has privateTo set
+        // NEVER position in private zone if this was a table card (has table position but no privateTo)
         if (!isTableCard && isPrivateCard) {
             console.log('[DEAL] handleCardDealt: Positioning card in private hand zone');
             // Position card in private hand zone with smart positioning
