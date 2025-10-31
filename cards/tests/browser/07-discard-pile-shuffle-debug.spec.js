@@ -12,12 +12,22 @@ const {
   clickShuffleButton,
   getConnectionStatus,
   waitForWebSocketConnection,
+  createRoom,
+  loadDeck,
 } = require('./helpers');
 
 test.describe('Discard Pile Shuffle Debug', () => {
   test('Debug: Shuffle Discard Pile - Check Connection and Logs', async ({ page }) => {
     await page.goto('/');
     await waitForGameInit(page);
+    
+    // Connect to a room first (required for dealing/discarding)
+    const roomCode = await createRoom(page);
+    await waitForWebSocketConnection(page);
+    
+    // Load deck and sync to server
+    await loadDeck(page, 'standard');
+    await page.waitForTimeout(1000); // Wait for deck to sync
     
     // Setup console logging
     const logs = [];

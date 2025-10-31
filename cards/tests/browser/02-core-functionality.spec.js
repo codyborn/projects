@@ -29,18 +29,18 @@ test.describe('Core Functionality Tests', () => {
   });
   
   test('Test 3: Click deck to deal card to private hand', async ({ page }) => {
+    // Connect to a room first (required for dealing)
+    const roomCode = await createRoom(page);
+    await waitForWebSocketConnection(page);
+    
+    // Load deck and sync to server
+    await loadDeck(page, 'standard');
+    await page.waitForTimeout(1000); // Wait for deck to sync
+    
     // Get initial counts
     const initialCardCount = await getAllCardsCount(page);
     const initialDeckCount = await getDeckCount(page);
     expect(initialDeckCount).toBeGreaterThan(0);
-    
-    // Check if connected to multiplayer (for debugging)
-    const connectionStatus = await page.evaluate(() => {
-      return window.cardGame && window.cardGame.multiplayer 
-        ? window.cardGame.multiplayer.connectionStatus 
-        : 'offline';
-    });
-    console.log('Connection status:', connectionStatus);
     
     // Collect console logs for debugging
     const consoleLogs = [];
@@ -141,11 +141,9 @@ test.describe('Core Functionality Tests', () => {
     const uniqueId = await newCard.getAttribute('data-unique-id');
     const privateTo = await newCard.getAttribute('data-private-to');
     
-    // Card should be private (unless in local mode)
-    if (connectionStatus === 'connected') {
-      expect(privateTo).toBeTruthy();
-      expect(privateTo).not.toBe('null');
-    }
+    // Card should be private (we're connected to multiplayer)
+    expect(privateTo).toBeTruthy();
+    expect(privateTo).not.toBe('null');
     
     // Verify the card is face up (not flipped)
     const isFlipped = await isCardFlipped(page, newCard);
@@ -318,6 +316,14 @@ test.describe('Core Functionality Tests', () => {
   });
   
   test('Test 4: Right-Click to Discard', async ({ page }) => {
+    // Connect to a room first (required for dealing)
+    const roomCode = await createRoom(page);
+    await waitForWebSocketConnection(page);
+    
+    // Load deck and sync to server
+    await loadDeck(page, 'standard');
+    await page.waitForTimeout(1000); // Wait for deck to sync
+    
     // Deal a card
     await dealCard(page);
     
@@ -369,6 +375,14 @@ test.describe('Core Functionality Tests', () => {
   });
   
   test('Test 5: Shuffle Discard Pile', async ({ page }) => {
+    // Connect to a room first (required for dealing/discarding)
+    const roomCode = await createRoom(page);
+    await waitForWebSocketConnection(page);
+    
+    // Load deck and sync to server
+    await loadDeck(page, 'standard');
+    await page.waitForTimeout(1000); // Wait for deck to sync
+    
     // Deal and discard 3-5 cards
     const cardsToDiscard = 4;
     await dealCard(page);
@@ -430,6 +444,14 @@ test.describe('Core Functionality Tests', () => {
   });
   
   test('Test 6: Card Counting Accuracy', async ({ page }) => {
+    // Connect to a room first (required for dealing/discarding)
+    const roomCode = await createRoom(page);
+    await waitForWebSocketConnection(page);
+    
+    // Load deck and sync to server
+    await loadDeck(page, 'standard');
+    await page.waitForTimeout(1000); // Wait for deck to sync
+    
     // Load deck (should show 52 cards)
     const initialDeckCount = await getDeckCount(page);
     expect(initialDeckCount).toBeGreaterThan(0);

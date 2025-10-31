@@ -13,6 +13,7 @@ const {
   waitForWebSocketConnection,
   getDeckCount,
   getAllCardsCount,
+  loadDeck,
 } = require('./helpers');
 
 test.describe('Deck Synchronization Tests', () => {
@@ -39,6 +40,10 @@ test.describe('Deck Synchronization Tests', () => {
       
       await waitForWebSocketConnection(hostPage);
       await waitForWebSocketConnection(playerPage);
+      
+      // Load deck and sync to server (required for dealing)
+      await loadDeck(hostPage, 'standard');
+      await hostPage.waitForTimeout(1000); // Wait for deck to sync
       
       // Wait for initial sync
       await hostPage.waitForTimeout(2000);
@@ -67,12 +72,14 @@ test.describe('Deck Synchronization Tests', () => {
       // Wait for sync
       await playerPage.waitForTimeout(2000);
       
-      // Get the card that host dealt
+      // Get the card that host dealt (only visible cards)
       const hostCardsAfter = await hostPage.evaluate(() => {
-        return Array.from(document.querySelectorAll('.card')).map(c => ({
-          uniqueId: c.dataset.uniqueId,
-          title: c.dataset.title
-        }));
+        return Array.from(document.querySelectorAll('.card'))
+          .filter(c => c.style.display !== 'none' && c.style.visibility !== 'hidden')
+          .map(c => ({
+            uniqueId: c.dataset.uniqueId,
+            title: c.dataset.title
+          }));
       });
       const newHostCard = hostCardsAfter.find(c => !cardsBeforeHost.includes(c.uniqueId));
       
@@ -85,12 +92,14 @@ test.describe('Deck Synchronization Tests', () => {
       // Wait for sync
       await hostPage.waitForTimeout(2000);
       
-      // Get the card that player dealt
+      // Get the card that player dealt (only visible cards)
       const playerCardsAfter = await playerPage.evaluate(() => {
-        return Array.from(document.querySelectorAll('.card')).map(c => ({
-          uniqueId: c.dataset.uniqueId,
-          title: c.dataset.title
-        }));
+        return Array.from(document.querySelectorAll('.card'))
+          .filter(c => c.style.display !== 'none' && c.style.visibility !== 'hidden')
+          .map(c => ({
+            uniqueId: c.dataset.uniqueId,
+            title: c.dataset.title
+          }));
       });
       const newPlayerCard = playerCardsAfter.find(c => !cardsBeforePlayer.includes(c.uniqueId));
       

@@ -129,7 +129,7 @@ body {
     position: fixed;
     top: 20px;
     left: 20px;
-    z-index: 100001; /* Higher than menu and overlay to stay on top */
+    z-index: 9999999; /* Highest z-index - always on top of everything including menu */
     background: rgba(255, 255, 255, 0.1);
     border: 2px solid rgba(255, 255, 255, 0.3);
     color: white;
@@ -139,6 +139,29 @@ body {
     cursor: pointer;
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
+}
+
+/* Internal menu toggle (scrolls with menu) */
+.menu-toggle-internal {
+    position: relative;
+    top: auto;
+    left: auto;
+    z-index: auto;
+    margin-right: 10px;
+}
+
+/* Hide external button when menu is open */
+body.menu-open #menu-toggle:not(.menu-toggle-internal) {
+    display: none;
+}
+
+/* Show internal button only when menu is open */
+.menu-toggle-internal {
+    display: none;
+}
+
+body.menu-open .menu-toggle-internal {
+    display: inline-block;
 }
 
 .menu-toggle:hover {
@@ -156,7 +179,7 @@ body {
     backdrop-filter: blur(20px);
     border-right: 2px solid rgba(255, 255, 255, 0.1);
     transition: left 0.3s ease;
-    z-index: 10000; /* Highest global z-index to always be accessible */
+    z-index: 9999998; /* Very high z-index - always above cards (which max at ~20000) */
     overflow-y: auto;
 }
 
@@ -205,7 +228,7 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 20px;
-    padding-left: 6em;
+    padding-left: 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -408,7 +431,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 2000;
+    z-index: 9999997; /* Below menu toggle and side menu, but above cards (which max at ~20000) */
 }
 
 .modal.show {
@@ -425,7 +448,7 @@ body {
     height: 100%;
     background: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(5px);
-    z-index: 1999;
+    z-index: 9999996; /* Below modal, but above cards */
     display: none;
 }
 

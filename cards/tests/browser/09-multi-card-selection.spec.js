@@ -8,6 +8,8 @@ const {
   waitForGameInit,
   dealCard,
   dealCards,
+  dealCardsToTable,
+  discardCard,
   getDiscardPileCount,
   getAllCardsCount,
   getCardsInDiscardPile,
@@ -15,6 +17,7 @@ const {
   joinRoom,
   waitForWebSocketConnection,
   getPrivateHandCount,
+  loadDeck,
 } = require('./helpers');
 
 // Shared room code for all tests - reduces server memory bloat
@@ -42,6 +45,10 @@ test.describe('Multi-Card Selection Tests', () => {
     
     // Wait for connection
     await waitForWebSocketConnection(page, 15000);
+    
+    // Load deck and sync to server (required for dealing)
+    await loadDeck(page, 'standard');
+    await page.waitForTimeout(1000); // Wait for deck to sync
   });
 
   /**
@@ -190,8 +197,8 @@ test.describe('Multi-Card Selection Tests', () => {
     // Get initial card count
     const initialCount = await getAllCardsCount(page);
     
-    // Deal a few cards
-    await dealCards(page, 3);
+    // Deal a few cards to the table (not private hand) for selection tests
+    await dealCardsToTable(page, 3);
     await page.waitForTimeout(1000);
     
     // Wait for new cards to appear (at least 3 more than initial)
@@ -1296,6 +1303,123 @@ test.describe('Multi-Card Selection Tests', () => {
     
     // At least some cards should be in discard pile
     expect(discardedCardsStillVisible).toBe(true);
+  });
+
+  test('Test 15b: Right-click single card in selected group discards entire group', async ({ page }) => {
+    // This test verifies that when a single card that's part of a selected group
+    // is right-clicked, ALL selected cards are discarded (not just the one clicked)
+    
+    // Get initial counts
+    const initialCount = await getAllCardsCount(page);
+    const initialDiscardCount = await getDiscardPileCount(page);
+    
+    // Deal 4 cards
+    await dealCards(page, 4);
+    await page.waitForTimeout(1000);
+    
+    // Wait for new cards to appear
+    const cards = page.locator('.card');
+    await page.waitForFunction(
+      (expectedCount) => {
+        const count = document.querySelectorAll('.card').length;
+        return count >= expectedCount;
+      },
+      initialCount + 4,
+      { timeout: 5000 }
+    );
+    
+    // Get the newly dealt cards (last 4 cards)
+    const allCards = await cards.all();
+    const newCards = allCards.slice(-4);
+    expect(newCards.length).toBe(4);
+    
+    // Select 3 cards using selection rectangle
+    const firstCard = newCards[0];
+    const thirdCard = newCards[2];
+    
+    const firstCardBox = await firstCard.boundingBox();
+    const thirdCardBox = await thirdCard.boundingBox();
+    
+    if (!firstCardBox || !thirdCardBox) {
+      throw new Error('Card bounding boxes not found');
+    }
+    
+    const cardTable = page.locator('#card-table');
+    const tableBox = await cardTable.boundingBox();
+    
+    if (!tableBox) {
+      throw new Error('Card table not found');
+    }
+    
+    // Create selection rectangle covering first 3 cards
+    const startX = firstCardBox.x - tableBox.x - 10;
+    const startY = firstCardBox.y - tableBox.y - 10;
+    const endX = thirdCardBox.x - tableBox.x + thirdCardBox.width + 10;
+    const endY = thirdCardBox.y - tableBox.y + thirdCardBox.height + 10;
+    
+    await createSelectionRectangle(page, startX, startY, endX, endY);
+    await page.waitForTimeout(500);
+    
+    // Verify at least 2 cards are selected (allow some flexibility for selection rectangle)
+    const selectedCards = await getSelectedCards(page);
+    expect(selectedCards.length).toBeGreaterThanOrEqual(2);
+    
+    // Get the unique IDs of the selected cards
+    const selectedUniqueIds = await page.evaluate(() => {
+      const selected = document.querySelectorAll('.card.card-selected');
+      return Array.from(selected).map(card => card.dataset.uniqueId);
+    });
+    const selectedCount = selectedUniqueIds.length;
+    expect(selectedCount).toBeGreaterThanOrEqual(2);
+    
+    // Right-click on ONLY the first selected card (not the whole group)
+    const cardToRightClick = firstCard;
+    const clickedCardId = await cardToRightClick.getAttribute('data-unique-id');
+    
+    // Verify the clicked card is one of the selected cards
+    expect(selectedUniqueIds).toContain(clickedCardId);
+    
+    // Right-click the single card using the helper
+    await discardCard(page, cardToRightClick);
+    
+    // Wait for discard operation to complete
+    await page.waitForTimeout(1500);
+    
+    // Verify ALL selected cards were discarded (not just the one clicked)
+    const finalDiscardCount = await getDiscardPileCount(page);
+    expect(finalDiscardCount).toBe(initialDiscardCount + selectedCount); // All selected cards should be discarded
+    
+    // Verify selection was cleared
+    const finalSelectedCards = await getSelectedCards(page);
+    expect(finalSelectedCards.length).toBe(0);
+    
+    // Verify all 3 selected cards are now in the discard pile
+    const cardsInDiscard = await page.evaluate((ids) => {
+      const discardArea = document.getElementById('discard-pile-area');
+      if (!discardArea) return { count: 0, found: [] };
+      
+      const discardRect = discardArea.getBoundingClientRect();
+      const found = [];
+      
+      for (const id of ids) {
+        const card = document.querySelector(`[data-unique-id="${id}"]`);
+        if (!card) continue;
+        
+        const cardRect = card.getBoundingClientRect();
+        const cardCenterX = cardRect.left + cardRect.width / 2;
+        const cardCenterY = cardRect.top + cardRect.height / 2;
+        
+        if (cardCenterX >= discardRect.left && cardCenterX <= discardRect.right &&
+            cardCenterY >= discardRect.top && cardCenterY <= discardRect.bottom) {
+          found.push(id);
+        }
+      }
+      
+      return { count: found.length, found };
+    }, selectedUniqueIds);
+    
+    expect(cardsInDiscard.count).toBe(selectedCount); // All selected cards should be in discard pile
+    expect(cardsInDiscard.found.sort()).toEqual(selectedUniqueIds.sort());
   });
 
   test('Test 16: Drag selected card to discard pile discards all selected cards', async ({ page }) => {

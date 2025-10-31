@@ -38,6 +38,41 @@ async function dealCards(page, count) {
 }
 
 /**
+ * Deal a card to the table at a specific position (server-authoritative)
+ */
+async function dealCardToTable(page, x, y) {
+  await page.evaluate(({ clickX, clickY }) => {
+    const table = document.getElementById('card-table');
+    if (table && window.cardGame) {
+      // Use the dealCardToPosition method which uses server-authoritative dealing
+      window.cardGame.dealCardToPosition(clickX, clickY);
+    }
+  }, { clickX: x, clickY: y });
+  await page.waitForTimeout(500); // Wait for server response
+}
+
+/**
+ * Deal multiple cards to the table (spread out)
+ */
+async function dealCardsToTable(page, count) {
+  const tableBox = await page.locator('#card-table').boundingBox();
+  if (!tableBox) {
+    throw new Error('Card table not found');
+  }
+  
+  const startX = tableBox.width * 0.3;
+  const startY = tableBox.height * 0.3;
+  const spacing = 80;
+  
+  for (let i = 0; i < count; i++) {
+    const x = tableBox.x + startX + (i % 3) * spacing;
+    const y = tableBox.y + startY + Math.floor(i / 3) * spacing;
+    await dealCardToTable(page, x, y);
+    await page.waitForTimeout(300);
+  }
+}
+
+/**
  * Discard a card (right-click)
  */
 async function discardCard(page, cardLocator) {
@@ -416,6 +451,8 @@ module.exports = {
   waitForGameInit,
   dealCard,
   dealCards,
+  dealCardToTable,
+  dealCardsToTable,
   loadDeck,
   discardCard,
   getDiscardPileCount,

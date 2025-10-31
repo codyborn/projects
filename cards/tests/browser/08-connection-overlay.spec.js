@@ -12,6 +12,7 @@ const {
   joinRoom,
   waitForWebSocketConnection,
   getConnectionStatus,
+  loadDeck,
 } = require('./helpers');
 
 test.describe('Connection Overlay Tests', () => {
@@ -59,6 +60,10 @@ test.describe('Connection Overlay Tests', () => {
     const roomCode = await createRoom(page);
     await waitForWebSocketConnection(page);
     
+    // Load deck and sync to server
+    await loadDeck(page, 'standard');
+    await page.waitForTimeout(1000); // Wait for deck to sync
+    
     // Wait for connection to fully establish
     await page.waitForTimeout(1000);
     
@@ -98,6 +103,10 @@ test.describe('Connection Overlay Tests', () => {
     
     // Wait for connection to complete
     await waitForWebSocketConnection(page);
+    
+    // Load deck and sync to server
+    await loadDeck(page, 'standard');
+    await page.waitForTimeout(1000); // Wait for deck to sync
     await page.waitForTimeout(500);
     
     // Overlay should now be hidden
@@ -112,6 +121,10 @@ test.describe('Connection Overlay Tests', () => {
     // Connect first
     const roomCode = await createRoom(page);
     await waitForWebSocketConnection(page);
+    
+    // Load deck and sync to server
+    await loadDeck(page, 'standard');
+    await page.waitForTimeout(1000); // Wait for deck to sync
     await page.waitForTimeout(500);
     
     // Deal a card while connected

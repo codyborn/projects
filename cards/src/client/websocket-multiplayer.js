@@ -207,6 +207,39 @@ class WebSocketMultiplayerManager {
                 this.autoConnectTestRoom();
             }, 100);
         }
+        
+        // Check for room code in URL query parameters
+        this.checkUrlForRoomCode();
+    }
+    
+    checkUrlForRoomCode() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomCode = urlParams.get('room');
+        
+        if (roomCode && roomCode.trim().length === 6) {
+            // Found room code in URL - auto-join
+            console.log('Found room code in URL:', roomCode);
+            
+            // Remove room code from URL (clean up URL)
+            urlParams.delete('room');
+            const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+            window.history.replaceState({}, '', newUrl);
+            
+            // Auto-fill input and join
+            setTimeout(() => {
+                const roomCodeInput = document.getElementById('room-code-input');
+                if (roomCodeInput) {
+                    roomCodeInput.value = roomCode.trim().toUpperCase();
+                    // Enable join button
+                    const joinBtn = document.getElementById('join-room-btn');
+                    if (joinBtn) {
+                        joinBtn.disabled = false;
+                    }
+                    // Auto-join
+                    this.joinRoom();
+                }
+            }, 500); // Small delay to ensure page is fully loaded
+        }
     }
     
     updateConnectionStatus(status) {
@@ -927,6 +960,35 @@ class WebSocketMultiplayerManager {
         // Wait for server response - card will be created via handleCardDealt
     }
     
+    requestDealCardToTable(x, y) {
+        console.log('[DEAL] requestDealCardToTable() called', {
+            hasSocket: !!this.socket,
+            socketState: this.socket?.readyState,
+            isOpen: this.isSocketReady(),
+            playerId: this.playerId,
+            roomCode: this.roomCode,
+            position: { x, y }
+        });
+        
+        if (!this.isSocketReady()) {
+            console.error('[DEAL] WebSocket not connected - cannot request card from server');
+            return;
+        }
+        
+        const message = {
+            type: 'dealCard',
+            playerId: this.playerId,
+            roomCode: this.roomCode,
+            position: { x, y },
+            location: 'table'
+        };
+        
+        console.log('[DEAL] Sending dealCard to table request to server:', message);
+        this.socket.send(JSON.stringify(message));
+        
+        // Wait for server response - card will be created via handleCardDealt or handleCardState
+    }
+    
     requestCardStateUpdate(cardStates) {
         if (!this.isSocketReady()) {
             console.error('WebSocket not connected');
@@ -1176,12 +1238,14 @@ class WebSocketMultiplayerManager {
         // This is the core method to process a single card state update
         // Called from handleCardState which processes arrays
         const { uniqueId, card, position, isFlipped, zIndex, privateTo, status } = cardState;
+        const cardLocation = cardState.location; // Use different variable name to avoid conflict
         
         console.log('[DEAL] processSingleCardState called', {
             uniqueId,
             hasCard: !!card,
             position,
             privateTo,
+            location: cardLocation,
             status,
             isServerUpdate
         });
@@ -1237,7 +1301,27 @@ class WebSocketMultiplayerManager {
         }
         
         // Find existing card by uniqueId
+        // Try multiple strategies to find existing card
         let cardElement = document.querySelector(`[data-unique-id="${uniqueId}"]`);
+        
+        // Also check by instanceId if uniqueId doesn't match (for dealing case)
+        if (!cardElement && card && card.instanceId) {
+            const allCards = document.querySelectorAll('.card');
+            for (const existingCard of allCards) {
+                const existingCardData = this.game.getCardFromElement(existingCard);
+                if (existingCardData && existingCardData.instanceId === card.instanceId) {
+                    // Found card by instanceId - update its uniqueId to match server
+                    console.log('[DEAL] Found card by instanceId, updating uniqueId', { 
+                        oldUniqueId: existingCard.dataset.uniqueId, 
+                        newUniqueId: uniqueId,
+                        instanceId: card.instanceId 
+                    });
+                    existingCard.dataset.uniqueId = uniqueId;
+                    cardElement = existingCard;
+                    break;
+                }
+            }
+        }
         
         if (!cardElement) {
             // Card doesn't exist, create it
@@ -1294,6 +1378,19 @@ class WebSocketMultiplayerManager {
             delete cardElement.dataset.privateTo;
         }
         
+        // Set location dataset attribute
+        if (cardLocation !== undefined && cardLocation !== null) {
+            cardElement.dataset.location = cardLocation;
+        } else {
+            // For table cards without explicit location, set it to 'table'
+            // This ensures table cards are properly identified
+            if (!privateTo || privateTo === null || privateTo === 'null') {
+                cardElement.dataset.location = 'table';
+            } else {
+                delete cardElement.dataset.location;
+            }
+        }
+        
         // Update card state
         const location = cardState.location;
         const isInDiscardPile = location === 'discardPile';
@@ -1321,7 +1418,13 @@ class WebSocketMultiplayerManager {
             // (even if location says 'table', if parent is discard pile, keep it there)
             const isActuallyInDiscardContainer = cardElement.parentNode === this.game.discardPileContent;
             
-            if (position && !isActuallyInDiscardContainer) {
+            // Don't apply server position updates during drag (prevents ghosting)
+            const isDragging = cardElement.classList.contains('dragging') || 
+                              cardElement.classList.contains('card-dragging-group') ||
+                              this.game.isDragging || 
+                              this.game.isDraggingGroup;
+            
+            if (position && !isActuallyInDiscardContainer && !isDragging) {
                 // Move to card-table if needed
                 if (cardElement.parentNode === this.game.discardPileContent) {
                     const cardTable = document.getElementById('card-table');
@@ -1350,17 +1453,44 @@ class WebSocketMultiplayerManager {
             }
         }
         
-        if (zIndex !== undefined) {
-            cardElement.style.zIndex = zIndex;
-        }
-        
-        
         // Get player alias for highlighting
         const playerAlias = playerId ? this.playerAliases.get(playerId) : null;
+        
+        // Calculate normalized z-index if provided
+        let normalizedZIndex = null;
+        if (zIndex !== undefined && zIndex !== null) {
+            // Ensure z-index is a valid number (parse in case it's a string)
+            const zIndexValue = typeof zIndex === 'number' ? zIndex : parseInt(zIndex, 10);
+            
+            if (!isNaN(zIndexValue) && zIndexValue >= 0) {
+                // Normalize max int values (from old Date.now() z-index) to reasonable values
+                normalizedZIndex = zIndexValue;
+                if (zIndexValue >= 2000000000) {
+                    // Use current zIndexCounter + 1 for these invalid values
+                    normalizedZIndex = Math.max((this.game?.zIndexCounter || 10000) + 1, 10000);
+                    console.warn(`[Z-INDEX] Normalized invalid z-index ${zIndexValue} to ${normalizedZIndex}`);
+                }
+                
+                // Update local zIndexCounter to track highest value (only for valid values)
+                if (this.game && typeof this.game.zIndexCounter !== 'undefined') {
+                    this.game.zIndexCounter = Math.max(this.game.zIndexCounter || 10000, normalizedZIndex);
+                }
+            }
+        }
         
         // Highlight the card to show it has moved or been placed
         if (this.game && typeof this.game.highlightCard === 'function') {
             this.game.highlightCard(cardElement, playerAlias);
+            
+            // Set z-index with !important AFTER adding highlight class
+            // This ensures our !important rule comes after the CSS class's !important rule
+            // In CSS, when specificity is equal, the last !important declaration wins
+            if (normalizedZIndex !== null) {
+                cardElement.style.setProperty('z-index', normalizedZIndex.toString(), 'important');
+            }
+        } else if (normalizedZIndex !== null) {
+            // If no highlight, just set z-index normally
+            cardElement.style.zIndex = normalizedZIndex.toString();
         }
         
         // Update visibility based on privateTo field
@@ -1539,6 +1669,7 @@ class WebSocketMultiplayerManager {
             cardState: cardState ? {
                 uniqueId: cardState.uniqueId,
                 privateTo: cardState.privateTo,
+                location: cardState.location,
                 hasCard: !!cardState.card,
                 position: cardState.position
             } : null
@@ -1549,22 +1680,50 @@ class WebSocketMultiplayerManager {
             return;
         }
         
-        // Position card in private hand zone with smart positioning
-        const privateHandZone = document.getElementById('private-hand-zone');
-        if (!privateHandZone) {
-            console.error('Private hand zone not found!');
-            return;
-        }
+        // Only position in private hand zone if it's a private card (not a table card)
+        // Table cards already have their position set by the server
+        // Check explicitly for location === 'table' to handle undefined/null cases
+        const isTableCard = cardState.location === 'table';
+        const isPrivateCard = cardState.privateTo && cardState.privateTo !== null && cardState.privateTo !== 'null';
         
-        const zoneRect = privateHandZone.getBoundingClientRect();
-        const table = document.getElementById('card-table');
-        const tableRect = table.getBoundingClientRect();
+        console.log('[DEAL] handleCardDealt: Checking card state', { 
+            location: cardState.location, 
+            privateTo: cardState.privateTo, 
+            position: cardState.position,
+            isTableCard,
+            isPrivateCard,
+            shouldPositionPrivate: !isTableCard && isPrivateCard
+        });
         
-        // Find a good position for the new card
-        if (this.game && typeof this.game.findBestPositionInPrivateZone === 'function') {
-            const bestPosition = this.game.findBestPositionInPrivateZone(zoneRect, tableRect);
-            cardState.position = bestPosition; // Update position for card creation
+        // Only position in private hand if it's NOT a table card AND has privateTo set
+        if (!isTableCard && isPrivateCard) {
+            console.log('[DEAL] handleCardDealt: Positioning card in private hand zone');
+            // Position card in private hand zone with smart positioning
+            const privateHandZone = document.getElementById('private-hand-zone');
+            if (!privateHandZone) {
+                console.error('Private hand zone not found!');
+                return;
+            }
+            
+            const zoneRect = privateHandZone.getBoundingClientRect();
+            const table = document.getElementById('card-table');
+            const tableRect = table.getBoundingClientRect();
+            
+            // Find a good position for the new card
+            if (this.game && typeof this.game.findBestPositionInPrivateZone === 'function') {
+                const bestPosition = this.game.findBestPositionInPrivateZone(zoneRect, tableRect);
+                cardState.position = bestPosition; // Update position for card creation
+            }
+        } else {
+            console.log('[DEAL] handleCardDealt: Table card - using server position', { 
+                location: cardState.location, 
+                position: cardState.position,
+                privateTo: cardState.privateTo,
+                isTableCard,
+                isPrivateCard
+            });
         }
+        // For table cards, use the position provided by the server (already in cardState.position)
         
         // Use handleCardState to process the card (wraps in array format)
         // This ensures consistent handling with broadcast cardState messages
@@ -1669,7 +1828,8 @@ class WebSocketMultiplayerManager {
                 }
             } else {
                 // For new decks or shuffles, use the full loadRemoteDeck method
-                this.game.loadRemoteDeck(deckData);
+                // Skip clearing board if it's a shuffle (cards outside discard pile should remain)
+                this.game.loadRemoteDeck(deckData, isShuffle);
                 // Set original deck size from server state (prioritize server value if provided)
                 if (originalDeckSize !== undefined) {
                     this.game.originalDeckSize = originalDeckSize;
@@ -2009,13 +2169,22 @@ class WebSocketMultiplayerManager {
     }
     
     copyRoomCode() {
-        navigator.clipboard.writeText(this.roomCode).then(() => {
+        // Create URL with room code as query parameter
+        const url = new URL(window.location.href);
+        url.searchParams.set('room', this.roomCode);
+        const roomLink = url.toString();
+        
+        navigator.clipboard.writeText(roomLink).then(() => {
             const button = document.getElementById('copy-room-code');
             const originalText = button.textContent;
             button.textContent = 'Copied!';
             setTimeout(() => {
                 button.textContent = originalText;
             }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy room code link:', err);
+            // Fallback: copy just the room code
+            navigator.clipboard.writeText(this.roomCode);
         });
     }
     

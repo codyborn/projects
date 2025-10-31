@@ -9,12 +9,13 @@
     <link rel="stylesheet" href="styles/cards.css">
 </head>
 <body>
-    <!-- Side Menu Toggle Button -->
+    <!-- Side Menu Toggle Button (always visible) -->
     <button id="menu-toggle" class="menu-toggle">☰</button>
     
     <!-- Side Menu -->
     <div id="side-menu" class="side-menu">
         <div class="menu-header">
+            <button id="menu-toggle-internal" class="menu-toggle menu-toggle-internal">☰</button>
             <h2>Deck Manager</h2>
             <button id="menu-close" class="menu-close">×</button>
         </div>
@@ -144,6 +145,7 @@
     <script src="src/shared/cards.js"></script>
     <script src="src/shared/StandardDeck.js"></script>
     <script src="src/shared/VirusDeck.js"></script>
+    <script src="src/shared/NomadDeck.js"></script>
     <script src="src/client/websocket-multiplayer.js"></script>
     <script src="src/client/app.js"></script>
 </body>

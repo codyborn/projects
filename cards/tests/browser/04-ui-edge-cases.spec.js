@@ -12,6 +12,9 @@ const {
   hoverDiscardPileCounter,
   clickShuffleButton,
   dealCards,
+  createRoom,
+  waitForWebSocketConnection,
+  loadDeck,
 } = require('./helpers');
 
 test.describe('UI/UX and Edge Case Tests', () => {
@@ -21,6 +24,14 @@ test.describe('UI/UX and Edge Case Tests', () => {
   });
   
   test('Test 10: Discard Pile Visual State', async ({ page }) => {
+    // Connect to a room first (required for dealing/discarding)
+    const roomCode = await createRoom(page);
+    await waitForWebSocketConnection(page);
+    
+    // Load deck and sync to server
+    await loadDeck(page, 'standard');
+    await page.waitForTimeout(1000); // Wait for deck to sync
+    
     // Discard multiple cards
     await dealCard(page);
     await dealCard(page);
@@ -96,6 +107,14 @@ test.describe('UI/UX and Edge Case Tests', () => {
   });
   
   test('Test 11: Hover States and Interactions', async ({ page }) => {
+    // Connect to a room first (required for dealing/discarding)
+    const roomCode = await createRoom(page);
+    await waitForWebSocketConnection(page);
+    
+    // Load deck and sync to server
+    await loadDeck(page, 'standard');
+    await page.waitForTimeout(1000); // Wait for deck to sync
+    
     // Discard at least one card to have something to shuffle
     await dealCard(page);
     await page.waitForTimeout(300);
@@ -134,6 +153,14 @@ test.describe('UI/UX and Edge Case Tests', () => {
   });
   
   test('Test 12: Responsive Design', async ({ page }) => {
+    // Connect to a room first (required for dealing/discarding)
+    const roomCode = await createRoom(page);
+    await waitForWebSocketConnection(page);
+    
+    // Load deck and sync to server
+    await loadDeck(page, 'standard');
+    await page.waitForTimeout(1000); // Wait for deck to sync
+    
     // Test at various viewport sizes
     const viewports = [
       { width: 375, height: 667 }, // Mobile
@@ -171,6 +198,14 @@ test.describe('UI/UX and Edge Case Tests', () => {
   });
   
   test('Test 13: Empty Discard Pile Shuffle', async ({ page }) => {
+    // Connect to a room first (required for shuffle operations)
+    const roomCode = await createRoom(page);
+    await waitForWebSocketConnection(page);
+    
+    // Load deck and sync to server
+    await loadDeck(page, 'standard');
+    await page.waitForTimeout(1000); // Wait for deck to sync
+    
     // Verify discard pile is empty
     const discardCountBefore = await getDiscardPileCount(page);
     expect(discardCountBefore).toBe(0);
@@ -220,6 +255,14 @@ test.describe('UI/UX and Edge Case Tests', () => {
   });
   
   test('Test 14: Rapid Discard Operations', async ({ page }) => {
+    // Connect to a room first (required for dealing/discarding)
+    const roomCode = await createRoom(page);
+    await waitForWebSocketConnection(page);
+    
+    // Load deck and sync to server
+    await loadDeck(page, 'standard');
+    await page.waitForTimeout(1000); // Wait for deck to sync
+    
     // Deal multiple cards
     await dealCards(page, 5);
     await page.waitForTimeout(800);
@@ -263,8 +306,13 @@ test.describe('UI/UX and Edge Case Tests', () => {
   });
   
   test('Test 15: Large Number of Discarded Cards', async ({ page }) => {
-    // Wait for game to be fully initialized
-    await page.waitForTimeout(500);
+    // Connect to a room first (required for dealing/discarding)
+    const roomCode = await createRoom(page);
+    await waitForWebSocketConnection(page);
+    
+    // Load deck and sync to server
+    await loadDeck(page, 'standard');
+    await page.waitForTimeout(1000); // Wait for deck to sync
     
     // Deal many cards (but not too many - limit to avoid timeouts)
     // Test with 20 cards instead of unlimited to stay within timeout

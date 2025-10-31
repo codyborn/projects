@@ -130,7 +130,7 @@ class SimpleWebSocketServer {
                 break;
                 
             case 'dealCard':
-                this.dealCard(ws, message.roomCode || roomCode, playerId);
+                this.dealCard(ws, message.roomCode || roomCode, playerId, message.position, message.location);
                 break;
                 
             case 'shuffleDiscardPile':
@@ -197,7 +197,8 @@ class SimpleWebSocketServer {
                 originalDeckSize: 0,
                 cards: new Map(), // uniqueId -> CardState
                 discardPile: [], // Array of uniqueIds
-                dealtCards: [] // Cards that have been dealt
+                dealtCards: [], // Cards that have been dealt
+                highestZIndex: 10000 // Track highest z-index for consistent ordering
             },
             connections: new Set()
         };
@@ -313,6 +314,17 @@ class SimpleWebSocketServer {
                 if (!hasLocationField && Object.prototype.hasOwnProperty.call(existing, 'location')) {
                     merged.location = existing.location;
                 }
+                
+                // Track highest z-index if provided
+                // Ensure we don't use invalid max int values (like from Date.now())
+                if (cardState.zIndex !== undefined && cardState.zIndex !== null) {
+                    const zIndexValue = typeof cardState.zIndex === 'number' ? cardState.zIndex : parseInt(cardState.zIndex, 10);
+                    // Only track if it's a valid reasonable z-index (not max int or Date.now())
+                    if (!isNaN(zIndexValue) && zIndexValue >= 0 && zIndexValue < 2000000000) {
+                        roomState.gameState.highestZIndex = Math.max(roomState.gameState.highestZIndex || 10000, zIndexValue);
+                    }
+                }
+                
                 roomState.gameState.cards.set(cardState.uniqueId, merged);
                 
                 // If this is a newly dealt card (not in state before), remove it from deck
@@ -362,7 +374,7 @@ class SimpleWebSocketServer {
         });
     }
     
-    dealCard(ws, roomCode, playerId) {
+    dealCard(ws, roomCode, playerId, position = null, location = 'private') {
         const roomState = this.validateRoomAndPlayer(ws, roomCode, playerId);
         if (!roomState) {
             return;
@@ -383,16 +395,64 @@ class SimpleWebSocketServer {
         
         console.log(`[DEAL][${roomCode}] Player ${playerId} dealt card ${card.uniqueId}. Deck size: ${roomState.gameState.deckData.cards.length + 1} -> ${roomState.gameState.deckData.cards.length}`);
         
+        // Determine position and privateTo based on location
+        // If location is 'table' and position is provided, deal to table at that position
+        // Otherwise, deal to private hand (default behavior)
+        // Debug: log the exact values received
+        console.log(`[DEAL][${roomCode}] Deal request details:`, { 
+            location, 
+            locationType: typeof location,
+            locationValue: JSON.stringify(location),
+            locationIsTable: location === 'table',
+            position, 
+            hasPosition: !!position 
+        });
+        const finalPosition = (location === 'table' && position) ? position : { x: 0, y: 0 };
+        const privateTo = (location === 'table') ? null : playerId; // Table cards are public
+        console.log(`[DEAL][${roomCode}] Final card state:`, { finalPosition, privateTo, location, locationIsTable: location === 'table' });
+        
+        // Use highest z-index + 1 for new card (ensures it's on top)
+        // First, check all existing cards to find the true highest z-index
+        let maxExistingZIndex = roomState.gameState.highestZIndex || 10000;
+        for (const [uniqueId, cardState] of roomState.gameState.cards.entries()) {
+            if (cardState && cardState.zIndex !== undefined && cardState.zIndex !== null) {
+                const zIndexValue = typeof cardState.zIndex === 'number' ? cardState.zIndex : parseInt(cardState.zIndex, 10);
+                // Only consider valid reasonable z-index values (not max int)
+                if (!isNaN(zIndexValue) && zIndexValue >= 0 && zIndexValue < 2000000000) {
+                    maxExistingZIndex = Math.max(maxExistingZIndex, zIndexValue);
+                }
+            }
+        }
+        roomState.gameState.highestZIndex = maxExistingZIndex + 1;
+        
         // Create card state for the dealt card
         const cardState = {
             uniqueId: card.uniqueId,
             card: card,
-            position: { x: 0, y: 0 }, // Client will position in private hand zone
-            isFlipped: false, // Cards dealt to private hand are face-up
-            privateTo: playerId, // Card goes to the requesting player's private hand
-            zIndex: Date.now(), // Use timestamp for z-index
+            position: finalPosition, // Use provided position for table, or (0,0) for private hand
+            isFlipped: false, // Cards dealt are face-up
+            privateTo: privateTo, // null for table cards, playerId for private hand
+            zIndex: roomState.gameState.highestZIndex, // Use highest z-index + 1
             timestamp: Date.now()
         };
+        
+        // Only include location field if it's 'table' (to avoid undefined in JSON)
+        // IMPORTANT: Explicitly set location field to ensure it's in the response
+        if (location === 'table') {
+            cardState.location = 'table';
+            console.log(`[DEAL][${roomCode}] Setting cardState.location = 'table'`, { cardStateLocation: cardState.location });
+        } else {
+            // Explicitly do not set location for private cards to ensure clean state
+            console.log(`[DEAL][${roomCode}] Not setting location (private card)`, { location, locationType: typeof location });
+        }
+        
+        console.log(`[DEAL][${roomCode}] CardState before sending:`, { 
+            uniqueId: cardState.uniqueId, 
+            location: cardState.location, 
+            hasLocation: 'location' in cardState,
+            privateTo: cardState.privateTo,
+            position: cardState.position
+        });
         
         // Store card in game state
         roomState.gameState.cards.set(cardState.uniqueId, cardState);
@@ -406,6 +466,11 @@ class SimpleWebSocketServer {
             },
             timestamp: Date.now(),
             sentBy: playerId
+        });
+        
+        console.log(`[DEAL][${roomCode}] CardDealt message sent to player ${playerId}`, { 
+            cardStateLocation: cardState.location,
+            cardStateHasLocation: 'location' in cardState
         });
         
         // Broadcast deck update to all players (reduced deck size)
