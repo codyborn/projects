@@ -357,3 +357,23 @@
     top: 6px;
     left: 6px;
 }
+
+/* Multi-card selection styles */
+.card-selected {
+    border: 3px solid var(--selection-color, #FFD700);
+    box-shadow: 0 0 10px var(--selection-color, #FFD700);
+    z-index: 1003; /* Above normal cards, below dragging */
+}
+
+.selection-rectangle {
+    position: absolute;
+    border: 2px dashed var(--selection-color, #FFD700);
+    background: rgba(var(--selection-color-rgb, 255, 215, 0), 0.2);
+    pointer-events: none;
+    z-index: 5000;
+    border-radius: 4px;
+}
+
+.card-dragging-group {
+    z-index: 1004; /* Above selected, below individual dragging */
+}

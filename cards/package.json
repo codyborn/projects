@@ -8,7 +8,7 @@
     "test": "node tests/simple-integration-test.js",
     "test:server-state": "node test-server-state.js",
     "test:load": "node test-load.js",
-    "test:browser": "playwright test",
+    "test:browser": "playwright test --reporter=list",
     "test:browser:ui": "playwright test --ui",
     "test:browser:headed": "playwright test --headed",
     "dev": "python3 -m http.server 3000",

@@ -752,12 +752,14 @@ body {
     font-size: 18px;
     margin: 0;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    user-select: none;
 }
 
 .player-hand-counts {
     display: flex;
     gap: 15px;
     align-items: center;
+    user-select: none;
 }
 
 .player-count-item {
@@ -771,6 +773,7 @@ body {
     font-size: 12px;
     color: #b8d4b8;
     font-weight: bold;
+    user-select: none;
 }
 
 .card-count {
@@ -782,6 +785,7 @@ body {
     font-weight: bold;
     min-width: 20px;
     text-align: center;
+    user-select: none;
 }
 
 .private-hand-zone {
@@ -890,6 +894,7 @@ body {
     bottom: 100%;
     transform: translateX(-50%) translateY(-6px);
     pointer-events: none;
+    user-select: none;
 }
 
 .discard-pile-content {
@@ -929,6 +934,7 @@ body {
     font-size: 14px;
     font-weight: bold;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+    user-select: none;
 }
 
 .discard-pile-counter:hover .shuffle-btn {

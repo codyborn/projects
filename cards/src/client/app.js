@@ -26,6 +26,15 @@ class CardGame {
         // Private hand system
         this.privateHandZone = null;
         
+        // Multi-card selection state
+        this.selectedCards = [];
+        this.isSelecting = false;
+        this.isDraggingGroup = false;
+        this.selectionStart = { x: 0, y: 0 };
+        this.selectionCurrent = { x: 0, y: 0 };
+        this.selectionRect = null;
+        this.dragThreshold = 5; // Minimum distance to start dragging
+        
         this.init();
     }
     
@@ -173,17 +182,113 @@ class CardGame {
         // Control buttons
         document.getElementById('reset-btn').addEventListener('click', () => this.resetGame());
 
-        // Card table for dealing
-        document.getElementById('card-table').addEventListener('click', (e) => {
-            // Only deal if clicking directly on the table (not on cards) and not dragging
-            const isConnected = !this.multiplayer || this.multiplayer.connectionStatus === 'connected';
-            if (!isConnected) {
-                e.preventDefault();
+        const cardTable = document.getElementById('card-table');
+        
+        // Selection rectangle handling
+        let tableMouseDown = false;
+        let tableMouseStart = { x: 0, y: 0 };
+        
+        cardTable.addEventListener('mousedown', (e) => {
+            // Only handle left mouse button
+            if (e.button !== 0) {
                 return;
             }
-            if (e.target.id === 'card-table' && !this.isDragging && !this.preventTableClick && !e.defaultPrevented) {
-                this.dealCardToPosition(e.clientX, e.clientY);
+            
+            // Don't start selection if clicking on a card or deck
+            if (e.target.classList.contains('card') || e.target.closest('.card') || 
+                e.target.classList.contains('deck') || e.target.closest('.deck')) {
+                return;
             }
+            
+            // Start selection if clicking on empty table area (not just when target is card-table)
+            // Also check if clicking on table itself or empty space within table
+            const table = document.getElementById('card-table');
+            if (table.contains(e.target) && !e.target.closest('.card') && !e.target.closest('.deck')) {
+                tableMouseDown = true;
+                tableMouseStart = { x: e.clientX, y: e.clientY };
+                
+                // Start selection rectangle (will check for drag movement)
+                this.startSelection(e);
+            }
+        });
+        
+        // Track mouse movement for selection rectangle
+        document.addEventListener('mousemove', (e) => {
+            // Update selection rectangle if selecting
+            if (this.isSelecting) {
+                this.updateSelection(e);
+            }
+            
+            // Update group drag if dragging group
+            if (this.isDraggingGroup) {
+                this.updateGroupDrag(e);
+            }
+            
+            // Check if this is a drag (movement > threshold) for single click detection
+            if (tableMouseDown) {
+                const deltaX = Math.abs(e.clientX - tableMouseStart.x);
+                const deltaY = Math.abs(e.clientY - tableMouseStart.y);
+                
+                if (deltaX > this.dragThreshold || deltaY > this.dragThreshold) {
+                    // This is a drag, not a click - selection rectangle will be visible
+                    // Selection is already started in mousedown
+                }
+            }
+        });
+        
+        document.addEventListener('mouseup', (e) => {
+            // End selection rectangle if selecting
+            if (this.isSelecting) {
+                const deltaX = Math.abs(this.selectionCurrent.x - this.selectionStart.x);
+                const deltaY = Math.abs(this.selectionCurrent.y - this.selectionStart.y);
+                
+                // Only end selection if there was actual movement
+                if (deltaX > this.dragThreshold || deltaY > this.dragThreshold) {
+                    this.endSelection(e);
+                } else {
+                    // Single click - clear selection and handle normally
+                    this.clearSelection();
+                    this.isSelecting = false;
+                }
+            }
+            
+            // End group drag if dragging group
+            if (this.isDraggingGroup) {
+                this.endGroupDrag(e);
+            }
+            
+            // Reset table mouse tracking
+            if (tableMouseDown) {
+                const deltaX = Math.abs(e.clientX - tableMouseStart.x);
+                const deltaY = Math.abs(e.clientY - tableMouseStart.y);
+                
+                // If single click (no drag), handle table click
+                if (deltaX < this.dragThreshold && deltaY < this.dragThreshold) {
+                    // Single click on empty table - deal card if connected
+                    const isConnected = !this.multiplayer || this.multiplayer.connectionStatus === 'connected';
+                    if (isConnected && e.target.id === 'card-table' && !this.isDragging && !this.preventTableClick && !e.defaultPrevented) {
+                        this.dealCardToPosition(e.clientX, e.clientY);
+                    }
+                }
+                
+                tableMouseDown = false;
+            }
+        });
+        
+        // Escape key to clear selection
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (this.isSelecting) {
+                    this.endSelection(e);
+                }
+                this.clearSelection();
+            }
+        });
+        
+        // Card table click handler (legacy - now handled in mouseup)
+        cardTable.addEventListener('click', (e) => {
+            // This is now mainly for backward compatibility
+            // Single click handling is done in mouseup handler above
         });
     }
 
@@ -686,12 +791,17 @@ class CardGame {
             e.preventDefault();
             e.stopPropagation();
             
+            // Check if this card is selected and we should start group drag
+            // Store state to check after drag threshold
             isDragging = false;
             this.isDragging = false;
             startX = e.clientX;
             startY = e.clientY;
             mouseDownTime = Date.now();
             mouseButton = e.button || 0;
+            
+            // Store if card is selected
+            const isCardSelected = this.selectedCards.includes(cardElement);
             
             // Get current card position relative to table
             const table = document.getElementById('card-table');
@@ -710,6 +820,9 @@ class CardGame {
             const DRAG_Z_BASE = 10000;
             this.zIndexCounter = Math.max(this.zIndexCounter + 1, DRAG_Z_BASE);
             cardElement.style.zIndex = this.zIndexCounter;
+            
+            // Store card element for potential group drag
+            cardElement._pendingGroupDrag = isCardSelected && this.selectedCards.length > 0;
         });
 
         // Use document mousemove to track mouse even outside card
@@ -719,35 +832,50 @@ class CardGame {
                 const deltaY = e.clientY - startY;
                 
                 if (Math.abs(deltaX) > dragThreshold || Math.abs(deltaY) > dragThreshold) {
+                    // Check if this should be a group drag
+                    if (cardElement._pendingGroupDrag && !this.isDraggingGroup) {
+                        // Start group drag
+                        if (this.startGroupDrag(e, cardElement)) {
+                            // Group drag started successfully
+                            isDragging = true;
+                            this.isDragging = true;
+                            // Don't add dragging class - group drag handles that
+                            return; // Group drag handles movement
+                        }
+                    }
+                    
                     if (!isDragging) {
                         isDragging = true;
                         this.isDragging = true;
                         cardElement.classList.add('dragging');
                     }
                     
-                    // Calculate new position relative to the initial position
-                    let newX = initialX + deltaX;
-                    let newY = initialY + deltaY;
-                    
-                    // Get board boundaries
-                    const table = document.getElementById('card-table');
-                    const tableRect = table.getBoundingClientRect();
-                    const cardRect = cardElement.getBoundingClientRect();
-                    const cardWidth = cardRect.width;
-                    const cardHeight = cardRect.height;
-                    
-                    // Constrain to board boundaries
-                    const minX = 0;
-                    const maxX = tableRect.width - cardWidth;
-                    const minY = 0;
-                    const maxY = tableRect.height - cardHeight;
-                    
-                    newX = Math.max(minX, Math.min(maxX, newX));
-                    newY = Math.max(minY, Math.min(maxY, newY));
-                    
-                    // Update position directly using left/top
-                    cardElement.style.left = newX + 'px';
-                    cardElement.style.top = newY + 'px';
+                    // Only update single card position if not doing group drag
+                    if (!this.isDraggingGroup) {
+                        // Calculate new position relative to the initial position
+                        let newX = initialX + deltaX;
+                        let newY = initialY + deltaY;
+                        
+                        // Get board boundaries
+                        const table = document.getElementById('card-table');
+                        const tableRect = table.getBoundingClientRect();
+                        const cardRect = cardElement.getBoundingClientRect();
+                        const cardWidth = cardRect.width;
+                        const cardHeight = cardRect.height;
+                        
+                        // Constrain to board boundaries
+                        const minX = 0;
+                        const maxX = tableRect.width - cardWidth;
+                        const minY = 0;
+                        const maxY = tableRect.height - cardHeight;
+                        
+                        newX = Math.max(minX, Math.min(maxX, newX));
+                        newY = Math.max(minY, Math.min(maxY, newY));
+                        
+                        // Update position directly using left/top
+                        cardElement.style.left = newX + 'px';
+                        cardElement.style.top = newY + 'px';
+                    }
                 }
             }
         });
@@ -756,6 +884,20 @@ class CardGame {
             if (startX !== undefined && startY !== undefined) {
                 const clickDuration = Date.now() - mouseDownTime;
                 
+                // Clear pending group drag flag
+                cardElement._pendingGroupDrag = false;
+                
+                // If group drag was active, it's handled by the document-level mouseup handler
+                // Just clean up local state
+                if (this.isDraggingGroup) {
+                    // Group drag is handled elsewhere, just reset local state
+                    isDragging = false;
+                    this.isDragging = false;
+                    startX = undefined;
+                    startY = undefined;
+                    mouseButton = 0;
+                    return;
+                }
                 
                 if (isDragging) {
                     cardElement.classList.remove('dragging');
@@ -869,8 +1011,14 @@ class CardGame {
                         this.preventTableClick = false;
                     }, 100);
                 } else if (clickDuration < 200 && mouseButton === 0) { // Short left-click without drag
-                    // Click without drag - flip card
-                    this.flipCard(cardElement);
+                    // Click without drag - check if card is selected
+                    if (this.selectedCards.length > 0 && this.selectedCards.includes(cardElement)) {
+                        // Flip all selected cards
+                        this.flipCards(this.selectedCards);
+                    } else {
+                        // Flip single card
+                        this.flipCard(cardElement);
+                    }
                 }
                 
                 // Reset tracking variables
@@ -992,7 +1140,14 @@ class CardGame {
                     });
                     
                 } else {
-                    this.flipCard(cardElement);
+                    // Touch tap - check if card is selected
+                    if (this.selectedCards.length > 0 && this.selectedCards.includes(cardElement)) {
+                        // Flip all selected cards
+                        this.flipCards(this.selectedCards);
+                    } else {
+                        // Flip single card
+                        this.flipCard(cardElement);
+                    }
                 }
                 
                 startX = undefined;
@@ -1490,6 +1645,526 @@ class CardGame {
         });
         
         return count;
+    }
+    
+    // ===== MULTI-CARD SELECTION METHODS =====
+    
+    // Check if a card can be selected
+    isCardSelectable(cardElement) {
+        // Exclude discard pile cards
+        if (this.discardPileArea) {
+            const cardRect = cardElement.getBoundingClientRect();
+            const cardCenterX = cardRect.left + cardRect.width / 2;
+            const cardCenterY = cardRect.top + cardRect.height / 2;
+            const discardRect = this.discardPileArea.getBoundingClientRect();
+            if (cardCenterX >= discardRect.left && cardCenterX <= discardRect.right &&
+                cardCenterY >= discardRect.top && cardCenterY <= discardRect.bottom) {
+                return false;
+            }
+        }
+        
+        // Exclude other players' private cards
+        const privateTo = cardElement.dataset.privateTo;
+        const currentPlayerId = this.multiplayer ? this.multiplayer.playerId : 'local';
+        if (privateTo && privateTo !== currentPlayerId) {
+            return false;
+        }
+        
+        // Exclude deck element
+        if (cardElement.classList.contains('deck')) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    // Get cards that intersect with selection rectangle
+    getCardsInRectangle(rect) {
+        const cards = [];
+        const allCards = document.querySelectorAll('.card');
+        
+        allCards.forEach(cardElement => {
+            if (!this.isCardSelectable(cardElement)) {
+                return;
+            }
+            
+            const cardRect = cardElement.getBoundingClientRect();
+            const table = document.getElementById('card-table');
+            const tableRect = table.getBoundingClientRect();
+            
+            // Convert card rect to table-relative coordinates
+            const cardLeft = cardRect.left - tableRect.left;
+            const cardTop = cardRect.top - tableRect.top;
+            const cardRight = cardLeft + cardRect.width;
+            const cardBottom = cardTop + cardRect.height;
+            
+            // Check if card rectangle intersects with selection rectangle
+            // Check if card center is inside rectangle
+            const cardCenterX = cardLeft + cardRect.width / 2;
+            const cardCenterY = cardTop + cardRect.height / 2;
+            
+            if (cardCenterX >= rect.left && cardCenterX <= rect.right &&
+                cardCenterY >= rect.top && cardCenterY <= rect.bottom) {
+                cards.push(cardElement);
+                return; // continue in forEach
+            }
+            
+            // Check if any corner is inside rectangle
+            const corners = [
+                { x: cardLeft, y: cardTop },
+                { x: cardRight, y: cardTop },
+                { x: cardLeft, y: cardBottom },
+                { x: cardRight, y: cardBottom }
+            ];
+            
+            for (const corner of corners) {
+                if (corner.x >= rect.left && corner.x <= rect.right &&
+                    corner.y >= rect.top && corner.y <= rect.bottom) {
+                    cards.push(cardElement);
+                    return; // continue in forEach
+                }
+            }
+            
+            // Check if rectangle overlaps with card (either rectangle completely contains card or vice versa)
+            // Check if selection rect is inside card bounds or overlaps
+            const rectOverlaps = !(rect.right < cardLeft || rect.left > cardRight || 
+                                   rect.bottom < cardTop || rect.top > cardBottom);
+            
+            if (rectOverlaps) {
+                cards.push(cardElement);
+            }
+        });
+        
+        return cards;
+    }
+    
+    // Select cards
+    selectCards(cardElements) {
+        const playerAlias = this.multiplayer ? this.multiplayer.playerAlias : 'local';
+        const selectionColor = this.generatePlayerColor(playerAlias);
+        
+        // Convert to RGB for rgba()
+        const rgb = this.hexToRgb(selectionColor);
+        const rgbString = rgb ? `${rgb.r}, ${rgb.g}, ${rgb.b}` : '255, 215, 0';
+        
+        // Set CSS variable for selection color
+        const table = document.getElementById('card-table');
+        if (table) {
+            table.style.setProperty('--selection-color', selectionColor);
+            table.style.setProperty('--selection-color-rgb', rgbString);
+        }
+        
+        cardElements.forEach(cardElement => {
+            if (!this.selectedCards.includes(cardElement)) {
+                this.selectedCards.push(cardElement);
+                cardElement.classList.add('card-selected');
+            }
+        });
+    }
+    
+    // Deselect cards
+    deselectCards(cardElements) {
+        cardElements.forEach(cardElement => {
+            const index = this.selectedCards.indexOf(cardElement);
+            if (index > -1) {
+                this.selectedCards.splice(index, 1);
+                cardElement.classList.remove('card-selected');
+            }
+        });
+    }
+    
+    // Clear all selections
+    clearSelection() {
+        this.selectedCards.forEach(cardElement => {
+            cardElement.classList.remove('card-selected');
+        });
+        this.selectedCards = [];
+        
+        // Remove selection rectangle if it exists
+        if (this.selectionRect && this.selectionRect.parentNode) {
+            this.selectionRect.parentNode.removeChild(this.selectionRect);
+            this.selectionRect = null;
+        }
+    }
+    
+    // Helper to convert color (hex or hsl) to RGB
+    hexToRgb(color) {
+        if (!color) return null;
+        
+        // Handle HSL colors (from generatePlayerColor)
+        if (color.startsWith('hsl')) {
+            const hslMatch = color.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+            if (hslMatch) {
+                const h = parseInt(hslMatch[1]) / 360;
+                const s = parseInt(hslMatch[2]) / 100;
+                const l = parseInt(hslMatch[3]) / 100;
+                
+                let r, g, b;
+                if (s === 0) {
+                    r = g = b = l;
+                } else {
+                    const hue2rgb = (p, q, t) => {
+                        if (t < 0) t += 1;
+                        if (t > 1) t -= 1;
+                        if (t < 1/6) return p + (q - p) * 6 * t;
+                        if (t < 1/2) return q;
+                        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                        return p;
+                    };
+                    
+                    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                    const p = 2 * l - q;
+                    r = hue2rgb(p, q, h + 1/3);
+                    g = hue2rgb(p, q, h);
+                    b = hue2rgb(p, q, h - 1/3);
+                }
+                
+                return {
+                    r: Math.round(r * 255),
+                    g: Math.round(g * 255),
+                    b: Math.round(b * 255)
+                };
+            }
+        }
+        
+        // Handle hex colors
+        if (color.startsWith('#')) {
+            const hex = color.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            return { r, g, b };
+        }
+        
+        return null;
+    }
+    
+    // Start selection rectangle
+    startSelection(e) {
+        const isConnected = !this.multiplayer || this.multiplayer.connectionStatus === 'connected';
+        if (!isConnected) {
+            return;
+        }
+        
+        // Only start on left mouse button
+        if (e.button !== 0 && e.button !== undefined) {
+            return;
+        }
+        
+        // Don't start if clicking on a card or deck
+        if (e.target.classList.contains('card') || e.target.closest('.card') || 
+            e.target.classList.contains('deck') || e.target.closest('.deck')) {
+            return;
+        }
+        
+        const table = document.getElementById('card-table');
+        const tableRect = table.getBoundingClientRect();
+        
+        this.selectionStart = {
+            x: e.clientX - tableRect.left,
+            y: e.clientY - tableRect.top
+        };
+        this.selectionCurrent = { ...this.selectionStart };
+        this.isSelecting = true;
+        
+        // Clear any existing selection FIRST (but don't remove rectangle we're about to create)
+        // Only clear the selected cards, not the rectangle
+        this.selectedCards.forEach(cardElement => {
+            cardElement.classList.remove('card-selected');
+        });
+        this.selectedCards = [];
+        
+        // Create selection rectangle element
+        this.selectionRect = document.createElement('div');
+        this.selectionRect.className = 'selection-rectangle';
+        table.appendChild(this.selectionRect);
+        
+        // Update rectangle immediately
+        this.updateSelection(e);
+    }
+    
+    // Update selection rectangle
+    updateSelection(e) {
+        if (!this.isSelecting || !this.selectionRect) {
+            return;
+        }
+        
+        const table = document.getElementById('card-table');
+        const tableRect = table.getBoundingClientRect();
+        
+        this.selectionCurrent = {
+            x: e.clientX - tableRect.left,
+            y: e.clientY - tableRect.top
+        };
+        
+        // Calculate rectangle bounds
+        const left = Math.min(this.selectionStart.x, this.selectionCurrent.x);
+        const top = Math.min(this.selectionStart.y, this.selectionCurrent.y);
+        const width = Math.abs(this.selectionCurrent.x - this.selectionStart.x);
+        const height = Math.abs(this.selectionCurrent.y - this.selectionStart.y);
+        
+        // Update rectangle position and size
+        // Ensure minimum size to keep rectangle visible
+        const minSize = 2;
+        const actualWidth = Math.max(width, minSize);
+        const actualHeight = Math.max(height, minSize);
+        
+        this.selectionRect.style.left = left + 'px';
+        this.selectionRect.style.top = top + 'px';
+        this.selectionRect.style.width = actualWidth + 'px';
+        this.selectionRect.style.height = actualHeight + 'px';
+        
+        // Update selected cards
+        const rect = { left, top, right: left + width, bottom: top + height };
+        const cardsInRect = this.getCardsInRectangle(rect);
+        
+        // First, deselect cards that are no longer in the rectangle
+        const cardsToDeselect = this.selectedCards.filter(card => !cardsInRect.includes(card));
+        this.deselectCards(cardsToDeselect);
+        
+        // Then, select new cards in the rectangle
+        this.selectCards(cardsInRect);
+    }
+    
+    // End selection rectangle
+    endSelection(e) {
+        if (!this.isSelecting) {
+            return;
+        }
+        
+        this.isSelecting = false;
+        
+        // Remove selection rectangle
+        if (this.selectionRect && this.selectionRect.parentNode) {
+            this.selectionRect.parentNode.removeChild(this.selectionRect);
+            this.selectionRect = null;
+        }
+        
+        // If no cards selected after selection, clear selection state
+        if (this.selectedCards.length === 0) {
+            // Check if this was a single click (no drag movement)
+            const deltaX = Math.abs(this.selectionCurrent.x - this.selectionStart.x);
+            const deltaY = Math.abs(this.selectionCurrent.y - this.selectionStart.y);
+            
+            if (deltaX < this.dragThreshold && deltaY < this.dragThreshold) {
+                // Single click on empty area - this should be handled by table click handler
+                // But we've already cleared selection, so that's fine
+            }
+        }
+    }
+    
+    // Start group drag
+    startGroupDrag(e, cardElement) {
+        const isConnected = !this.multiplayer || this.multiplayer.connectionStatus === 'connected';
+        if (!isConnected) {
+            return false;
+        }
+        
+        // Only drag if we have selected cards
+        if (this.selectedCards.length === 0) {
+            return false;
+        }
+        
+        // Check if the clicked card is selected
+        if (!this.selectedCards.includes(cardElement)) {
+            return false;
+        }
+        
+        // Check if this is actually a drag (movement > threshold)
+        const table = document.getElementById('card-table');
+        const tableRect = table.getBoundingClientRect();
+        const startX = e.clientX - tableRect.left;
+        const startY = e.clientY - tableRect.top;
+        
+        // Store initial positions for all selected cards
+        this.groupDragStart = {
+            mouseX: startX,
+            mouseY: startY,
+            cardPositions: this.selectedCards.map(card => {
+                const rect = card.getBoundingClientRect();
+                return {
+                    element: card,
+                    initialX: rect.left - tableRect.left,
+                    initialY: rect.top - tableRect.top
+                };
+            })
+        };
+        
+        this.isDraggingGroup = true;
+        
+        // Add dragging class to all selected cards
+        this.selectedCards.forEach(card => {
+            card.classList.add('card-dragging-group');
+            // Bring to front
+            this.zIndexCounter = Math.max(this.zIndexCounter + 1, 10000);
+            card.style.zIndex = this.zIndexCounter;
+        });
+        
+        return true;
+    }
+    
+    // Update group drag
+    updateGroupDrag(e) {
+        if (!this.isDraggingGroup || !this.groupDragStart) {
+            return;
+        }
+        
+        const table = document.getElementById('card-table');
+        const tableRect = table.getBoundingClientRect();
+        const currentX = e.clientX - tableRect.left;
+        const currentY = e.clientY - tableRect.top;
+        
+        const deltaX = currentX - this.groupDragStart.mouseX;
+        const deltaY = currentY - this.groupDragStart.mouseY;
+        
+        // Calculate card dimensions for boundary checking
+        const firstCard = this.selectedCards[0];
+        const cardRect = firstCard.getBoundingClientRect();
+        const cardWidth = cardRect.width;
+        const cardHeight = cardRect.height;
+        
+        // Constrain to board boundaries
+        const minX = 0;
+        const maxX = tableRect.width - cardWidth;
+        const minY = 0;
+        const maxY = tableRect.height - cardHeight;
+        
+        // Update positions of all selected cards maintaining relative positions
+        this.groupDragStart.cardPositions.forEach(({ element, initialX, initialY }) => {
+            let newX = initialX + deltaX;
+            let newY = initialY + deltaY;
+            
+            // Constrain to boundaries
+            newX = Math.max(minX, Math.min(maxX, newX));
+            newY = Math.max(minY, Math.min(maxY, newY));
+            
+            element.style.left = newX + 'px';
+            element.style.top = newY + 'px';
+        });
+    }
+    
+    // End group drag
+    endGroupDrag(e) {
+        if (!this.isDraggingGroup) {
+            return;
+        }
+        
+        this.isDraggingGroup = false;
+        
+        // Store selected cards before clearing
+        const selectedCards = [...this.selectedCards];
+        
+        // Remove dragging class from all selected cards
+        selectedCards.forEach(card => {
+            card.classList.remove('card-dragging-group');
+        });
+        
+        const table = document.getElementById('card-table');
+        const tableRect = table.getBoundingClientRect();
+        
+        // Get center of selection group
+        const firstCard = selectedCards[0];
+        const firstRect = firstCard.getBoundingClientRect();
+        const groupCenterX = firstRect.left + firstRect.width / 2;
+        const groupCenterY = firstRect.top + firstRect.height / 2;
+        
+        // Check drop zones
+        const privateHandZone = document.getElementById('private-hand-zone');
+        if (privateHandZone) {
+            const zoneRect = privateHandZone.getBoundingClientRect();
+            const isInPrivateZone = groupCenterX >= zoneRect.left && groupCenterX <= zoneRect.right &&
+                                   groupCenterY >= zoneRect.top && groupCenterY <= zoneRect.bottom;
+            
+            if (isInPrivateZone) {
+                // Drop in private zone - organize cards
+                const currentPlayerId = this.multiplayer ? this.multiplayer.playerId : 'local';
+                
+                // Organize cards one by one to ensure unique positions
+                // Set privateTo first, then find position (so findBestPositionInPrivateZone can check for overlaps)
+                selectedCards.forEach((card, index) => {
+                    card.dataset.privateTo = currentPlayerId;
+                });
+                
+                // Now find positions sequentially so each card knows about previous cards' positions
+                selectedCards.forEach(card => {
+                    const position = this.findBestPositionInPrivateZone(zoneRect, tableRect);
+                    card.style.left = position.x + 'px';
+                    card.style.top = position.y + 'px';
+                });
+                
+                // Send update to server
+                if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
+                    const cardStates = selectedCards.map(cardElement => {
+                        return {
+                            uniqueId: cardElement.dataset.uniqueId,
+                            card: this.getCardFromElement(cardElement),
+                            position: {
+                                x: parseInt(cardElement.style.left) || 0,
+                                y: parseInt(cardElement.style.top) || 0
+                            },
+                            isFlipped: cardElement.classList.contains('flipped'),
+                            privateTo: currentPlayerId,
+                            zIndex: parseInt(cardElement.style.zIndex) || 0,
+                            timestamp: Date.now()
+                        };
+                    });
+                    this.multiplayer.requestCardStateUpdate(cardStates);
+                }
+                
+                // Update display
+                this.updatePrivateHandDisplay();
+                return;
+            }
+        }
+        
+        // Check discard pile area
+        if (this.discardPileArea) {
+            const discardRect = this.discardPileArea.getBoundingClientRect();
+            const isInDiscardArea = groupCenterX >= discardRect.left && groupCenterX <= discardRect.right &&
+                                   groupCenterY >= discardRect.top && groupCenterY <= discardRect.bottom;
+            
+            if (isInDiscardArea) {
+                // Drop in discard pile
+                const cards = selectedCards.map(card => this.getCardFromElement(card));
+                this.addCardsToDiscardPile(selectedCards, cards);
+                
+                // Clear selection
+                this.clearSelection();
+                return;
+            }
+        }
+        
+        // Drop on table - maintain positions
+        const cardStates = selectedCards.map(cardElement => {
+            return {
+                uniqueId: cardElement.dataset.uniqueId,
+                card: this.getCardFromElement(cardElement),
+                position: {
+                    x: parseInt(cardElement.style.left) || 0,
+                    y: parseInt(cardElement.style.top) || 0
+                },
+                isFlipped: cardElement.classList.contains('flipped'),
+                privateTo: cardElement.dataset.privateTo || null,
+                zIndex: parseInt(cardElement.style.zIndex) || 0,
+                timestamp: Date.now()
+            };
+        });
+        
+        // Clear selection
+        this.clearSelection();
+        
+        // Send update to server
+        if (this.multiplayer && this.multiplayer.connectionStatus === 'connected') {
+            this.multiplayer.requestCardStateUpdate(cardStates);
+        }
+        
+        // Highlight all moved cards
+        selectedCards.forEach(card => {
+            this.highlightCard(card, this.multiplayer ? this.multiplayer.playerAlias : null);
+        });
+        
+        // Update display
+        this.updatePrivateHandDisplay();
     }
     
     // ===== MULTIPLAYER METHODS =====
