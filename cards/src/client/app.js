@@ -19,6 +19,105 @@ class CardGame {
         this.cardIdCounter = 0;
         this.zIndexCounter = 10000; // Start at DRAG_Z_BASE to ensure consistent ordering
         
+        // Theme system
+        this.themes = [
+            {
+                name: 'Forest',
+                background: 'radial-gradient(circle at center, #2d5a4a, #1a3d2e)',
+                border: '#4a7c59',
+                containerBackground: 'linear-gradient(135deg, #0f4c3a, #1a5f4a)',
+                cardBackBackground: 'linear-gradient(145deg, #1a3d2e, #2d5a4a)',
+                cardBackBorder: '#4a7c59',
+                cardBackPattern: '♠',
+                cardBackColor: '#e8f5e8'
+            },
+            {
+                name: 'Ocean',
+                background: 'radial-gradient(circle at center, #1e3a8a, #1e40af)',
+                border: '#3b82f6',
+                containerBackground: 'linear-gradient(135deg, #0e1b3a, #1e3a8a)',
+                cardBackBackground: 'linear-gradient(145deg, #1e40af, #3b82f6)',
+                cardBackBorder: '#60a5fa',
+                cardBackPattern: '🌊',
+                cardBackColor: '#dbeafe'
+            },
+            {
+                name: 'Sunset',
+                background: 'radial-gradient(circle at center, #dc2626, #991b1b)',
+                border: '#ef4444',
+                containerBackground: 'linear-gradient(135deg, #991b1b, #dc2626)',
+                cardBackBackground: 'linear-gradient(145deg, #dc2626, #f97316)',
+                cardBackBorder: '#fca5a5',
+                cardBackPattern: '☀',
+                cardBackColor: '#fef3c7'
+            },
+            {
+                name: 'Space',
+                background: 'radial-gradient(circle at center, #0f172a, #1e293b)',
+                border: '#475569',
+                containerBackground: 'linear-gradient(135deg, #020617, #0f172a)',
+                cardBackBackground: 'linear-gradient(145deg, #0f172a, #1e293b)',
+                cardBackBorder: '#64748b',
+                cardBackPattern: '⭐',
+                cardBackColor: '#e0e7ff',
+                cardBackPatternGlow: '0 0 10px rgba(224, 231, 255, 0.8)'
+            },
+            {
+                name: 'Neon',
+                background: 'radial-gradient(circle at center, #0a0a0a, #1a1a2e)',
+                border: '#00ffff',
+                containerBackground: 'linear-gradient(135deg, #000000, #0a0a0a)',
+                cardBackBackground: 'linear-gradient(145deg, #0a0a0a, #1a1a2e)',
+                cardBackBorder: '#00ffff',
+                cardBackPattern: '⚡',
+                cardBackColor: '#00ffff',
+                cardBackPatternGlow: '0 0 20px #00ffff, 0 0 40px #00ffff'
+            },
+            {
+                name: 'Desert',
+                background: 'radial-gradient(circle at center, #d97706, #b45309)',
+                border: '#f59e0b',
+                containerBackground: 'linear-gradient(135deg, #b45309, #d97706)',
+                cardBackBackground: 'linear-gradient(145deg, #b45309, #d97706)',
+                cardBackBorder: '#fbbf24',
+                cardBackPattern: '🌵',
+                cardBackColor: '#fef3c7'
+            },
+            {
+                name: 'Neon Pink',
+                background: 'radial-gradient(circle at center, #831843, #9f1239)',
+                border: '#ff10f0',
+                containerBackground: 'linear-gradient(135deg, #701a35, #831843)',
+                cardBackBackground: 'linear-gradient(145deg, #831843, #ec4899)',
+                cardBackBorder: '#ff10f0',
+                cardBackPattern: '🦄',
+                cardBackColor: '#fce7f3',
+                cardBackPatternGlow: '0 0 20px #ff10f0, 0 0 40px #ff10f0'
+            },
+            {
+                name: 'Underwater',
+                background: 'radial-gradient(circle at center, #0c4a6e, #075985)',
+                border: '#06b6d4',
+                containerBackground: 'linear-gradient(135deg, #075985, #0c4a6e)',
+                cardBackBackground: 'linear-gradient(145deg, #075985, #0891b2)',
+                cardBackBorder: '#22d3ee',
+                cardBackPattern: '🐙',
+                cardBackColor: '#cffafe'
+            },
+            {
+                name: 'Fire',
+                background: 'radial-gradient(circle at center, #7c2d12, #9a3412)',
+                border: '#f97316',
+                containerBackground: 'linear-gradient(135deg, #7c2d12, #9a3412)',
+                cardBackBackground: 'linear-gradient(145deg, #9a3412, #dc2626)',
+                cardBackBorder: '#fb923c',
+                cardBackPattern: '🔥',
+                cardBackColor: '#fed7aa',
+                cardBackPatternGlow: '0 0 15px rgba(249, 115, 22, 0.8)'
+            }
+        ];
+        this.currentThemeIndex = 0;
+        
         // Discard pile elements (will be initialized if present in HTML)
         this.discardPileArea = null;
         this.discardPileContent = null;
@@ -36,6 +135,11 @@ class CardGame {
         this.dragThreshold = 5; // Minimum distance to start dragging
         
         this.init();
+        
+        // Apply initial theme
+        if (this.themes.length > 0) {
+            this.applyTheme(this.themes[this.currentThemeIndex]);
+        }
     }
     
     // Check if connected to multiplayer (helper method to reduce duplication)
@@ -339,13 +443,22 @@ class CardGame {
             }
         });
         
-        // Escape key to clear selection
+        // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
+            // Don't trigger if user is typing in an input field
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                return;
+            }
+            
             if (e.key === 'Escape') {
                 if (this.isSelecting) {
                     this.endSelection(e);
                 }
                 this.clearSelection();
+            } else if (e.key === 't' || e.key === 'T') {
+                this.cycleTheme();
+            } else if (e.key === 'c' || e.key === 'C') {
+                this.triggerConfetti();
             }
         });
         
@@ -388,15 +501,20 @@ class CardGame {
         // Create deck element
         const deckElement = document.createElement('div');
         deckElement.className = 'deck';
+        
+        // Get current theme for deck styling
+        const currentTheme = this.themes[this.currentThemeIndex] || this.themes[0];
+        const pattern = currentTheme.cardBackPattern || '♠';
+        
         deckElement.innerHTML = `
             <div class="card-back">
                 <div class="card-back-pattern">
-                    <div class="card-back-center">♠</div>
+                    <div class="card-back-center">${pattern}</div>
                     <div class="card-back-corners">
-                        <div class="corner top-left">♠</div>
-                        <div class="corner top-right">♠</div>
-                        <div class="corner bottom-left">♠</div>
-                        <div class="corner bottom-right">♠</div>
+                        <div class="corner top-left">${pattern}</div>
+                        <div class="corner top-right">${pattern}</div>
+                        <div class="corner bottom-left">${pattern}</div>
+                        <div class="corner bottom-right">${pattern}</div>
                     </div>
                 </div>
                 <div class="deck-count">${this.getDeckCount()}</div>
@@ -425,6 +543,55 @@ class CardGame {
         });
         
         table.appendChild(deckElement);
+        
+        // Apply current theme to deck
+        const deckCardBack = deckElement.querySelector('.card-back');
+        if (deckCardBack) {
+            deckCardBack.style.background = currentTheme.cardBackBackground;
+            deckCardBack.style.borderColor = currentTheme.cardBackBorder;
+            
+            const deckCenter = deckCardBack.querySelector('.card-back-center');
+            const deckCorners = deckCardBack.querySelectorAll('.card-back-corners .corner');
+            
+            if (deckCenter) {
+                deckCenter.style.color = currentTheme.cardBackColor;
+                if (currentTheme.cardBackPatternGlow) {
+                    deckCenter.style.textShadow = currentTheme.cardBackPatternGlow;
+                } else {
+                    deckCenter.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+                }
+            }
+            
+            deckCorners.forEach(corner => {
+                corner.style.color = currentTheme.cardBackColor;
+                if (currentTheme.cardBackPatternGlow) {
+                    corner.style.textShadow = currentTheme.cardBackPatternGlow;
+                } else {
+                    corner.style.textShadow = '1px 1px 2px rgba(0, 0, 0, 0.7)';
+                }
+            });
+        }
+        
+        // Add glow effect if no cards have been dealt yet
+        this.updateDeckGlow();
+    }
+    
+    updateDeckGlow() {
+        const deckElement = document.querySelector('.deck');
+        if (!deckElement) return;
+        
+        // Check if any cards have been dealt by looking for card elements on the table
+        // (excluding the deck itself and any card-back elements that are part of the deck)
+        const table = document.getElementById('card-table');
+        const cardsOnTable = table ? table.querySelectorAll('.card:not(.deck)').length : 0;
+        const hasCardsDealt = cardsOnTable > 0;
+        
+        // Add or remove glow class based on whether cards have been dealt
+        if (hasCardsDealt) {
+            deckElement.classList.remove('deck-glow');
+        } else {
+            deckElement.classList.add('deck-glow');
+        }
     }
 
     dealCard() {
@@ -474,6 +641,9 @@ class CardGame {
         
         // Add interaction handlers
         this.addCardInteractions(cardElement, card);
+        
+        // Update deck glow after dealing a card
+        this.updateDeckGlow();
     }
 
     // Generate a deterministic color based on player alias
@@ -716,7 +886,6 @@ class CardGame {
         }
         
         // Use card properties
-        const displaySymbol = safeCard.emoji || '?';
         const displayTitle = safeCard.title || 'Card';
         const cardColor = this.getCardColor(safeCard.color);
         
@@ -731,26 +900,70 @@ class CardGame {
         
         const textColor = safeCard.color === 'wild' ? 'white' : '#333';
         const imageSize = safeCard.imageSize || 24; // Default to 24px if not specified
+        
+        // Determine what to display in the middle: image, emoji, or ?
+        let symbolContent = '';
+        if (safeCard.image) {
+            // Use image if provided
+            symbolContent = `<img src="${safeCard.image}" alt="${displayTitle}" style="width: ${imageSize}px; height: ${imageSize}px; object-fit: contain;">`;
+        } else if (safeCard.emoji) {
+            // Use emoji if no image
+            symbolContent = safeCard.emoji;
+        } else {
+            // Fallback to ?
+            symbolContent = '?';
+        }
+        
         cardFace.innerHTML = `
             <div style="font-size: 14px; color: ${textColor};">${displayTitle}</div>
-            <div style="font-size: ${imageSize}px;">${displaySymbol}</div>
+            <div style="font-size: ${imageSize}px; display: flex; align-items: center; justify-content: center;">${symbolContent}</div>
             ${deck.invertTitle ? `<div style="font-size: 14px; transform: rotate(180deg); color: ${textColor};">${displayTitle}</div>` : ''}
         `;
         
         // Create card back
         const cardBack = document.createElement('div');
         cardBack.className = 'card-back';
+        
+        // Get current theme for card back styling
+        const currentTheme = this.themes[this.currentThemeIndex] || this.themes[0];
+        const pattern = currentTheme.cardBackPattern || '♠';
+        
         cardBack.innerHTML = `
             <div class="card-back-pattern">
-                <div class="card-back-center">♠</div>
+                <div class="card-back-center">${pattern}</div>
                 <div class="card-back-corners">
-                    <div class="corner top-left">♠</div>
-                    <div class="corner top-right">♠</div>
-                    <div class="corner bottom-left">♠</div>
-                    <div class="corner bottom-right">♠</div>
+                    <div class="corner top-left">${pattern}</div>
+                    <div class="corner top-right">${pattern}</div>
+                    <div class="corner bottom-left">${pattern}</div>
+                    <div class="corner bottom-right">${pattern}</div>
                 </div>
             </div>
         `;
+        
+        // Apply current theme styles to the new card back
+        cardBack.style.background = currentTheme.cardBackBackground;
+        cardBack.style.borderColor = currentTheme.cardBackBorder;
+        
+        const center = cardBack.querySelector('.card-back-center');
+        const corners = cardBack.querySelectorAll('.card-back-corners .corner');
+        
+        if (center) {
+            center.style.color = currentTheme.cardBackColor;
+            if (currentTheme.cardBackPatternGlow) {
+                center.style.textShadow = currentTheme.cardBackPatternGlow;
+            } else {
+                center.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+            }
+        }
+        
+        corners.forEach(corner => {
+            corner.style.color = currentTheme.cardBackColor;
+            if (currentTheme.cardBackPatternGlow) {
+                corner.style.textShadow = currentTheme.cardBackPatternGlow;
+            } else {
+                corner.style.textShadow = '1px 1px 2px rgba(0, 0, 0, 0.7)';
+            }
+        });
         
         cardElement.appendChild(cardFace);
         cardElement.appendChild(cardBack);
@@ -1237,6 +1450,11 @@ class CardGame {
             tooltip.className = 'card-tooltip';
             tooltip.textContent = description;
             
+            // Set highest z-index to ensure tooltip appears above all cards
+            // Use very high z-index (below menus/overlays but above all cards)
+            const TOOLTIP_Z_INDEX = 9999990;
+            tooltip.style.zIndex = TOOLTIP_Z_INDEX.toString();
+            
             // Position tooltip relative to the card's actual position in the document
             const cardRect = cardElement.getBoundingClientRect();
             
@@ -1394,6 +1612,9 @@ class CardGame {
             // Update the deck display
             this.renderDeck();
             
+            // Update deck glow in case this was the last card
+            this.updateDeckGlow();
+            
             // Show a brief visual feedback
             this.showShuffleFeedback();
         }
@@ -1465,6 +1686,9 @@ class CardGame {
         
         // Re-render deck
         this.renderDeck();
+        
+        // Update deck glow (will be shown since all cards are cleared)
+        this.updateDeckGlow();
         
         // Request reset game to server (only if this is a user-initiated reset)
         if (shouldBroadcast && this.isConnected()) {
@@ -2381,6 +2605,9 @@ class CardGame {
         
         // Clear the dealt cards array
         this.dealtCards = [];
+        
+        // Update deck glow since all cards are cleared
+        this.updateDeckGlow();
     }
     
     updateDeckManager() {
@@ -2528,15 +2755,27 @@ class CardGame {
             // Editing existing deck
             const deckData = this.customDecks.get(deckId);
             title.textContent = 'Edit Deck';
-            document.getElementById('deck-name').value = deckData.name;
-            document.getElementById('deck-description').value = deckData.description;
-            document.getElementById('deck-json').value = JSON.stringify(deckData, null, 2);
+            document.getElementById('deck-name').value = deckData.name || '';
+            document.getElementById('deck-description').value = deckData.description || '';
+            // Only include cards and invertTitle in JSON (not name/description)
+            const jsonData = {
+                cards: deckData.cards || [],
+                invertTitle: deckData.invertTitle || false
+            };
+            document.getElementById('deck-json').value = JSON.stringify(jsonData, null, 2);
         } else {
             // Creating new deck
             title.textContent = 'Create New Deck';
-            document.getElementById('deck-name').value = '';
-            document.getElementById('deck-description').value = '';
-            document.getElementById('deck-json').value = this.getDefaultDeckJSON();
+            // Get default deck data to extract name and description for form fields
+            const defaultDeckData = JSON.parse(this.getDefaultDeckJSON());
+            document.getElementById('deck-name').value = defaultDeckData.name || '';
+            document.getElementById('deck-description').value = defaultDeckData.description || '';
+            // Only include cards and invertTitle in JSON (not name/description)
+            const jsonData = {
+                cards: defaultDeckData.cards || [],
+                invertTitle: defaultDeckData.invertTitle || false
+            };
+            document.getElementById('deck-json').value = JSON.stringify(jsonData, null, 2);
         }
         
         modal.classList.add('show');
@@ -2618,23 +2857,70 @@ class CardGame {
     
     getDefaultDeckJSON() {
         return JSON.stringify({
-            "name": "My Custom Deck",
-            "description": "A custom deck with unique cards",
+            "name": "Example Deck",
+            "description":
+`<p>You can use html in your deck descriptions.</p>
+<br>
+<ul>
+    <li>Tell your <strong>story</strong></li>
+    <li>List your game <strong>rules</strong></li>
+    <li>Even add <strong>images</strong> here</li>
+</ul>`,
             "cards": [
                 {
-                    "title": "Ace of Hearts",
-                    "description": "The ace of hearts",
-                    "emoji": "❤️"
+                    "title": "Ruby Gem",
+                    "description": "A valuable red gemstone. This is shown when you hover over the card!",
+                    "emoji": "💎",
+                    "color": "#ff0000",
+                    "imageSize": 32
                 },
                 {
-                    "title": "King of Spades",
-                    "description": "The king of spades",
-                    "emoji": "♠️"
+                    "title": "Wild Card",
+                    "description": "This card uses the 'wild' color type instead of a hex code.",
+                    "emoji": "🌟",
+                    "color": "wild",
+                    "imageSize": 28
                 },
                 {
-                    "title": "K",
-                    "description": "",
-                    "emoji": "♠️"
+                    "title": "Orange Fire",
+                    "description": "This card uses a GIF image instead of an emoji!",
+                    "image": "./src/shared/images/fire.gif",
+                    "color": "neutral",
+                    "imageSize": 30
+                },
+                {
+                    "title": "Ocean Wave",
+                    "description": "The deep blue ocean. Hex colors like #0066cc give you precise control.",
+                    "emoji": "🌊",
+                    "color": "#0066cc",
+                    "imageSize": 36
+                },
+                {
+                    "title": "Purple Potion",
+                    "description": "A magical purple potion with custom hex color #9932CC",
+                    "emoji": "🧪",
+                    "color": "#9932CC",
+                    "imageSize": 24
+                },
+                {
+                    "title": "Golden Sun",
+                    "description": "A bright golden sun. Try hovering to see this description!",
+                    "emoji": "☀️",
+                    "color": "#ffd700",
+                    "imageSize": 40
+                },
+                {
+                    "title": "Green Forest",
+                    "description": "A lush green forest card demonstrating hex color #228B22",
+                    "emoji": "🌲",
+                    "color": "#228B22"
+                },
+                {
+                    "title": "Silver Moon",
+                    "description": "A silver moon card. You can use any hex color or named color!",
+                    "emoji": "🌙",
+                    "color": "#c0c0c0",
+                    "imageSize": 34
                 }
             ]
         }, null, 2);
@@ -2710,6 +2996,214 @@ class CardGame {
                 }
             });
         }
+    }
+    
+    cycleTheme() {
+        // Cycle to next theme
+        this.currentThemeIndex = (this.currentThemeIndex + 1) % this.themes.length;
+        this.applyTheme(this.themes[this.currentThemeIndex]);
+    }
+    
+    applyTheme(theme) {
+        const cardTable = document.getElementById('card-table');
+        const gameContainer = document.getElementById('game-container');
+        
+        if (!cardTable) return;
+        
+        // Apply theme styles to board
+        cardTable.style.background = theme.background;
+        cardTable.style.borderColor = theme.border;
+        
+        // Apply theme to game container background
+        if (gameContainer && theme.containerBackground) {
+            gameContainer.style.background = theme.containerBackground;
+        }
+        
+        // Also update body background to match theme
+        if (theme.containerBackground) {
+            document.body.style.background = theme.containerBackground;
+        }
+        
+        // Apply theme to all card backs
+        const cardBacks = document.querySelectorAll('.card-back');
+        cardBacks.forEach(cardBack => {
+            cardBack.style.background = theme.cardBackBackground;
+            cardBack.style.borderColor = theme.cardBackBorder;
+        });
+        
+        // Apply theme to card back patterns (center and corners)
+        const cardBackCenters = document.querySelectorAll('.card-back-center');
+        const cardBackCorners = document.querySelectorAll('.card-back-corners .corner');
+        
+        cardBackCenters.forEach(center => {
+            center.textContent = theme.cardBackPattern;
+            center.style.color = theme.cardBackColor;
+            if (theme.cardBackPatternGlow) {
+                center.style.textShadow = theme.cardBackPatternGlow;
+            } else {
+                center.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+            }
+        });
+        
+        cardBackCorners.forEach(corner => {
+            corner.textContent = theme.cardBackPattern;
+            corner.style.color = theme.cardBackColor;
+            if (theme.cardBackPatternGlow) {
+                corner.style.textShadow = theme.cardBackPatternGlow;
+            } else {
+                corner.style.textShadow = '1px 1px 2px rgba(0, 0, 0, 0.7)';
+            }
+        });
+        
+        // Update deck element (it uses .card-back class)
+        const deckElement = document.querySelector('.deck');
+        if (deckElement) {
+            const deckCardBack = deckElement.querySelector('.card-back');
+            if (deckCardBack) {
+                deckCardBack.style.background = theme.cardBackBackground;
+                deckCardBack.style.borderColor = theme.cardBackBorder;
+                
+                const deckCenter = deckCardBack.querySelector('.card-back-center');
+                const deckCorners = deckCardBack.querySelectorAll('.card-back-corners .corner');
+                
+                if (deckCenter) {
+                    deckCenter.textContent = theme.cardBackPattern;
+                    deckCenter.style.color = theme.cardBackColor;
+                    if (theme.cardBackPatternGlow) {
+                        deckCenter.style.textShadow = theme.cardBackPatternGlow;
+                    } else {
+                        deckCenter.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+                    }
+                }
+                
+                deckCorners.forEach(corner => {
+                    corner.textContent = theme.cardBackPattern;
+                    corner.style.color = theme.cardBackColor;
+                    if (theme.cardBackPatternGlow) {
+                        corner.style.textShadow = theme.cardBackPatternGlow;
+                    } else {
+                        corner.style.textShadow = '1px 1px 2px rgba(0, 0, 0, 0.7)';
+                    }
+                });
+            }
+        }
+        
+        console.log(`Theme changed to: ${theme.name}`);
+    }
+    
+    triggerConfetti() {
+        // Show confetti locally
+        this.showConfetti();
+        
+        // Broadcast confetti event to all players (if connected)
+        if (this.multiplayer && this.multiplayer.isSocketReady()) {
+            this.multiplayer.sendMessage({
+                type: 'confetti'
+            });
+        }
+    }
+    
+    showConfetti() {
+        // Create confetti canvas
+        const canvas = document.createElement('canvas');
+        canvas.id = 'confetti-canvas';
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        canvas.style.pointerEvents = 'none';
+        canvas.style.zIndex = '9999999';
+        document.body.appendChild(canvas);
+        
+        const ctx = canvas.getContext('2d');
+        
+        // Resize handler for canvas
+        const resizeCanvas = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        };
+        resizeCanvas();
+        
+        // Confetti particles
+        const particles = [];
+        const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ff8800', '#8800ff'];
+        const particleCount = 150;
+        
+        // Create particles
+        for (let i = 0; i < particleCount; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: -10,
+                vx: (Math.random() - 0.5) * 4,
+                vy: Math.random() * 3 + 2,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                size: Math.random() * 8 + 4,
+                rotation: Math.random() * 360,
+                rotationSpeed: (Math.random() - 0.5) * 10
+            });
+        }
+        
+        // Animation loop
+        let animationId;
+        let isCleanedUp = false;
+        
+        const cleanup = () => {
+            if (isCleanedUp) return;
+            isCleanedUp = true;
+            
+            window.removeEventListener('resize', resizeCanvas);
+            if (canvas.parentNode) {
+                canvas.remove();
+            }
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+        };
+        
+        window.addEventListener('resize', resizeCanvas);
+        
+        const animate = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            let activeParticles = 0;
+            
+            particles.forEach(particle => {
+                // Update position
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                particle.vy += 0.15; // Gravity
+                particle.rotation += particle.rotationSpeed;
+                
+                // Draw particle
+                ctx.save();
+                ctx.translate(particle.x, particle.y);
+                ctx.rotate(particle.rotation * Math.PI / 180);
+                ctx.fillStyle = particle.color;
+                ctx.beginPath();
+                ctx.rect(-particle.size / 2, -particle.size / 2, particle.size, particle.size);
+                ctx.fill();
+                ctx.restore();
+                
+                // Check if particle is still on screen
+                if (particle.y < canvas.height + 20) {
+                    activeParticles++;
+                }
+            });
+            
+            if (activeParticles > 0) {
+                animationId = requestAnimationFrame(animate);
+            } else {
+                // Clean up when done
+                cleanup();
+            }
+        };
+        
+        // Start animation
+        animate();
+        
+        // Safety cleanup after 5 seconds
+        setTimeout(cleanup, 5000);
     }
     
 }

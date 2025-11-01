@@ -22,6 +22,7 @@ class WebSocketMultiplayerManager {
         // Message queuing system (retry logic removed)
         this.messageQueue = [];
         this.messageIdCounter = 0;
+        this.isRestoringState = false; // Flag to prevent processing messages during state restoration
         
         // Message deduplication removed - state validation handles synchronization
         
@@ -56,6 +57,9 @@ class WebSocketMultiplayerManager {
         this.stateValidationInterval = null;
         
         this.setupEventListeners();
+        
+        // Set initial status message (ensures correct message for offline state before any room is created/joined)
+        this.updateConnectionStatus('offline');
         
         // Expose manual cleanup for debugging
         window.cleanupCards = () => this.manualCleanup();
@@ -249,12 +253,26 @@ class WebSocketMultiplayerManager {
         
         indicator.className = `status-indicator ${status}`;
         
+        // Determine the appropriate status text
         switch (status) {
             case 'offline':
-                text.textContent = 'Offline';
+                // If no room has been created/joined, show instruction message
+                // Otherwise show "Offline" to indicate disconnection
+                if (!this.roomCode) {
+                    text.textContent = 'Create or join a room to start playing';
+                } else {
+                    // Player was in a room but is now disconnected
+                    text.textContent = 'Offline';
+                }
                 break;
             case 'connecting':
-                text.textContent = 'Connecting...';
+                // Show "Reconnecting..." if we're reconnecting to an existing room
+                // Otherwise show "Connecting..." for a new connection
+                if (this.reconnecting && this.roomCode) {
+                    text.textContent = 'Reconnecting...';
+                } else {
+                    text.textContent = 'Connecting...';
+                }
                 break;
             case 'connected':
                 text.textContent = 'Connected';
@@ -268,11 +286,28 @@ class WebSocketMultiplayerManager {
             const boardText = boardStatus.querySelector('.status-text');
             if (boardIndicator) boardIndicator.className = `status-indicator ${status}`;
             if (boardText) {
-                if (status === 'offline') boardText.textContent = 'Offline';
-                else if (status === 'connecting') boardText.textContent = 'Connecting...';
-                else boardText.textContent = 'Connected';
+                if (status === 'offline') {
+                    // If no room has been created/joined, show instruction message
+                    // Otherwise show "Offline" to indicate disconnection
+                    if (!this.roomCode) {
+                        boardText.textContent = 'Create or join a room to start playing';
+                    } else {
+                        // Player was in a room but is now disconnected
+                        boardText.textContent = 'Offline';
+                    }
+                } else if (status === 'connecting') {
+                    // Show "Reconnecting..." if reconnecting, otherwise "Connecting..."
+                    if (this.reconnecting && this.roomCode) {
+                        boardText.textContent = 'Reconnecting...';
+                    } else {
+                        boardText.textContent = 'Connecting...';
+                    }
+                } else {
+                    boardText.textContent = 'Connected';
+                }
             }
-            // Show the overlay when not connected; hide when connected
+            // Show the overlay when not connected; hide only when connected
+            // The overlay will show "Create or join a room to start playing" when no roomCode, or "Offline" when disconnected from a room
             boardStatus.style.display = (status === 'connected') ? 'none' : 'flex';
         }
     }
@@ -445,6 +480,13 @@ class WebSocketMultiplayerManager {
             this.socket.onerror = (error) => {
                 console.error('WebSocket error:', error);
                 
+                // Check if socket is actually closed
+                if (this.socket && (this.socket.readyState === WebSocket.CLOSED || this.socket.readyState === WebSocket.CLOSING)) {
+                    console.log('Socket is closed after error, handling connection loss');
+                    this.handleConnectionLoss();
+                    return;
+                }
+                
                 // If localhost failed, mark that we should try remote
                 const connAttempt = this.socket._connectionAttempt;
                 if (connAttempt && connAttempt.isLocalhost && !connAttempt.triedRemote) {
@@ -463,14 +505,14 @@ class WebSocketMultiplayerManager {
                             if (this.roomCode) {
                                 this.connectToRemoteServer(remoteUrl);
                             }
+                        } else if (this.socket && this.socket.readyState !== WebSocket.OPEN) {
+                            // Socket is not open, handle connection loss
+                            this.handleConnectionLoss();
                         }
                     }, 1000);
                 } else {
-                    this.updateConnectionStatus('offline');
-                    // Schedule reconnect attempt if we're still in a room
-                    if (this.roomCode && !this.reconnecting) {
-                        this.scheduleReconnect();
-                    }
+                    // Not a localhost fallback scenario, handle connection loss immediately
+                    this.handleConnectionLoss();
                 }
             };
             
@@ -709,6 +751,12 @@ class WebSocketMultiplayerManager {
                 break;
                 
             case 'gameMessage':
+                // Skip processing game messages during state restoration to avoid conflicts
+                if (this.isRestoringState) {
+                    console.log('Skipping game message during state restoration:', message.data?.type);
+                    break;
+                }
+                
                 // Server-validated state updates
                 if (message.data && message.data.type === 'cardState') {
                     // cardState data is always an array (even for single cards)
@@ -725,6 +773,11 @@ class WebSocketMultiplayerManager {
                     if (playerId) {
                         this.connectedPlayers.delete(playerId);
                         this.updatePlayerCount();
+                    }
+                } else if (message.data && message.data.type === 'confetti') {
+                    // Trigger confetti for all players
+                    if (this.game && typeof this.game.showConfetti === 'function') {
+                        this.game.showConfetti();
                     }
                 } else {
                     // Fallback: try legacy handler
@@ -835,6 +888,13 @@ class WebSocketMultiplayerManager {
                 // Request full state to resync
                 console.log('Invalid state detected, requesting full state...');
                 this.requestFullState();
+                break;
+                
+            case 'DECK_EMPTY':
+            case 'DEAL_FAILED':
+                // These are expected errors - just show the message, don't disconnect
+                console.log(`Deck operation failed: ${errorMessage}`);
+                // Connection stays active, just notify the user
                 break;
                 
             default:
@@ -1142,6 +1202,9 @@ class WebSocketMultiplayerManager {
         
         console.log('Applying game state from server', gameState);
         
+        // Set flag to prevent processing messages during state restoration
+        this.isRestoringState = true;
+        
         // Clear local state
         if (typeof this.game.clearBoard === 'function') {
             this.game.clearBoard();
@@ -1163,6 +1226,20 @@ class WebSocketMultiplayerManager {
                 if (this.game.deck && gameState.deckData) {
                     this.game.deck.cards = gameState.deckData.cards || [];
                     this.game.originalDeckSize = gameState.originalDeckSize || gameState.deckData.cards?.length || 0;
+                    // Force re-render deck to update count display
+                    if (typeof this.game.renderDeck === 'function') {
+                        this.game.renderDeck();
+                    }
+                }
+            }
+        } else if (gameState.deckData) {
+            // If we have deck data but no deckId, just update the deck
+            if (this.game.deck && gameState.deckData) {
+                this.game.deck.cards = gameState.deckData.cards || [];
+                this.game.originalDeckSize = gameState.originalDeckSize || gameState.deckData.cards?.length || 0;
+                // Force re-render deck to update count display
+                if (typeof this.game.renderDeck === 'function') {
+                    this.game.renderDeck();
                 }
             }
         }
@@ -1202,6 +1279,12 @@ class WebSocketMultiplayerManager {
                 }
             }, 100);
         }
+        
+        // Clear the restoration flag after a short delay to allow all DOM updates to complete
+        setTimeout(() => {
+            this.isRestoringState = false;
+            console.log('State restoration complete');
+        }, 200);
         
         console.log('✅ Full state synchronized from server');
     }
@@ -1357,6 +1440,11 @@ class WebSocketMultiplayerManager {
                 if (this.game && typeof this.game.addCardInteractions === 'function') {
                     this.game.addCardInteractions(cardElement, card);
                 }
+                
+                // Update deck glow after adding a card
+                if (this.game && typeof this.game.updateDeckGlow === 'function') {
+                    this.game.updateDeckGlow();
+                }
             } else {
                 console.error('[DEAL] Game instance or createCardElement function not available');
                 return;
@@ -1478,7 +1566,11 @@ class WebSocketMultiplayerManager {
         }
         
         // Highlight the card to show it has moved or been placed
-        if (this.game && typeof this.game.highlightCard === 'function') {
+        // Only highlight if this is from another player (not our own action, which was already highlighted locally)
+        // Also skip highlighting for state restorations (playerId === null)
+        const shouldHighlight = playerId !== null && playerId !== this.playerId;
+        
+        if (shouldHighlight && this.game && typeof this.game.highlightCard === 'function') {
             this.game.highlightCard(cardElement, playerAlias);
             
             // For discard pile cards, positionCardInDiscardPileElement already set the highest z-index
@@ -2239,15 +2331,33 @@ class WebSocketMultiplayerManager {
         if (this.healthCheckInterval) return;
         
         this.healthCheckInterval = setInterval(() => {
-            const now = Date.now();
-            const timeSinceLastMessage = now - this.lastMessageTime;
-            const timeSinceLastPong = now - this.lastPongTime;
-            
-            // Check if we haven't received any messages or pongs recently
-            if (timeSinceLastMessage > this.connectionTimeout || timeSinceLastPong > this.connectionTimeout) {
-                console.warn('Connection health check failed - no messages/pongs received recently');
-                this.handleConnectionLoss();
+            // Only check if we're actually connected
+            if (this.connectionStatus !== 'connected') {
+                return; // Don't check health if we're not connected
             }
+            
+            // First check if socket is still connected
+            if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+                console.warn('Socket not open in health check, handling connection loss');
+                this.handleConnectionLoss();
+                return;
+            }
+            
+            const now = Date.now();
+            // Only check timeouts if we've actually received messages/pongs before
+            // (lastMessageTime > 0 means we've received at least one message)
+            if (this.lastMessageTime > 0) {
+                const timeSinceLastMessage = now - this.lastMessageTime;
+                const timeSinceLastPong = now - this.lastPongTime;
+                
+                // Check if we haven't received any messages or pongs recently
+                // Only fail if both are stale (more lenient check)
+                if (timeSinceLastMessage > this.connectionTimeout && timeSinceLastPong > this.connectionTimeout) {
+                    console.warn('Connection health check failed - no messages/pongs received recently');
+                    this.handleConnectionLoss();
+                }
+            }
+            // If lastMessageTime is 0, we haven't received any messages yet, so skip the timeout check
         }, 5000); // Check every 5 seconds
     }
     
@@ -2262,9 +2372,18 @@ class WebSocketMultiplayerManager {
         if (this.pingInterval) return;
         
         this.pingInterval = setInterval(() => {
-            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-                this.sendPing();
+            // Only send ping if we're actually connected
+            if (this.connectionStatus !== 'connected') {
+                return; // Don't ping if not connected
             }
+            
+            // Check if socket is still connected
+            if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+                console.warn('Socket no longer open in ping interval, handling connection loss');
+                this.handleConnectionLoss();
+                return;
+            }
+            this.sendPing();
         }, this.pingIntervalMs);
     }
     
@@ -2302,21 +2421,28 @@ class WebSocketMultiplayerManager {
             }
             
             // Send ping as JSON message (fallback if binary ping not supported)
+            // Double-check socket is still open before sending
+            if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+                console.warn('Socket not open when trying to send ping');
+                this.handleConnectionLoss();
+                return;
+            }
             this.socket.send(JSON.stringify({ type: 'ping' }));
             
             // Set timeout to wait for pong
+            const pingTime = Date.now();
             this.pongTimeout = setTimeout(() => {
-                const now = Date.now();
-                const timeSinceLastPong = now - this.lastPongTime;
-                
-                // If we haven't received a pong within the timeout period, connection may be dead
-                if (timeSinceLastPong > this.pongTimeoutMs) {
+                // Only check pong timeout if we've received pongs before
+                // If lastPongTime hasn't been updated since we sent the ping, we didn't get a pong
+                if (this.lastPongTime > 0 && this.lastPongTime < pingTime) {
+                    // We haven't received a pong since sending this ping
                     console.warn('Pong timeout - connection may be dead');
                     this.missedPongs++;
                     if (this.missedPongs >= this.maxMissedPongs) {
                         this.handleConnectionLoss();
                     }
                 }
+                // If lastPongTime is 0, we haven't received any pongs yet, so don't fail immediately
             }, this.pongTimeoutMs);
         } catch (error) {
             console.error('Failed to send ping:', error);
@@ -2341,6 +2467,11 @@ class WebSocketMultiplayerManager {
     }
     
     handleConnectionLoss() {
+        // Don't handle connection loss if we're already offline or already reconnecting
+        if (this.connectionStatus === 'offline' || this.reconnecting) {
+            return;
+        }
+        
         console.log('Handling connection loss...');
         this.updateConnectionStatus('offline');
         this.stopPingInterval();
@@ -2397,6 +2528,13 @@ class WebSocketMultiplayerManager {
     onReconnection() {
         console.log('Reconnected, requesting full state...');
         
+        // Clear message queue - these messages are stale and will cause sync issues
+        // The server will send full state, so we don't need old queued messages
+        this.messageQueue = [];
+        
+        // Set flag to prevent processing messages during state restoration
+        this.isRestoringState = true;
+        
         // Send join room message again (will receive full state)
         this.roomCreationAttempted = false; // Reset to allow rejoin
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
@@ -2407,17 +2545,19 @@ class WebSocketMultiplayerManager {
                 playerId: this.playerId,
                 playerName: this.playerAlias
             }));
-            
-            // Send queued messages after a short delay
-            setTimeout(() => {
-                this.flushMessageQueue();
-            }, 1000);
         }
     }
     
     // Send queued messages when connection is restored
+    // NOTE: This is no longer called during reconnection - message queue is cleared instead
     flushMessageQueue() {
         if (!this.isSocketReady()) {
+            return;
+        }
+        
+        // Don't flush messages during state restoration
+        if (this.isRestoringState) {
+            console.log('Skipping message queue flush during state restoration');
             return;
         }
         
@@ -2443,9 +2583,6 @@ class WebSocketMultiplayerManager {
                 break;
             }
         }
-        
-        // Request full state to ensure sync after sending queued messages
-        this.requestFullState();
     }
     
     // Cleanup method

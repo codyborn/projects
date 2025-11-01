@@ -47,7 +47,7 @@
     align-items: center;
     justify-content: center;
     background: white;
-    border: 1px solid #333;
+    border: 1px solid #fff;
     color: #333;
     padding: 8px;
     font-weight: bold;
@@ -185,6 +185,27 @@
     transform: translate(-50%, -50%) scale(1.05);
 }
 
+/* Deck glow when no cards have been dealt yet */
+.deck-glow {
+    animation: deckGlow 2s ease-in-out infinite;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 
+                0 0 40px rgba(255, 215, 0, 0.6), 
+                0 0 60px rgba(255, 215, 0, 0.4);
+}
+
+@keyframes deckGlow {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 
+                    0 0 40px rgba(255, 215, 0, 0.6), 
+                    0 0 60px rgba(255, 215, 0, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(255, 215, 0, 1), 
+                    0 0 60px rgba(255, 215, 0, 0.8), 
+                    0 0 90px rgba(255, 215, 0, 0.6);
+    }
+}
+
 /* Card face styling - moved above */
 
 .card-face.red {
@@ -313,7 +334,7 @@
     font-size: 12px;
     max-width: 200px;
     text-align: center;
-    z-index: 10000;
+    z-index: 9999990 !important; /* Highest z-index for tooltips - always above cards */
     pointer-events: none;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     line-height: 1.4;

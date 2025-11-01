@@ -5,14 +5,17 @@ class NomadDeck extends Deck {
       this.name = 'THE NOMAD';
       this.description = `
         <h3>Visit every continent. Out-plan your rivals. Don't go broke.</h3>
-        <p><strong>Players:</strong> 2–5 |
-           <strong>Goal:</strong> Score the most points by visiting cities. First player to visit all 7 continents ends the game and gains +5 bonus points.</p>
+        <br>
+        <p>As a digital nomad, you’re always chasing adventure. But when it's a race to visit every continent, every move counts. Along the way, you'll pick up handy gear and remote gigs to fuel your travels, but linger too long in one place and your rivals will leave you in the dust.</p>
+        <p><strong>Players:</strong> 2–4 |
+           <strong>Goal:</strong> Score the most points by visiting cities. First player to visit all 7 continents ends the game and gains +3 bonus points.</p>
         <br>
         <h4>How to Play</h4>
         <ul>
           <li><strong>Each turn:</strong> Play 1 card (City, Income, Item, or Event) <em>or</em> discard any number of cards, then draw until you have 3 cards.</li>
-          <li><strong>Travel:</strong> Your first City is free (starting point). Traveling to a new continent costs = <strong>$3,000 + $1,000 × continent hops</strong> on the mini-map. Cities on the same continent are <strong>free</strong>.</li>
-          <li><strong>Scoring:</strong> +1 point per City you visit. First to all 7 continents gains <strong>+5 points</strong> and ends the game.</li>
+          <li><strong>Travel:</strong> Your first City is free (starting point). Traveling to a new continent costs = <strong>$3,000 + $1,000 x continent hops</strong> on the mini-map. Cities on the same continent are <strong>free</strong>. Place a City card toward the middle of the board to indicate your current location.</li>
+          <li><strong>Scoring:</strong> +1 point per City you visit. First to all 7 continents gains <strong>+3 points</strong> and ends the game.</li>
+          <li><strong>Placing vs. Using:</strong> <em>Placing</em> an Income card or Item card from your hand consumes your turn. <em>Using</em> Income cards (spending money) or Items (activating effects) does not.</li>
         </ul>
         <br>
         <h4>Mini-Map</h4>
@@ -20,10 +23,17 @@ class NomadDeck extends Deck {
         <br>
         <h4>Card Types</h4>
         <ul>
-          <li><strong>🏙️ CITIES</strong> — Play to travel and score points (1 each). Track your current continent via your latest City.</li>
-          <li><strong>💵 INCOME</strong> — Play an income card to add money to your bank account. Keep the income cards on the table until you spend them.</li>
-          <li><strong>🎒 ITEMS</strong> — Play item cards to gain persistent abilities or single-use effects. Your backpack has 3 slots to hold items.</li>
-          <li><strong>🌐 EVENTS</strong> — Single-use effects.</li>
+          <li><strong>🏙️ CITIES</strong> — Play to travel and score points (1 each). Track your current continent via your latest City. Place your current City toward the middle of the board.</li>
+          <li><strong>💵 INCOME</strong> — <em>Place</em> an Income card (uses your turn) to add it to your bank account. Income cards stay on the table until you <em>spend</em> them (does not use a turn). You must spend Income cards in whole amounts.</li>
+          <li><strong>🎒 ITEMS</strong> — <em>Place</em> an Item card in your backpack (uses your turn). Your backpack starts with 3 slots. <em>Using</em> an Item's ability (persistent or discard) does not use a turn. Persistent items stay in your backpack; single-use items are discarded after use.</li>
+          <li><strong>🌐 EVENTS</strong> — Play from hand (uses your turn) for single-use effects that immediately resolve. Consumes your turn.</li>
+        </ul>
+        <br>
+        <h4>Scoring</h4>
+        <ul>
+          <li><strong>+1 point</strong> for each City you visit</li>
+          <li><strong>+3 points</strong> for being first to visit all 7 continents</li>
+          <li><strong>+1 point</strong> for ending the game with the most Income cards</li>
         </ul>
       `;
       this.invertTitle = false;
@@ -36,7 +46,7 @@ class NomadDeck extends Deck {
       // ---------- CITY CARDS (41 total: 6 per continent except Antarctica with 5) ----------
       // Color palette per continent
       const C = {
-        NA: '#f9b21d', SA: '#66bb37', EU: '#39bfc4',
+        NA: '#ffd20f', SA: '#66bb37', EU: '#39bfc4',
         AS: '#f2719d', AF: '#ff9426', OC: '#0c57d1', AN: '#e91e46'
       };
   
@@ -98,7 +108,7 @@ class NomadDeck extends Deck {
       // ---------- INCOME CARDS (25 total) ----------
       const INC = 'neutral';
       this.income('Yoga Teacher', 1000, 6, INC);
-      this.income('Influencer Marketing', 2000, 3, INC);
+      this.income('Viral Video', 2000, 3, INC);
   
       this.income('Consulting Job', 3000, 5, INC);
       this.income('Online Course Launch', 3000, 3, INC);
@@ -109,7 +119,7 @@ class NomadDeck extends Deck {
       this.income('Executive Coaching', 5000, 1, INC);
       this.income('Startup Exit (tiny one)', 5000, 1, INC);
   
-      this.income('Sold NFT from 2021', 6000, 1, INC);
+      this.income('Found hardware wallet from 2016', 6000, 1, INC);
 
       // ---------- EVENT CARDS (20 total, 1 global active) ----------
       const EVT = 'wild';
@@ -123,7 +133,7 @@ class NomadDeck extends Deck {
         'Draw 2 cards. You may immediately play one.');
       this.addCardType('Lost Luggage', EVT, '🌐', 2, 
         'Choose a player to discard all their item cards.');
-      this.addCardType('Lucky Encounter', EVT, '🌐', 2, 
+      this.addCardType('Lost and Found', EVT, '🌐', 2, 
         'Steal up to $3,000 from any player of your choice.');
       this.addCardType('Luggage Mixup', EVT, '🌐', 2, 
         'Swap backpack contents with any other player.');
@@ -131,18 +141,9 @@ class NomadDeck extends Deck {
       //   'Choose any player to discard their active Skill.');
 
       // ---------- ITEM CARDS — with color-coded brightness and hue ----------
-      /*
-      Hue:
-        - Persistent items = purple hue (#9932CC base)
-        - Single-use items = violet hue (#8A2BE2 base)
-      Brightness by size:
-        - 1-slot = bright (1.0)
-        - 2-slot = medium (0.9)
-        - 3-slot = dark (0.8)
-      */
 
     const items = [
-      { title: 'Laptop', emoji: '💻', size: 1, count: 3, desc: 'Play up to 2 Income cards per turn.', persistent: true },
+      { title: 'Laptop', emoji: '💻', size: 2, count: 3, desc: 'Play up to 2 Income cards per turn.', persistent: true },
       { title: 'Travel Insurance', emoji: '🛡️', size: 2, count: 1, desc: 'Discard to ignore an Event.', persistent: false },
       { title: 'Credit Card', emoji: '💳', size: 1, count: 2, desc: 'Discard to reduce the cost of a City by $3,000 this turn.', persistent: false },
       { title: 'Nomad Card Game', emoji: '🃏', size: 1, count: 1, desc: 'Claim an additional 3 points at the end of the game.', persistent: true },
@@ -180,7 +181,7 @@ class NomadDeck extends Deck {
     }
 
     item(title, emoji, size, count, desc, persistent) {
-      const color = this.colorBy(size, persistent);
+      const color = '#8a4af3';
       this.addCardType(`${size}\n ${title}`, color, emoji, count, desc);
     }
   
