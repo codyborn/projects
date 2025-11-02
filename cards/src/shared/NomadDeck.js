@@ -161,12 +161,12 @@ class NomadDeck extends Deck {
       { title: 'Nomad Card Game', size: 1, count: 1, desc: 'Claim an additional 3 points at the end of the game.', persistent: true },
       { title: 'Lock Pick', size: 1, count: 3, desc: 'Discard to steal 1 Item card from a player.', persistent: false },
       { title: 'Dice', size: 1, count: 3, desc: 'Discard to swap 1 Income card with another player.', persistent: false },
+      { title: 'SatPhone', size: 1, count: 2, desc: 'Discard to travel to a previously visited City for free.', persistent: false },
       
       { title: 'Guidebooks', size: 2, count: 2, desc: 'Travel to new continents costs $1,000 less.', persistent: true },
       { title: 'World Map', size: 2, count: 2, desc: 'Play up to 2 Cities per turn.', persistent: true },
-      { title: 'SatPhone', size: 2, count: 2, desc: 'Discard to travel to a previously visited City for free.', persistent: false },
-
       { title: 'Day Bag', size: 2, count: 2, desc: 'Hold up to 5 cards in your hand.', persistent: true },
+      
       { title: 'Extra Large Backpack', size: 0, count: 2, desc: '4 total item slots.', persistent: true },
     ];
 
