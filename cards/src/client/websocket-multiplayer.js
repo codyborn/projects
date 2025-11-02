@@ -2186,20 +2186,63 @@ class WebSocketMultiplayerManager {
         this.displayChatMessage(displayName, message, playerId === this.playerId);
     }
     
+    isSingleEmoji(text) {
+        // Trim whitespace
+        const trimmed = text.trim();
+        
+        if (!trimmed || trimmed.length === 0) {
+            return false;
+        }
+        
+        // Comprehensive emoji regex pattern
+        // Matches:
+        // - Standard emoji ranges (1F300-1F9FF, etc.)
+        // - Emoji with variation selectors (FE0F)
+        // - Emoji with skin tone modifiers (1F3FB-1F3FF)
+        // - Zero-width joiner sequences (200D) for compound emojis
+        // - Regional indicator symbols for flags (1F1E6-1F1FF)
+        const emojiPattern = /^(?:[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA00}-\u{1FAFF}]|[\u{1F1E6}-\u{1F1FF}])(?:[\u{FE0F}]|[\u{200D}]|[\u{1F3FB}-\u{1F3FF}])*(?:[\u{200D}](?:[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA00}-\u{1FAFF}]|[\u{1F1E6}-\u{1F1FF}])[\u{FE0F}]?)*$/u;
+        
+        // Check if the entire trimmed text matches a single emoji pattern
+        return emojiPattern.test(trimmed);
+    }
+    
     displayChatMessage(playerName, messageText, isOwnMessage = false) {
         const chatMessages = document.getElementById('chat-messages');
         if (!chatMessages) {
             return;
         }
         
+        // Check if it's a single emoji and create floating animation
+        const trimmedMessage = messageText.trim();
+        if (this.isSingleEmoji(trimmedMessage)) {
+            this.showFloatingEmoji(trimmedMessage, playerName);
+        }
+        
         // Create message element
         const messageEl = document.createElement('div');
         messageEl.className = 'chat-message';
         
-        // Generate player color for name
+        // Apply theme colors if available
+        if (this.game && this.game.themes && this.game.currentThemeIndex !== undefined) {
+            const currentTheme = this.game.themes[this.game.currentThemeIndex] || this.game.themes[0];
+            const borderColor = this.game.hexToRgb ? this.game.hexToRgb(currentTheme.border) : null;
+            if (borderColor) {
+                messageEl.style.background = `rgba(${borderColor.r}, ${borderColor.g}, ${borderColor.b}, 0.2)`;
+            }
+            // Don't set color on messageEl - it will be set on .chat-text specifically
+            // This preserves player name colors set via inline styles
+        }
+        
+        // Generate player color for name (unique per player, not affected by theme)
         const playerColor = this.game ? this.game.generatePlayerColor(playerName) : '#e8f5e8';
         
-        messageEl.innerHTML = `<span class="chat-player-name" style="color: ${playerColor}">${this.escapeHtml(playerName)}:</span><span class="chat-text">${this.escapeHtml(messageText)}</span>`;
+        // Get theme color for message text (if available)
+        const themeTextColor = (this.game && this.game.themes && this.game.currentThemeIndex !== undefined) 
+            ? (this.game.themes[this.game.currentThemeIndex] || this.game.themes[0]).cardBackColor || '#e8f5e8'
+            : '#e8f5e8';
+        
+        messageEl.innerHTML = `<span class="chat-player-name" style="color: ${playerColor}">${this.escapeHtml(playerName)}:</span><span class="chat-text" style="color: ${themeTextColor}">${this.escapeHtml(messageText)}</span>`;
         
         // Add to chat messages container
         chatMessages.appendChild(messageEl);
@@ -2222,6 +2265,51 @@ class WebSocketMultiplayerManager {
                 }
             }, 500); // Fade out duration
         }, 10000);
+    }
+    
+    showFloatingEmoji(emoji, playerName) {
+        const cardTable = document.getElementById('card-table');
+        if (!cardTable) {
+            return;
+        }
+        
+        // Create floating emoji element
+        const floatingEmoji = document.createElement('div');
+        floatingEmoji.className = 'floating-emoji';
+        floatingEmoji.textContent = emoji;
+        
+        // Generate player color for the emoji
+        const playerColor = this.game ? this.game.generatePlayerColor(playerName) : '#e8f5e8';
+        floatingEmoji.style.color = playerColor;
+        
+        // Set initial position at bottom center of screen
+        floatingEmoji.style.position = 'fixed';
+        floatingEmoji.style.bottom = '120px'; // Above the chat area
+        floatingEmoji.style.left = '50%';
+        floatingEmoji.style.transform = 'translateX(-50%)';
+        floatingEmoji.style.fontSize = '80px';
+        floatingEmoji.style.zIndex = '10000';
+        floatingEmoji.style.pointerEvents = 'none';
+        floatingEmoji.style.userSelect = 'none';
+        floatingEmoji.style.willChange = 'transform, opacity';
+        
+        // Add to body
+        document.body.appendChild(floatingEmoji);
+        
+        // Trigger animation (force reflow)
+        void floatingEmoji.offsetWidth;
+        
+        // Start animation - float up and fade out
+        floatingEmoji.style.transition = 'transform 3s ease-out, opacity 3s ease-out';
+        floatingEmoji.style.transform = 'translateX(-50%) translateY(-400px)';
+        floatingEmoji.style.opacity = '0';
+        
+        // Remove element after animation
+        setTimeout(() => {
+            if (floatingEmoji.parentNode) {
+                floatingEmoji.remove();
+            }
+        }, 3000);
     }
     
     escapeHtml(text) {

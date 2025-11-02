@@ -2,7 +2,7 @@
 class NomadDeck extends Deck {
     constructor() {
       super();
-      this.name = 'THE NOMAD';
+      this.name = 'The Nomad Card Game';
       this.description = `
         <h3>Visit every continent.<br>Out-plan your rivals.<br>Don't go broke.</h3>
         <br>
@@ -20,7 +20,7 @@ class NomadDeck extends Deck {
         <br>
         <h4>Mini-Map</h4>
         <img src="./src/shared/images/nomad-mini-map.png" alt="Nomad Mini-Map" style="width: 100%; height: auto;">
-        <br>
+        <br><br>
         <h4>Card Types</h4>
         <ul>
           <li><strong>🏙️ CITIES</strong> — Play to travel and score points (1 each). Track your current continent via your latest City. Place your current City toward the middle of the board.</li>
@@ -58,59 +58,59 @@ class NomadDeck extends Deck {
       };
   
       // North America
-      this.city('New York City', C.NA);
-      this.city('Vancouver', C.NA);
-      this.city('Mexico City', C.NA);
-      this.city('Austin', C.NA);
-      this.city('Montreal', C.NA);
-      this.city('Los Angeles', C.NA);
+      this.city('New York City', C.NA, 'Population: 8.5M.\nThe Empire State Building has its own zip code (10118).');
+      this.city('Vancouver', C.NA, 'Population: 700K.\nHome to Stanley Park, one of North America\'s largest urban parks.');
+      this.city('Mexico City', C.NA, 'Population: 9.2M.\nBuilt on an ancient lakebed, parts of the city sink up to 20cm per year.');
+      this.city('Austin', C.NA, 'Population: 980K.\nHome to the world\'s largest urban bat colony at Congress Avenue Bridge.');
+      this.city('Montreal', C.NA, 'Population: 1.8M.\nOne of the most bilingual cities in North America, with French and English widely spoken.');
+      this.city('Los Angeles', C.NA, 'Population: 3.9M.\nHome to major museums like the Getty Center and LACMA.');
   
       // South America
-      this.city('Rio de Janeiro', C.SA);
-      this.city('Buenos Aires', C.SA);
-      this.city('Cusco', C.SA);
-      this.city('Medellín', C.SA);
-      this.city('Santiago', C.SA);
-      this.city('Lima', C.SA);
+      this.city('Rio de Janeiro', C.SA, 'Population: 6.7M.\nHosts the world\'s largest street party during Carnival.');
+      this.city('Buenos Aires', C.SA, 'Population: 3.1M.\nBirthplace of the tango dance, with hundreds of milongas (dance halls) throughout the city.');
+      this.city('Cusco', C.SA, 'Population: 435K.\nBuilt on ancient Incan foundations, many walls are perfectly aligned without mortar.');
+      this.city('Medellín', C.SA, 'Population: 2.5M.\nTransformed from crime capital to innovation hub with cable car transportation.');
+      this.city('Santiago', C.SA, 'Population: 6.3M.\nSurrounded by mountains that create a natural bowl, trapping smog.');
+      this.city('Lima', C.SA, 'Population: 9.8M.\nThe oldest continuously functioning university in the Americas is here (1551).');
   
       // Europe
-      this.city('London', C.EU);
-      this.city('Paris', C.EU);
-      this.city('Berlin', C.EU);
-      this.city('Lisbon', C.EU);
-      this.city('Athens', C.EU);
-      this.city('Reykjavík', C.EU);
+      this.city('London', C.EU, 'Population: 9.0M.\nHome to over 170 museums, including the free-to-enter British Museum.');
+      this.city('Paris', C.EU, 'Population: 2.1M.\nThe Eiffel Tower grows 6 inches taller in summer due to heat expansion.');
+      this.city('Berlin', C.EU, 'Population: 3.7M.\nOften said to have more bridges than Venice (1,700+).');
+      this.city('Lisbon', C.EU, 'Population: 548K.\nOne of the oldest cities in Europe, predating Rome by centuries.');
+      this.city('Athens', C.EU, 'Population: 3.2M.\nThe Parthenon was originally painted in bright colors, not white marble.');
+      this.city('Reykjavík', C.EU, 'Population: 135K.\nHeats most buildings using geothermal energy from volcanic activity.');
   
       // Asia
-      this.city('Tokyo', C.AS);
-      this.city('Bangkok', C.AS);
-      this.city('Seoul', C.AS);
-      this.city('Bali', C.AS);
-      this.city('Singapore', C.AS);
-      this.city('Kathmandu', C.AS);
+      this.city('Tokyo', C.AS, 'Population: 14.0M.\nHas the world\'s busiest train station—Shinjuku serves 3.6M passengers daily.');
+      this.city('Bangkok', C.AS, 'Population: 10.7M.\nHas one of the longest official city names in the world at 168 characters.');
+      this.city('Seoul', C.AS, 'Population: 9.7M.\nAmong the world\'s fastest internet speeds and most connected populations.');
+      this.city('Bali', C.AS, 'Population: 4.3M.\nObserves Nyepi Day annually, when the entire island shuts down for 24 hours of silence.');
+      this.city('Singapore', C.AS, 'Population: 5.9M.\nDespite its size, it\'s one of the world\'s leading financial centers.');
+      this.city('Kathmandu', C.AS, 'Population: 1.5M.\nThe Kathmandu Valley contains seven UNESCO World Heritage sites within 20km.');
   
       // Africa
-      this.city('Cape Town', C.AF);
-      this.city('Marrakesh', C.AF);
-      this.city('Nairobi', C.AF);
-      this.city('Cairo', C.AF);
-      this.city('Zanzibar', C.AF);
-      this.city('Accra', C.AF);
+      this.city('Cape Town', C.AF, 'Population: 4.8M.\nHome to Table Mountain, one of the oldest mountains in the world (260M years old).');
+      this.city('Marrakesh', C.AF, 'Population: 930K.\nThe ancient medina is a UNESCO World Heritage site with a maze of narrow alleys.');
+      this.city('Nairobi', C.AF, 'Population: 4.4M.\nThe only capital city with a national park within its boundaries.');
+      this.city('Cairo', C.AF, 'Population: 10.2M.\nHome to one of the Seven Wonders of the Ancient World—the Great Pyramid.');
+      this.city('Zanzibar', C.AF, 'Population: 1.8M.\nWas the world\'s leading producer of cloves in the 19th century.');
+      this.city('Accra', C.AF, 'Population: 2.3M.\nKnown as Africa\'s music capital with vibrant highlife and afrobeat scenes.');
   
       // Oceania
-      this.city('Sydney', C.OC);
-      this.city('Melbourne', C.OC);
-      this.city('Auckland', C.OC);
-      this.city('Fiji', C.OC);
-      this.city('Perth', C.OC);
-      this.city('Tasmania', C.OC);
+      this.city('Sydney', C.OC, 'Population: 5.3M.\nThe Opera House roof is covered with over 1 million tiles.');
+      this.city('Melbourne', C.OC, 'Population: 5.0M.\nNamed the world\'s most livable city 7 times in a row (2011-2017).');
+      this.city('Auckland', C.OC, 'Population: 1.7M.\nBuilt on about 53 volcanoes in a dormant volcanic field.');
+      this.city('Fiji', C.OC, 'Population: 940K.\nThe International Date Line zigzags around Fiji to keep the islands together.');
+      this.city('Perth', C.OC, 'Population: 2.1M.\nOne of the most isolated major cities—closest city is Adelaide, 2,104km away.');
+      this.city('Tasmania', C.OC, 'Population: 558K.\nHome to the world\'s cleanest air, measured at Cape Grim Baseline Station.');
   
       // Antarctica
-      this.city('McMurdo Station', C.AN);
-      this.city('South Pole Camp', C.AN);
-      this.city('Deception Island', C.AN);
-      this.city('Palmer Station', C.AN);
-      this.city('King George Island', C.AN);
+      this.city('McMurdo Station', C.AN, 'Population: ~1,000 (summer).\nLargest research station in Antarctica, operates year-round.');
+      this.city('South Pole Camp', C.AN, 'Population: ~150 (summer).\nLocated at 90°S, where all lines of longitude converge.');
+      this.city('Deception Island', C.AN, 'Population: ~20 (summer).\nActive volcano with a flooded caldera that serves as a natural harbor.');
+      this.city('Palmer Station', C.AN, 'Population: ~40 (summer).\nUS research station on Anvers Island, studying marine biology.');
+      this.city('King George Island', C.AN, 'Population: ~500 (summer).\nHosts research stations from 12 different countries.');
   
       // ---------- INCOME CARDS (25 total) ----------
       const INC = 'neutral';
@@ -120,7 +120,7 @@ class NomadDeck extends Deck {
       this.income('Freelance Writing', 3000, 5, INC);
       this.income('Online Course Creation', 3000, 3, INC);
   
-      this.income('Vibe coded app', 4000, 3, INC);
+      this.income('Vibe-coded App', 4000, 3, INC);
       this.income('YouTuber Sponsorship', 4000, 2, INC);
   
       this.income('Executive Coaching', 5000, 1, INC);
@@ -166,7 +166,7 @@ class NomadDeck extends Deck {
       { title: 'Guidebooks', size: 2, count: 2, desc: 'Travel to new continents costs $1,000 less.', persistent: true },
       { title: 'World Map', size: 2, count: 2, desc: 'Play up to 2 Cities per turn.', persistent: true },
       { title: 'Day Bag', size: 2, count: 2, desc: 'Hold up to 5 cards in your hand.', persistent: true },
-      
+
       { title: 'Extra Large Backpack', size: 0, count: 2, desc: '4 total item slots.', persistent: true },
     ];
 
@@ -185,8 +185,8 @@ class NomadDeck extends Deck {
   }
   
     // Helper: add a single City card
-    city(name, color) {
-      this.addCardType(name, color, '🏙️', 1, '');
+    city(name, color, description = '') {
+      this.addCardType(name, color, '🏙️', 1, description);
     }
   
     // Helper: add multiple Income cards with same template

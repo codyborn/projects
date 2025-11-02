@@ -334,6 +334,7 @@
     font-size: 12px;
     max-width: 200px;
     text-align: center;
+    white-space: pre-line;
     z-index: 9999990 !important; /* Highest z-index for tooltips - always above cards */
     pointer-events: none;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);

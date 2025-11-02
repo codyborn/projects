@@ -2519,6 +2519,18 @@ class CardGame {
                 }
             }
         });
+        
+        // Emoji button shortcuts
+        const emojiButtons = document.querySelectorAll('.chat-emoji-btn');
+        emojiButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const emoji = button.dataset.emoji;
+                if (emoji && this.multiplayer) {
+                    // Send the emoji as a message (will trigger floating animation if it's a single emoji)
+                    this.multiplayer.sendChatMessage(emoji);
+                }
+            });
+        });
     }
     
     setupInfoModalListeners() {
@@ -3149,7 +3161,149 @@ class CardGame {
             }
         }
         
+        // Apply theme to private hand area
+        const privateHandArea = document.getElementById('private-hand-area');
+        if (privateHandArea) {
+            // Use a darker, semi-transparent version of the border color for background
+            privateHandArea.style.borderColor = theme.border;
+        }
+        
+        // Apply theme to private hand zone
+        const privateHandZone = document.getElementById('private-hand-zone');
+        if (privateHandZone) {
+            // Convert border color to RGB for rgba background
+            const borderColor = this.hexToRgb(theme.border);
+            if (borderColor) {
+                privateHandZone.style.borderColor = theme.border;
+                privateHandZone.style.background = `rgba(${borderColor.r}, ${borderColor.g}, ${borderColor.b}, 0.1)`;
+                
+                // Update empty state text color using CSS variable
+                // Create a lighter, more muted version of the border color
+                const emptyR = Math.min(255, borderColor.r + 100);
+                const emptyG = Math.min(255, borderColor.g + 100);
+                const emptyB = Math.min(255, borderColor.b + 100);
+                privateHandZone.style.setProperty('--private-hand-empty-color', `rgb(${emptyR}, ${emptyG}, ${emptyB})`);
+            }
+        }
+        
+        // Apply theme to private hand header text
+        const privateHandHeader = document.querySelector('.private-hand-header h3');
+        if (privateHandHeader) {
+            privateHandHeader.style.color = theme.cardBackColor || '#e8f5e8';
+        }
+        
+        // Apply theme to card count badges
+        const cardCounts = document.querySelectorAll('.card-count');
+        cardCounts.forEach(count => {
+            count.style.background = theme.border;
+            count.style.color = theme.cardBackColor || '#ffffff';
+        });
+        
+        // NOTE: Player IDs should NOT get theme colors - they use unique player colors
+        // generated from aliases via generatePlayerColor(). Inline styles set by
+        // updatePrivateHandDisplay() will preserve player-specific colors.
+        
+        // Apply theme to discard pile
+        const discardPileContainer = document.querySelector('.discard-pile-container');
+        if (discardPileContainer) {
+            const borderColor = this.hexToRgb(theme.border);
+            if (borderColor) {
+                discardPileContainer.style.borderColor = theme.border;
+                discardPileContainer.style.background = `rgba(${borderColor.r}, ${borderColor.g}, ${borderColor.b}, 0.3)`;
+            }
+        }
+        
+        // Apply theme to discard pile label
+        const discardPileLabel = document.querySelector('.discard-pile-label');
+        if (discardPileLabel) {
+            discardPileLabel.style.color = theme.cardBackColor || '#e8f5e8';
+        }
+        
+        // Apply theme to discard pile counter
+        const discardPileCounter = document.querySelector('.discard-pile-counter');
+        if (discardPileCounter) {
+            discardPileCounter.style.color = theme.cardBackColor || '#e8f5e8';
+        }
+        
+        // Apply theme to chat elements
+        const chatMessages = document.getElementById('chat-messages');
+        if (chatMessages) {
+            // Chat messages container background can stay dark, but we'll keep it subtle
+            // Optionally use a very subtle theme color tint
+        }
+        
+        // Apply theme to chat messages
+        const chatMessageElements = document.querySelectorAll('.chat-message');
+        chatMessageElements.forEach(msg => {
+            const borderColor = this.hexToRgb(theme.border);
+            if (borderColor) {
+                msg.style.background = `rgba(${borderColor.r}, ${borderColor.g}, ${borderColor.b}, 0.2)`;
+            }
+            // Only update the message text color, NOT the player name color
+            // Player names use inline styles with unique player colors and should be preserved
+            const chatText = msg.querySelector('.chat-text');
+            if (chatText) {
+                chatText.style.color = theme.cardBackColor || '#e8f5e8';
+            } else {
+                // Fallback: if no .chat-text found, apply to message (but preserve player name inline styles)
+                msg.style.color = theme.cardBackColor || '#e8f5e8';
+            }
+        });
+        
+        // Apply theme to chat input
+        const chatInput = document.getElementById('chat-input');
+        if (chatInput) {
+            chatInput.style.borderColor = theme.border;
+            chatInput.style.color = theme.cardBackColor || '#e8f5e8';
+        }
+        
+        // Apply theme to chat emoji buttons
+        const chatEmojiButtons = document.querySelectorAll('.chat-emoji-btn');
+        chatEmojiButtons.forEach(btn => {
+            btn.style.borderColor = theme.border;
+        });
+        
+        // Update chat scrollbar thumb color
+        const style = document.createElement('style');
+        style.id = 'chat-theme-styles';
+        const existingStyle = document.getElementById('chat-theme-styles');
+        if (existingStyle) {
+            existingStyle.remove();
+        }
+        
+        const borderColor = this.hexToRgb(theme.border);
+        if (borderColor) {
+            style.textContent = `
+                .chat-messages::-webkit-scrollbar-thumb {
+                    background: rgba(${borderColor.r}, ${borderColor.g}, ${borderColor.b}, 0.5) !important;
+                }
+                .chat-messages::-webkit-scrollbar-thumb:hover {
+                    background: rgba(${borderColor.r}, ${borderColor.g}, ${borderColor.b}, 0.7) !important;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
         console.log(`Theme changed to: ${theme.name}`);
+    }
+    
+    // Helper method to convert hex color to RGB
+    hexToRgb(hex) {
+        if (!hex) return null;
+        // Remove # if present
+        hex = hex.replace('#', '');
+        
+        // Handle 3-digit hex
+        if (hex.length === 3) {
+            hex = hex.split('').map(char => char + char).join('');
+        }
+        
+        const result = /^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : null;
     }
     
     triggerConfetti() {

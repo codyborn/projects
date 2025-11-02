@@ -836,6 +836,7 @@ body.menu-open .menu-toggle-internal {
     padding: 15px;
     backdrop-filter: blur(10px);
     z-index: 0;
+    transition: border-color 0.3s ease;
 }
 
 .private-hand-header {
@@ -859,6 +860,7 @@ body.menu-open .menu-toggle-internal {
     margin: 0;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
     user-select: none;
+    transition: color 0.3s ease;
 }
 
 .player-hand-counts {
@@ -880,6 +882,7 @@ body.menu-open .menu-toggle-internal {
     color: #b8d4b8;
     font-weight: bold;
     user-select: none;
+    transition: color 0.3s ease;
 }
 
 .card-count {
@@ -892,6 +895,7 @@ body.menu-open .menu-toggle-internal {
     min-width: 20px;
     text-align: center;
     user-select: none;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .private-hand-zone {
@@ -905,17 +909,19 @@ body.menu-open .menu-toggle-internal {
     gap: 5px;
     align-items: flex-start;
     align-content: flex-start;
+    transition: border-color 0.3s ease, background-color 0.3s ease;
 }
 
 .private-hand-zone:empty::before {
     content: "Drag cards here to keep them private";
-    color: #7a9a7a;
+    color: var(--private-hand-empty-color, #7a9a7a);
     font-style: italic;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
     height: 100px;
+    transition: color 0.3s ease;
 }
 
 /* Cards in private hand should be smaller */
@@ -987,6 +993,7 @@ body.menu-open .menu-toggle-internal {
     justify-content: flex-start;
     padding: 8px;
     box-sizing: border-box;
+    transition: border-color 0.3s ease, background-color 0.3s ease;
 }
 
 .discard-pile-label {
@@ -1001,6 +1008,7 @@ body.menu-open .menu-toggle-internal {
     transform: translateX(-50%) translateY(-6px);
     pointer-events: none;
     user-select: none;
+    transition: color 0.3s ease;
 }
 
 .discard-pile-content {
@@ -1094,6 +1102,11 @@ body.menu-open .menu-toggle-internal {
     gap: 2px;
     font-size: 11px;
     line-height: 1.2;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    transition: background-color 0.3s ease;
 }
 
 .chat-messages::-webkit-scrollbar {
@@ -1122,7 +1135,12 @@ body.menu-open .menu-toggle-internal {
     animation: fadeIn 0.2s ease-in;
     word-wrap: break-word;
     opacity: 1;
-    transition: opacity 0.5s ease-out;
+    transition: opacity 0.5s ease-out, background-color 0.3s ease, color 0.3s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    cursor: default;
 }
 
 .chat-message.fading {
@@ -1136,6 +1154,45 @@ body.menu-open .menu-toggle-internal {
 
 .chat-input-container {
     display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.chat-emoji-buttons {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+}
+
+.chat-emoji-btn {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid #4a7c59;
+    border-radius: 4px;
+    font-size: 16px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease, border-color 0.3s ease;
+    padding: 0;
+    outline: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+.chat-emoji-btn:hover {
+    background: rgba(74, 124, 89, 0.4);
+    border-color: #6a9c79;
+    transform: scale(1.1);
+}
+
+.chat-emoji-btn:active {
+    transform: scale(0.95);
+    background: rgba(74, 124, 89, 0.6);
 }
 
 .chat-input {
@@ -1147,12 +1204,20 @@ body.menu-open .menu-toggle-internal {
     color: #e8f5e8;
     font-size: 12px;
     outline: none;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.3s ease, color 0.3s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 .chat-input:focus {
     border-color: #6a9c79;
     background: rgba(0, 0, 0, 0.6);
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
 }
 
 .chat-input::placeholder {
@@ -1168,4 +1233,20 @@ body.menu-open .menu-toggle-internal {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* Floating Emoji Animation */
+.floating-emoji {
+    position: fixed;
+    font-size: 80px;
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+    z-index: 10000;
+    will-change: transform, opacity;
 }
