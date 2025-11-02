@@ -842,7 +842,15 @@ body.menu-open .menu-toggle-internal {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 15px;
     margin-bottom: 10px;
+}
+
+.header-middle-section {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    min-width: 0; /* Allow shrinking */
 }
 
 .private-hand-header h3 {
@@ -1061,4 +1069,103 @@ body.menu-open .menu-toggle-internal {
     background: rgba(74, 124, 89, 1);
     transform: scale(1.1);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Chat Styles */
+.chat-container {
+    position: relative;
+    width: 100%;
+    max-width: 300px;
+    height: 60px;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 40px;
+    padding: 2px 4px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    margin-bottom: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 11px;
+    line-height: 1.2;
+}
+
+.chat-messages::-webkit-scrollbar {
+    width: 4px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 2px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: rgba(74, 124, 89, 0.5);
+    border-radius: 2px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: rgba(74, 124, 89, 0.7);
+}
+
+.chat-message {
+    padding: 2px 4px;
+    border-radius: 3px;
+    background: rgba(74, 124, 89, 0.2);
+    color: #e8f5e8;
+    animation: fadeIn 0.2s ease-in;
+    word-wrap: break-word;
+    opacity: 1;
+    transition: opacity 0.5s ease-out;
+}
+
+.chat-message.fading {
+    opacity: 0;
+}
+
+.chat-message .chat-player-name {
+    font-weight: bold;
+    margin-right: 4px;
+}
+
+.chat-input-container {
+    display: flex;
+}
+
+.chat-input {
+    flex: 1;
+    padding: 4px 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid #4a7c59;
+    border-radius: 4px;
+    color: #e8f5e8;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.chat-input:focus {
+    border-color: #6a9c79;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.chat-input::placeholder {
+    color: #7a9a7a;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

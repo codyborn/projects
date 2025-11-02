@@ -141,6 +141,11 @@ class SimpleWebSocketServer {
                 this.resetGame(message.roomCode || roomCode, playerId);
                 break;
                 
+            case 'chatMessage':
+                // Handle chat messages - broadcast to all players in room
+                this.broadcastChatMessage(roomCode, playerId, message.message || message.text || '');
+                break;
+                
             case 'gameMessage':
                 // Authoritatively handle wrapped game messages
                 if (message.data && message.data.type === 'cardState') {
@@ -168,6 +173,12 @@ class SimpleWebSocketServer {
                             data: message.data
                         }, ws);
                     }
+                } else if (message.data && message.data.type === 'chatMessage') {
+                    // Forward chat messages through gameMessage wrapper
+                    this.broadcastToRoom(roomCode, {
+                        type: 'gameMessage',
+                        data: message.data
+                    });
                 } else {
                     // Forward other game messages
                     this.broadcastToRoom(roomCode, {
@@ -705,9 +716,52 @@ class SimpleWebSocketServer {
                 roomState.gameState.deckData.cards = roomState.gameState.deckData.cards.slice(0, roomState.gameState.originalDeckSize);
             }
             
-            // Broadcast deck update
-            this.broadcastDeckUpdate(roomCode, playerId);
+            // Broadcast deck shuffle (separate message type to avoid clearing board)
+            this.broadcastDeckShuffle(roomCode, playerId);
         }
+    }
+    
+    broadcastDeckShuffle(roomCode, playerId) {
+        const roomState = this.rooms.get(roomCode);
+        if (!roomState || !roomState.gameState.deckData) return;
+        
+        this.broadcastToRoom(roomCode, {
+            type: 'gameMessage',
+            data: {
+                type: 'deckShuffled',
+                data: {
+                    deckId: roomState.gameState.deckId,
+                    deckData: roomState.gameState.deckData,
+                    originalDeckSize: roomState.gameState.originalDeckSize
+                }
+            },
+            timestamp: Date.now(),
+            sentBy: playerId
+        });
+    }
+    
+    broadcastChatMessage(roomCode, playerId, messageText) {
+        const roomState = this.rooms.get(roomCode);
+        if (!roomState) return;
+        
+        // Get player alias if available
+        const playerAlias = roomState.players.get(playerId)?.playerAlias || playerId;
+        
+        // Broadcast chat message to all players in room
+        this.broadcastToRoom(roomCode, {
+            type: 'gameMessage',
+            data: {
+                type: 'chatMessage',
+                data: {
+                    playerId: playerId,
+                    playerAlias: playerAlias,
+                    message: messageText,
+                    timestamp: Date.now()
+                }
+            },
+            timestamp: Date.now(),
+            sentBy: playerId
+        });
     }
     
     resetGame(roomCode, playerId) {

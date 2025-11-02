@@ -293,6 +293,7 @@ class CardGame {
         this.setupEventListeners();
         this.setupDeckManagementListeners();
         this.setupInfoModalListeners();
+        this.setupChatListeners();
         
         // Initialize multiplayer
         this.initializeMultiplayer();
@@ -2501,6 +2502,25 @@ class CardGame {
         });
     }
     
+    setupChatListeners() {
+        const chatInput = document.getElementById('chat-input');
+        if (!chatInput) {
+            return;
+        }
+        
+        // Send message on Enter key
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                const message = chatInput.value.trim();
+                if (message && this.multiplayer) {
+                    this.multiplayer.sendChatMessage(message);
+                    chatInput.value = '';
+                }
+            }
+        });
+    }
+    
     setupInfoModalListeners() {
         const infoToggle = document.getElementById('info-toggle');
         const controlsInfoModal = document.getElementById('controls-info-modal');
@@ -2758,13 +2778,28 @@ class CardGame {
             this.clearBoard();
         }
         
+        // Preserve originalDeckSize if this is a shuffle operation (skipClearBoard=true)
+        // During shuffle, the deck size changes but we need to keep the true original size
+        const preserveOriginalSize = skipClearBoard && this.originalDeckSize > 0;
+        const savedOriginalDeckSize = preserveOriginalSize ? this.originalDeckSize : null;
+        
         // Create deck from remote data
         this.deck = new cards.Deck(deckData);
         this.currentDeckId = 'remote';
         // Don't shuffle - server maintains deck state
         // this.deck.shuffle();
         this.dealtCards = [];
-        this.originalDeckSize = deckData.cards?.length || 0;
+        
+        // Only update originalDeckSize if this is NOT a shuffle operation
+        // For shuffles, we preserve the existing originalDeckSize
+        if (!preserveOriginalSize) {
+            this.originalDeckSize = deckData.cards?.length || 0;
+        } else {
+            // Restore the preserved original deck size
+            this.originalDeckSize = savedOriginalDeckSize;
+            console.log(`Preserved originalDeckSize during shuffle: ${this.originalDeckSize}`);
+        }
+        
         this.renderDeck();
         this.updateDeckManager();
         

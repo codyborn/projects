@@ -766,6 +766,8 @@ class WebSocketMultiplayerManager {
                     this.handleCardDealt(message.data.data, message.timestamp, message.sentBy);
                 } else if (message.data && message.data.type === 'deckChange') {
                     this.handleDeckChange(message.data.data); // data is { deckId, deckData }
+                } else if (message.data && message.data.type === 'deckShuffled') {
+                    this.handleDeckShuffled(message.data.data); // data is { deckId, deckData, originalDeckSize }
                 } else if (message.data && message.data.type === 'playerJoined') {
                     this.handlePlayerJoin(message.data.data);
                 } else if (message.data && message.data.type === 'playerLeft') {
@@ -774,6 +776,8 @@ class WebSocketMultiplayerManager {
                         this.connectedPlayers.delete(playerId);
                         this.updatePlayerCount();
                     }
+                } else if (message.data && message.data.type === 'chatMessage') {
+                    this.handleChatMessage(message.data.data); // data is { playerId, playerAlias, message, timestamp }
                 } else if (message.data && message.data.type === 'confetti') {
                     // Trigger confetti for all players
                     if (this.game && typeof this.game.showConfetti === 'function') {
@@ -1995,12 +1999,13 @@ class WebSocketMultiplayerManager {
             serverDeckName: deckData?.name
         });
         
-        // Clear board UNLESS this is just a card deal (deck size decreased by 1, same deck)
-        // Server's updateDeck() always clears state, so we must clear board too
-        // Exception: card deals preserve the newly dealt card
-        if (!isCardDeal) {
-            // Clear the board for deck changes and shuffles (server has cleared its state)
-            console.log('[DEAL] Clearing board (deck change or shuffle detected)');
+        // Clear board ONLY for explicit deck changes (different deck ID/name)
+        // Do NOT clear for card deals, shuffles, or state syncs (same deck)
+        // Card deals preserve the newly dealt card
+        // Shuffles preserve cards on the board (only discard pile cards are removed)
+        if (isExplicitDeckChange) {
+            // Clear the board only for explicit deck changes
+            console.log('[DEAL] Clearing board (explicit deck change detected)');
             if (this.game && typeof this.game.clearBoard === 'function') {
                 const cardCountBefore = document.querySelectorAll('.card').length;
                 this.game.clearBoard();
@@ -2008,7 +2013,13 @@ class WebSocketMultiplayerManager {
                 console.log('[DEAL] Board cleared - cards before:', cardCountBefore, 'after:', cardCountAfter);
             }
         } else {
-            console.log('[DEAL] NOT clearing board (card deal detected - preserving dealt card)');
+            if (isCardDeal) {
+                console.log('[DEAL] NOT clearing board (card deal detected - preserving dealt card)');
+            } else if (isShuffle) {
+                console.log('[DEAL] NOT clearing board (shuffle detected - preserving board cards)');
+            } else {
+                console.log('[DEAL] NOT clearing board (same deck - state sync)');
+            }
         }
         
         // Load the deck as a remote deck (prevents id duplicates) and use it as the active deck
@@ -2072,6 +2083,151 @@ class WebSocketMultiplayerManager {
         if (!isShuffle && !isCardDeal && isExplicitDeckChange && deckData && deckData.name) {
             this.showRemoteDeckNotification(deckData.name);
         }
+    }
+    
+    handleDeckShuffled(data) {
+        // data is { deckId, deckData, originalDeckSize? }
+        const { deckId, deckData, originalDeckSize } = data;
+        console.log('[SHUFFLE] Handling deck shuffle from server:', {
+            deckId,
+            hasDeckData: !!deckData,
+            deckDataLength: deckData?.cards?.length || 0,
+            localDeckLength: this.game?.deck?.cards?.length || 0,
+            originalDeckSize,
+            currentOriginalDeckSize: this.game?.originalDeckSize
+        });
+        
+        // Shuffle should NEVER clear the board - only discard pile cards were removed
+        // Preserve the original deck size before loading (loadRemoteDeck will try to overwrite it)
+        const preservedOriginalDeckSize = this.game?.originalDeckSize || originalDeckSize;
+        
+        if (this.game && typeof this.game.loadRemoteDeck === 'function') {
+            // Use loadRemoteDeck with skipClearBoard=true to update deck without clearing board
+            this.game.loadRemoteDeck(deckData, true); // true = skip clearing board
+            
+            // IMPORTANT: Restore originalDeckSize - use server value if provided, otherwise preserve existing
+            // The deck size after shuffle may be different from the true original size
+            if (originalDeckSize !== undefined && originalDeckSize > 0) {
+                this.game.originalDeckSize = originalDeckSize;
+                console.log(`[SHUFFLE] Updated originalDeckSize to ${originalDeckSize} (from server)`);
+            } else if (preservedOriginalDeckSize > 0) {
+                // Preserve the existing originalDeckSize (don't overwrite with post-shuffle size)
+                this.game.originalDeckSize = preservedOriginalDeckSize;
+                console.log(`[SHUFFLE] Preserved originalDeckSize: ${preservedOriginalDeckSize}`);
+            }
+            
+            // Ensure deck doesn't exceed original size
+            if (this.game.deck && this.game.originalDeckSize > 0 && 
+                this.game.deck.cards.length > this.game.originalDeckSize) {
+                console.warn(`[SHUFFLE] Deck size ${this.game.deck.cards.length} exceeds original ${this.game.originalDeckSize}, truncating`);
+                this.game.deck.cards = this.game.deck.cards.slice(0, this.game.originalDeckSize);
+            }
+            
+            // Update deck manager and render deck to refresh the UI (this updates the deck count display)
+            if (typeof this.game.renderDeck === 'function') {
+                this.game.renderDeck();
+            }
+            if (typeof this.game.updateDeckManager === 'function') {
+                this.game.updateDeckManager();
+            }
+        }
+        
+        // Update discard pile counter after shuffle (cards were removed)
+        if (this.game && typeof this.game.updateDiscardPileCounter === 'function') {
+            setTimeout(() => {
+                if (this.game && typeof this.game.updateDiscardPileCounter === 'function') {
+                    this.game.updateDiscardPileCounter();
+                }
+            }, 100);
+        }
+    }
+    
+    // Chat Methods
+    sendChatMessage(messageText) {
+        if (!this.isSocketReady() || !this.roomCode) {
+            console.warn('Cannot send chat message: not connected');
+            return;
+        }
+        
+        const trimmedMessage = messageText.trim();
+        if (!trimmedMessage) {
+            return;
+        }
+        
+        // Send chat message to server
+        this.socket.send(JSON.stringify({
+            type: 'chatMessage',
+            playerId: this.playerId,
+            roomCode: this.roomCode,
+            message: trimmedMessage
+        }));
+    }
+    
+    handleChatMessage(data) {
+        // data is { playerId, playerAlias, message, timestamp }
+        const { playerId, playerAlias, message } = data;
+        
+        if (!message || !playerId) {
+            return;
+        }
+        
+        // Use player alias if provided, otherwise get from local mapping, fallback to playerId
+        // Store the alias in our local mapping if it's different from what we have
+        if (playerAlias && playerAlias !== playerId) {
+            if (!this.playerAliases.has(playerId) || this.playerAliases.get(playerId) !== playerAlias) {
+                this.playerAliases.set(playerId, playerAlias);
+            }
+        }
+        
+        // Get display name (alias preferred, fallback to playerId)
+        const displayName = this.getPlayerDisplayName(playerId);
+        
+        // Display chat message
+        this.displayChatMessage(displayName, message, playerId === this.playerId);
+    }
+    
+    displayChatMessage(playerName, messageText, isOwnMessage = false) {
+        const chatMessages = document.getElementById('chat-messages');
+        if (!chatMessages) {
+            return;
+        }
+        
+        // Create message element
+        const messageEl = document.createElement('div');
+        messageEl.className = 'chat-message';
+        
+        // Generate player color for name
+        const playerColor = this.game ? this.game.generatePlayerColor(playerName) : '#e8f5e8';
+        
+        messageEl.innerHTML = `<span class="chat-player-name" style="color: ${playerColor}">${this.escapeHtml(playerName)}:</span><span class="chat-text">${this.escapeHtml(messageText)}</span>`;
+        
+        // Add to chat messages container
+        chatMessages.appendChild(messageEl);
+        
+        // Auto-scroll to bottom
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // Limit number of messages (keep last 10)
+        const messages = chatMessages.querySelectorAll('.chat-message');
+        if (messages.length > 10) {
+            messages[0].remove();
+        }
+        
+        // Auto-fade and remove after 10 seconds
+        setTimeout(() => {
+            messageEl.classList.add('fading');
+            setTimeout(() => {
+                if (messageEl.parentNode) {
+                    messageEl.remove();
+                }
+            }, 500); // Fade out duration
+        }, 10000);
+    }
+    
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
     
     // Helper method to compare card content
