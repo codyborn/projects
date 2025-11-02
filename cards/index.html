@@ -12,6 +12,9 @@
     <!-- Side Menu Toggle Button (always visible) -->
     <button id="menu-toggle" class="menu-toggle">☰</button>
     
+    <!-- Info Icon Button -->
+    <button id="info-toggle" class="info-toggle" title="Game Controls">𝒊</button>
+    
     <!-- Side Menu -->
     <div id="side-menu" class="side-menu">
         <div class="menu-header">
@@ -101,6 +104,54 @@
     <!-- Overlay for modals -->
     <div id="modal-overlay" class="modal-overlay"></div>
     
+    <!-- Game Controls Info Modal -->
+    <div id="controls-info-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Game Controls</h3>
+                <button id="controls-info-close" class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="controls-info-section">
+                    <h4>🃏 Deck & Cards</h4>
+                    <ul>
+                        <li><strong>Click the deck</strong> to place a card in your private hand. Private hand cards are only visible to you, but the count shows to other players.</li>
+                        <li><strong>Click acard</strong> to flip it</li>
+                        <li><strong>Drag a card</strong> to move it around the board</li>
+                        <li><strong>Right-click a card</strong> to discard it</li>
+                        <li><strong>Click 🔄 on Discard Pile</strong> to shuffle it back into the deck</li>
+                    </ul>   
+                </div>
+                
+                <div class="controls-info-section">
+                    <h4>🎯 Multi-Select</h4>
+                    <ul>
+                        <li><strong>Click and drag</strong> on empty table space to select multiple cards</li>
+                        <li><strong>Selected cards</strong> can be moved, flipped, or discarded together</li>
+                        <li><strong>Press Escape</strong> to clear selection</li>
+                    </ul>
+                </div>
+                
+                <div class="controls-info-section">
+                    <h4>👤 Player Settings</h4>
+                    <ul>
+                        <li><strong>Update alias</strong> in the side menu to change your display name</li>
+                        <li>Your name color is generated based on your alias</li>
+                    </ul>
+                </div>
+                
+                <div class="controls-info-section">
+                    <h4>⌨️ Keyboard Shortcuts</h4>
+                    <ul>
+                        <li><strong>Press <kbd>t</kbd></strong> to change theme</li>
+                        <li><strong>Press <kbd>c</kbd></strong> to trigger 🎉</li>
+                        <li><strong>Press <kbd>Escape</kbd></strong> to clear card selection</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <div id="game-container">
         <div id="card-table">
             <!-- Board Connection Status Overlay -->
@@ -143,6 +194,7 @@
 
     <!-- Load our custom card system -->
     <script src="src/shared/cards.js"></script>
+    <script src="src/shared/game-constants.js"></script>
     <script src="src/shared/StandardDeck.js"></script>
     <script src="src/shared/VirusDeck.js"></script>
     <script src="src/shared/NomadDeck.js"></script>

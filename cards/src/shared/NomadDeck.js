@@ -4,15 +4,15 @@ class NomadDeck extends Deck {
       super();
       this.name = 'THE NOMAD';
       this.description = `
-        <h3>Visit every continent. Out-plan your rivals. Don't go broke.</h3>
+        <h3>Visit every continent.<br>Out-plan your rivals.<br>Don't go broke.</h3>
         <br>
         <p>As a digital nomad, you’re always chasing adventure. But when it's a race to visit every continent, every move counts. Along the way, you'll pick up handy gear and remote gigs to fuel your travels, but linger too long in one place and your rivals will leave you in the dust.</p>
-        <p><strong>Players:</strong> 2–4 |
+        <p><strong>Players:</strong> 2–4<br>
            <strong>Goal:</strong> Score the most points by visiting cities. First player to visit all 7 continents ends the game and gains +3 bonus points.</p>
         <br>
         <h4>How to Play</h4>
         <ul>
-          <li><strong>Each turn:</strong> Play 1 card (City, Income, Item, or Event) <em>or</em> discard any number of cards, then draw until you have 3 cards.</li>
+          <li><strong>Each turn:</strong> Play 1 card (City, Income, Item, or Event) <em>or</em> discard any number of cards, then draw until you have 4 cards.</li>
           <li><strong>Travel:</strong> Your first City is free (starting point). Traveling to a new continent costs = <strong>$3,000 + $1,000 x continent hops</strong> on the mini-map. Cities on the same continent are <strong>free</strong>. Place a City card toward the middle of the board to indicate your current location.</li>
           <li><strong>Scoring:</strong> +1 point per City you visit. First to all 7 continents gains <strong>+3 points</strong> and ends the game.</li>
           <li><strong>Placing vs. Using:</strong> <em>Placing</em> an Income card or Item card from your hand consumes your turn. <em>Using</em> Income cards (spending money) or Items (activating effects) does not.</li>
@@ -24,8 +24,15 @@ class NomadDeck extends Deck {
         <h4>Card Types</h4>
         <ul>
           <li><strong>🏙️ CITIES</strong> — Play to travel and score points (1 each). Track your current continent via your latest City. Place your current City toward the middle of the board.</li>
-          <li><strong>💵 INCOME</strong> — <em>Place</em> an Income card (uses your turn) to add it to your bank account. Income cards stay on the table until you <em>spend</em> them (does not use a turn). You must spend Income cards in whole amounts.</li>
-          <li><strong>🎒 ITEMS</strong> — <em>Place</em> an Item card in your backpack (uses your turn). Your backpack starts with 3 slots. <em>Using</em> an Item's ability (persistent or discard) does not use a turn. Persistent items stay in your backpack; single-use items are discarded after use.</li>
+          <li><strong>💵 INCOME</strong> — Place an Income card (uses your turn) to add it to your bank account. Income cards stay on the table until you spend them (does not use a turn). You must spend Income cards in whole amounts.</li>
+          <li><strong>🎒 ITEMS</strong> — Place an Item card in your backpack (uses your turn). Your backpack starts with 3 slots. <em>Using</em> an Item's ability (persistent or discard) does not use a turn. Persistent items stay in your backpack; single-use items are discarded after use.<br>
+          <strong>Item Size:</strong> The number of 📦 emojis on an Item card shows how many backpack slots it uses:
+          <ul>
+            <li>📦 = 1 slot</li>
+            <li>📦📦 = 2 slots</li>
+            <li>📦📦📦 = 3 slots</li>
+          </ul>
+          </li>
           <li><strong>🌐 EVENTS</strong> — Play from hand (uses your turn) for single-use effects that immediately resolve. Consumes your turn.</li>
         </ul>
         <br>
@@ -110,10 +117,10 @@ class NomadDeck extends Deck {
       this.income('Yoga Teacher', 1000, 6, INC);
       this.income('Viral Video', 2000, 3, INC);
   
-      this.income('Consulting Job', 3000, 5, INC);
-      this.income('Online Course Launch', 3000, 3, INC);
+      this.income('Freelance Writing', 3000, 5, INC);
+      this.income('Online Course Creation', 3000, 3, INC);
   
-      this.income('Crypto Pump', 4000, 3, INC);
+      this.income('Vibe coded app', 4000, 3, INC);
       this.income('YouTuber Sponsorship', 4000, 2, INC);
   
       this.income('Executive Coaching', 5000, 1, INC);
@@ -137,30 +144,37 @@ class NomadDeck extends Deck {
         'Steal up to $3,000 from any player of your choice.');
       this.addCardType('Luggage Mixup', EVT, '🌐', 2, 
         'Swap backpack contents with any other player.');
+      this.addCardType('Travel Agent Hallucination', EVT, '🌐', 2, 
+          'Send a player to any of their previously visited cities.');
+      this.addCardType('Tourist Trap', EVT, '🌐', 2, 
+          'Take a city card from any player.');
+
       // this.addCardType('Stomach Virus', EVT, '🌐', 2,
       //   'Choose any player to discard their active Skill.');
 
       // ---------- ITEM CARDS — with color-coded brightness and hue ----------
 
     const items = [
-      { title: 'Laptop', emoji: '💻', size: 2, count: 3, desc: 'Play up to 2 Income cards per turn.', persistent: true },
-      { title: 'Travel Insurance', emoji: '🛡️', size: 2, count: 1, desc: 'Discard to ignore an Event.', persistent: false },
-      { title: 'Credit Card', emoji: '💳', size: 1, count: 2, desc: 'Discard to reduce the cost of a City by $3,000 this turn.', persistent: false },
-      { title: 'Nomad Card Game', emoji: '🃏', size: 1, count: 1, desc: 'Claim an additional 3 points at the end of the game.', persistent: true },
-      { title: 'Lock Pick', emoji: '🗝️', size: 1, count: 3, desc: 'Discard to swap 1 Item card with a player.', persistent: false },
-      { title: 'Dice', emoji: '🎲', size: 1, count: 3, desc: 'Discard to swap 2 Income cards with a player.', persistent: false },
+      { title: 'Laptop', size: 2, count: 3, desc: 'Play up to 2 Income cards per turn.', persistent: true },
+      { title: 'Travel Insurance', size: 2, count: 1, desc: 'Discard to ignore the effects of an Event on you.', persistent: false },
+      { title: 'Credit Card', size: 1, count: 2, desc: 'Discard to reduce the cost of a City by $3,000 this turn.', persistent: false },
+      { title: 'Nomad Card Game', size: 1, count: 1, desc: 'Claim an additional 3 points at the end of the game.', persistent: true },
+      { title: 'Lock Pick', size: 1, count: 3, desc: 'Discard to steal 1 Item card from a player.', persistent: false },
+      { title: 'Dice', size: 1, count: 3, desc: 'Discard to swap 1 Income card with another player.', persistent: false },
       
-      { title: 'Guidebooks', emoji: '📚', size: 2, count: 2, desc: 'Travel to new continents costs $1,000 less.', persistent: true },
-      { title: 'World Map', emoji: '🗺️', size: 2, count: 2, desc: 'Play up to 2 Cities per turn.', persistent: true },
-      { title: 'SatPhone', emoji: '🛰️', size: 2, count: 2, desc: 'Discard to travel to a previously visited City for free.', persistent: false },
+      { title: 'Guidebooks', size: 2, count: 2, desc: 'Travel to new continents costs $1,000 less.', persistent: true },
+      { title: 'World Map', size: 2, count: 2, desc: 'Play up to 2 Cities per turn.', persistent: true },
+      { title: 'SatPhone', size: 2, count: 2, desc: 'Discard to travel to a previously visited City for free.', persistent: false },
 
-      { title: 'Day Bag', emoji: '🎒', size: 2, count: 2, desc: 'Hold up to 4 cards in your hand.', persistent: true },
-      { title: 'Extra Large Backpack', emoji: '🎒', size: 2, count: 2, desc: '+3 additional item slots.', persistent: true },
+      { title: 'Day Bag', size: 2, count: 2, desc: 'Hold up to 5 cards in your hand.', persistent: true },
+      { title: 'Extra Large Backpack', size: 0, count: 2, desc: '4 total item slots.', persistent: true },
     ];
 
-    // Add all Item cards to the deck with color calculated
+    // Add all Item cards to the deck with box emojis representing size
     items.forEach(obj => {
-      this.item(obj.title, obj.emoji, obj.size, obj.count, obj.desc, obj.persistent);
+      // Generate emoji based on size: 📦 for 1, 📦📦 for 2, etc.
+      const boxEmoji = obj.size > 0 ? '📦'.repeat(obj.size) : '📦';
+      this.item(obj.title, boxEmoji, obj.size, obj.count, obj.desc, obj.persistent);
     });
 }
 
@@ -182,7 +196,8 @@ class NomadDeck extends Deck {
 
     item(title, emoji, size, count, desc, persistent) {
       const color = '#8a4af3';
-      this.addCardType(`${size}\n ${title}`, color, emoji, count, desc);
+      // Title is clean - size is represented by the emoji (box emojis)
+      this.addCardType(title, color, emoji, count, desc);
     }
   
     addCardType(title, color, emoji, count = 1, description = '', imageSize = 24) {

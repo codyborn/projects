@@ -602,6 +602,81 @@ body.menu-open .menu-toggle-internal {
     }
 }
 
+/* Info Toggle Button */
+.info-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999999; /* Same as menu toggle - always visible */
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.info-toggle:hover {
+    background: rgba(0, 0, 0, 0.9);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: scale(1.1);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+.info-toggle:active {
+    transform: scale(0.95);
+}
+
+/* Controls Info Modal Styles */
+.controls-info-section {
+    margin-bottom: 25px;
+}
+
+.controls-info-section h4 {
+    color: #4CAF50;
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
+.controls-info-section ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.controls-info-section li {
+    margin-bottom: 12px;
+    padding-left: 20px;
+    position: relative;
+    line-height: 1.6;
+    color: #e0e0e0;
+}
+
+.controls-info-section li::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.controls-info-section kbd {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
 /* Player Name Section */
 .player-name-section {
     display: inline-flex;

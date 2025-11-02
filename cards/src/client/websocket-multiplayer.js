@@ -1387,7 +1387,10 @@ class WebSocketMultiplayerManager {
         let cardElement = document.querySelector(`[data-unique-id="${uniqueId}"]`);
         
         // Also check by instanceId if uniqueId doesn't match (for dealing case)
-        if (!cardElement && card && card.instanceId) {
+        // BUT: Skip instanceId matching during state restoration to prevent card data mismatches
+        // During state restoration, if a card isn't found by uniqueId, we should create a new one
+        // rather than trying to match by instanceId (which could match the wrong card)
+        if (!cardElement && card && card.instanceId && !isServerUpdate) {
             const allCards = document.querySelectorAll('.card');
             for (const existingCard of allCards) {
                 const existingCardData = this.game.getCardFromElement(existingCard);
@@ -1426,6 +1429,9 @@ class WebSocketMultiplayerManager {
                 // Set both uniqueId and instanceId
                 cardElement.dataset.uniqueId = uniqueId;
                 cardElement.dataset.instanceId = card.instanceId;
+                
+                // Ensure card has position styling so it's visible
+                cardElement.style.position = 'absolute';
                 
                 // Determine initial container based on location
                 const cardTable = document.getElementById('card-table');
@@ -1511,7 +1517,7 @@ class WebSocketMultiplayerManager {
                               this.game.isDragging || 
                               this.game.isDraggingGroup;
             
-            if (position && !isActuallyInDiscardContainer && !isDragging) {
+            if (!isActuallyInDiscardContainer && !isDragging) {
                 // Move to card-table if needed
                 if (cardElement.parentNode === this.game.discardPileContent) {
                     const cardTable = document.getElementById('card-table');
@@ -1522,10 +1528,76 @@ class WebSocketMultiplayerManager {
                         cardTable.appendChild(cardElement);
                     }
                 }
+                
                 // Position relative to card-table
                 cardElement.style.position = 'absolute';
-                cardElement.style.left = position.x + 'px';
-                cardElement.style.top = position.y + 'px';
+                
+                // CRITICAL: All non-discard-pile cards must have a position
+                // privateTo determines visibility, but position is always needed
+                let finalPosition = null;
+                
+                // Check if we have a valid position from server
+                // Server now calculates positions for private cards, so we should always trust server positions
+                if (position && typeof position === 'object' && position.x !== undefined && position.y !== undefined) {
+                    // Check if position is not the default placeholder (0,0)
+                    // Server no longer sends (0,0) for private cards - it calculates real positions
+                    const isPlaceholderPosition = position.x === 0 && position.y === 0;
+                    const isPrivateCard = privateTo && privateTo !== null && privateTo !== 'null';
+                    
+                    // Use server position if it's not a placeholder (or if it's for a table card)
+                    if (!isPlaceholderPosition || !isPrivateCard) {
+                        // Valid position from server - use it directly
+                        finalPosition = position;
+                        console.log('[DEAL] Using server-provided position:', { uniqueId, finalPosition, privateTo });
+                    }
+                }
+                
+                // If no valid position from server, calculate one as fallback
+                // This should only happen for edge cases (e.g., old server state, state restoration issues)
+                if (!finalPosition) {
+                    const isPrivateCard = privateTo && privateTo !== null && privateTo !== 'null';
+                    
+                    if (isPrivateCard) {
+                        // Fallback: calculate position in private hand zone (shouldn't normally happen)
+                        console.warn('[DEAL] No server position for private card, calculating fallback:', { uniqueId });
+                        const privateHandZone = document.getElementById('private-hand-zone');
+                        const cardTable = document.getElementById('card-table');
+                        
+                        if (privateHandZone && cardTable && this.game && typeof this.game.findBestPositionInPrivateZone === 'function') {
+                            const zoneRect = privateHandZone.getBoundingClientRect();
+                            const tableRect = cardTable.getBoundingClientRect();
+                            finalPosition = this.game.findBestPositionInPrivateZone(zoneRect, tableRect, uniqueId);
+                            console.log('[DEAL] Calculated fallback position for private card:', { uniqueId, finalPosition });
+                        } else {
+                            // Fallback if private zone calculation fails
+                            const cardTable = document.getElementById('card-table');
+                            if (cardTable) {
+                                const tableRect = cardTable.getBoundingClientRect();
+                                finalPosition = { x: tableRect.width / 2, y: tableRect.height / 2 };
+                            }
+                        }
+                    } else {
+                        // For table cards, use center of table as fallback
+                        const cardTable = document.getElementById('card-table');
+                        if (cardTable) {
+                            const tableRect = cardTable.getBoundingClientRect();
+                            finalPosition = { x: tableRect.width / 2, y: tableRect.height / 2 };
+                            console.log('[DEAL] Using fallback position for table card:', { uniqueId, finalPosition });
+                        }
+                    }
+                }
+                
+                // Apply the position
+                // CRITICAL: All non-discard-pile cards must have a position
+                // Server now calculates positions for private cards, so we just apply them
+                if (finalPosition) {
+                    cardElement.style.left = finalPosition.x + 'px';
+                    cardElement.style.top = finalPosition.y + 'px';
+                    const isServerPosition = position && position.x !== 0 && position.y !== 0;
+                    console.log('[DEAL] Applied position to card:', { uniqueId, finalPosition, privateTo, location: cardLocation, fromServer: isServerPosition });
+                } else {
+                    console.warn('[DEAL] Could not determine position for card:', { uniqueId, privateTo, location: cardLocation });
+                }
             }
         }
         
@@ -1565,6 +1637,22 @@ class WebSocketMultiplayerManager {
             }
         }
         
+        // Set z-index first (always needed, regardless of highlighting)
+        if (normalizedZIndex !== null && !isInDiscardPile) {
+            // For non-discard-pile cards, always use the normalized z-index with !important
+            cardElement.style.setProperty('z-index', normalizedZIndex.toString(), 'important');
+        } else if (normalizedZIndex !== null && isInDiscardPile) {
+            // For discard pile cards, ensure we're using the highest z-index (already set by positionCardInDiscardPileElement)
+            const currentZIndex = parseInt(cardElement.style.zIndex || '0', 10);
+            if (currentZIndex > 0) {
+                // Keep the highest z-index that was set
+                cardElement.style.setProperty('z-index', currentZIndex.toString(), 'important');
+            } else {
+                // Fallback: use normalized z-index if somehow not set
+                cardElement.style.setProperty('z-index', normalizedZIndex.toString(), 'important');
+            }
+        }
+        
         // Highlight the card to show it has moved or been placed
         // Only highlight if this is from another player (not our own action, which was already highlighted locally)
         // Also skip highlighting for state restorations (playerId === null)
@@ -1572,36 +1660,6 @@ class WebSocketMultiplayerManager {
         
         if (shouldHighlight && this.game && typeof this.game.highlightCard === 'function') {
             this.game.highlightCard(cardElement, playerAlias);
-            
-            // For discard pile cards, positionCardInDiscardPileElement already set the highest z-index
-            // Don't override it with a potentially lower server z-index
-            // For other cards, use the normalized z-index
-            if (normalizedZIndex !== null && !isInDiscardPile) {
-                cardElement.style.setProperty('z-index', normalizedZIndex.toString(), 'important');
-            } else if (normalizedZIndex !== null && isInDiscardPile) {
-                // For discard pile cards, ensure we're using the highest z-index (already set by positionCardInDiscardPileElement)
-                const currentZIndex = parseInt(cardElement.style.zIndex || '0', 10);
-                if (currentZIndex > 0) {
-                    // Keep the highest z-index that was set
-                    cardElement.style.setProperty('z-index', currentZIndex.toString(), 'important');
-                } else {
-                    // Fallback: use normalized z-index if somehow not set
-                    cardElement.style.setProperty('z-index', normalizedZIndex.toString(), 'important');
-                }
-            }
-        } else if (normalizedZIndex !== null) {
-            // If no highlight, just set z-index normally (but preserve discard pile highest z-index)
-            if (!isInDiscardPile) {
-                cardElement.style.zIndex = normalizedZIndex.toString();
-            } else {
-                // For discard pile cards, preserve the highest z-index already set
-                const currentZIndex = parseInt(cardElement.style.zIndex || '0', 10);
-                if (currentZIndex > 0) {
-                    cardElement.style.setProperty('z-index', currentZIndex.toString(), 'important');
-                } else {
-                    cardElement.style.zIndex = normalizedZIndex.toString();
-                }
-            }
         }
         
         // Update visibility based on privateTo field
@@ -1812,36 +1870,59 @@ class WebSocketMultiplayerManager {
             shouldPositionPrivate: !isTableCard && isPrivateCard
         });
         
-        // Only position in private hand if it's NOT a table card AND has privateTo set
-        // NEVER position in private zone if this was a table card (has table position but no privateTo)
+        // Server now calculates positions for private cards
+        // Trust server-provided positions - only calculate fallback if position is missing/invalid
+        // Ensure all non-discard-pile cards have a position
         if (!isTableCard && isPrivateCard) {
-            console.log('[DEAL] handleCardDealt: Positioning card in private hand zone');
-            // Position card in private hand zone with smart positioning
-            const privateHandZone = document.getElementById('private-hand-zone');
-            if (!privateHandZone) {
-                console.error('Private hand zone not found!');
-                return;
+            // Server should provide position - only calculate if missing or invalid
+            if (!cardState.position || 
+                !cardState.position.x || 
+                !cardState.position.y ||
+                (cardState.position.x === 0 && cardState.position.y === 0)) {
+                console.warn('[DEAL] handleCardDealt: Server did not provide valid position for private card, calculating fallback');
+                
+                const privateHandZone = document.getElementById('private-hand-zone');
+                if (!privateHandZone) {
+                    console.error('Private hand zone not found!');
+                    return;
+                }
+                
+                const zoneRect = privateHandZone.getBoundingClientRect();
+                const table = document.getElementById('card-table');
+                const tableRect = table.getBoundingClientRect();
+                
+                // Find a good position for the new card (fallback only)
+                if (this.game && typeof this.game.findBestPositionInPrivateZone === 'function') {
+                    // Pass uniqueId to exclude this card from existing cards check
+                    const bestPosition = this.game.findBestPositionInPrivateZone(zoneRect, tableRect, cardState.uniqueId);
+                    cardState.position = bestPosition; // Update position for card creation
+                    console.log('[DEAL] Calculated fallback position for private card in handleCardDealt:', bestPosition);
+                }
+            } else {
+                console.log('[DEAL] handleCardDealt: Using server-provided position for private card:', cardState.position);
             }
-            
-            const zoneRect = privateHandZone.getBoundingClientRect();
-            const table = document.getElementById('card-table');
-            const tableRect = table.getBoundingClientRect();
-            
-            // Find a good position for the new card
-            if (this.game && typeof this.game.findBestPositionInPrivateZone === 'function') {
-                const bestPosition = this.game.findBestPositionInPrivateZone(zoneRect, tableRect);
-                cardState.position = bestPosition; // Update position for card creation
+        } else if (isTableCard) {
+            // For table cards, ensure position exists (fallback to center if missing)
+            if (!cardState.position || !cardState.position.x || !cardState.position.y) {
+                const table = document.getElementById('card-table');
+                if (table) {
+                    const tableRect = table.getBoundingClientRect();
+                    cardState.position = {
+                        x: tableRect.width / 2,
+                        y: tableRect.height / 2
+                    };
+                    console.log('[DEAL] Added fallback position for table card:', cardState.position);
+                }
+            } else {
+                console.log('[DEAL] handleCardDealt: Table card - using server position', { 
+                    location: cardState.location, 
+                    position: cardState.position,
+                    privateTo: cardState.privateTo,
+                    isTableCard,
+                    isPrivateCard
+                });
             }
-        } else {
-            console.log('[DEAL] handleCardDealt: Table card - using server position', { 
-                location: cardState.location, 
-                position: cardState.position,
-                privateTo: cardState.privateTo,
-                isTableCard,
-                isPrivateCard
-            });
         }
-        // For table cards, use the position provided by the server (already in cardState.position)
         
         // Use handleCardState to process the card (wraps in array format)
         // This ensures consistent handling with broadcast cardState messages
@@ -1914,11 +1995,12 @@ class WebSocketMultiplayerManager {
             serverDeckName: deckData?.name
         });
         
-        // Only clear board if it's an explicit deck change (different deckId/name)
-        // Don't clear for shuffles or card deals (these are same deck operations)
-        if (isExplicitDeckChange) {
-            // Clear the board first (new deck)
-            console.log('[DEAL] Clearing board (new deck detected)');
+        // Clear board UNLESS this is just a card deal (deck size decreased by 1, same deck)
+        // Server's updateDeck() always clears state, so we must clear board too
+        // Exception: card deals preserve the newly dealt card
+        if (!isCardDeal) {
+            // Clear the board for deck changes and shuffles (server has cleared its state)
+            console.log('[DEAL] Clearing board (deck change or shuffle detected)');
             if (this.game && typeof this.game.clearBoard === 'function') {
                 const cardCountBefore = document.querySelectorAll('.card').length;
                 this.game.clearBoard();
@@ -1926,7 +2008,7 @@ class WebSocketMultiplayerManager {
                 console.log('[DEAL] Board cleared - cards before:', cardCountBefore, 'after:', cardCountAfter);
             }
         } else {
-            console.log('[DEAL] NOT clearing board (card deal, shuffle, or same deck detected)');
+            console.log('[DEAL] NOT clearing board (card deal detected - preserving dealt card)');
         }
         
         // Load the deck as a remote deck (prevents id duplicates) and use it as the active deck

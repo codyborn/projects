@@ -292,6 +292,7 @@ class CardGame {
         // Setup event listeners
         this.setupEventListeners();
         this.setupDeckManagementListeners();
+        this.setupInfoModalListeners();
         
         // Initialize multiplayer
         this.initializeMultiplayer();
@@ -710,78 +711,43 @@ class CardGame {
         }, 1500);
     }
 
-    // Find the best position for a new card in the private hand zone
-    findBestPositionInPrivateZone(zoneRect, tableRect) {
-        // Get actual card dimensions dynamically
-        const existingCard = document.querySelector('.card');
-        let cardWidth = 76; // Default fallback
-        let cardHeight = 100; // Default fallback
-        
-        if (existingCard) {
-            const cardRect = existingCard.getBoundingClientRect();
-            cardWidth = cardRect.width;
-            cardHeight = cardRect.height;
-        }
-        
-        const spacing = 10; // Spacing between cards
+    // Simple sequential grid layout for private hand zone (fallback only - server handles real positioning)
+    findBestPositionInPrivateZone(zoneRect, tableRect, excludeUniqueId = null) {
+        const constants = window.GameConstants || {};
+        const cardWidth = constants.PRIVATE_ZONE_CARD_WIDTH || 60;
+        const cardHeight = constants.PRIVATE_ZONE_CARD_HEIGHT || 80;
+        const spacing = constants.PRIVATE_ZONE_CARD_SPACING || 25;
+        const cardYBase = constants.PRIVATE_ZONE_CARD_Y_BASE || 674;
+        const zoneLeft = constants.PRIVATE_ZONE_LEFT || 20;
         
         // Convert zone coordinates to table coordinates
-        const zoneLeft = zoneRect.left - tableRect.left;
-        const zoneTop = zoneRect.top - tableRect.top;
+        const zoneLeftRel = zoneRect.left - tableRect.left;
         const zoneWidth = zoneRect.width;
-        const zoneHeight = zoneRect.height;
         
-        // Get all existing cards in private hand zone
-        const existingCards = Array.from(document.querySelectorAll('.card')).filter(card => {
-            const privateTo = card.dataset.privateTo;
-            const currentPlayerId = this.multiplayer?.playerId;
-            if (!currentPlayerId) return false; // Require multiplayer
-            return privateTo === currentPlayerId;
-        });
-        
-        // Try to find a position that doesn't overlap with existing cards
-        const maxAttempts = 50;
-        for (let attempt = 0; attempt < maxAttempts; attempt++) {
-            // Try different positions: left to right, top to bottom
-            const cardsPerRow = Math.floor(zoneWidth / (cardWidth + spacing));
-            const row = Math.floor(attempt / cardsPerRow);
-            const col = attempt % cardsPerRow;
-            
-            const x = zoneLeft + (col * (cardWidth + spacing)) + spacing;
-            const y = zoneTop + (row * (cardHeight + spacing)) + spacing;
-            
-            // Check if this position is within the zone bounds
-            if (x + cardWidth > zoneLeft + zoneWidth || y + cardHeight > zoneTop + zoneHeight) {
-                continue; // Position is outside zone
-            }
-            
-            // Check if this position overlaps with any existing card
-            let hasOverlap = false;
-            for (const existingCard of existingCards) {
-                const existingRect = existingCard.getBoundingClientRect();
-                const existingX = existingRect.left - tableRect.left;
-                const existingY = existingRect.top - tableRect.top;
-                
-                // Check for overlap (with some padding)
-                const padding = 5;
-                if (!(x + cardWidth + padding < existingX || 
-                      x - padding > existingX + existingRect.width ||
-                      y + cardHeight + padding < existingY || 
-                      y - padding > existingY + existingRect.height)) {
-                    hasOverlap = true;
-                    break;
-                }
-            }
-            
-            if (!hasOverlap) {
-                return { x, y };
-            }
+        // Count existing cards in private zone (excluding this one)
+        const currentPlayerId = this.multiplayer?.playerId;
+        if (!currentPlayerId) {
+            // Fallback if no multiplayer
+            return { x: zoneLeftRel + spacing, y: cardYBase };
         }
         
-        // If we couldn't find a non-overlapping position, place it randomly in the zone
-        const randomX = zoneLeft + Math.random() * (zoneWidth - cardWidth);
-        const randomY = zoneTop + Math.random() * (zoneHeight - cardHeight);
-        return { x: randomX, y: randomY };
+        const existingCount = Array.from(document.querySelectorAll('.card'))
+            .filter(card => {
+                const privateTo = card.dataset.privateTo;
+                if (privateTo !== currentPlayerId) return false;
+                if (excludeUniqueId && card.dataset.uniqueId === excludeUniqueId) return false;
+                return true;
+            }).length;
+        
+        // Simple sequential grid: left to right, using server's Y base position
+        const cardsPerRow = Math.floor(zoneWidth / (cardWidth + spacing));
+        const row = Math.floor(existingCount / cardsPerRow);
+        const col = existingCount % cardsPerRow;
+        
+        const x = zoneLeftRel + (col * (cardWidth + spacing)) + spacing;
+        const y = cardYBase - (row * (cardHeight + spacing));
+        
+        return { x, y };
     }
 
     // Highlight the deck to show a card was dealt
@@ -812,26 +778,26 @@ class CardGame {
         }, 1500);
     }
 
-    // FEATURE DISABLED: Commented out table-click-to-deal feature (might want it back in future)
-    // dealCardToPosition(x, y) {
-    //     // Prevent dealing when not connected
-    //     if (!this.isConnected()) {
-    //         return;
-    //     }
-    //     
-    //     // Use server-authoritative dealing - don't touch local deck
-    //     // Server will handle card selection and deck removal
-    //     const table = document.getElementById('card-table');
-    //     const tableRect = table.getBoundingClientRect();
-    //     
-    //     // Calculate position relative to table
-    //     const relativeX = x - tableRect.left;
-    //     const relativeY = y - tableRect.top;
-    //     
-    //     // Request server to deal card to table at specified position
-    //     // Server is authoritative - it will pick the card and remove it from deck
-    //     this.multiplayer.requestDealCardToTable(relativeX, relativeY);
-    // }
+    // Deal card to a specific position on the table (for testing and programmatic use)
+    dealCardToPosition(x, y) {
+        // Prevent dealing when not connected
+        if (!this.isConnected()) {
+            return;
+        }
+        
+        // Use server-authoritative dealing - don't touch local deck
+        // Server will handle card selection and deck removal
+        const table = document.getElementById('card-table');
+        const tableRect = table.getBoundingClientRect();
+        
+        // Calculate position relative to table
+        const relativeX = x - tableRect.left;
+        const relativeY = y - tableRect.top;
+        
+        // Request server to deal card to table at specified position
+        // Server is authoritative - it will pick the card and remove it from deck
+        this.multiplayer.requestDealCardToTable(relativeX, relativeY);
+    }
 
     createCardElement(deck, card) {
         // Defensive programming - ensure card has required properties
@@ -2365,15 +2331,11 @@ class CardGame {
                 const currentPlayerId = this.multiplayer?.playerId;
                 if (!currentPlayerId) return; // Require multiplayer
                 
-                // Organize cards one by one to ensure unique positions
-                // Set privateTo first, then find position (so findBestPositionInPrivateZone can check for overlaps)
+                // Set privateTo and position cards sequentially
                 selectedCards.forEach((card, index) => {
                     card.dataset.privateTo = currentPlayerId;
-                });
-                
-                // Now find positions sequentially so each card knows about previous cards' positions
-                selectedCards.forEach(card => {
-                    const position = this.findBestPositionInPrivateZone(zoneRect, tableRect);
+                    // Simple sequential layout (server will recalculate proper positions)
+                    const position = this.findBestPositionInPrivateZone(zoneRect, tableRect, card.dataset.uniqueId);
                     card.style.left = position.x + 'px';
                     card.style.top = position.y + 'px';
                 });
@@ -2535,6 +2497,70 @@ class CardGame {
             const newAlias = e.target.value.trim();
             if (newAlias && this.multiplayer) {
                 this.multiplayer.setPlayerAlias(newAlias);
+            }
+        });
+    }
+    
+    setupInfoModalListeners() {
+        const infoToggle = document.getElementById('info-toggle');
+        const controlsInfoModal = document.getElementById('controls-info-modal');
+        const controlsInfoClose = document.getElementById('controls-info-close');
+        const modalOverlay = document.getElementById('modal-overlay');
+        
+        if (!infoToggle || !controlsInfoModal || !controlsInfoClose) {
+            return;
+        }
+        
+        // Open info modal
+        infoToggle.addEventListener('click', () => {
+            controlsInfoModal.classList.add('show');
+            if (modalOverlay) {
+                modalOverlay.classList.add('show');
+            }
+        });
+        
+        // Close info modal
+        const closeInfoModal = () => {
+            controlsInfoModal.classList.remove('show');
+            if (modalOverlay) {
+                modalOverlay.classList.remove('show');
+            }
+        };
+        
+        controlsInfoClose.addEventListener('click', closeInfoModal);
+        
+        // Close when clicking outside the modal content
+        // The modal structure is: modal (full screen container) > modal-content (actual box)
+        controlsInfoModal.addEventListener('click', (e) => {
+            // If clicking on the modal container itself (not modal-content or its children), close it
+            const modalContent = controlsInfoModal.querySelector('.modal-content');
+            if (modalContent && !modalContent.contains(e.target)) {
+                // Clicked outside modal content - close it
+                closeInfoModal();
+            }
+        });
+        
+        // Also close on overlay click (backdrop)
+        if (modalOverlay) {
+            const handleOverlayClick = (e) => {
+                // Only close if clicking the overlay directly and the controls modal is open
+                if (e.target === modalOverlay && controlsInfoModal.classList.contains('show')) {
+                    // Don't close if deck editor is also open (it uses the same overlay)
+                    const deckEditorModal = document.getElementById('deck-editor-modal');
+                    if (!deckEditorModal || !deckEditorModal.classList.contains('show')) {
+                        closeInfoModal();
+                    }
+                }
+            };
+            
+            modalOverlay.addEventListener('click', handleOverlayClick);
+        }
+        
+        // Close on Escape key (check modal first, then let other handlers process)
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && controlsInfoModal.classList.contains('show')) {
+                e.stopPropagation(); // Prevent other Escape handlers from firing
+                closeInfoModal();
             }
         });
     }

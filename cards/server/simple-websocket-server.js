@@ -374,6 +374,94 @@ class SimpleWebSocketServer {
         });
     }
     
+    /**
+     * Calculate a position for a private card that doesn't overlap with existing private cards
+     * Uses shared constants from game-constants.js to ensure consistency with client
+     */
+    findBestPositionForPrivateCard(roomState, playerId) {
+        // Import shared constants
+        const GameConstants = require('../src/shared/game-constants.js');
+        
+        const tableWidth = GameConstants.TABLE_WIDTH;
+        const tableHeight = GameConstants.TABLE_HEIGHT;
+        const zoneLeft = GameConstants.PRIVATE_ZONE_LEFT;
+        const zoneRight = GameConstants.PRIVATE_ZONE_RIGHT;
+        const zoneBottom = GameConstants.PRIVATE_ZONE_BOTTOM;
+        const zoneWidth = GameConstants.PRIVATE_ZONE_WIDTH;
+        const zoneTop = GameConstants.PRIVATE_ZONE_TOP;
+        
+        // Card dimensions in private zone (smaller than table cards)
+        const cardWidth = GameConstants.PRIVATE_ZONE_CARD_WIDTH;
+        const cardHeight = GameConstants.PRIVATE_ZONE_CARD_HEIGHT;
+        const spacing = GameConstants.PRIVATE_ZONE_CARD_SPACING;
+        const cardYBase = GameConstants.PRIVATE_ZONE_CARD_Y_BASE; // Y position to center cards (46px from bottom)
+        
+        // Get all existing cards private to this player
+        const existingPrivateCards = [];
+        for (const [uniqueId, cardState] of roomState.gameState.cards.entries()) {
+            if (cardState && cardState.privateTo === playerId && cardState.position) {
+                const pos = cardState.position;
+                if (pos && typeof pos === 'object' && pos.x !== undefined && pos.y !== undefined) {
+                    existingPrivateCards.push({
+                        x: pos.x,
+                        y: pos.y,
+                        width: cardWidth,
+                        height: cardHeight
+                    });
+                }
+            }
+        }
+        
+        // Try to find a position that doesn't overlap
+        const maxAttempts = 100; // Enough for reasonable hand sizes
+        const cardsPerRow = Math.floor(zoneWidth / (cardWidth + spacing));
+        
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            const row = Math.floor(attempt / cardsPerRow);
+            const col = attempt % cardsPerRow;
+            
+            const x = zoneLeft + (col * (cardWidth + spacing)) + spacing;
+            // Use cardYBase to center cards vertically in the zone (46px from bottom)
+            // For multiple rows, cards stack upward
+            const y = cardYBase - (row * (cardHeight + spacing));
+            
+            // Check if position is within zone bounds
+            // Card must be within zone horizontally and vertically
+            // For vertical: card can extend above zoneTop as long as bottom of card is within zone
+            // The card is valid if any part of it is within the zone boundaries
+            const cardBottom = y + cardHeight;
+            const zoneBottomY = tableHeight - zoneBottom;
+            const validHorizontally = x >= zoneLeft && x + cardWidth <= zoneLeft + zoneWidth;
+            const validVertically = y < zoneBottomY && cardBottom > zoneTop; // Card overlaps with zone
+            if (!validHorizontally || !validVertically) {
+                continue; // Position is outside zone
+            }
+            
+            // Check if this position overlaps with any existing card
+            let hasOverlap = false;
+            const padding = 5;
+            for (const existingCard of existingPrivateCards) {
+                if (!(x + cardWidth + padding < existingCard.x || 
+                      x - padding > existingCard.x + existingCard.width ||
+                      y + cardHeight + padding < existingCard.y || 
+                      y - padding > existingCard.y + existingCard.height)) {
+                    hasOverlap = true;
+                    break;
+                }
+            }
+            
+            if (!hasOverlap) {
+                return { x, y };
+            }
+        }
+        
+        // If we couldn't find a non-overlapping position, use a random position in the zone
+        // Use cardYBase as the default Y position (centered vertically)
+        const randomX = zoneLeft + Math.random() * (zoneWidth - cardWidth);
+        const randomY = cardYBase - Math.random() * Math.min(100, cardYBase - zoneTop - cardHeight);
+        return { x: randomX, y: randomY };
+    }
+    
     dealCard(ws, roomCode, playerId, position = null, location = 'private') {
         const roomState = this.validateRoomAndPlayer(ws, roomCode, playerId);
         if (!roomState) {
@@ -397,18 +485,26 @@ class SimpleWebSocketServer {
         
         // Determine position and privateTo based on location
         // If location is 'table' and position is provided, deal to table at that position
-        // Otherwise, deal to private hand (default behavior)
-        // Debug: log the exact values received
-        console.log(`[DEAL][${roomCode}] Deal request details:`, { 
-            location, 
-            locationType: typeof location,
-            locationValue: JSON.stringify(location),
-            locationIsTable: location === 'table',
-            position, 
-            hasPosition: !!position 
-        });
-        const finalPosition = (location === 'table' && position) ? position : { x: 0, y: 0 };
+        // Otherwise, deal to private hand (default behavior) and calculate position server-side
+        let finalPosition;
         const privateTo = (location === 'table') ? null : playerId; // Table cards are public
+        
+        if (location === 'table' && position) {
+            // Table card with provided position
+            finalPosition = position;
+        } else if (location === 'table') {
+            // Table card without position - use center as fallback
+            const GameConstants = require('../src/shared/game-constants.js');
+            finalPosition = { 
+                x: GameConstants.TABLE_WIDTH / 2, 
+                y: GameConstants.TABLE_HEIGHT / 2 
+            }; // Center of table
+        } else {
+            // Private card - calculate position server-side to avoid stacking
+            finalPosition = this.findBestPositionForPrivateCard(roomState, playerId);
+            console.log(`[DEAL][${roomCode}] Calculated server-side position for private card:`, finalPosition);
+        }
+        
         console.log(`[DEAL][${roomCode}] Final card state:`, { finalPosition, privateTo, location, locationIsTable: location === 'table' });
         
         // Use highest z-index + 1 for new card (ensures it's on top)
