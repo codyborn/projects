@@ -5,9 +5,109 @@
     box-sizing: border-box;
 }
 
+/* Theme variables (defaults = Forest) */
+:root {
+    --theme-background: radial-gradient(circle at center, #2d5a4a, #1a3d2e);
+    --theme-border: #4a7c59;
+    --border-rgb: 74, 124, 89;
+    --container-bg: linear-gradient(135deg, #0f4c3a, #1a5f4a);
+    --cardback-bg: linear-gradient(145deg, #1a3d2e, #2d5a4a);
+    --cardback-border: #4a7c59;
+    --cardback-color: #e8f5e8;
+    --cardback-pattern-glow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+    --badge-bg: var(--theme-border);
+    --badge-color: #ffffff;
+}
+
+body[data-theme="Ocean"] {
+    --theme-background: radial-gradient(circle at center, #1e3a8a, #1e40af);
+    --theme-border: #3b82f6;
+    --border-rgb: 59, 130, 246;
+    --container-bg: linear-gradient(135deg, #0e1b3a, #1e3a8a);
+    --cardback-bg: linear-gradient(145deg, #1e40af, #3b82f6);
+    --cardback-border: #60a5fa;
+    --cardback-color: #dbeafe;
+}
+
+body[data-theme="Sunset"] {
+    --theme-background: radial-gradient(circle at center, #dc2626, #991b1b);
+    --theme-border: #ef4444;
+    --border-rgb: 239, 68, 68;
+    --container-bg: linear-gradient(135deg, #991b1b, #dc2626);
+    --cardback-bg: linear-gradient(145deg, #dc2626, #f97316);
+    --cardback-border: #fca5a5;
+    --cardback-color: #fef3c7;
+}
+
+body[data-theme="Space"] {
+    --theme-background: radial-gradient(circle at center, #0f172a, #1e293b);
+    --theme-border: #475569;
+    --border-rgb: 71, 85, 105;
+    --container-bg: linear-gradient(135deg, #020617, #0f172a);
+    --cardback-bg: linear-gradient(145deg, #0f172a, #1e293b);
+    --cardback-border: #64748b;
+    --cardback-color: #e0e7ff;
+    --cardback-pattern-glow: 0 0 10px rgba(224, 231, 255, 0.8);
+}
+
+body[data-theme="Neon"] {
+    --theme-background: radial-gradient(circle at center, #0a0a0a, #1a1a2e);
+    --theme-border: #00ffff;
+    --border-rgb: 0, 255, 255;
+    --container-bg: linear-gradient(135deg, #000000, #0a0a0a);
+    --cardback-bg: linear-gradient(145deg, #0a0a0a, #1a1a2e);
+    --cardback-border: #00ffff;
+    --cardback-color: #00ffff;
+    --cardback-pattern-glow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+    --badge-bg: #00ffff;
+    --badge-color: #000000;
+}
+
+body[data-theme="Desert"] {
+    --theme-background: radial-gradient(circle at center, #d97706, #b45309);
+    --theme-border: #f59e0b;
+    --border-rgb: 245, 158, 11;
+    --container-bg: linear-gradient(135deg, #b45309, #d97706);
+    --cardback-bg: linear-gradient(145deg, #b45309, #d97706);
+    --cardback-border: #fbbf24;
+    --cardback-color: #fef3c7;
+}
+
+body[data-theme="Neon Pink"] {
+    --theme-background: radial-gradient(circle at center, #831843, #9f1239);
+    --theme-border: #ff10f0;
+    --border-rgb: 255, 16, 240;
+    --container-bg: linear-gradient(135deg, #701a35, #831843);
+    --cardback-bg: linear-gradient(145deg, #831843, #ec4899);
+    --cardback-border: #ff10f0;
+    --cardback-color: #fce7f3;
+    --cardback-pattern-glow: 0 0 20px #ff10f0, 0 0 40px #ff10f0;
+}
+
+body[data-theme="Underwater"] {
+    --theme-background: radial-gradient(circle at center, #0c4a6e, #075985);
+    --theme-border: #06b6d4;
+    --border-rgb: 6, 182, 212;
+    --container-bg: linear-gradient(135deg, #075985, #0c4a6e);
+    --cardback-bg: linear-gradient(145deg, #075985, #0891b2);
+    --cardback-border: #22d3ee;
+    --cardback-color: #cffafe;
+}
+
+body[data-theme="Fire"] {
+    --theme-background: radial-gradient(circle at center, #7c2d12, #9a3412);
+    --theme-border: #f97316;
+    --border-rgb: 249, 115, 22;
+    --container-bg: linear-gradient(135deg, #7c2d12, #9a3412);
+    --cardback-bg: linear-gradient(145deg, #9a3412, #dc2626);
+    --cardback-border: #fb923c;
+    --cardback-color: #fed7aa;
+    --cardback-pattern-glow: 0 0 15px rgba(249, 115, 22, 0.8);
+}
+
 body {
     font-family: 'Arial', sans-serif;
-    background: linear-gradient(135deg, #0f4c3a, #1a5f4a);
+    background: var(--container-bg, linear-gradient(135deg, #0f4c3a, #1a5f4a));
     color: white;
     min-height: 100vh;
     overflow: auto; /* Allow scrolling when content is larger than viewport */
@@ -27,8 +127,8 @@ body {
 
 #card-table {
     position: relative;
-    background: radial-gradient(circle at center, #2d5a4a, #1a3d2e);
-    border: 3px solid #4a7c59;
+    background: var(--theme-background, radial-gradient(circle at center, #2d5a4a, #1a3d2e));
+    border: 3px solid var(--theme-border, #4a7c59);
     border-radius: 10px;
     overflow: hidden;
     transition: margin-left 0.3s ease;
@@ -831,7 +931,7 @@ body.menu-open .menu-toggle-internal {
     left: 20px;
     right: 20px;
     background: rgba(0, 0, 0, 0.8);
-    border: 2px solid #4a7c59;
+    border: 2px solid var(--theme-border, #4a7c59);
     border-radius: 10px;
     padding: 15px;
     backdrop-filter: blur(10px);
@@ -855,7 +955,7 @@ body.menu-open .menu-toggle-internal {
 }
 
 .private-hand-header h3 {
-    color: #e8f5e8;
+    color: var(--cardback-color, #e8f5e8);
     font-size: 18px;
     margin: 0;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
@@ -886,8 +986,8 @@ body.menu-open .menu-toggle-internal {
 }
 
 .card-count {
-    background: #4a7c59;
-    color: white;
+    background: var(--badge-bg, var(--theme-border, #4a7c59));
+    color: var(--badge-color, #ffffff);
     padding: 4px 8px;
     border-radius: 12px;
     font-size: 14px;
@@ -898,12 +998,18 @@ body.menu-open .menu-toggle-internal {
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* Ensure strong contrast for Neon theme card-count badges */
+body[data-theme="Neon"] .card-count {
+    --badge-bg: #00ffff;
+    --badge-color: #000000;
+}
+
 .private-hand-zone {
     min-height: 120px;
-    border: 2px dashed #4a7c59;
+    border: 2px dashed var(--theme-border, #4a7c59);
     border-radius: 8px;
     padding: 10px;
-    background: rgba(74, 124, 89, 0.1);
+    background: rgba(var(--border-rgb, 74, 124, 89), 0.1);
     display: flex;
     flex-wrap: wrap;
     gap: 5px;
@@ -984,8 +1090,8 @@ body.menu-open .menu-toggle-internal {
 .discard-pile-container {
     width: 76px;
     height: 100px;
-    background: rgba(74, 124, 89, 0.3);
-    border: 2px dashed #4a7c59;
+    background: rgba(var(--border-rgb, 74, 124, 89), 0.3);
+    border: 2px dashed var(--theme-border, #4a7c59);
     border-radius: 8px;
     display: flex;
     flex-direction: column;
@@ -998,7 +1104,7 @@ body.menu-open .menu-toggle-internal {
 
 .discard-pile-label {
     font-size: 12px;
-    color: #e8f5e8;
+    color: var(--cardback-color, #e8f5e8);
     font-weight: bold;
     text-align: center;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
@@ -1044,7 +1150,7 @@ body.menu-open .menu-toggle-internal {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #e8f5e8;
+    color: var(--cardback-color, #e8f5e8);
     font-size: 14px;
     font-weight: bold;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
@@ -1060,8 +1166,8 @@ body.menu-open .menu-toggle-internal {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    border: 2px solid #4a7c59;
-    background: rgba(74, 124, 89, 0.8);
+    border: 2px solid var(--theme-border, #4a7c59);
+    background: rgba(var(--border-rgb, 74, 124, 89), 0.8);
     color: white;
     font-size: 16px;
     cursor: pointer;
@@ -1074,7 +1180,7 @@ body.menu-open .menu-toggle-internal {
 }
 
 .shuffle-btn:hover {
-    background: rgba(74, 124, 89, 1);
+    background: rgba(var(--border-rgb, 74, 124, 89), 1);
     transform: scale(1.1);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
@@ -1119,19 +1225,19 @@ body.menu-open .menu-toggle-internal {
 }
 
 .chat-messages::-webkit-scrollbar-thumb {
-    background: rgba(74, 124, 89, 0.5);
+    background: rgba(var(--border-rgb, 74, 124, 89), 0.5);
     border-radius: 2px;
 }
 
 .chat-messages::-webkit-scrollbar-thumb:hover {
-    background: rgba(74, 124, 89, 0.7);
+    background: rgba(var(--border-rgb, 74, 124, 89), 0.7);
 }
 
 .chat-message {
     padding: 2px 4px;
     border-radius: 3px;
-    background: rgba(74, 124, 89, 0.2);
-    color: #e8f5e8;
+    background: rgba(var(--border-rgb, 74, 124, 89), 0.2);
+    color: var(--cardback-color, #e8f5e8);
     animation: fadeIn 0.2s ease-in;
     word-wrap: break-word;
     opacity: 1;
@@ -1166,7 +1272,7 @@ body.menu-open .menu-toggle-internal {
 
 .chat-emoji-btn {
     background: rgba(0, 0, 0, 0.4);
-    border: 1px solid #4a7c59;
+    border: 1px solid var(--theme-border, #4a7c59);
     border-radius: 4px;
     font-size: 16px;
     width: 28px;
@@ -1185,23 +1291,23 @@ body.menu-open .menu-toggle-internal {
 }
 
 .chat-emoji-btn:hover {
-    background: rgba(74, 124, 89, 0.4);
-    border-color: #6a9c79;
+    background: rgba(var(--border-rgb, 74, 124, 89), 0.4);
+    border-color: var(--theme-border, #6a9c79);
     transform: scale(1.1);
 }
 
 .chat-emoji-btn:active {
     transform: scale(0.95);
-    background: rgba(74, 124, 89, 0.6);
+    background: rgba(var(--border-rgb, 74, 124, 89), 0.6);
 }
 
 .chat-input {
     flex: 1;
     padding: 4px 8px;
     background: rgba(0, 0, 0, 0.4);
-    border: 1px solid #4a7c59;
+    border: 1px solid var(--theme-border, #4a7c59);
     border-radius: 4px;
-    color: #e8f5e8;
+    color: var(--cardback-color, #e8f5e8);
     font-size: 12px;
     outline: none;
     transition: border-color 0.3s ease, color 0.3s ease;
@@ -1212,7 +1318,7 @@ body.menu-open .menu-toggle-internal {
 }
 
 .chat-input:focus {
-    border-color: #6a9c79;
+    border-color: var(--theme-border, #6a9c79);
     background: rgba(0, 0, 0, 0.6);
     user-select: text;
     -webkit-user-select: text;

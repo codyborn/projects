@@ -19,103 +19,8 @@ class CardGame {
         this.cardIdCounter = 0;
         this.zIndexCounter = 10000; // Start at DRAG_Z_BASE to ensure consistent ordering
         
-        // Theme system
-        this.themes = [
-            {
-                name: 'Forest',
-                background: 'radial-gradient(circle at center, #2d5a4a, #1a3d2e)',
-                border: '#4a7c59',
-                containerBackground: 'linear-gradient(135deg, #0f4c3a, #1a5f4a)',
-                cardBackBackground: 'linear-gradient(145deg, #1a3d2e, #2d5a4a)',
-                cardBackBorder: '#4a7c59',
-                cardBackPattern: '♠',
-                cardBackColor: '#e8f5e8'
-            },
-            {
-                name: 'Ocean',
-                background: 'radial-gradient(circle at center, #1e3a8a, #1e40af)',
-                border: '#3b82f6',
-                containerBackground: 'linear-gradient(135deg, #0e1b3a, #1e3a8a)',
-                cardBackBackground: 'linear-gradient(145deg, #1e40af, #3b82f6)',
-                cardBackBorder: '#60a5fa',
-                cardBackPattern: '🌊',
-                cardBackColor: '#dbeafe'
-            },
-            {
-                name: 'Sunset',
-                background: 'radial-gradient(circle at center, #dc2626, #991b1b)',
-                border: '#ef4444',
-                containerBackground: 'linear-gradient(135deg, #991b1b, #dc2626)',
-                cardBackBackground: 'linear-gradient(145deg, #dc2626, #f97316)',
-                cardBackBorder: '#fca5a5',
-                cardBackPattern: '☀',
-                cardBackColor: '#fef3c7'
-            },
-            {
-                name: 'Space',
-                background: 'radial-gradient(circle at center, #0f172a, #1e293b)',
-                border: '#475569',
-                containerBackground: 'linear-gradient(135deg, #020617, #0f172a)',
-                cardBackBackground: 'linear-gradient(145deg, #0f172a, #1e293b)',
-                cardBackBorder: '#64748b',
-                cardBackPattern: '⭐',
-                cardBackColor: '#e0e7ff',
-                cardBackPatternGlow: '0 0 10px rgba(224, 231, 255, 0.8)'
-            },
-            {
-                name: 'Neon',
-                background: 'radial-gradient(circle at center, #0a0a0a, #1a1a2e)',
-                border: '#00ffff',
-                containerBackground: 'linear-gradient(135deg, #000000, #0a0a0a)',
-                cardBackBackground: 'linear-gradient(145deg, #0a0a0a, #1a1a2e)',
-                cardBackBorder: '#00ffff',
-                cardBackPattern: '⚡',
-                cardBackColor: '#00ffff',
-                cardBackPatternGlow: '0 0 20px #00ffff, 0 0 40px #00ffff'
-            },
-            {
-                name: 'Desert',
-                background: 'radial-gradient(circle at center, #d97706, #b45309)',
-                border: '#f59e0b',
-                containerBackground: 'linear-gradient(135deg, #b45309, #d97706)',
-                cardBackBackground: 'linear-gradient(145deg, #b45309, #d97706)',
-                cardBackBorder: '#fbbf24',
-                cardBackPattern: '🌵',
-                cardBackColor: '#fef3c7'
-            },
-            {
-                name: 'Neon Pink',
-                background: 'radial-gradient(circle at center, #831843, #9f1239)',
-                border: '#ff10f0',
-                containerBackground: 'linear-gradient(135deg, #701a35, #831843)',
-                cardBackBackground: 'linear-gradient(145deg, #831843, #ec4899)',
-                cardBackBorder: '#ff10f0',
-                cardBackPattern: '🦄',
-                cardBackColor: '#fce7f3',
-                cardBackPatternGlow: '0 0 20px #ff10f0, 0 0 40px #ff10f0'
-            },
-            {
-                name: 'Underwater',
-                background: 'radial-gradient(circle at center, #0c4a6e, #075985)',
-                border: '#06b6d4',
-                containerBackground: 'linear-gradient(135deg, #075985, #0c4a6e)',
-                cardBackBackground: 'linear-gradient(145deg, #075985, #0891b2)',
-                cardBackBorder: '#22d3ee',
-                cardBackPattern: '🐙',
-                cardBackColor: '#cffafe'
-            },
-            {
-                name: 'Fire',
-                background: 'radial-gradient(circle at center, #7c2d12, #9a3412)',
-                border: '#f97316',
-                containerBackground: 'linear-gradient(135deg, #7c2d12, #9a3412)',
-                cardBackBackground: 'linear-gradient(145deg, #9a3412, #dc2626)',
-                cardBackBorder: '#fb923c',
-                cardBackPattern: '🔥',
-                cardBackColor: '#fed7aa',
-                cardBackPatternGlow: '0 0 15px rgba(249, 115, 22, 0.8)'
-            }
-        ];
+        // Theme system (centralized in src/shared/themes.js)
+        this.themes = (typeof window !== 'undefined' && window.Themes) ? window.Themes : [];
         this.currentThemeIndex = 0;
         
         // Discard pile elements (will be initialized if present in HTML)
@@ -3078,212 +2983,29 @@ class CardGame {
     }
     
     applyTheme(theme) {
-        const cardTable = document.getElementById('card-table');
-        const gameContainer = document.getElementById('game-container');
-        
-        if (!cardTable) return;
-        
-        // Apply theme styles to board
-        cardTable.style.background = theme.background;
-        cardTable.style.borderColor = theme.border;
-        
-        // Apply theme to game container background
-        if (gameContainer && theme.containerBackground) {
-            gameContainer.style.background = theme.containerBackground;
-        }
-        
-        // Also update body background to match theme
-        if (theme.containerBackground) {
-            document.body.style.background = theme.containerBackground;
-        }
-        
-        // Apply theme to all card backs
-        const cardBacks = document.querySelectorAll('.card-back');
-        cardBacks.forEach(cardBack => {
-            cardBack.style.background = theme.cardBackBackground;
-            cardBack.style.borderColor = theme.cardBackBorder;
-        });
-        
-        // Apply theme to card back patterns (center and corners)
+        // Use data-theme to drive styling via CSS variables
+        document.body.dataset.theme = theme.name;
+
+        // Update card-back pattern symbols (text content only)
         const cardBackCenters = document.querySelectorAll('.card-back-center');
         const cardBackCorners = document.querySelectorAll('.card-back-corners .corner');
-        
-        cardBackCenters.forEach(center => {
-            center.textContent = theme.cardBackPattern;
-            center.style.color = theme.cardBackColor;
-            if (theme.cardBackPatternGlow) {
-                center.style.textShadow = theme.cardBackPatternGlow;
-            } else {
-                center.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
-            }
+        cardBackCenters.forEach(center => { center.textContent = theme.cardBackPattern; });
+        cardBackCorners.forEach(corner => { corner.textContent = theme.cardBackPattern; });
+
+        // Clear any inline theme styles set previously on dynamic elements
+        const elementsToClear = [
+            '#card-table', '#game-container', '.card-back', '.discard-pile-container',
+            '.discard-pile-label', '.discard-pile-counter', '.private-hand-header h3',
+            '.private-hand-zone', '.card-count', '#chat-input', '.chat-emoji-btn', '.chat-message'
+        ];
+        elementsToClear.forEach(sel => {
+            document.querySelectorAll(sel).forEach(el => el.removeAttribute('style'));
         });
-        
-        cardBackCorners.forEach(corner => {
-            corner.textContent = theme.cardBackPattern;
-            corner.style.color = theme.cardBackColor;
-            if (theme.cardBackPatternGlow) {
-                corner.style.textShadow = theme.cardBackPatternGlow;
-            } else {
-                corner.style.textShadow = '1px 1px 2px rgba(0, 0, 0, 0.7)';
-            }
-        });
-        
-        // Update deck element (it uses .card-back class)
-        const deckElement = document.querySelector('.deck');
-        if (deckElement) {
-            const deckCardBack = deckElement.querySelector('.card-back');
-            if (deckCardBack) {
-                deckCardBack.style.background = theme.cardBackBackground;
-                deckCardBack.style.borderColor = theme.cardBackBorder;
-                
-                const deckCenter = deckCardBack.querySelector('.card-back-center');
-                const deckCorners = deckCardBack.querySelectorAll('.card-back-corners .corner');
-                
-                if (deckCenter) {
-                    deckCenter.textContent = theme.cardBackPattern;
-                    deckCenter.style.color = theme.cardBackColor;
-                    if (theme.cardBackPatternGlow) {
-                        deckCenter.style.textShadow = theme.cardBackPatternGlow;
-                    } else {
-                        deckCenter.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
-                    }
-                }
-                
-                deckCorners.forEach(corner => {
-                    corner.textContent = theme.cardBackPattern;
-                    corner.style.color = theme.cardBackColor;
-                    if (theme.cardBackPatternGlow) {
-                        corner.style.textShadow = theme.cardBackPatternGlow;
-                    } else {
-                        corner.style.textShadow = '1px 1px 2px rgba(0, 0, 0, 0.7)';
-                    }
-                });
-            }
-        }
-        
-        // Apply theme to private hand area
-        const privateHandArea = document.getElementById('private-hand-area');
-        if (privateHandArea) {
-            // Use a darker, semi-transparent version of the border color for background
-            privateHandArea.style.borderColor = theme.border;
-        }
-        
-        // Apply theme to private hand zone
-        const privateHandZone = document.getElementById('private-hand-zone');
-        if (privateHandZone) {
-            // Convert border color to RGB for rgba background
-            const borderColor = this.hexToRgb(theme.border);
-            if (borderColor) {
-                privateHandZone.style.borderColor = theme.border;
-                privateHandZone.style.background = `rgba(${borderColor.r}, ${borderColor.g}, ${borderColor.b}, 0.1)`;
-                
-                // Update empty state text color using CSS variable
-                // Create a lighter, more muted version of the border color
-                const emptyR = Math.min(255, borderColor.r + 100);
-                const emptyG = Math.min(255, borderColor.g + 100);
-                const emptyB = Math.min(255, borderColor.b + 100);
-                privateHandZone.style.setProperty('--private-hand-empty-color', `rgb(${emptyR}, ${emptyG}, ${emptyB})`);
-            }
-        }
-        
-        // Apply theme to private hand header text
-        const privateHandHeader = document.querySelector('.private-hand-header h3');
-        if (privateHandHeader) {
-            privateHandHeader.style.color = theme.cardBackColor || '#e8f5e8';
-        }
-        
-        // Apply theme to card count badges
-        const cardCounts = document.querySelectorAll('.card-count');
-        cardCounts.forEach(count => {
-            count.style.background = theme.border;
-            count.style.color = theme.cardBackColor || '#ffffff';
-        });
-        
-        // NOTE: Player IDs should NOT get theme colors - they use unique player colors
-        // generated from aliases via generatePlayerColor(). Inline styles set by
-        // updatePrivateHandDisplay() will preserve player-specific colors.
-        
-        // Apply theme to discard pile
-        const discardPileContainer = document.querySelector('.discard-pile-container');
-        if (discardPileContainer) {
-            const borderColor = this.hexToRgb(theme.border);
-            if (borderColor) {
-                discardPileContainer.style.borderColor = theme.border;
-                discardPileContainer.style.background = `rgba(${borderColor.r}, ${borderColor.g}, ${borderColor.b}, 0.3)`;
-            }
-        }
-        
-        // Apply theme to discard pile label
-        const discardPileLabel = document.querySelector('.discard-pile-label');
-        if (discardPileLabel) {
-            discardPileLabel.style.color = theme.cardBackColor || '#e8f5e8';
-        }
-        
-        // Apply theme to discard pile counter
-        const discardPileCounter = document.querySelector('.discard-pile-counter');
-        if (discardPileCounter) {
-            discardPileCounter.style.color = theme.cardBackColor || '#e8f5e8';
-        }
-        
-        // Apply theme to chat elements
-        const chatMessages = document.getElementById('chat-messages');
-        if (chatMessages) {
-            // Chat messages container background can stay dark, but we'll keep it subtle
-            // Optionally use a very subtle theme color tint
-        }
-        
-        // Apply theme to chat messages
-        const chatMessageElements = document.querySelectorAll('.chat-message');
-        chatMessageElements.forEach(msg => {
-            const borderColor = this.hexToRgb(theme.border);
-            if (borderColor) {
-                msg.style.background = `rgba(${borderColor.r}, ${borderColor.g}, ${borderColor.b}, 0.2)`;
-            }
-            // Only update the message text color, NOT the player name color
-            // Player names use inline styles with unique player colors and should be preserved
-            const chatText = msg.querySelector('.chat-text');
-            if (chatText) {
-                chatText.style.color = theme.cardBackColor || '#e8f5e8';
-            } else {
-                // Fallback: if no .chat-text found, apply to message (but preserve player name inline styles)
-                msg.style.color = theme.cardBackColor || '#e8f5e8';
-            }
-        });
-        
-        // Apply theme to chat input
-        const chatInput = document.getElementById('chat-input');
-        if (chatInput) {
-            chatInput.style.borderColor = theme.border;
-            chatInput.style.color = theme.cardBackColor || '#e8f5e8';
-        }
-        
-        // Apply theme to chat emoji buttons
-        const chatEmojiButtons = document.querySelectorAll('.chat-emoji-btn');
-        chatEmojiButtons.forEach(btn => {
-            btn.style.borderColor = theme.border;
-        });
-        
-        // Update chat scrollbar thumb color
-        const style = document.createElement('style');
-        style.id = 'chat-theme-styles';
+
+        // Remove old dynamic scrollbar style, CSS handles colors now
         const existingStyle = document.getElementById('chat-theme-styles');
-        if (existingStyle) {
-            existingStyle.remove();
-        }
-        
-        const borderColor = this.hexToRgb(theme.border);
-        if (borderColor) {
-            style.textContent = `
-                .chat-messages::-webkit-scrollbar-thumb {
-                    background: rgba(${borderColor.r}, ${borderColor.g}, ${borderColor.b}, 0.5) !important;
-                }
-                .chat-messages::-webkit-scrollbar-thumb:hover {
-                    background: rgba(${borderColor.r}, ${borderColor.g}, ${borderColor.b}, 0.7) !important;
-                }
-            `;
-            document.head.appendChild(style);
-        }
-        
+        if (existingStyle) existingStyle.remove();
+
         console.log(`Theme changed to: ${theme.name}`);
     }
     
