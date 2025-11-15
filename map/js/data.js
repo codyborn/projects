@@ -35,7 +35,8 @@ const cities = [
     subtitle: 'Marseille, Toulon, St Tropez',
     dates: 'May 12th - Jun 7th', 
     duration: '26 days',
-    islandImg: './images/hyeres.gif',
+    islandImg: './images/hyeres.png',
+    islandGif: './images/hyeres.gif',
     blog: './posts/hyeres.md',
     blogTitle: 'Bread is the answer',
     size: 160
@@ -54,7 +55,8 @@ const cities = [
     name: 'Cannes', 
     dates: 'Jun 28th - Jul 6th', 
     duration: '8 days',
-    islandImg: './images/cannes.gif',
+    islandImg: './images/cannes.png',
+    islandGif: './images/cannes.gif',
     size: 160
   },
   { 
@@ -79,7 +81,8 @@ const cities = [
     name: 'Lisbon', 
     dates: 'Sep 13th - Sep 21st', 
     duration: '9 days',
-    islandImg: './images/lisbon.gif',
+    islandImg: './images/lisbon.png',
+    islandGif: './images/lisbon.gif',
     size: 150
   },
   { 
@@ -100,21 +103,15 @@ const cities = [
     name: 'Patagonia',
     dates: 'Oct 18th - Nov 15th', 
     duration: '28 days',
-    islandImg: './images/patagonia.gif',
+    islandImg: './images/patagonia.png',
+    islandGif: './images/patagonia.gif',
     size: 180
   },
   { 
     name: 'Buenos Aires', 
-    dates: 'Nov 15th - Nov 22nd', 
-    duration: '7 days',
+    dates: 'Nov 15th - ???', 
+    duration: '? days',
     islandImg: './images/buenos_aires.png',
-    size: 160
-  },
-  { 
-    name: 'Antarctica', 
-    dates: 'Nov 22nd - Dec 1st', 
-    duration: '12 days',
-    islandImg: './images/antarctica.gif',
     size: 160
   },
   { 

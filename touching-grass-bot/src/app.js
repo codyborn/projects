@@ -155,6 +155,40 @@ slackApp.event('app_mention', async ({ event, client }) => {
   }
 })
 
+// Helper function to get message author
+async function getMessageAuthor (client, channelId, messageTs) {
+  try {
+    const result = await client.conversations.history({
+      channel: channelId,
+      latest: messageTs,
+      inclusive: true,
+      limit: 1
+    })
+
+    if (result.messages && result.messages.length > 0) {
+      return result.messages[0].user
+    } else {
+      // Try thread replies if it's a threaded message
+      if (messageTs && messageTs.includes('.')) {
+        const [parentTs] = messageTs.split('.')
+        const threadResult = await client.conversations.replies({
+          channel: channelId,
+          ts: parentTs,
+          latest: messageTs,
+          inclusive: true,
+          limit: 1
+        })
+        if (threadResult.messages && threadResult.messages.length > 0) {
+          return threadResult.messages[0].user
+        }
+      }
+    }
+  } catch (error) {
+    logger.error(`Error fetching message author: ${error.message}`)
+  }
+  return null
+}
+
 // Handle reaction_added events
 slackApp.event('reaction_added', async ({ event, client }) => {
   try {
@@ -187,6 +221,19 @@ slackApp.event('reaction_added', async ({ event, client }) => {
 
     logger.info(`Detected +2 reaction: ${reaction} (normalized: ${normalizedReaction})`)
 
+    // Get message author to check for self-reactions
+    const messageAuthor = await getMessageAuthor(client, item.channel, item.ts)
+    if (!messageAuthor) {
+      logger.warn(`Could not find message author for message ${item.ts} in channel ${item.channel}`)
+      return
+    }
+
+    // Filter out self-reactions (user reacting to their own message)
+    if (event.user === messageAuthor) {
+      logger.debug(`Skipping self-reaction: user ${event.user} reacted to their own message ${item.ts}`)
+      return
+    }
+
     const photoService = require('./services/photoService')
     const userService = require('./services/userService')
 
@@ -194,44 +241,8 @@ slackApp.event('reaction_added', async ({ event, client }) => {
     let photo = await photoService.getPhotoByMessageTsAndChannel(item.ts, item.channel)
 
     if (!photo) {
-      // Get the message to find the author
-      let messageAuthor = null
-      try {
-        const result = await client.conversations.history({
-          channel: item.channel,
-          latest: item.ts,
-          inclusive: true,
-          limit: 1
-        })
 
-        if (result.messages && result.messages.length > 0) {
-          messageAuthor = result.messages[0].user
-        } else {
-          // Try thread replies if it's a threaded message
-          if (item.ts && item.ts.includes('.')) {
-            const [parentTs] = item.ts.split('.')
-            const threadResult = await client.conversations.replies({
-              channel: item.channel,
-              ts: parentTs,
-              latest: item.ts,
-              inclusive: true,
-              limit: 1
-            })
-            if (threadResult.messages && threadResult.messages.length > 0) {
-              messageAuthor = threadResult.messages[0].user
-            }
-          }
-        }
-      } catch (error) {
-        logger.error(`Error fetching message author: ${error.message}`)
-      }
-
-      if (!messageAuthor) {
-        logger.warn(`Could not find message author for message ${item.ts} in channel ${item.channel}`)
-        return
-      }
-
-      // Get or create user for the message author
+      // Get or create user for the message author (not the reaction user)
       const userInfo = await client.users.info({ user: messageAuthor })
       const slackUserData = {
         slack_user_id: messageAuthor,
@@ -320,6 +331,19 @@ slackApp.event('reaction_removed', async ({ event, client }) => {
                     normalizedReaction.includes('thumbsup')
 
     if (!isPlus2) {
+      return
+    }
+
+    // Get message author to check for self-reactions
+    const messageAuthor = await getMessageAuthor(client, item.channel, item.ts)
+    if (!messageAuthor) {
+      logger.warn(`Could not find message author for message ${item.ts} in channel ${item.channel}`)
+      return
+    }
+
+    // Filter out self-reactions (user removing reaction from their own message)
+    if (event.user === messageAuthor) {
+      logger.debug(`Skipping self-reaction removal: user ${event.user} removed reaction from their own message ${item.ts}`)
       return
     }
 

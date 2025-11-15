@@ -19,6 +19,16 @@ async function handleGrassCommand (message, client) {
       return
     }
 
+    // Check for test mode - if message includes "test", skip database updates
+    const baseText = (message.text || '').toLowerCase()
+    const fileTexts = (files || []).flatMap(f => {
+      const initial = (f.initial_comment && f.initial_comment.comment) ? f.initial_comment.comment.toLowerCase() : ''
+      const title = (f.title || '').toLowerCase()
+      return [initial, title]
+    })
+    const combinedText = [baseText, ...fileTexts].join(' ')
+    const isTestMode = combinedText.includes('test')
+
     // Get user info from Slack
     const userInfo = await client.users.info({ user: slackUserId })
     const slackUserData = {
@@ -27,35 +37,45 @@ async function handleGrassCommand (message, client) {
       display_name: userInfo.user.profile.display_name || userInfo.user.real_name || userInfo.user.name
     }
 
-    // Create or update user in database
-    const user = await userService.createOrUpdateUser(slackUserData)
-
-    // Check if this photo was already submitted
-    const existingPhoto = await photoService.getPhotoByMessageTs(messageTs)
-    if (existingPhoto) {
-      await client.chat.postMessage({
-        channel,
-        text: 'This photo has already been counted! :grass:',
-        thread_ts: messageTs
-      })
-      return
-    }
-
-    // Record the photo submission
+    // Get image URL (needed for both test mode and normal mode)
     const imageUrl = files[0].url_private || files[0].permalink
-    await photoService.recordPhotoSubmission({
-      user_id: user.id,
-      slack_message_ts: messageTs,
-      slack_channel_id: channel,
-      image_url: imageUrl,
-      points_awarded: 1
-    })
 
-    // Increment user points
-    const updatedUser = await userService.incrementUserPoints(user.id, 1)
+    let user = null
+    let updatedUser = null
+    let userRank = null
 
-    // Get user's current rank
-    const userRank = await leaderboardService.getUserRank(slackUserId)
+    if (!isTestMode) {
+      // Create or update user in database
+      user = await userService.createOrUpdateUser(slackUserData)
+
+      // Check if this photo was already submitted
+      const existingPhoto = await photoService.getPhotoByMessageTs(messageTs)
+      if (existingPhoto) {
+        await client.chat.postMessage({
+          channel,
+          text: 'This photo has already been counted! :grass:',
+          thread_ts: messageTs
+        })
+        return
+      }
+
+      // Record the photo submission
+      await photoService.recordPhotoSubmission({
+        user_id: user.id,
+        slack_message_ts: messageTs,
+        slack_channel_id: channel,
+        image_url: imageUrl,
+        points_awarded: 1
+      })
+
+      // Increment user points
+      updatedUser = await userService.incrementUserPoints(user.id, 1)
+
+      // Get user's current rank
+      userRank = await leaderboardService.getUserRank(slackUserId)
+    } else {
+      logger.info(`Test mode detected for message ${messageTs} by user ${slackUserData.slack_username}`)
+    }
 
     // Helper function to check for grass keywords
     function containsGrassKeyword (text) {
@@ -86,8 +106,9 @@ async function handleGrassCommand (message, client) {
     const userFirstName = getFirstName(slackUserData.display_name || slackUserData.slack_username)
 
     // Extract user's comment/caption from message (excluding grass keywords and filenames)
-    const baseText = (message.text || '').trim()
-    const fileTexts = (message.files || []).flatMap(f => {
+    // Reuse baseText from test mode detection above
+    const commentBaseText = (message.text || '').trim()
+    const commentFileTexts = (message.files || []).flatMap(f => {
       const initial = (f.initial_comment && f.initial_comment.comment) ? f.initial_comment.comment : ''
       const title = f.title || ''
       // Filter out grass keywords and filenames
@@ -96,7 +117,7 @@ async function handleGrassCommand (message, client) {
         .join(' ')
       return filtered
     })
-    const userComment = [baseText, ...fileTexts].filter(t => t && !containsGrassKeyword(t) && !isFilename(t)).join(' ').trim()
+    const userComment = [commentBaseText, ...commentFileTexts].filter(t => t && !containsGrassKeyword(t) && !isFilename(t)).join(' ').trim()
 
     // Try to get AI comment on the photo
     let aiComment = null
@@ -113,8 +134,6 @@ async function handleGrassCommand (message, client) {
 
     // Build response message with user's name
     const userName = slackUserData.display_name || slackUserData.slack_username
-    const pointsText = updatedUser.total_points === 1 ? 'point' : 'points'
-
     let responseText = ''
 
     // Add AI comment if available
@@ -122,15 +141,22 @@ async function handleGrassCommand (message, client) {
       responseText += `${aiComment}`
     }
 
-    responseText += `\n\n:grass: Great job touching grass, ${userName}! You now have ${updatedUser.total_points} ${pointsText}. You're currently ranked #${userRank}!`
+    if (isTestMode) {
+      // Test mode response - no database updates
+      responseText += `\n\n:grass: Test mode - Great job touching grass, ${userName}! (No points awarded in test mode)`
+      logger.info(`Test mode photo processed by ${slackUserData.slack_username} - no database updates`)
+    } else {
+      // Normal mode response with points and rank
+      const pointsText = updatedUser.total_points === 1 ? 'point' : 'points'
+      responseText += `\n\n:grass: Great job touching grass, ${userName}! You now have ${updatedUser.total_points} ${pointsText}. You're currently ranked #${userRank}!`
+      logger.info(`Photo submitted by ${slackUserData.slack_username}: ${updatedUser.total_points} points`)
+    }
 
     await client.chat.postMessage({
       channel,
       text: responseText,
       thread_ts: messageTs
     })
-
-    logger.info(`Photo submitted by ${slackUserData.slack_username}: ${updatedUser.total_points} points`)
   } catch (error) {
     logger.error('Error handling grass command:', error)
 

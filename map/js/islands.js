@@ -17,6 +17,42 @@ function preloadImages() {
   });
 }
 
+// Load GIFs after PNG images are loaded (for better experience on slow connections)
+function loadGifsAfterImages() {
+  // Wait for all PNG images to be loaded first
+  const islandImages = Array.from(document.querySelectorAll('.island img'));
+  const imagePromises = islandImages.map(img => {
+    if (img.complete) {
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      img.addEventListener('load', resolve, { once: true });
+      img.addEventListener('error', resolve, { once: true });
+    });
+  });
+  
+  Promise.all(imagePromises).then(() => {
+    // All PNG images are loaded, now attempt to load GIFs
+    cities.forEach((cityObj, index) => {
+      if (cityObj.islandGif) {
+        const gifImg = new Image();
+        gifImg.onload = () => {
+          // Replace PNG with GIF once it's loaded
+          const islandDiv = document.querySelectorAll('.island')[index];
+          if (islandDiv) {
+            const imgElement = islandDiv.querySelector('img');
+            if (imgElement) {
+              imgElement.src = cityObj.islandGif;
+            }
+          }
+        };
+        // Don't handle errors - if GIF fails to load, just keep the PNG
+        gifImg.src = cityObj.islandGif;
+      }
+    });
+  });
+}
+
 // Start preloading immediately
 preloadImages();
 
@@ -93,6 +129,9 @@ function renderIslands() {
         if (typeof scrollToCurrentIsland === 'function') {
             scrollToCurrentIsland();
         }
+        
+        // Start loading GIFs after PNG images are loaded
+        loadGifsAfterImages();
     });
   };
   

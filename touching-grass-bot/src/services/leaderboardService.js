@@ -12,7 +12,9 @@ class LeaderboardService {
       let result
 
       if (period === 'weekly' || period === 'week') {
-        dateFilter = 'AND p.created_at >= NOW() - INTERVAL \'7 days\''
+        // Current calendar week: Sunday 00:00:00 to Saturday 23:59:59
+        // date_trunc('week', ...) returns Monday, so we shift to get Sunday
+        dateFilter = `AND p.created_at >= (date_trunc('week', NOW() + interval '1 day') - interval '1 day')`
         periodLabel = 'This Week'
         const sql = `
           SELECT 
@@ -31,7 +33,11 @@ class LeaderboardService {
         `
         result = await query(sql, [limit])
       } else if (period === 'last_week' || period === 'lastweek' || period === 'last-week') {
-        dateFilter = 'AND p.created_at >= NOW() - INTERVAL \'14 days\' AND p.created_at < NOW() - INTERVAL \'7 days\''
+        // Previous calendar week: Last Sunday 00:00:00 to Last Saturday 23:59:59
+        // Start of last week: 8 days before current week start
+        // End of last week: 1 day before current week start (just before Sunday)
+        dateFilter = `AND p.created_at >= (date_trunc('week', NOW() + interval '1 day') - interval '8 days')
+                      AND p.created_at < (date_trunc('week', NOW() + interval '1 day') - interval '1 day')`
         periodLabel = 'Last Week'
         const sql = `
           SELECT 
@@ -207,9 +213,8 @@ class LeaderboardService {
     leaderboard.forEach((user, index) => {
       const emoji = emojis[index] || `${index + 1}.`
       const pointsText = user.points === 1 ? 'point' : 'points'
-      const photosText = user.photos === 1 ? 'photo' : 'photos'
 
-      message += `${emoji} *${user.username}* - ${user.points} ${pointsText} (${user.photos} ${photosText})\n`
+      message += `${emoji} *${user.username}* - ${user.points} ${pointsText}\n`
     })
 
     message += '\nPost a photo with "grass" to join the leaderboard! :grass:'
@@ -223,9 +228,12 @@ class LeaderboardService {
 
       let dateFilter = ''
       if (period === 'weekly' || period === 'week') {
-        dateFilter = 'AND p.created_at >= NOW() - INTERVAL \'7 days\''
+        // Current calendar week: Sunday 00:00:00 to Saturday 23:59:59
+        dateFilter = `AND p.created_at >= (date_trunc('week', NOW() + interval '1 day') - interval '1 day')`
       } else if (period === 'last_week' || period === 'lastweek' || period === 'last-week') {
-        dateFilter = 'AND p.created_at >= NOW() - INTERVAL \'14 days\' AND p.created_at < NOW() - INTERVAL \'7 days\''
+        // Previous calendar week: Last Sunday 00:00:00 to Last Saturday 23:59:59
+        dateFilter = `AND p.created_at >= (date_trunc('week', NOW() + interval '1 day') - interval '8 days')
+                      AND p.created_at < (date_trunc('week', NOW() + interval '1 day') - interval '1 day')`
       } else if (period === 'monthly' || period === 'month') {
         dateFilter = 'AND p.created_at >= NOW() - INTERVAL \'30 days\''
       }
@@ -233,32 +241,28 @@ class LeaderboardService {
 
       const result = await query(`
         SELECT 
-          p.id,
-          p.slack_message_ts,
-          p.slack_channel_id,
-          p.plus2_reactions_count,
-          p.created_at,
           u.slack_user_id,
           u.slack_username,
-          u.display_name
+          u.display_name,
+          SUM(p.plus2_reactions_count) as total_reactions,
+          COUNT(p.id) as post_count
         FROM photos p
         JOIN users u ON p.user_id = u.id
         WHERE p.plus2_reactions_count > 0
         ${dateFilter}
-        ORDER BY p.plus2_reactions_count DESC, p.created_at DESC
+        GROUP BY u.id, u.slack_user_id, u.slack_username, u.display_name
+        ORDER BY total_reactions DESC, post_count DESC
         LIMIT $1
       `, [limit])
 
       return {
         period,
-        posts: result.rows.map((post, index) => ({
+        posts: result.rows.map((user, index) => ({
           rank: index + 1,
-          username: post.display_name || post.slack_username,
-          reactions: parseInt(post.plus2_reactions_count) || 0,
-          slack_user_id: post.slack_user_id,
-          message_ts: post.slack_message_ts,
-          channel_id: post.slack_channel_id,
-          created_at: post.created_at
+          username: user.display_name || user.slack_username,
+          reactions: parseInt(user.total_reactions) || 0,
+          post_count: parseInt(user.post_count) || 0,
+          slack_user_id: user.slack_user_id
         }))
       }
     } catch (error) {
