@@ -438,8 +438,37 @@ class CardGame {
         deckElement.style.userSelect = 'none'; // Prevent text selection
         deckElement.style.cursor = 'pointer'; // Show it's clickable
         
-        // Add click handler for dealing
+        // Add touch handler for dealing on mobile/iPad (must be before click to prevent double-firing)
+        let deckTouchHandled = false;
+        deckElement.addEventListener('touchstart', (e) => {
+            // Prevent default to avoid double-triggering with click on some devices
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Set flag to prevent click handler from also firing
+            deckTouchHandled = true;
+            setTimeout(() => {
+                deckTouchHandled = false;
+            }, 300);
+            
+            console.log('[DEAL] Deck touched', { 
+                multiplayer: !!this.multiplayer, 
+                connectionStatus: this.multiplayer?.connectionStatus,
+                deckExists: !!this.deck,
+                deckLength: this.deck?.cards?.length || 0
+            });
+            this.dealCard();
+        });
+        
+        // Add click handler for dealing (desktop)
         deckElement.addEventListener('click', (e) => {
+            // Prevent click handler from firing if touch was handled
+            if (deckTouchHandled) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            
             console.log('[DEAL] Deck clicked', { 
                 multiplayer: !!this.multiplayer, 
                 connectionStatus: this.multiplayer?.connectionStatus,
@@ -1280,12 +1309,121 @@ class CardGame {
                                           cardCenterY >= zoneRect.top && 
                                           cardCenterY <= zoneRect.bottom;
                     
-                    console.log('Touch private zone detection:', {
-                        cardCenterX, cardCenterY,
-                        zoneRect: { left: zoneRect.left, right: zoneRect.right, top: zoneRect.top, bottom: zoneRect.bottom },
-                        isInPrivateZone
-                    });
+                    // Set privateTo attribute on the card element
+                    if (isInPrivateZone) {
+                        cardElement.dataset.privateTo = this.multiplayer.playerId;
+                    } else {
+                        delete cardElement.dataset.privateTo;
+                    }
                     
+                    // Check for drop into discard pile area; if so, move into discard container and enforce face-up
+                    // Use touch end position (from changedTouches) as primary check
+                    let handledByDiscardDrop = false;
+                    if (this.discardPileArea && this.discardPileContent) {
+                        const discardRect = this.discardPileArea.getBoundingClientRect();
+                        // Check touch end position first (most accurate), then card center as fallback
+                        const touch = e.changedTouches[0];
+                        const touchInDiscard = touch && (touch.clientX >= discardRect.left && touch.clientX <= discardRect.right &&
+                                                          touch.clientY >= discardRect.top && touch.clientY <= discardRect.bottom);
+                        const cardInDiscard = cardCenterX >= discardRect.left && cardCenterX <= discardRect.right &&
+                                             cardCenterY >= discardRect.top && cardCenterY <= discardRect.bottom;
+                        const isInDiscardArea = touchInDiscard || cardInDiscard;
+                        
+                        if (isInDiscardArea && cardElement.parentNode !== this.discardPileContent) {
+                            // Check if card is part of a selection (reuse same logic as right-click discard)
+                            if (this.selectedCards.length > 0 && this.selectedCards.includes(cardElement)) {
+                                // Discard all selected cards
+                                const selectedCards = [...this.selectedCards];
+                                const selectedCardData = selectedCards.map(cardEl => this.getCardFromElement(cardEl));
+                                this.addCardsToDiscardPile(selectedCards, selectedCardData);
+                                // Clear selection after discarding
+                                this.clearSelection();
+                            } else {
+                                // Discard single card
+                                this.addCardToDiscardPile(cardElement, card);
+                            }
+                            handledByDiscardDrop = true;
+                        }
+                    }
+
+                    // Determine discard area membership and handle transitions by area (not container)
+                    // Only handle this if we haven't already handled a discard drop with selected cards
+                    if (!handledByDiscardDrop && this.isCardInDiscardArea(cardElement)) {
+                        // Check if card is part of a selection (reuse same logic as right-click discard)
+                        if (this.selectedCards.length > 0 && this.selectedCards.includes(cardElement)) {
+                            // Discard all selected cards
+                            const selectedCards = [...this.selectedCards];
+                            const selectedCardData = selectedCards.map(cardEl => this.getCardFromElement(cardEl));
+                            this.addCardsToDiscardPile(selectedCards, selectedCardData);
+                            // Clear selection after discarding
+                            this.clearSelection();
+                            handledByDiscardDrop = true; // Mark as handled
+                        } else {
+                            // Snap into discard visuals and broadcast discard state
+                            this.addCardToDiscardPile(cardElement, card);
+                        }
+                    } else if (!handledByDiscardDrop) {
+                        // Ensure it's considered on table and broadcast position/location
+                        if (this.isConnected()) {
+                            const table = document.getElementById('card-table');
+                            const tableRect = table.getBoundingClientRect();
+                            // Send top-left coordinates to avoid visual shift on reapply
+                            const newX = cardRect.left - tableRect.left;
+                            const newY = cardRect.top - tableRect.top;
+                            this.multiplayer.requestCardStateUpdate([{
+                                uniqueId: cardElement.dataset.uniqueId,
+                                position: { x: newX, y: newY },
+                                location: 'table',
+                                isFlipped: cardElement.classList.contains('flipped'),
+                                privateTo: cardElement.dataset.privateTo || null,
+                                zIndex: parseInt(cardElement.style.zIndex || '0', 10),
+                                timestamp: Date.now()
+                            }]);
+                        }
+                    }
+                    
+                    // Request card state update to server (only if not a remote update)
+                    if (!handledByDiscardDrop && this.isConnected() && cardElement.dataset.remoteUpdate !== 'true' && !cardElement.dataset.beingRemoved) {
+                        // Determine location based on current parent
+                        const location = (cardElement.parentNode === this.discardPileContent) ? 'discardPile' : 'table';
+                        
+                        // Calculate position relative to table
+                        const table = document.getElementById('card-table');
+                        const tableRect = table ? table.getBoundingClientRect() : { left: 0, top: 0 };
+                        const cardRect = cardElement.getBoundingClientRect();
+                        // Send top-left coordinates to avoid post-drop drift
+                        const newX = cardRect.left - tableRect.left;
+                        const newY = cardRect.top - tableRect.top;
+                        
+                        // Use multi-card API (single card as array) with explicit location
+                        this.moveCards([cardElement], [{
+                            x: newX,
+                            y: newY
+                        }]);
+                        // Update display after state change
+                        this.updatePrivateHandDisplay();
+                    }
+                    
+                    // Update discard pile counter after card move
+                    this.updateDiscardPileCounter();
+                    
+                    // Highlight the card to show it has moved
+                    this.highlightCard(cardElement, this.multiplayer ? this.multiplayer.playerAlias : null);
+                    
+                    // Ensure z-index remains above board content immediately after drop
+                    const currentZIndex = parseInt(cardElement.style.zIndex || '0', 10);
+                    if (currentZIndex > 0) {
+                        this.zIndexCounter = Math.max(this.zIndexCounter || 10000, currentZIndex);
+                    }
+                    
+                    // Prevent table click event after dragging
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Set a flag to prevent table click for a short time
+                    this.preventTableClick = true;
+                    setTimeout(() => {
+                        this.preventTableClick = false;
+                    }, 100);
                 } else {
                     // Touch tap - check if card is selected
                     if (this.selectedCards.length > 0 && this.selectedCards.includes(cardElement)) {
