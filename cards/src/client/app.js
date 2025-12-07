@@ -1449,8 +1449,13 @@ class CardGame {
         if (!description) return;
         
         let tooltip = null;
+        let longPressTimer = null;
+        let touchStartTime = null;
+        let touchMoved = false;
+        const LONG_PRESS_DURATION = 500; // milliseconds
         
-        cardElement.addEventListener('mouseenter', (e) => {
+        // Helper function to show tooltip
+        const showTooltip = () => {
             if (tooltip) return; // Prevent multiple tooltips
             
             // Only show tooltip if card is face up (not flipped)
@@ -1479,13 +1484,23 @@ class CardGame {
             tooltip.style.transform = 'translateX(-50%) translateY(-100%)';
             
             document.body.appendChild(tooltip);
-        });
+        };
         
-        cardElement.addEventListener('mouseleave', () => {
+        // Helper function to hide tooltip
+        const hideTooltip = () => {
             if (tooltip) {
                 tooltip.remove();
                 tooltip = null;
             }
+        };
+        
+        // Mouse events for desktop
+        cardElement.addEventListener('mouseenter', (e) => {
+            showTooltip();
+        });
+        
+        cardElement.addEventListener('mouseleave', () => {
+            hideTooltip();
         });
         
         cardElement.addEventListener('mousemove', (e) => {
@@ -1502,12 +1517,78 @@ class CardGame {
             }
         });
         
+        // Touch events for mobile/iPad - long-press to show tooltip
+        // Note: This runs alongside the card dragging touchstart handler
+        // Both handlers fire, but dragging will preventDefault - that's fine, our timer still works
+        cardElement.addEventListener('touchstart', (e) => {
+            // Only handle if this is the first touch and card is not being dragged
+            if (e.touches.length === 1 && !cardElement.classList.contains('dragging')) {
+                touchStartTime = Date.now();
+                touchMoved = false;
+                
+                // Start long-press timer
+                longPressTimer = setTimeout(() => {
+                    // Only show tooltip if touch hasn't moved (not a drag)
+                    // Check again that card isn't being dragged (might have started during the delay)
+                    if (!touchMoved && !cardElement.classList.contains('dragging')) {
+                        showTooltip();
+                    }
+                }, LONG_PRESS_DURATION);
+            }
+        }, { passive: true });
+        
+        // Listen for touchmove to cancel long-press if user starts dragging
+        // Note: The card dragging handler also listens to document touchmove,
+        // so movement will be detected even if this handler doesn't fire
+        cardElement.addEventListener('touchmove', () => {
+            // If touch moves, cancel long-press timer
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+            touchMoved = true;
+            // Don't hide tooltip if it's already showing (user might be moving to read it)
+        }, { passive: true });
+        
+        cardElement.addEventListener('touchend', (e) => {
+            // Clear long-press timer
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+            
+            // If tooltip is showing and this was a quick tap (not a drag), hide it on next tap
+            // This allows users to tap again to dismiss
+            if (tooltip && !touchMoved && touchStartTime) {
+                const touchDuration = Date.now() - touchStartTime;
+                // If it was a quick tap after tooltip is shown, hide it
+                if (touchDuration < LONG_PRESS_DURATION + 200) {
+                    // Small delay to allow for accidental taps
+                    setTimeout(() => {
+                        hideTooltip();
+                    }, 100);
+                }
+            }
+            
+            touchStartTime = null;
+            touchMoved = false;
+        }, { passive: true });
+        
+        // Hide tooltip when touching elsewhere on the page
+        document.addEventListener('touchstart', (e) => {
+            // If touch is not on the card or tooltip, hide tooltip
+            if (tooltip && !cardElement.contains(e.target) && !tooltip.contains(e.target)) {
+                hideTooltip();
+            }
+        }, { passive: true });
+        
         // Store cleanup function on the card element
         cardElement._cleanupTooltip = () => {
-            if (tooltip) {
-                tooltip.remove();
-                tooltip = null;
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
             }
+            hideTooltip();
         };
     }
 
