@@ -13,6 +13,7 @@
 - `RATE_LIMIT_WINDOW_MS` - Rate limit window in milliseconds
 - `RATE_LIMIT_MAX_REQUESTS` - Max requests per window
 - `OPENAI_API_KEY` - OpenAI API key for AI photo comments (optional, falls back to standard message if not set)
+- `LEADERBOARD_CHANNEL_ID` - Slack channel ID for scheduled weekly leaderboard posts (every Friday at 3:00 PM ET)
 
 ## Example .env file
 ```
@@ -25,4 +26,5 @@ DATABASE_URL=postgresql://username:password@localhost:5432/touching_grass
 LOG_LEVEL=debug
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX_REQUESTS=100
+LEADERBOARD_CHANNEL_ID=C0123456789
 ```

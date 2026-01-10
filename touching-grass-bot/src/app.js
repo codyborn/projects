@@ -3,6 +3,7 @@ const express = require('express')
 const helmet = require('helmet')
 const cors = require('cors')
 const rateLimit = require('express-rate-limit')
+const cron = require('node-cron')
 require('dotenv').config()
 
 const logger = require('./utils/logger')
@@ -509,6 +510,94 @@ slackApp.action(/^leaderboard_(weekly|last_week|monthly|all)$/, async ({ action,
   }
 })
 
+// Scheduled weekly leaderboard posting
+async function postScheduledLeaderboard () {
+  try {
+    const channelId = config.slack.leaderboardChannelId
+    if (!channelId) {
+      logger.warn('LEADERBOARD_CHANNEL_ID not configured, skipping scheduled leaderboard post')
+      return
+    }
+
+    logger.info('Posting scheduled weekly leaderboard...')
+
+    // Get both leaderboards for the week
+    let leaderboardData
+    let popularPosts = { period: 'weekly', posts: [] }
+
+    try {
+      leaderboardData = await leaderboardService.getLeaderboardByPeriod('weekly', 10)
+    } catch (error) {
+      logger.error('Error getting weekly leaderboard for scheduled post:', error)
+      return
+    }
+
+    try {
+      popularPosts = await leaderboardService.getPopularPostsLeaderboard('weekly', 10)
+    } catch (error) {
+      logger.warn('Error getting popular posts for scheduled post:', error)
+    }
+
+    // Build the message blocks
+    const blocks = [
+      {
+        type: 'header',
+        text: {
+          type: 'plain_text',
+          text: '🌿 Weekly Grass Touching Recap! 🌿',
+          emoji: true
+        }
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: leaderboardService.formatLeaderboardForSlack(leaderboardData.leaderboard, 'weekly')
+        }
+      },
+      {
+        type: 'divider'
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: leaderboardService.formatPopularPostsLeaderboard(popularPosts, 'weekly')
+        }
+      },
+      {
+        type: 'context',
+        elements: [
+          {
+            type: 'mrkdwn',
+            text: '_This leaderboard is posted every Friday at 3:00 PM ET. Keep touching grass!_ 🌱'
+          }
+        ]
+      }
+    ]
+
+    // Post to the configured channel
+    await slackApp.client.chat.postMessage({
+      channel: channelId,
+      blocks,
+      text: '🌿 Weekly Grass Touching Recap! Check out who touched the most grass this week!'
+    })
+
+    logger.info('Successfully posted scheduled weekly leaderboard')
+  } catch (error) {
+    logger.error('Error posting scheduled leaderboard:', error)
+  }
+}
+
+// Schedule leaderboard post for every Friday at 3:00 PM ET (America/New_York)
+// Cron format: minute hour dayOfMonth month dayOfWeek
+const scheduledLeaderboardJob = cron.schedule('0 15 * * 5', () => {
+  postScheduledLeaderboard()
+}, {
+  scheduled: false, // Don't start until app is ready
+  timezone: 'America/New_York'
+})
+
 // Error handling middleware
 expressApp.use((error, req, res, _next) => {
   logger.error('Express error:', error)
@@ -534,6 +623,10 @@ async function startApp () {
     expressApp.listen(config.server.port, () => {
       logger.info(`Express server started on port ${config.server.port}`)
     })
+
+    // Start the scheduled leaderboard job
+    scheduledLeaderboardJob.start()
+    logger.info('Scheduled weekly leaderboard job started (Fridays at 3:00 PM ET)')
   } catch (error) {
     logger.error('Failed to start application:', error)
     process.exit(1)
@@ -543,12 +636,14 @@ async function startApp () {
 // Graceful shutdown
 process.on('SIGINT', async () => {
   logger.info('Shutting down gracefully...')
+  scheduledLeaderboardJob.stop()
   await slackApp.stop()
   process.exit(0)
 })
 
 process.on('SIGTERM', async () => {
   logger.info('Shutting down gracefully...')
+  scheduledLeaderboardJob.stop()
   await slackApp.stop()
   process.exit(0)
 })

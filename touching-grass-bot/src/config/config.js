@@ -5,7 +5,8 @@ const config = {
   slack: {
     botToken: process.env.SLACK_BOT_TOKEN,
     signingSecret: process.env.SLACK_SIGNING_SECRET,
-    appToken: process.env.SLACK_APP_TOKEN
+    appToken: process.env.SLACK_APP_TOKEN,
+    leaderboardChannelId: process.env.LEADERBOARD_CHANNEL_ID // Channel for scheduled leaderboard posts
   },
   database: {
     url: process.env.DATABASE_URL
