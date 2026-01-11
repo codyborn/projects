@@ -182,6 +182,51 @@ h2 {
     padding-top: 10px;
 }
 
+/* Year Separator */
+.year-separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 40px;
+  position: relative;
+  z-index: 5;
+}
+
+
+.year-label {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #2a4d69;
+  padding: 0 30px;
+  text-shadow: 
+    0 2px 4px rgba(255, 255, 255, 0.6),
+    0 4px 8px rgba(77, 208, 225, 0.3);
+  animation: floatBob 4s ease-in-out infinite;
+  position: relative;
+}
+
+@keyframes floatBob {
+  0%, 100% { 
+    transform: translateY(0px) rotate(-0.5deg); 
+  }
+  25% { 
+    transform: translateY(-4px) rotate(0.5deg); 
+  }
+  50% { 
+    transform: translateY(-2px) rotate(-0.3deg); 
+  }
+  75% { 
+    transform: translateY(-5px) rotate(0.3deg); 
+  }
+}
+
+.night-mode .year-label {
+  color: #b3b3ff;
+  text-shadow: 
+    0 0 15px rgba(179, 179, 255, 0.5),
+    0 0 30px rgba(100, 150, 255, 0.3);
+}
+
 /* Night Mode Toggle */
 .night-mode-toggle {
   position: fixed;
@@ -640,6 +685,16 @@ h2 {
   }
   .island-tooltip {
     max-width: 100%;
+  }
+  
+  .year-separator {
+    padding: 15px 20px;
+    margin: 10px 0;
+  }
+  
+  .year-label {
+    font-size: 1.6rem;
+    padding: 0 20px;
   }
   
   .blog-content {

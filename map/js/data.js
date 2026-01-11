@@ -8,27 +8,31 @@ const cities = [
     islandImg: './images/miami.png',
     blog: './posts/miami.md',
     blogTitle: 'Tied down',
+    year: 2025
   },
   { 
     name: 'New York', 
     dates: 'Apr 6 - Apr 25th', 
     duration: '21 days',
     islandImg: './images/NY.png',
-    size: 200
+    size: 200,
+    year: 2025
   },
   { 
     name: 'Madrid', 
     dates: 'Apr 26 - May 2nd', 
     duration: '7 days',
     islandImg: './images/madrid.png' ,
-    size: 150
+    size: 150,
+    year: 2025
   },
   { 
     name: 'Granada', 
     dates: 'May 2nd - May 11th', 
     duration: '10 days',
     islandImg: './images/granada.png' ,
-    size: 180
+    size: 180,
+    year: 2025
   },
   { 
     name: 'Hyeres',
@@ -39,7 +43,8 @@ const cities = [
     islandGif: './images/hyeres.gif',
     blog: './posts/hyeres.md',
     blogTitle: 'Bread is the answer',
-    size: 160
+    size: 160,
+    year: 2025
   },
   { 
     name: 'Antibes', 
@@ -49,7 +54,8 @@ const cities = [
     islandImg: './images/antibes.png',
     blog: './posts/antibes.md',
     blogTitle: 'When you can\'t beat em',
-    size: 160
+    size: 160,
+    year: 2025
   },
   { 
     name: 'Cannes', 
@@ -57,7 +63,8 @@ const cities = [
     duration: '8 days',
     islandImg: './images/cannes.png',
     islandGif: './images/cannes.gif',
-    size: 160
+    size: 160,
+    year: 2025
   },
   { 
     name: 'Scotland',
@@ -65,7 +72,8 @@ const cities = [
     dates: 'Jul 6th - Aug 17th', 
     duration: '43 days',
     islandImg: './images/scotland.png',
-    size: 150
+    size: 150,
+    year: 2025
   },
   { 
     name: 'Morocco',
@@ -75,7 +83,8 @@ const cities = [
     islandImg: './images/dakhla.png',
     blog: './posts/dakhla.md',
     blogTitle: 'The French have watches',
-    size: 160
+    size: 160,
+    year: 2025
   },
   { 
     name: 'Lisbon', 
@@ -83,21 +92,24 @@ const cities = [
     duration: '9 days',
     islandImg: './images/lisbon.png',
     islandGif: './images/lisbon.gif',
-    size: 150
+    size: 150,
+    year: 2025
   },
   { 
     name: 'New York', 
     dates: 'Sep 21st - Oct 11th', 
     duration: '20 days',
     islandImg: './images/NY.png',
-    size: 200
+    size: 200,
+    year: 2025
   },
   { 
     name: 'Santiago',
     dates: 'Oct 11th - Oct 18th', 
     duration: '8 days',
     islandImg: './images/santiago.png',
-    size: 160
+    size: 160,
+    year: 2025
   },
   { 
     name: 'Patagonia',
@@ -105,21 +117,88 @@ const cities = [
     duration: '28 days',
     islandImg: './images/patagonia.png',
     islandGif: './images/patagonia.gif',
-    size: 180
+    size: 180,
+    year: 2025
   },
   { 
     name: 'Buenos Aires', 
-    dates: 'Nov 15th - ???', 
-    duration: '? days',
+    subtitle: 'Colonia del Sacramento, Iguazu Falls',
+    dates: 'Nov 15th - Nov 29th', 
+    duration: '14 days',
     islandImg: './images/buenos_aires.png',
-    size: 160
+    size: 160,
+    year: 2025
+  },
+  { 
+    name: 'Joshua Tree', 
+    dates: 'Nov 29th - Dec 8th', 
+    duration: '10 days',
+    islandImg: './images/joshua_tree.png',
+    size: 140,
+    year: 2025
+  },
+  { 
+    name: 'New York', 
+    dates: 'Dec 8th - Dec 12th', 
+    duration: '5 days',
+    islandImg: './images/NY.png',
+    size: 200,
+    year: 2025
   },
   { 
     name: 'Orange County', 
-    dates: 'Dec 1st - Dec 31st', 
-    duration: '1 month',
+    dates: 'Dec 12th - Dec 27th', 
+    duration: '15 days',
     islandImg: './images/orange_county.png',
-    size: 140
+    size: 140,
+    year: 2025
+  },
+  { 
+    name: 'La Ventana', 
+    dates: 'Dec 27th - Jan 4th', 
+    duration: '9 days',
+    islandImg: './images/la_ventana.png',
+    size: 140,
+    year: 2025
+  },
+  { 
+    name: 'New York', 
+    dates: 'Jan 4th - Jan 11th', 
+    duration: '8 days',
+    islandImg: './images/NY.png',
+    size: 200,
+    year: 2026
+  },
+  { 
+    name: 'Miami', 
+    dates: 'Jan 11th - Feb 14th', 
+    duration: '44 days',
+    islandImg: './images/miami.png',
+    year: 2026
+  },
+  { 
+    name: 'Denver',
+    subtitle: 'Boulder, Tabernash',
+    dates: 'Feb 14th - Feb 27th', 
+    duration: '8 days',
+    islandImg: './images/denver.png',
+    size: 180,
+    year: 2026
+  },
+  { 
+    name: 'Miami', 
+    dates: 'Feb 27th - ???', 
+    duration: '? days',
+    islandImg: './images/miami.png',
+    year: 2026
+  },
+  { 
+    name: '???', 
+    dates: '??? - ???', 
+    duration: '2 months',
+    islandImg: './images/mystery.png',
+    size: 200,
+    year: 2026
   },
 ];
 

@@ -59,13 +59,39 @@ preloadImages();
 function renderIslands() {
   grid.innerHTML = '';
   const cols = getColumnCount();
-  const rows = Math.ceil(cities.length / cols);
   const positions = [];
   
+  // Track the current row for grid placement (accounts for year separator rows)
+  let currentGridRow = 0;
+  let currentYear = null;
+  let islandIndexInRow = 0;
+  
   cities.forEach((cityObj, i) => {
-    const row = Math.floor(i / cols);
-    let col = i % cols;
-    if (row % 2 === 1) col = cols - 1 - col;
+    // Check if we need to insert a year separator
+    if (cityObj.year && cityObj.year !== currentYear) {
+      // If not the first year, complete the current row if partially filled
+      if (currentYear !== null && islandIndexInRow > 0) {
+        currentGridRow++;
+        islandIndexInRow = 0;
+      }
+      
+      // Create year separator
+      const yearSeparator = document.createElement('div');
+      yearSeparator.className = 'year-separator';
+      yearSeparator.style.gridRow = (currentGridRow + 1).toString();
+      yearSeparator.style.gridColumn = `1 / -1`;
+      yearSeparator.innerHTML = `<span class="year-label">${cityObj.year}</span>`;
+      grid.appendChild(yearSeparator);
+      
+      currentGridRow++;
+      currentYear = cityObj.year;
+    }
+    
+    // Calculate column position with snake pattern
+    let col = islandIndexInRow % cols;
+    const rowWithinYear = Math.floor(islandIndexInRow / cols);
+    if (rowWithinYear % 2 === 1) col = cols - 1 - col;
+    
     const div = document.createElement('div');
     div.className = 'island';
     div.onclick = () => {
@@ -73,7 +99,7 @@ function renderIslands() {
         openBlogPost(cityObj.blog, cityObj.blogTitle, cityObj.name);
       }
     };
-    div.style.gridRow = (row + 1).toString();
+    div.style.gridRow = (currentGridRow + 1).toString();
     div.style.gridColumn = (col + 1).toString();
     div.innerHTML = `
       <img src="${cityObj.islandImg}" alt="${cityObj.name}" style="width: ${cityObj.size ? cityObj.size + 'px' : '120px'}; height: auto;" loading="eager">
@@ -88,7 +114,7 @@ function renderIslands() {
         ${cityObj.blog ? `<div><a href="#">${cityObj.blogTitle}</a></div>` : ''}
       </div>
     `;
-    positions.push({row, col, div});
+    positions.push({row: currentGridRow, col, div});
     
     // Tooltip show/hide
     div.addEventListener('mouseenter', () => {
@@ -98,6 +124,12 @@ function renderIslands() {
       div.querySelector('.island-tooltip').style.opacity = 0;
     });
     grid.appendChild(div);
+    
+    islandIndexInRow++;
+    // Move to next row when current row is full
+    if (islandIndexInRow % cols === 0) {
+      currentGridRow++;
+    }
   });
   
   setTimeout(updateIslandBounds, 100);
@@ -122,7 +154,7 @@ function renderIslands() {
             initializeClouds();
             initializeSailboats();
         }
-        drawLines(positions, cols, rows);
+        drawLines(positions, cols);
         setupMobileTooltips();
         
         // Scroll to current island on mobile after everything is rendered
