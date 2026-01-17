@@ -171,7 +171,7 @@ const cities = [
   },
   { 
     name: 'Miami', 
-    dates: 'Jan 11th - Feb 14th', 
+    dates: 'Jan 11th - Feb 15th', 
     duration: '44 days',
     islandImg: './images/miami.png',
     year: 2026
@@ -179,17 +179,10 @@ const cities = [
   { 
     name: 'Denver',
     subtitle: 'Boulder, Tabernash',
-    dates: 'Feb 14th - Feb 27th', 
-    duration: '8 days',
+    dates: 'Feb 15th - Feb 27th', 
+    duration: '13 days',
     islandImg: './images/denver.png',
     size: 180,
-    year: 2026
-  },
-  { 
-    name: 'Miami', 
-    dates: 'Feb 27th - ???', 
-    duration: '? days',
-    islandImg: './images/miami.png',
     year: 2026
   },
   { 
