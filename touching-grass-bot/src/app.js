@@ -592,7 +592,10 @@ async function postScheduledLeaderboard () {
 // Schedule leaderboard post for every Friday at 3:00 PM ET (America/New_York)
 // Cron format: minute hour dayOfMonth month dayOfWeek
 const scheduledLeaderboardJob = cron.schedule('0 15 * * 5', () => {
-  postScheduledLeaderboard()
+  logger.info('Cron job triggered: Scheduled leaderboard post')
+  postScheduledLeaderboard().catch(error => {
+    logger.error('Unhandled error in scheduled leaderboard post:', error)
+  })
 }, {
   scheduled: false, // Don't start until app is ready
   timezone: 'America/New_York'
@@ -627,6 +630,14 @@ async function startApp () {
     // Start the scheduled leaderboard job
     scheduledLeaderboardJob.start()
     logger.info('Scheduled weekly leaderboard job started (Fridays at 3:00 PM ET)')
+    logger.info(`Leaderboard channel ID: ${config.slack.leaderboardChannelId || 'NOT CONFIGURED'}`)
+    
+    // Log next scheduled run time for debugging
+    if (scheduledLeaderboardJob.running) {
+      logger.info('Cron job is running and will execute on the next scheduled time')
+    } else {
+      logger.warn('Cron job failed to start')
+    }
   } catch (error) {
     logger.error('Failed to start application:', error)
     process.exit(1)

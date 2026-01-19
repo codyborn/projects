@@ -775,15 +775,32 @@ class SimpleWebSocketServer {
             return;
         }
         
+        // Collect all card data from cards on table/hands before clearing
+        // This restores dealt cards back to the deck
+        const cardsToRestore = [];
+        for (const [uniqueId, cardState] of roomState.gameState.cards.entries()) {
+            if (cardState && cardState.card) {
+                cardsToRestore.push(cardState.card);
+            }
+        }
+        
+        console.log(`[RESET][${roomCode}] Restoring ${cardsToRestore.length} cards to deck. Current deck size: ${roomState.gameState.deckData?.cards?.length || 0}`);
+        
         // Reset game state (keep deck, clear cards)
         roomState.gameState.cards.clear();
         roomState.gameState.discardPile = [];
         roomState.gameState.dealtCards = [];
         
-        // If deck exists, reshuffle it
+        // If deck exists, add restored cards and reshuffle
         if (roomState.gameState.deckData) {
+            // Add all restored cards back to the deck
+            roomState.gameState.deckData.cards.push(...cardsToRestore);
+            
+            // Shuffle the complete deck
             const shuffledDeck = this.shuffleArray([...roomState.gameState.deckData.cards]);
             roomState.gameState.deckData.cards = shuffledDeck;
+            
+            console.log(`[RESET][${roomCode}] Deck size after reset: ${roomState.gameState.deckData.cards.length}, originalDeckSize: ${roomState.gameState.originalDeckSize}`);
         }
         
         // Broadcast reset
