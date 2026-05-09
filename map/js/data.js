@@ -223,16 +223,23 @@ function getColumnCount() {
 // Date parsing and current island detection
 let hasScrolledToCurrentIsland = false;
 
-function parseDateString(dateStr) {
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  
+function parseDateString(dateStr, year) {
+  // Fall back to current year if a city doesn't specify one
+  const baseYear = year ?? new Date().getFullYear();
+
   // Handle different date formats
   if (dateStr.includes(' - ')) {
     // Format: "Jan 1st - Apr 6th" or "Sep 13th - Sept 21st"
     const [startStr, endStr] = dateStr.split(' - ');
-    const startDate = parseSingleDate(startStr, currentYear);
-    const endDate = parseSingleDate(endStr, currentYear);
+    const startDate = parseSingleDate(startStr, baseYear);
+    let endDate = parseSingleDate(endStr, baseYear);
+
+    // If the range wraps across New Year (e.g. "Dec 27th - Jan 4th"),
+    // the end date belongs to the following year.
+    if (startDate && endDate && endDate < startDate) {
+      endDate = parseSingleDate(endStr, baseYear + 1);
+    }
+
     return { start: startDate, end: endDate };
   }
 }
@@ -274,7 +281,7 @@ function getCurrentIsland() {
   
   for (let i = 0; i < cities.length; i++) {
     const city = cities[i];
-    const dateRange = parseDateString(city.dates);
+    const dateRange = parseDateString(city.dates, city.year);
     
     if (dateRange && dateRange.start && dateRange.end) {
       // Check if current date falls within this city's date range
