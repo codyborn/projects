@@ -4,7 +4,6 @@ const helmet = require('helmet')
 const cors = require('cors')
 const rateLimit = require('express-rate-limit')
 const cron = require('node-cron')
-require('dotenv').config()
 
 const logger = require('./utils/logger')
 const config = require('./config/config')
@@ -519,6 +518,13 @@ async function postScheduledLeaderboard () {
       return
     }
 
+    // Only post on Fridays (day 5 in JavaScript, where Sunday=0, Monday=1, etc.)
+    const currentDay = new Date().getDay()
+    if (currentDay !== 5) {
+      logger.info(`Skipping scheduled leaderboard post - today is day ${currentDay} (not Friday)`)
+      return
+    }
+
     logger.info('Posting scheduled weekly leaderboard...')
 
     // Get both leaderboards for the week
@@ -589,18 +595,6 @@ async function postScheduledLeaderboard () {
   }
 }
 
-// Schedule leaderboard post for every Friday at 3:00 PM ET (America/New_York)
-// Cron format: minute hour dayOfMonth month dayOfWeek
-const scheduledLeaderboardJob = cron.schedule('0 15 * * 5', () => {
-  logger.info('Cron job triggered: Scheduled leaderboard post')
-  postScheduledLeaderboard().catch(error => {
-    logger.error('Unhandled error in scheduled leaderboard post:', error)
-  })
-}, {
-  scheduled: false, // Don't start until app is ready
-  timezone: 'America/New_York'
-})
-
 // Error handling middleware
 expressApp.use((error, req, res, _next) => {
   logger.error('Express error:', error)
@@ -628,16 +622,12 @@ async function startApp () {
     })
 
     // Start the scheduled leaderboard job
-    scheduledLeaderboardJob.start()
-    logger.info('Scheduled weekly leaderboard job started (Fridays at 3:00 PM ET)')
-    logger.info(`Leaderboard channel ID: ${config.slack.leaderboardChannelId || 'NOT CONFIGURED'}`)
+    // scheduledLeaderboardJob.start()
+    // logger.info('Scheduled weekly leaderboard job started (Fridays at 3:00 PM ET)')
+    // logger.info(`Leaderboard channel ID: ${config.slack.leaderboardChannelId || 'NOT CONFIGURED'}`)
+    // logger.info(`Process.env.LEADERBOARD_CHANNEL_ID: ${process.env.LEADERBOARD_CHANNEL_ID || 'NOT SET'}`)
     
-    // Log next scheduled run time for debugging
-    if (scheduledLeaderboardJob.running) {
-      logger.info('Cron job is running and will execute on the next scheduled time')
-    } else {
-      logger.warn('Cron job failed to start')
-    }
+    // Note: Using Heroku Scheduler instead of node-cron to handle weekly leaderboard posts
   } catch (error) {
     logger.error('Failed to start application:', error)
     process.exit(1)
@@ -647,14 +637,14 @@ async function startApp () {
 // Graceful shutdown
 process.on('SIGINT', async () => {
   logger.info('Shutting down gracefully...')
-  scheduledLeaderboardJob.stop()
+  // scheduledLeaderboardJob.stop()
   await slackApp.stop()
   process.exit(0)
 })
 
 process.on('SIGTERM', async () => {
   logger.info('Shutting down gracefully...')
-  scheduledLeaderboardJob.stop()
+  // scheduledLeaderboardJob.stop()
   await slackApp.stop()
   process.exit(0)
 })

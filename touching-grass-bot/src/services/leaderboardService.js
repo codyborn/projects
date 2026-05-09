@@ -55,11 +55,31 @@ class LeaderboardService {
           LIMIT $1
         `
         result = await query(sql, [limit])
+      } else if (period === 'recap') {
+        // Friday-to-Friday window: last 7 days from when the script runs (Fri 3pm ET → Fri 3pm ET)
+        dateFilter = 'AND p.created_at >= NOW() - INTERVAL \'7 days\''
+        periodLabel = 'This Week'
+        const sql = `
+          SELECT
+            u.id,
+            u.slack_user_id,
+            u.slack_username,
+            u.display_name,
+            COALESCE(SUM(p.points_awarded), 0) as points,
+            COUNT(p.id) as photos
+          FROM users u
+          LEFT JOIN photos p ON u.id = p.user_id ${dateFilter}
+          GROUP BY u.id, u.slack_user_id, u.slack_username, u.display_name
+          HAVING COUNT(p.id) > 0
+          ORDER BY points DESC, photos DESC, u.created_at ASC
+          LIMIT $1
+        `
+        result = await query(sql, [limit])
       } else if (period === 'monthly' || period === 'month') {
         dateFilter = 'AND p.created_at >= NOW() - INTERVAL \'30 days\''
         periodLabel = 'This Month'
         const sql = `
-          SELECT 
+          SELECT
             u.id,
             u.slack_user_id,
             u.slack_username,
@@ -227,7 +247,10 @@ class LeaderboardService {
       const { query } = require('../database/connection')
 
       let dateFilter = ''
-      if (period === 'weekly' || period === 'week') {
+      if (period === 'recap') {
+        // Friday-to-Friday window: last 7 days from when the script runs (Fri 3pm ET → Fri 3pm ET)
+        dateFilter = 'AND p.created_at >= NOW() - INTERVAL \'7 days\''
+      } else if (period === 'weekly' || period === 'week') {
         // Current calendar week: Sunday 00:00:00 to Saturday 23:59:59
         dateFilter = `AND p.created_at >= (date_trunc('week', NOW() + interval '1 day') - interval '1 day')`
       } else if (period === 'last_week' || period === 'lastweek' || period === 'last-week') {

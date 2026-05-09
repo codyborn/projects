@@ -1,3 +1,6 @@
+// Load environment variables before anything else
+require('dotenv').config()
+
 const config = {
   server: {
     port: process.env.PORT || 3000

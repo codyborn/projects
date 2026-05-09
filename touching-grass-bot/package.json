@@ -23,7 +23,8 @@
     "logs": "heroku logs --tail --app touching-grass-bot",
     "pre-deploy": "node scripts/pre-deploy-check.js",
     "check": "npm run lint && npm run test && node scripts/pre-deploy-check.js",
-    "syntax-check": "node -c src/app.js && find src -name '*.js' -exec node -c {} \\;"
+    "syntax-check": "node -c src/app.js && find src -name '*.js' -exec node -c {} \\;",
+    "post-leaderboard": "node scripts/post-scheduled-leaderboard.js"
   },
   "keywords": [
     "slack",
