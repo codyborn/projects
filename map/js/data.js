@@ -179,10 +179,20 @@ const cities = [
   { 
     name: 'Denver',
     subtitle: 'Boulder, Tabernash',
-    dates: 'Feb 15th - Feb 27th', 
-    duration: '13 days',
+    dates: 'Feb 15th - Mar 30th', 
+    duration: '45 days',
     islandImg: './images/denver.png',
     size: 180,
+    year: 2026
+  },
+  { 
+    name: 'New York', 
+    dates: 'Mar 30th - May 16th', 
+    duration: '48 days',
+    islandImg: './images/NY.png',
+    blog: './posts/new_york.md',
+    blogTitle: 'The City',
+    size: 200,
     year: 2026
   },
   { 
