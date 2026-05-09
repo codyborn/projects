@@ -196,6 +196,14 @@ const cities = [
     year: 2026
   },
   { 
+    name: 'Montana', 
+    dates: 'May 16th - Jun 22nd', 
+    duration: '37 days',
+    islandImg: './images/montana.png',
+    size: 200,
+    year: 2026
+  },
+  { 
     name: '???', 
     dates: '??? - ???', 
     duration: '2 months',
