@@ -200,6 +200,7 @@ const cities = [
     dates: 'May 16th - Jun 22nd', 
     duration: '37 days',
     islandImg: './images/montana.png',
+    islandGif: './images/montana.gif',
     size: 200,
     year: 2026
   },
