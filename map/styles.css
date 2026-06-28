@@ -260,6 +260,36 @@ h2 {
   content: "☀️";
 }
 
+.latest-blog-toggle {
+  position: fixed;
+  top: 10px;
+  left: 88px;
+  background: rgba(44, 62, 80, 0.9);
+  color: #fff;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 25px;
+  font-size: 1rem;
+  line-height: 25px; /* match the emoji line box of .night-mode-toggle for equal height */
+  cursor: pointer;
+  z-index: 9999;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.latest-blog-toggle:hover {
+  background: rgba(44, 62, 80, 1);
+  transform: scale(1.05);
+}
+
+.latest-blog-toggle svg {
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: middle;
+  display: inline-block;
+}
+
 /* Blog Reader Overlay */
 .blog-overlay {
   position: fixed;
@@ -349,6 +379,53 @@ h2 {
 
 .share-button.copied {
   background: #28a745;
+}
+
+.blog-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 30px 30px;
+  border-top: 1px solid #e9ecef;
+}
+
+.nav-button {
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-family: 'Georgia', serif;
+  transition: background 0.2s ease;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-button:hover {
+  background: rgba(0, 0, 0, 1);
+}
+
+#next-button {
+  margin-left: auto;
+}
+
+.blog-hero {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 30px 30px 0;
+}
+
+.blog-hero img {
+  width: 200px;
+  max-width: 100%;
+  height: auto;
+  display: block;
 }
 
 .blog-text {
@@ -544,7 +621,7 @@ h2 {
   z-index: 2;
 }
 
-.night-mode line {
+.night-mode #island-lines line {
   stroke: darkcyan;
 }
 
@@ -584,6 +661,19 @@ h2 {
 
 .night-mode .share-button.copied {
   background: #28a745;
+}
+
+.night-mode .blog-footer {
+  border-top: 1px solid #333;
+}
+
+.night-mode .nav-button {
+  background: #333;
+  color: #ffffff;
+}
+
+.night-mode .nav-button:hover {
+  background: #555;
 }
 
 .night-mode .typing-cursor {

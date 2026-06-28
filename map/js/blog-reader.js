@@ -162,7 +162,19 @@ async function openBlogPost(blogPath, blogTitle, cityName) {
     const markdownText = await response.text();
     
     document.getElementById('blog-title').textContent = blogTitle;
-    
+
+    // Show the island image/gif at the top of the post (prefer the gif if present)
+    const cityObj = cities.find(city => city.name === cityName && city.blog);
+    const heroSrc = cityObj ? (cityObj.islandGif || cityObj.islandImg) : null;
+    const hero = document.getElementById('blog-hero');
+    if (heroSrc) {
+      hero.innerHTML = `<img src="${heroSrc}" alt="${cityName}">`;
+      hero.style.display = '';
+    } else {
+      hero.innerHTML = '';
+      hero.style.display = 'none';
+    }
+
     const overlay = document.getElementById('blog-overlay');
     overlay.classList.add('active');
     
@@ -175,13 +187,15 @@ async function openBlogPost(blogPath, blogTitle, cityName) {
     document.body.style.overflow = 'hidden';
     
     currentBlogCity = cityName;
-    
+
+    updateBlogNav(cityName);
+
     // Add city to query string in URL
     if (window.history.pushState) {
       const newUrl = `${window.location.pathname}?city=${encodeURIComponent(cityName)}`;
       window.history.pushState({}, document.title, newUrl);
     }
-    
+
   } catch (error) {
     console.error('Error loading blog post:', error);
     alert('Error loading blog post. Please try again.');
@@ -327,6 +341,63 @@ function startGentleTypeAnimation(text) {
   }, 150);
 }
 
+// Blog posts in chronological order (cities is stored chronologically)
+function getBlogCities() {
+  return cities.filter(city => city.blog);
+}
+
+// Update the Prev/Next buttons to point at the chronologically adjacent posts.
+// Prev = older post, Next = newer post.
+function updateBlogNav(cityName) {
+  const blogCities = getBlogCities();
+  const idx = blogCities.findIndex(city => city.name === cityName);
+
+  const prevCity = idx > 0 ? blogCities[idx - 1] : null;
+  const nextCity = idx >= 0 && idx < blogCities.length - 1 ? blogCities[idx + 1] : null;
+
+  const prevButton = document.getElementById('prev-button');
+  const nextButton = document.getElementById('next-button');
+
+  if (prevCity) {
+    prevButton.textContent = `← ${prevCity.blogTitle}`;
+    prevButton.style.visibility = 'visible';
+    prevButton.dataset.city = prevCity.name;
+  } else {
+    prevButton.style.visibility = 'hidden';
+    delete prevButton.dataset.city;
+  }
+
+  if (nextCity) {
+    nextButton.textContent = `${nextCity.blogTitle} →`;
+    nextButton.style.visibility = 'visible';
+    nextButton.dataset.city = nextCity.name;
+  } else {
+    nextButton.style.visibility = 'hidden';
+    delete nextButton.dataset.city;
+  }
+}
+
+// Open the most recent blog post (last chronologically)
+function openLatestBlog() {
+  const blogCities = getBlogCities();
+  if (!blogCities.length) return;
+
+  const latest = blogCities[blogCities.length - 1];
+  openBlogPost(latest.blog, latest.blogTitle, latest.name);
+}
+
+// direction: -1 = previous (older), 1 = next (newer)
+function navigateBlog(direction) {
+  const blogCities = getBlogCities();
+  const idx = blogCities.findIndex(city => city.name === currentBlogCity);
+  if (idx === -1) return;
+
+  const target = blogCities[idx + direction];
+  if (!target) return;
+
+  openBlogPost(target.blog, target.blogTitle, target.name);
+}
+
 function closeBlogOverlay() {
   if (typingInterval) {
     clearInterval(typingInterval);
@@ -338,6 +409,7 @@ function closeBlogOverlay() {
   
   document.getElementById('blog-title').textContent = '';
   document.getElementById('blog-text').innerHTML = '';
+  document.getElementById('blog-hero').innerHTML = '';
   
   // Add new history entry without query string
   if (window.history.pushState) {
@@ -358,12 +430,21 @@ document.getElementById('blog-overlay').addEventListener('click', (event) => {
 });
 
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && document.getElementById('blog-overlay').classList.contains('active')) {
+  const isOpen = document.getElementById('blog-overlay').classList.contains('active');
+  if (!isOpen) return;
+
+  if (event.key === 'Escape') {
     closeBlogOverlay();
+  } else if (event.key === 'ArrowLeft') {
+    navigateBlog(-1);
+  } else if (event.key === 'ArrowRight') {
+    navigateBlog(1);
   }
 });
 
 // Export for use in other modules
 window.openBlogPost = openBlogPost;
 window.closeBlogOverlay = closeBlogOverlay;
-window.copyBlogLink = copyBlogLink; 
+window.copyBlogLink = copyBlogLink;
+window.navigateBlog = navigateBlog;
+window.openLatestBlog = openLatestBlog;

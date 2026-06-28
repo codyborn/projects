@@ -10,6 +10,16 @@
 <body>
   <!-- Night Mode Toggle Button -->
   <button class="night-mode-toggle" onclick="toggleNightMode()"></button>
+
+  <!-- Latest Blog Post Button -->
+  <button class="latest-blog-toggle" onclick="openLatestBlog()" title="Latest blog post" aria-label="Latest blog post">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4" y="3" width="16" height="18" rx="2"></rect>
+      <line x1="8" y1="8" x2="16" y2="8"></line>
+      <line x1="8" y1="12" x2="16" y2="12"></line>
+      <line x1="8" y1="16" x2="13" y2="16"></line>
+    </svg>
+  </button>
   
   <canvas id="water-canvas"></canvas>
   <canvas id="cloud-canvas"></canvas>
@@ -32,7 +42,12 @@
           <button class="return-button" onclick="closeBlogOverlay()">Close</button>
         </div>
       </div>
+      <div class="blog-hero" id="blog-hero"></div>
       <div class="blog-text" id="blog-text"></div>
+      <div class="blog-footer" id="blog-footer">
+        <button class="nav-button" id="prev-button" onclick="navigateBlog(-1)"></button>
+        <button class="nav-button" id="next-button" onclick="navigateBlog(1)"></button>
+      </div>
     </div>
   </div>
   

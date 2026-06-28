@@ -295,7 +295,9 @@ function getCurrentIsland() {
     if (dateRange && dateRange.start && dateRange.end) {
       // Check if current date falls within this city's date range
       if (now >= dateRange.start && now <= dateRange.end) {
-        return { city, index: i };
+        // Islands render most-recent-first, so the DOM index is the reverse of
+        // the chronological index used to scan `cities` above.
+        return { city, index: cities.length - 1 - i };
       }
     }
   }

@@ -35,10 +35,13 @@ function loadGifsAfterImages() {
     // All PNG images are loaded, now attempt to load GIFs
     cities.forEach((cityObj, index) => {
       if (cityObj.islandGif) {
+        // Islands render most-recent-first, so the DOM index is the reverse of
+        // the chronological index here.
+        const domIndex = cities.length - 1 - index;
         const gifImg = new Image();
         gifImg.onload = () => {
           // Replace PNG with GIF once it's loaded
-          const islandDiv = document.querySelectorAll('.island')[index];
+          const islandDiv = document.querySelectorAll('.island')[domIndex];
           if (islandDiv) {
             const imgElement = islandDiv.querySelector('img');
             if (imgElement) {
@@ -60,13 +63,18 @@ function renderIslands() {
   grid.innerHTML = '';
   const cols = getColumnCount();
   const positions = [];
-  
+
+  // Render most-recent-first: the newest location sits at the top of the map
+  // and you scroll down through history. `cities` stays chronological in data.js
+  // (so new trips are still appended at the bottom) and is reversed here.
+  const orderedCities = [...cities].reverse();
+
   // Track the current row for grid placement (accounts for year separator rows)
   let currentGridRow = 0;
   let currentYear = null;
   let islandIndexInRow = 0;
-  
-  cities.forEach((cityObj, i) => {
+
+  orderedCities.forEach((cityObj, i) => {
     // Check if we need to insert a year separator
     if (cityObj.year && cityObj.year !== currentYear) {
       // If not the first year, complete the current row if partially filled
