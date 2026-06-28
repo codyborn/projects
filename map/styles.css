@@ -410,8 +410,13 @@ h2 {
   background: rgba(0, 0, 0, 1);
 }
 
+/* Next on the left, Prev on the right */
 #next-button {
-  margin-left: auto;
+  order: 1;
+}
+
+#prev-button {
+  order: 2;
 }
 
 .blog-hero {

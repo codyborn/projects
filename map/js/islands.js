@@ -75,8 +75,13 @@ function renderIslands() {
   let islandIndexInRow = 0;
 
   orderedCities.forEach((cityObj, i) => {
+    // Whether this island is the first one of a new year (its connector to the
+    // previous island crosses a year separator and should be routed orthogonally)
+    let crossesYear = false;
     // Check if we need to insert a year separator
     if (cityObj.year && cityObj.year !== currentYear) {
+      // Only a real year-to-year transition (not the very first year) needs routing
+      crossesYear = currentYear !== null;
       // If not the first year, complete the current row if partially filled
       if (currentYear !== null && islandIndexInRow > 0) {
         currentGridRow++;
@@ -122,7 +127,7 @@ function renderIslands() {
         ${cityObj.blog ? `<div><a href="#">${cityObj.blogTitle}</a></div>` : ''}
       </div>
     `;
-    positions.push({row: currentGridRow, col, div});
+    positions.push({row: currentGridRow, col, div, crossesYear});
     
     // Tooltip show/hide
     div.addEventListener('mouseenter', () => {
@@ -210,17 +215,36 @@ function drawLines(positions, cols, rows) {
     };
   });
   
+  const applyDashStyle = (el) => {
+    el.setAttribute('fill', 'none');
+    el.setAttribute('stroke', 'rgba(255, 255, 255, 0.5)');
+    el.setAttribute('stroke-width', '4');
+    el.setAttribute('stroke-linecap', 'round');
+    el.setAttribute('stroke-linejoin', 'round');
+    el.setAttribute('stroke-dasharray', '8,8');
+  };
+
   for (let i = 0; i < centers.length - 1; i++) {
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', centers[i].x);
-    line.setAttribute('y1', centers[i].y);
-    line.setAttribute('x2', centers[i+1].x);
-    line.setAttribute('y2', centers[i+1].y);
-    line.setAttribute('stroke', 'rgba(255, 255, 255, 0.5)');
-    line.setAttribute('stroke-width', '4');
-    line.setAttribute('stroke-linecap', 'round');
-    line.setAttribute('stroke-dasharray', '8,8');
-    svg.appendChild(line);
+    const a = centers[i];
+    const b = centers[i + 1];
+
+    if (positions[i + 1].crossesYear) {
+      // Cross-year connector: route orthogonally (down, across, down) so it
+      // never cuts diagonally across the year separator.
+      const midY = (a.y + b.y) / 2;
+      const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+      polyline.setAttribute('points', `${a.x},${a.y} ${a.x},${midY} ${b.x},${midY} ${b.x},${b.y}`);
+      applyDashStyle(polyline);
+      svg.appendChild(polyline);
+    } else {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', a.x);
+      line.setAttribute('y1', a.y);
+      line.setAttribute('x2', b.x);
+      line.setAttribute('y2', b.y);
+      applyDashStyle(line);
+      svg.appendChild(line);
+    }
   }
 }
 
