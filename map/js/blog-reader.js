@@ -359,7 +359,7 @@ function updateBlogNav(cityName) {
   const nextButton = document.getElementById('next-button');
 
   if (prevCity) {
-    prevButton.textContent = `← ${prevCity.blogTitle}`;
+    prevButton.textContent = `${prevCity.blogTitle} →`;
     prevButton.style.visibility = 'visible';
     prevButton.dataset.city = prevCity.name;
   } else {
@@ -368,7 +368,7 @@ function updateBlogNav(cityName) {
   }
 
   if (nextCity) {
-    nextButton.textContent = `${nextCity.blogTitle} →`;
+    nextButton.textContent = `← ${nextCity.blogTitle}`;
     nextButton.style.visibility = 'visible';
     nextButton.dataset.city = nextCity.name;
   } else {

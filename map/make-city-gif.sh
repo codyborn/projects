@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Convert a city .mp4 into a transparent, looping GIF.
-# Usage: ./make-city-gif.sh <cityname> [filterColor] [filterStrength] [REVERSE] [BG_FLOODFILL] [FADE_FRAMES]
+# Usage: ./make-city-gif.sh <cityname> [filterColor] [filterStrength] [REVERSE] [BG_FLOODFILL] [FADE_FRAMES] [PAUSE_SECONDS]
 #   cityname        Required. Basename (looks for <cityname>.mp4 in cwd) OR a path to an .mp4.
 #   filterColor     Color to key out. Hex (#rrggbb / 0xrrggbb / rrggbb) or a named color
 #                   like 'white', 'black', 'cyan'. Default: 4dd0e1
@@ -14,6 +14,9 @@
 #   FADE_FRAMES     >0 = append a smooth crossfade from the last frame back to the first frame,
 #                   spread over this many frames (at 12 fps, e.g. 24 = 2-second fade). Makes the
 #                   GIF loop seamlessly. Default: 0
+#   PAUSE_SECONDS   >0 = hold the final frame for this many seconds before the GIF loops,
+#                   creating a pause between loops (duplicates the last frame at 12 fps).
+#                   Can be combined with FADE_FRAMES. Default: 0
 #
 # Env vars (optional):
 #   CITYGIF_BRIGHTNESS  ffmpeg eq brightness, -1.0..1.0. Default: 0
@@ -31,9 +34,13 @@ filterStrength="${3:-0.10:0.04}"
 REVERSE="${4:-0}"
 BG_FLOODFILL="${5:-0}"
 FADE_FRAMES="${6:-0}"
+PAUSE_SECONDS="${7:-0}"
+
+FPS=12
+PAUSE_FRAMES=$(( PAUSE_SECONDS * FPS ))
 
 if [ -z "$cityname" ]; then
-  echo "Usage: $0 <cityname> [filterColor] [filterStrength] [REVERSE] [BG_FLOODFILL] [FADE_FRAMES]" >&2
+  echo "Usage: $0 <cityname> [filterColor] [filterStrength] [REVERSE] [BG_FLOODFILL] [FADE_FRAMES] [PAUSE_SECONDS]" >&2
   exit 1
 fi
 
@@ -95,7 +102,7 @@ if [ "$BRIGHTNESS" != "0" ] || [ "$SATURATION" != "1" ]; then
   EQ_OR_PASS="${EQ_FILTER}"
 fi
 
-if [ "$FADE_FRAMES" -gt 0 ]; then
+if [ "$FADE_FRAMES" -gt 0 ] || [ "$PAUSE_FRAMES" -gt 0 ]; then
   WORK_DIR="$(mktemp -d -t citygif_work.XXXXXX)"
   KEY_DIR="$WORK_DIR/keyed"
   mkdir -p "$KEY_DIR"
@@ -137,8 +144,9 @@ PY
       "$KEY_DIR/%04d.png"
   fi
 
-  echo "Generating $FADE_FRAMES fade frames..."
-  python3 - "$KEY_DIR" "$FADE_FRAMES" <<'PY'
+  if [ "$FADE_FRAMES" -gt 0 ]; then
+    echo "Generating $FADE_FRAMES fade frames..."
+    python3 - "$KEY_DIR" "$FADE_FRAMES" <<'PY'
 import sys, os, glob
 import numpy as np
 from PIL import Image
@@ -155,6 +163,18 @@ for k in range(1, K + 1):
     Image.fromarray(blend, mode="RGBA").save(os.path.join(key_dir, f"{N + k:04d}.png"))
 print(f"total frames: {N + K}", file=sys.stderr)
 PY
+  fi
+
+  # Hold the final frame for PAUSE_SECONDS to create a pause between loops.
+  if [ "$PAUSE_FRAMES" -gt 0 ]; then
+    echo "Appending ${PAUSE_SECONDS}s pause (${PAUSE_FRAMES} frames)..."
+    last_frame="$(ls "$KEY_DIR"/*.png | sort | tail -1)"
+    count="$(ls "$KEY_DIR"/*.png | wc -l | tr -d ' ')"
+    for ((k=1; k<=PAUSE_FRAMES; k++)); do
+      printf -v fname "%04d.png" "$((count + k))"
+      cp "$last_frame" "$KEY_DIR/$fname"
+    done
+  fi
 
   echo "PASS 1: palette..."
   ffmpeg -y -loglevel error -framerate 12 -i "$KEY_DIR/%04d.png" \
