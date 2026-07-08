@@ -31,7 +31,24 @@ class SimpleWebSocketServer {
 
     start() {
         console.log(`🎮 Server-Authoritative WebSocket Server starting on port ${this.port}`);
-        this.server = http.createServer();
+        this.server = http.createServer((req, res) => {
+            // Plain HTTP health check - used by Render's health checks and by the
+            // client to wake a sleeping free-tier instance before opening a room
+            if (req.url === '/health' || req.url === '/') {
+                res.writeHead(200, {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                });
+                res.end(JSON.stringify({
+                    status: 'ok',
+                    uptimeSeconds: Math.floor(process.uptime()),
+                    rooms: this.rooms.size
+                }));
+                return;
+            }
+            res.writeHead(404);
+            res.end();
+        });
         this.wss = new WebSocket.Server({ server: this.server });
 
         this.wss.on('connection', (ws, request) => {

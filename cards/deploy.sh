@@ -165,6 +165,22 @@ deploy_railway() {
     print_success "Deployed to Railway!"
 }
 
+# Function to show Render deployment instructions
+# Render deploys via its dashboard/GitHub integration (render.yaml Blueprint),
+# not a CLI push like Heroku, so there's nothing to script here.
+deploy_render() {
+    print_status "Render deploys from git automatically once connected - no CLI push needed."
+    echo ""
+    echo "  1. render.yaml is already committed at the repo root"
+    echo "  2. Go to https://dashboard.render.com/blueprints and click 'New Blueprint Instance'"
+    echo "  3. Select this GitHub repo - Render will read render.yaml and create the service"
+    echo "  4. Once created, every push to main auto-deploys the server"
+    echo ""
+    print_status "After the first deploy, confirm the assigned hostname matches"
+    print_status "cards-websocket-server.onrender.com in src/client/websocket-multiplayer.js"
+    print_status "(Render appends a suffix if that name is already taken) and update it if not."
+}
+
 # Function to run tests
 run_tests() {
     print_status "Running tests..."
@@ -228,12 +244,14 @@ show_help() {
     echo "Commands:"
     echo "  heroku     Deploy to Heroku"
     echo "  railway    Deploy to Railway"
+    echo "  render     Show Render Blueprint deployment instructions"
     echo "  test       Run integration tests"
     echo "  local      Start local development"
     echo "  help       Show this help message"
     echo ""
     echo "Examples:"
     echo "  $0 heroku    # Deploy to Heroku"
+    echo "  $0 render    # Show Render deployment instructions"
     echo "  $0 test      # Run tests"
     echo "  $0 local     # Start local development"
 }
@@ -245,6 +263,9 @@ case "${1:-help}" in
         ;;
     railway)
         deploy_railway
+        ;;
+    render)
+        deploy_render
         ;;
     test)
         run_tests

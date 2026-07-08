@@ -17,6 +17,7 @@
     "test:server:reconnect": "node tests/server/full-state-reconnect.test.js",
     "deploy:heroku": "npm run test:server:discard && HEROKU_APP_NAME=cards-websocket-server ./deploy.sh heroku",
     "deploy:railway": "./deploy.sh railway",
+    "deploy:render": "./deploy.sh render",
     "deploy:test": "./deploy.sh test",
     "deploy:local": "./deploy.sh local"
   },

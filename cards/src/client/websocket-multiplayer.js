@@ -3,6 +3,10 @@
  * Handles room creation, joining, and real-time synchronization via WebSocket
  */
 
+// Render free-tier hostname for the deployed server. Update this if the
+// service name in render.yaml ends up taken and Render assigns a suffix.
+const MULTIPLAYER_REMOTE_HOST = 'cards-websocket-server.onrender.com';
+
 class WebSocketMultiplayerManager {
     constructor(gameInstance) {
         this.game = gameInstance;
@@ -374,7 +378,7 @@ class WebSocketMultiplayerManager {
         
         // If accessing from localhost, try local server first, fallback to remote
         // Otherwise, use remote server directly
-        const remoteHost = 'cards-websocket-server-02b8944e7896.herokuapp.com';
+        const remoteHost = MULTIPLAYER_REMOTE_HOST;
         const localHost = 'localhost:8080';
         
         let host = isLocalhost ? localHost : remoteHost;
@@ -2942,4 +2946,59 @@ class WebSocketMultiplayerManager {
         this.updatePlayerCount();
     }
 }
+
+// Wake the (possibly sleeping) free-tier server the moment the page loads,
+// rather than waiting until the player tries to create/join a room. Shows the
+// #boot-overlay (see index.html) until the server responds or we give up waiting.
+function wakeMultiplayerServer() {
+    const overlay = document.getElementById('boot-overlay');
+    const subtitle = document.getElementById('boot-subtitle');
+    if (!overlay) return;
+
+    const isLocalhost = window.location.hostname === 'localhost' ||
+                         window.location.hostname === '127.0.0.1' ||
+                         window.location.hostname === '';
+    const host = isLocalhost ? 'localhost:8080' : MULTIPLAYER_REMOTE_HOST;
+    const healthUrl = isLocalhost ? `http://${host}/health` : `https://${host}/health`;
+
+    const startedAt = Date.now();
+    const slowNoticeMs = 8000;   // free instances can take up to ~50s to spin up
+    const giveUpNoticeMs = 90000;
+    let slowNoticeShown = false;
+
+    function hideOverlay() {
+        overlay.classList.add('boot-overlay-hidden');
+        setTimeout(() => { overlay.style.display = 'none'; }, 400);
+    }
+
+    function attempt() {
+        fetch(healthUrl, { cache: 'no-store' })
+            .then(res => {
+                if (res.ok) {
+                    hideOverlay();
+                } else {
+                    scheduleRetry();
+                }
+            })
+            .catch(() => scheduleRetry());
+    }
+
+    function scheduleRetry() {
+        const elapsed = Date.now() - startedAt;
+
+        if (!slowNoticeShown && elapsed > slowNoticeMs && subtitle) {
+            subtitle.textContent = "Free servers doze off when idle - this can take up to a minute to wake back up.";
+            slowNoticeShown = true;
+        }
+        if (elapsed > giveUpNoticeMs && subtitle) {
+            subtitle.textContent = "Still waking up... hang tight, or refresh if this seems stuck.";
+        }
+
+        setTimeout(attempt, elapsed > giveUpNoticeMs ? 5000 : 2000);
+    }
+
+    attempt();
+}
+
+wakeMultiplayerServer();
 

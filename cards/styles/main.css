@@ -1356,3 +1356,60 @@ body[data-theme="Neon"] .card-count {
     z-index: 10000;
     will-change: transform, opacity;
 }
+
+/* Boot Overlay - shown while waking a sleeping free-tier server */
+.boot-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999999; /* above everything, including the menu toggle */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--theme-background, radial-gradient(circle at center, #2d5a4a, #1a3d2e));
+    opacity: 1;
+    transition: opacity 0.4s ease;
+}
+
+.boot-overlay.boot-overlay-hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.boot-overlay-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 32px 40px;
+    border-radius: 16px;
+    background: var(--container-bg, linear-gradient(135deg, #0f4c3a, #1a5f4a));
+    border: 1px solid var(--theme-border, #4a7c59);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    text-align: center;
+    max-width: 360px;
+}
+
+.boot-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(var(--border-rgb, 74, 124, 89), 0.3);
+    border-top-color: var(--theme-border, #4a7c59);
+    border-radius: 50%;
+    animation: boot-spin 0.9s linear infinite;
+}
+
+@keyframes boot-spin {
+    to { transform: rotate(360deg); }
+}
+
+.boot-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--cardback-color, #e8f5e8);
+}
+
+.boot-subtitle {
+    font-size: 13px;
+    color: var(--cardback-color, #e8f5e8);
+    opacity: 0.8;
+}
