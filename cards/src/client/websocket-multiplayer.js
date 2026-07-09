@@ -2963,10 +2963,14 @@ function wakeMultiplayerServer() {
 
     const startedAt = Date.now();
     const slowNoticeMs = 8000;    // free instances can take up to ~50s to spin up
-    const hardTimeoutMs = 45000;  // never block the app forever - e.g. ad blockers/privacy
-                                   // extensions (Brave Shields, uBlock, etc.) can silently
-                                   // block this health check request indefinitely
+    const hardTimeoutMs = 45000;  // never block the app forever - covers a genuine cold start
+    const fastFailureMs = 2000;   // a failure quicker than this means the request was blocked
+                                   // client-side (Brave Shields, uBlock, etc.) rather than a
+                                   // slow cold start - Render holds the connection open while
+                                   // spinning up, it doesn't fail fast
+    const fastFailuresToGiveUp = 2;
     let slowNoticeShown = false;
+    let fastFailureCount = 0;
 
     function hideOverlay() {
         overlay.classList.add('boot-overlay-hidden');
@@ -2974,23 +2978,27 @@ function wakeMultiplayerServer() {
     }
 
     function attempt() {
+        const attemptStartedAt = Date.now();
         fetch(healthUrl, { cache: 'no-store' })
             .then(res => {
                 if (res.ok) {
                     hideOverlay();
                 } else {
-                    scheduleRetry();
+                    scheduleRetry(false);
                 }
             })
-            .catch(() => scheduleRetry());
+            .catch(() => scheduleRetry(Date.now() - attemptStartedAt < fastFailureMs));
     }
 
-    function scheduleRetry() {
+    function scheduleRetry(wasFastFailure) {
         const elapsed = Date.now() - startedAt;
+        fastFailureCount = wasFastFailure ? fastFailureCount + 1 : 0;
 
-        if (elapsed > hardTimeoutMs) {
-            // Health check never succeeded - let the player in anyway. The multiplayer
-            // connection itself retries independently once they create/join a room.
+        if (elapsed > hardTimeoutMs || fastFailureCount >= fastFailuresToGiveUp) {
+            // Either a genuine cold start has had a fair chance, or the request is being
+            // blocked client-side (it keeps failing instantly). Let the player in either
+            // way - the multiplayer connection itself retries independently once they
+            // create/join a room.
             hideOverlay();
             return;
         }
