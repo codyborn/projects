@@ -2962,8 +2962,10 @@ function wakeMultiplayerServer() {
     const healthUrl = isLocalhost ? `http://${host}/health` : `https://${host}/health`;
 
     const startedAt = Date.now();
-    const slowNoticeMs = 8000;   // free instances can take up to ~50s to spin up
-    const giveUpNoticeMs = 90000;
+    const slowNoticeMs = 8000;    // free instances can take up to ~50s to spin up
+    const hardTimeoutMs = 45000;  // never block the app forever - e.g. ad blockers/privacy
+                                   // extensions (Brave Shields, uBlock, etc.) can silently
+                                   // block this health check request indefinitely
     let slowNoticeShown = false;
 
     function hideOverlay() {
@@ -2986,15 +2988,19 @@ function wakeMultiplayerServer() {
     function scheduleRetry() {
         const elapsed = Date.now() - startedAt;
 
+        if (elapsed > hardTimeoutMs) {
+            // Health check never succeeded - let the player in anyway. The multiplayer
+            // connection itself retries independently once they create/join a room.
+            hideOverlay();
+            return;
+        }
+
         if (!slowNoticeShown && elapsed > slowNoticeMs && subtitle) {
             subtitle.textContent = "Free servers doze off when idle - this can take up to a minute to wake back up.";
             slowNoticeShown = true;
         }
-        if (elapsed > giveUpNoticeMs && subtitle) {
-            subtitle.textContent = "Still waking up... hang tight, or refresh if this seems stuck.";
-        }
 
-        setTimeout(attempt, elapsed > giveUpNoticeMs ? 5000 : 2000);
+        setTimeout(attempt, 2000);
     }
 
     attempt();
