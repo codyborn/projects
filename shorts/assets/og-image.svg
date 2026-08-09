@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="630" viewBox="0 0 1200 630">
   <rect width="1200" height="630" fill="#16181d"/>
   <image href="shearwater.png" x="490" y="52" width="220" height="220"/>
-  <text x="600" y="392" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="74" font-weight="600" fill="#d8d4cb" letter-spacing="1">Thank You for Staying</text>
+  <text x="600" y="392" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="74" font-weight="600" fill="#d8d4cb" letter-spacing="1">Thank You For Staying</text>
   <text x="600" y="458" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="30" font-style="italic" fill="#7d7a72">a short story by Cody Born</text>
   <text x="600" y="565" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="21" fill="#c9a44a" letter-spacing="4">CIT.EARTH/SHORTS</text>
 </svg>
