@@ -481,5 +481,40 @@ it in a voice I used to spend carelessly, back when it was mine:</p>
     <p>© 2026 Cody Born · <a href="thank-you-for-staying.epub" download>EPUB</a> · <a href="https://cit.earth/">cit.earth</a></p>
   </footer>
 </div>
+<script data-goatcounter="https://citizen-earth.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+<script>
+(function () {
+  var thresholds = [25, 50, 75, 100];
+  var fired = {};
+  function depthPercent() {
+    var doc = document.documentElement;
+    var total = doc.scrollHeight - window.innerHeight;
+    if (total <= 0) return 100;
+    return Math.round(100 * (window.scrollY || doc.scrollTop || 0) / total);
+  }
+  function check() {
+    var p = depthPercent();
+    thresholds.forEach(function (t) {
+      var reached = t === 100 ? p >= 99 : p >= t;
+      if (reached && !fired[t]) {
+        fired[t] = true;
+        if (window.goatcounter && window.goatcounter.count) {
+          window.goatcounter.count({ path: 'read-depth-' + t, title: 'Read ' + t + '%', event: true });
+        }
+      }
+    });
+    if (fired[100]) window.removeEventListener('scroll', onScroll);
+  }
+  var ticking = false;
+  function onScroll() {
+    if (!ticking) {
+      ticking = true;
+      requestAnimationFrame(function () { ticking = false; check(); });
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('load', check);
+})();
+</script>
 </body>
 </html>
