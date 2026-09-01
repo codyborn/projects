@@ -290,6 +290,38 @@ h2 {
   display: inline-block;
 }
 
+.gear-toggle {
+  position: fixed;
+  top: 10px;
+  left: 160px;
+  background: rgba(44, 62, 80, 0.9);
+  color: #fff;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 25px;
+  font-size: 1rem;
+  line-height: 25px; /* match the emoji line box of .night-mode-toggle for equal height */
+  cursor: pointer;
+  z-index: 9999;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  text-decoration: none;
+  display: inline-block;
+}
+
+.gear-toggle:hover {
+  background: rgba(44, 62, 80, 1);
+  transform: scale(1.05);
+}
+
+.gear-toggle svg {
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: middle;
+  display: inline-block;
+}
+
 /* Blog Reader Overlay */
 .blog-overlay {
   position: fixed;
