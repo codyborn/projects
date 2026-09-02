@@ -19,6 +19,10 @@ window.addEventListener('popstate', () => {
 
 function checkForAutoOpen() {
   const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('blog') === 'latest') {
+    openLatestBlog();
+    return;
+  }
   const cityParam = urlParams.get('city');
   
   // If there's no city parameter and a blog is currently open, close it
