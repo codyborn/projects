@@ -238,52 +238,40 @@ h2 {
   align-items: stretch;
 }
 
-.night-mode-toggle {
+.night-mode-toggle,
+.latest-blog-toggle,
+.gear-toggle {
+  width: 60px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   background: rgba(44, 62, 80, 0.9);
   color: #fff;
   border: none;
-  padding: 12px 20px;
   border-radius: 25px;
-  font-size: 1rem;
+  font-size: 1.2rem;
   cursor: pointer;
-  z-index: 9999;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
+  text-decoration: none;
 }
 
-.night-mode-toggle:hover {
+.night-mode-toggle:hover,
+.latest-blog-toggle:hover,
+.gear-toggle:hover {
   background: rgba(44, 62, 80, 1);
   transform: scale(1.05);
 }
 
 .night-mode-toggle::before {
   content: "🌙";
-  font-size: 1.2em;
 }
 
 .night-mode .night-mode-toggle::before {
   content: "☀️";
-}
-
-.latest-blog-toggle {
-  background: rgba(44, 62, 80, 0.9);
-  color: #fff;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 25px;
-  font-size: 1rem;
-  line-height: 25px; /* match the emoji line box of .night-mode-toggle for equal height */
-  cursor: pointer;
-  z-index: 9999;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-}
-
-.latest-blog-toggle:hover {
-  background: rgba(44, 62, 80, 1);
-  transform: scale(1.05);
 }
 
 .latest-blog-toggle svg {
@@ -291,28 +279,6 @@ h2 {
   height: 1.2em;
   vertical-align: middle;
   display: inline-block;
-}
-
-.gear-toggle {
-  background: rgba(44, 62, 80, 0.9);
-  color: #fff;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 25px;
-  font-size: 1rem;
-  line-height: 25px; /* match the emoji line box of .night-mode-toggle for equal height */
-  cursor: pointer;
-  z-index: 9999;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-  text-decoration: none;
-  display: inline-block;
-}
-
-.gear-toggle:hover {
-  background: rgba(44, 62, 80, 1);
-  transform: scale(1.05);
 }
 
 .gear-toggle img {
