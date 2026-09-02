@@ -8,28 +8,21 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- Night Mode Toggle Button -->
-  <button class="night-mode-toggle" onclick="toggleNightMode()"></button>
-
-  <!-- Latest Blog Post Button -->
-  <button class="latest-blog-toggle" onclick="openLatestBlog()" title="Latest blog post" aria-label="Latest blog post">
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="4" y="3" width="16" height="18" rx="2"></rect>
-      <line x1="8" y1="8" x2="16" y2="8"></line>
-      <line x1="8" y1="12" x2="16" y2="12"></line>
-      <line x1="8" y1="16" x2="13" y2="16"></line>
-    </svg>
-  </button>
-
-  <!-- Gear List Button -->
-  <a class="gear-toggle" href="gear.html" title="What's in my bag" aria-label="What's in my bag">
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M6 21V8a6 6 0 0 1 12 0v13"></path>
-      <path d="M4 21h16"></path>
-      <path d="M9 5V3h6v2"></path>
-      <path d="M8 12h8v5H8z"></path>
-    </svg>
-  </a>
+  <!-- Top-left control buttons -->
+  <div class="top-controls">
+    <button class="night-mode-toggle" onclick="toggleNightMode()"></button>
+    <button class="latest-blog-toggle" onclick="openLatestBlog()" title="Latest blog post" aria-label="Latest blog post">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="3" width="16" height="18" rx="2"></rect>
+        <line x1="8" y1="8" x2="16" y2="8"></line>
+        <line x1="8" y1="12" x2="16" y2="12"></line>
+        <line x1="8" y1="16" x2="13" y2="16"></line>
+      </svg>
+    </button>
+    <a class="gear-toggle" href="gear.html" title="What's in my bag" aria-label="What's in my bag">
+      <img src="images/backpack-icon.png" alt="" width="20" height="20">
+    </a>
+  </div>
   
   <canvas id="water-canvas"></canvas>
   <canvas id="cloud-canvas"></canvas>
