@@ -145,7 +145,7 @@ function tickDay(s: RunState, rng: Rng, opts: { rest?: boolean } = {}): Resolved
   s.energy += 5 + (lodging?.energyPerDay ?? 0) + (opts.rest ? 0 : 0);
   s.mood += (lodging?.moodPerDay ?? 0) - 1;
   // slow wear: the year itself is the opponent. Routine (training, cooking, supplements) pushes back.
-  s.health -= 0.15 + s.day * 0.0023 + (s.energy < 40 ? 0.35 : 0) + (hasTag(s, 'fitness') ? 0 : 0.2);
+  s.health -= 0.10 + s.day * 0.0017 + (s.energy < 40 ? 0.35 : 0) + (hasTag(s, 'fitness') ? 0 : 0.2);
   if (coffeePacked(s)) { s.energy += 15; s.mood += 2; s.coffeeMornings += 1; }
   if (s.sickDays > 0) { s.sickDays -= 1; s.health -= 4; s.energy -= 5; }
   if (s.backInjuryDays > 0) s.backInjuryDays -= 1;
@@ -173,7 +173,7 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
     case 'work': events = tickDay(s, rng); s.energy = clamp(s.energy - 12, 0, energyCap(s)); s.mood = clamp(s.mood - 1, 0, 100); s.workStreak += 1; s.log.push({ day: s.day, city: s.cityId, text: DAILY.work }); break;
     case 'explore': events = tickDay(s, rng); s.energy = clamp(s.energy - 12, 0, energyCap(s)); s.mood = clamp(s.mood + 7, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: DAILY.explore }); events.push(...rollEvents(s, 'action', ctx, rngFor(s, 4), 1)); break;
     case 'rest': {
-      events = tickDay(s, rng, { rest: true }); s.energy = clamp(s.energy + 18, 0, energyCap(s)); s.mood = clamp(s.mood + 2, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: DAILY.rest });
+      events = tickDay(s, rng, { rest: true }); s.energy = clamp(s.energy + 28, 0, energyCap(s)); s.mood = clamp(s.mood + 2, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: DAILY.rest });
       const lvl = LEVEL_BY_CITY[s.cityId];
       if (hasTag(s, 'switch') && lvl) { checkEnding(s); return { state: s, events, minigame: { key: MINIGAME_KEYS.carryon, payload: { level: lvl, city: city.id }, difficulty: diff } }; }
       break; }
@@ -199,7 +199,7 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
 }
 
 export function applyMinigameResult(state: RunState, key: string, result: MinigameResult): StepResult {
-  const s = clone(state); const rng = rngFor(s, 5); let events: ResolvedEvent[] = []; const score = clamp(result.failed ? 0 : result.score, 0, 1); const city = CITY[s.cityId];
+  const s = clone(state); const rng = rngFor(s, 5); let events: ResolvedEvent[] = []; const raw = Number.isFinite(result.score) ? result.score : 0; const score = clamp(result.failed ? 0 : (raw > 1 ? raw / 100 : raw), 0, 1); /* score is 0..100 */ const city = CITY[s.cityId];
   switch (key) {
     case MINIGAME_KEYS.workout: {
       events = tickDay(s, rng); s.energy = clamp(s.energy - 10, 0, energyCap(s)); s.health = clamp(s.health + 2 + Math.round(score * 5), 0, 100); s.mood = clamp(s.mood + 3 + Math.round(score * 6), 0, 100);

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { itemIcon } from '../art/sprites';
 import type { Item, PackedItem, Bag, RunState } from '../core/types';
 import { PAL, txt, rect, type Label, hex, clamp } from '../ui/theme';
 import { Button } from '../ui/Button';
@@ -34,7 +35,7 @@ export class PackScene extends Phaser.Scene {
     this.grids = { checked: { bag: 'checked', x: 12, y: 58, cols: gs.checked.cols, rows: gs.checked.rows, maxLb: gs.checked.maxLb },
                    backpack: { bag: 'backpack', x: 222, y: 58, cols: gs.backpack.cols, rows: gs.backpack.rows, maxLb: gs.backpack.maxLb } };
     rect(this, 0, 0, 360, 640, PAL.night0);
-    txt(this, 12, 14, 'PACK YOUR LIFE', 16, PAL.white); txt(this, 12, 34, 'drag in · double-tap to rotate · drag out to remove', 8, PAL.gray1);
+    txt(this, 12, 14, 'PACK YOUR LIFE', 16, PAL.white);
     new Button(this, 300, 26, 'DEPART', () => this.depart(), { w: 100, h: 40, fill: PAL.sun0, size: 12 });
     this.wLabel = {} as any; this.wBar = {} as any;
     for (const g of Object.values(this.grids)) {
@@ -42,16 +43,16 @@ export class PackScene extends Phaser.Scene {
       const gg = this.add.graphics(); gg.fillStyle(PAL.ink, 1); gg.fillRect(g.x + 2, g.y + 3, w, h); gg.fillStyle(PAL.night1, 1); gg.fillRect(g.x, g.y, w, h);
       gg.lineStyle(1, PAL.night3, 1); for (let c = 0; c <= g.cols; c++) gg.lineBetween(g.x + c * CELL + 0.5, g.y, g.x + c * CELL + 0.5, g.y + h); for (let r = 0; r <= g.rows; r++) gg.lineBetween(g.x, g.y + r * CELL + 0.5, g.x + w, g.y + r * CELL + 0.5);
       gg.lineStyle(1, PAL.gray1, 1); gg.strokeRect(g.x + 0.5, g.y + 0.5, w - 1, h - 1);
-      txt(this, g.x, g.y - 12, g.bag === 'checked' ? '🧳 CHECKED · can be delayed' : '🎒 BACKPACK · always with you', 8, PAL.gray2);
+      txt(this, g.x, g.y - 12, g.bag === 'checked' ? 'CHECKED · delayable' : 'BACKPACK · on you', 8, PAL.gray2);
       this.wBar[g.bag] = this.add.graphics(); this.wLabel[g.bag] = txt(this, g.x, g.y + h + 12, '', 8, PAL.gray2);
     }
     // backpack is shorter: put a "tips" box under it
     const bp = this.grids.backpack; new Panel(this, bp.x, bp.y + bp.rows * CELL + 30, bp.cols * CELL, 80, { fill: PAL.night1 });
     this.hints = txt(this, bp.x + 4, bp.y + bp.rows * CELL + 34, '', 8, PAL.sun1, { wrap: bp.cols * CELL - 8 });
     // tabs
-    const tabY = 318; this.tabBtns = CATS.map((c, i) => new Button(this, 30 + i * 60, tabY, c === 'Other' ? 'MISC' : c.toUpperCase(), () => this.setCat(c), { w: 58, h: 30, size: 8, fill: PAL.night2 }));
+    const tabY = 318; this.tabBtns = CATS.map((c, i) => new Button(this, 30 + i * 60, tabY, ({ Tech: 'TECH', Clothing: 'WEAR', Adventure: 'ADV', Health: 'HEALTH', Other: 'MISC', Extras: 'EXTRA' } as Record<string, string>)[c] ?? c.toUpperCase(), () => this.setCat(c), { w: 58, h: 30, size: 8, fill: PAL.night2 }));
     // tray
-    rect(this, 0, 336, 360, 304, PAL.night1); txt(this, 12, 342, 'swipe ←→ · drag up to pack', 8, PAL.gray1);
+    rect(this, 0, 336, 360, 304, PAL.night1); txt(this, 12, 342, 'swipe · drag up to pack · double-tap rotates · drag out removes', 8, PAL.gray1);
     this.trayC = this.add.container(0, 0); this.trayMask = this.make.graphics({}); this.trayMask.fillRect(0, 352, 360, 288); this.trayC.setMask(this.trayMask.createGeometryMask());
     const zone = this.add.zone(180, 496, 360, 288).setInteractive({ draggable: true }); this.setupTrayInput(zone);
     this.occupancy = { checked: this.emptyOcc('checked'), backpack: this.emptyOcc('backpack') };
@@ -70,7 +71,9 @@ export class PackScene extends Phaser.Scene {
     g.fillStyle(PAL.ink, alpha); g.fillRect(2, 3, w * cell - 2, h * cell - 2); g.fillStyle(it.color, alpha); g.fillRect(1, 1, w * cell - 3, h * cell - 3);
     g.fillStyle(PAL.white, 0.22 * alpha); g.fillRect(2, 2, w * cell - 5, 2); g.lineStyle(1, PAL.ink, alpha); g.strokeRect(1.5, 1.5, w * cell - 4, h * cell - 4);
     c.add(g);
-    if (cell >= 18) { const l = txt(this, (w * cell) / 2, (h * cell) / 2, it.label, 8, PAL.white, { align: 'center', wrap: w * cell - 4 }).setOrigin(0.5); c.add(l as any); }
+    const big = w * cell >= 66 && h * cell >= 40;
+    try { const key = itemIcon(this, it); const ic = this.add.image((w * cell) / 2, big ? (h * cell) / 2 - 8 : (h * cell) / 2, key).setOrigin(0.5); if (!big && (w * cell < 20 || h * cell < 20)) ic.setScale(0.75); c.add(ic); } catch {}
+    if (big) { const l = txt(this, (w * cell) / 2, (h * cell) / 2 + 8, it.label, 8, PAL.white, { align: 'center', wrap: w * cell - 4 }).setOrigin(0.5, 0); c.add(l as any); }
     return c;
   }
   private place(it: Item, b: Bag, x: number, y: number, rot: boolean, animate = true) {
@@ -159,9 +162,9 @@ export class PackScene extends Phaser.Scene {
     const tags = new Set<string>(); let clothes = 0; let laptopChecked = false;
     for (const p of this.placed) { const it = Data.item(p.id); if (!it) continue; it.tags.forEach(t => tags.add(t)); clothes += it.clothesDays ?? 0; if (it.tags.includes('work') && p.bag === 'checked') laptopChecked = true; }
     const total = w.checked + w.backpack, cap = this.grids.checked.maxLb + this.grids.backpack.maxLb; const h: string[] = [];
-    if (total >= cap * 0.9) h.push('⚠ ≥90% weight: back risk'); if (laptopChecked) h.push('⚠ laptop in checked bag: delay risk'); if (clothes < 7) h.push(`⚠ ${clothes} days of clothes: laundry often`);
-    if (!tags.has('firstaid')) h.push('⚠ no first aid kit'); if (!tags.has('health') && !tags.has('fitness')) h.push('⚠ nothing for health: sickness risk'); if (tags.has('coffee')) h.push('☕ coffee packed: good mornings'); if (tags.has('kettle')) h.push('🫖 kettle packed. bold.'); if (tags.has('switch')) h.push('🎮 Carry-On unlocked');
-    this.hints.setText(h.length ? h.join('\n') : 'Everything you pack has a consequence.');
+    if (total >= cap * 0.9) h.push('! heavy: back risk'); if (laptopChecked) h.push('! laptop in checked'); if (clothes < 7) h.push(`! ${clothes}d of clothes`);
+    if (!tags.has('firstaid')) h.push('! no first aid'); if (!tags.has('health') && !tags.has('fitness')) h.push('! no health kit'); if (tags.has('coffee')) h.push('+ coffee mornings'); if (tags.has('kettle')) h.push('+ kettle. bold.'); if (tags.has('switch')) h.push('+ Carry-On');
+    this.hints.setText(h.length ? h.slice(0, 2).join('\n') : 'Everything has a consequence.');
   }
   private depart() {
     const run = getRun(this); const packed: PackedItem[] = this.placed.map(p => ({ id: p.id, bag: p.bag, x: p.x, y: p.y, rot: p.rot } as any));

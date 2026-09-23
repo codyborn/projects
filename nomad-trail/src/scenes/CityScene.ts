@@ -7,7 +7,7 @@ import { Hud } from '../ui/hud';
 import { toast } from '../ui/Toast';
 import { Sim, Data, getRun, putRun } from '../ui/simBridge';
 const ACTIONS: { a: CityAction; label: string; icon: string; tip: string }[] = [
-  { a: 'work', label: 'WORK', icon: '💻', tip: 'a remote day' }, { a: 'explore', label: 'EXPLORE', icon: '🧭', tip: 'mood up, mild risk' },
+  { a: 'work', label: 'WORK WEEK', icon: '💻', tip: 'a remote day' }, { a: 'explore', label: 'EXPLORE', icon: '🧭', tip: 'mood up, mild risk' },
   { a: 'train', label: 'TRAIN', icon: '🏋', tip: 'stay fit' }, { a: 'cook', label: 'COOK', icon: '🍳', tip: 'local dish' },
   { a: 'rest', label: 'REST', icon: '🛏', tip: 'energy up' }, { a: 'laundry', label: 'LAUNDRY', icon: '🧺', tip: 'a day, clean clothes' },
   { a: 'checkroom', label: 'CHECK ROOM', icon: '🔍', tip: 'forget nothing' }, { a: 'moveon', label: 'MOVE ON', icon: '✈', tip: 'pick the next city' } ];
@@ -23,11 +23,11 @@ export class CityScene extends Phaser.Scene {
     // vista
     let drew = false; const hook = (window as any).__nomadArt?.skyline; if (hook) { try { hook(this, run.cityId, 0, 86, 360, 150); drew = true; } catch {} }
     if (!drew) this.fallbackVista(run.cityId, city?.climate ?? 'temperate');
-    txt(this, 12, 96, (city?.name ?? run.cityId).toUpperCase(), 16, PAL.white); txt(this, 12, 116, `${city?.country ?? ''} · stay day ${run.stayDays + 1}`, 8, PAL.gray2);
+    txt(this, 12, 96, (city?.name ?? run.cityId).toUpperCase(), 16, PAL.white).setDepth(3); txt(this, 12, 116, `${city?.country ?? ''} · stay day ${run.stayDays + 1}`, 8, PAL.gray2).setDepth(3);
     this.hud = new Hud(this); this.hud.refresh(run);
     new Panel(this, 12, 244, 336, 118, { fill: PAL.night1, border: PAL.night3 }); this.logLbl = txt(this, 20, 250, '', 8, PAL.gray2, { wrap: 320 }); this.refreshLog();
     ACTIONS.forEach((act, i) => { const b = new Button(this, 96 + (i % 2) * 168, 392 + Math.floor(i / 2) * 56, act.label, () => this.act(act.a), { w: 160, h: 48, size: 11, icon: act.icon, fill: act.a === 'moveon' ? PAL.sea0 : PAL.night2 }); this.btns.push(b); });
-    txt(this, 180, 620, 'every action is one day', 8, PAL.gray0).setOrigin(0.5);
+    txt(this, 180, 620, 'each action is a day · work week is five', 8, PAL.gray0).setOrigin(0.5);
     if (data.arrived) this.arrivalCard();
   }
   private fallbackVista(cityId: string, climate: string) {
@@ -36,7 +36,7 @@ export class CityScene extends Phaser.Scene {
     const g = this.add.graphics(); const rnd = new Phaser.Math.RandomDataGenerator([cityId]); g.fillStyle(PAL.night2, 1); let x = 0; while (x < 360) { const w = 14 + rnd.between(0, 30), h = climate === 'alpine' ? 40 + rnd.between(0, 80) : 20 + rnd.between(0, 60); if (climate === 'alpine') { g.fillTriangle(x, 236, x + w / 2, 236 - h, x + w, 236); } else g.fillRect(x, 236 - h, w, h); x += w + 2; }
     rect(this, 0, 232, 360, 6, PAL.earth0);
   }
-  private refreshLog() { const run = getRun(this); this.logLbl.setText(run.log.slice(-5).map(l => `d${l.day}  ${l.text}`).join('\n')); }
+  private refreshLog() { const run = getRun(this); this.logLbl.setText(run.log.slice(-4).map(l => { const t = `d${l.day} ${l.text}`; return t.length > 78 ? t.slice(0, 76) + '…' : t; }).join('\n')); }
   private arrivalCard() {
     const run = getRun(this); const city = Data.city(run.cityId); const dim = dimmer(this, 0.6); const p = new Panel(this, 24, 180, 312, 260, { fill: PAL.night1, border: PAL.sun2 });
     const parts: Phaser.GameObjects.GameObject[] = [dim, p];
@@ -50,11 +50,15 @@ export class CityScene extends Phaser.Scene {
   }
   private act(a: CityAction) {
     if (this.busy) return; this.busy = true; this.btns.forEach(b => b.setDisabled(true));
-    const run = getRun(this); const res = Sim.cityAction(run, a); putRun(this, res.state); this.hud.refresh(res.state); this.refreshLog();
+    const run = getRun(this); let res = Sim.cityAction(run, a);
+    if (a === 'work') { // work week: up to 5 days, stop early on events, ending, or bag trouble
+      for (let i = 1; i < 5 && !res.events.length && !res.minigame && !Sim.checkEnding(res.state) && res.state.cleanClothes > 0; i++) res = Sim.cityAction(res.state, a);
+    }
+    putRun(this, res.state); this.hud.refresh(res.state); this.refreshLog();
     const queue: (() => Promise<void>)[] = [];
     for (const id of res.events) queue.push(() => this.overlay('Event', { eventId: id }));
     if (res.minigame) queue.push(() => this.minigame(res.minigame!));
-    if (res.state.day !== this.lastDay && Sim.coffeePacked(res.state) && this.scene.get('Coffee') && a !== 'moveon') queue.push(() => this.overlay('Coffee', { city: res.state.cityId, day: res.state.day }));
+    if (res.state.day !== this.lastDay && res.state.stayDays === 1 && Sim.coffeePacked(res.state) && this.scene.get('Coffee') && a !== 'moveon') { const c = Data.city(res.state.cityId); queue.push(() => this.overlay('Coffee', { cityId: res.state.cityId, day: res.state.day, climate: c?.climate, region: c?.region })); }
     this.lastDay = res.state.day;
     (async () => { for (const q of queue) await q(); this.after(a); })();
   }

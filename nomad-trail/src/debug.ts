@@ -2,6 +2,8 @@
 import type Phaser from 'phaser';
 import type { RunState, MinigameResult } from './core/types';
 import { MINIGAME_KEYS } from './core/types';
+import { buildPack } from '../sim/policy';
+import { makeRng } from './core/sim/rng';
 
 export function installDebug(game: Phaser.Game) {
   const w = window as any;
@@ -19,19 +21,19 @@ export function installDebug(game: Phaser.Game) {
     goto: go,
     state: run,
     hasSave: () => !!SimMod?.load?.(),
-    newRun: (start = 'miami', dir: 'east' | 'west' = 'east') => { const s = SimMod.createRun(Date.now() % 100000, start, dir); setRun(s); go('Pack'); },
+    newRun: (start = 'miami', dir: 'east' | 'west' = 'east', seed?: number) => { const s = SimMod.createRun(seed ?? (Date.now() % 100000), start, dir); setRun(s); go('Pack'); },
     autoPack: (style: 'balanced' | 'heavy' | 'light' = 'balanced') => {
-      const items = SimMod.items ?? SimMod.data?.items; const s = run()!;
-      const pick = SimMod.autoPack ? SimMod.autoPack(style, items) : [];
-      const res = SimMod.setPack(s, pick); setRun(res.state ?? s); return res;
+      const s = run()!; const pick = buildPack(style === 'light' ? 'smart' : style === 'heavy' ? 'heavy' : 'random', makeRng(s.seed));
+      const res = SimMod.setPack(s, pick); setRun(res.state ?? s); return { ok: res.ok, errors: res.errors, weights: res.weights };
     },
     depart: () => { const s = run()!; if (s.phase === 'pack') s.phase = 'route'; setRun(s); go('Route'); },
-    travelFirst: () => { const s = run()!; const legs = SimMod.availableLegs(s); if (!legs.length) return 'no legs'; go('Travel', { to: legs[0].to }); return legs[0].to; },
-    act: (a: string) => { const sc: any = game.scene.getScene('City'); if (sc?.doAction) return sc.doAction(a); const r = SimMod.cityAction(run()!, a); setRun(r.state); return r; },
-    dismissEvents: () => { const ev: any = game.scene.getScene('Event'); if (ev && game.scene.isActive('Event')) { ev.dismissAll?.() ?? game.scene.stop('Event'); } },
-    minigame: (key: string, payload?: any) => new Promise<MinigameResult>(res => { lastMinigameDone = res; go(key, { energy: 80, difficulty: 0.4, payload, onDone: (r: MinigameResult) => { lastMinigameDone = null; res(r); } }); }),
+    travelFirst: () => { const s = run()!; const legs = SimMod.availableLegs(s); if (!legs.length) return 'no legs'; go('Travel', { leg: legs[0] }); return legs[0].to; },
+    act: (a: string) => { const sc: any = game.scene.getScene('City'); if (sc && game.scene.isActive('City')) { sc.act(a); return 'ok'; } return 'not-in-city:' + game.scene.getScenes(true).map(x => x.scene.key).join(','); },
+    dismissEvents: () => { const ev: any = game.scene.getScene('Event'); if (ev && (game.scene.isActive('Event') || game.scene.isPaused('Event'))) { ev.autoResolve ? ev.autoResolve() : game.scene.stop('Event'); } },
+    lastResult: null as MinigameResult | null,
+    minigame: (key: string, payload?: any) => { go(key, { energy: 80, difficulty: 0.4, payload, onDone: (r: MinigameResult) => { api.lastResult = r; lastMinigameDone = null; } }); return key; },
     finishMinigame: (score = 70) => {
-      for (const k of Object.values(MINIGAME_KEYS)) { const sc: any = game.scene.getScene(k); if (sc && game.scene.isActive(k)) { sc.forceFinish?.(score) ?? sc.frame?.finish?.({ score, perfect: score >= 95, failed: score < 30 }) ?? game.scene.stop(k); return k; } }
+      for (const k of Object.values(MINIGAME_KEYS)) { const sc: any = game.scene.getScene(k); if (sc && game.scene.isActive(k)) { if (sc.frame?.finish) sc.frame.finish(score); else if (sc.finish) sc.finish(score); else game.scene.stop(k); return k; } }
       const c: any = game.scene.getScene('Coffee'); if (c && game.scene.isActive('Coffee')) { c.skip?.() ?? game.scene.stop('Coffee'); return 'Coffee'; }
       return null;
     },

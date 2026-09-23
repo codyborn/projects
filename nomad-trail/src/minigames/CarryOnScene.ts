@@ -3,51 +3,10 @@ import { PAL } from '../core/palette';
 import { MINIGAME_KEYS, type ArcadeLevel, type Hazard, type MinigameLaunch } from '../core/types';
 import { MinigameFrame, W, H, clamp, normalizeLaunch, panel, txt, pixTexture } from './_shared';
 
-export const TILE = 16;
+import { TILE, PAR_DEFAULT, PHYS, DEFAULT_LEVEL, validateLevel } from './carryonLevel';
+export { DEFAULT_LEVEL, validateLevel } from './carryonLevel';
 const WORLD_Y = 160;           // world top on screen
-const PAR_DEFAULT = 45, HARD_CAP = 120;
-
-/** Built-in level (also the fallback when no payload). Hand-checked: every rise <= 3 rows, every gap <= 3 tiles. */
-export const DEFAULT_LEVEL: ArcadeLevel = {
-  city: 'Nowhere in particular', hazard: 'pigeon', palette: [PAL.night2, PAL.night3, PAL.gray1], stampPieces: 10, parTime: PAR_DEFAULT,
-  tiles: [
-    '#######################',
-    '#..........H..........#',
-    '#.........*...........#',
-    '#........###..........#',
-    '#.....................#',
-    '#....*..........*.....#',
-    '#...###........###....#',
-    '#.....................#',
-    '#.....................#',
-    '#......*.....*........#',
-    '#.....###...###.......#',
-    '#.....................#',
-    '#..*..............*...#',
-    '#.###............###..#',
-    '#.....................#',
-    '#.....*.......*.......#',
-    '#....###.....###......#',
-    '#.....................#',
-    '#S.......^.......^..*.#',
-    '#######################',
-  ],
-};
-
-/** Static reachability sanity check: every stamp needs a standable cell within jump reach (rise <= 3 rows, |dx| <= 3). Returns issues. */
-export function validateLevel(level: ArcadeLevel): string[] {
-  const rows = level.tiles, issues: string[] = []; const hgt = rows.length, wid = Math.max(...rows.map(r => r.length));
-  const at = (x: number, y: number) => (y < 0 || y >= hgt || x < 0 || x >= wid) ? '#' : (rows[y][x] || '.');
-  const standable = (x: number, y: number) => at(x, y) !== '#' && at(x, y) !== '^' && (at(x, y + 1) === '#' || at(x, y + 1) === '-');
-  let start = false, stamps = 0;
-  for (let y = 0; y < hgt; y++) for (let x = 0; x < wid; x++) {
-    const c = at(x, y); if (c === 'S') start = true;
-    if (c === '*') { stamps++; let ok = false; for (let dy = -1; dy <= 6 && !ok; dy++) for (let dx = -3; dx <= 3 && !ok; dx++) if (standable(x + dx, y + dy) && (dy >= 0 ? dy <= 6 : true)) ok = true; if (!ok) issues.push(`stamp at ${x},${y} looks unreachable`); }
-  }
-  if (!start) issues.push('no start (S)'); if (!stamps) issues.push('no stamp pieces (*)');
-  if (level.stampPieces && level.stampPieces !== stamps) issues.push(`stampPieces=${level.stampPieces} but ${stamps} '*' tiles`);
-  return issues;
-}
+const HARD_CAP = 120;
 
 interface Mover { spr: Phaser.GameObjects.Rectangle | Phaser.GameObjects.Image; vx: number; vy: number; kind: Hazard; t: number; x0: number; y0: number; dir: number; alive: boolean; w: number; h: number; }
 
@@ -173,14 +132,14 @@ export class CarryOnScene extends Phaser.Scene {
     const kb = (this as any)._kb as { l: Phaser.Input.Keyboard.Key[]; r: Phaser.Input.Keyboard.Key[]; j: Phaser.Input.Keyboard.Key[] } | undefined;
     const dirs = [...this.touchDirs.values()]; const left = dirs.includes('left') || !!kb?.l.some(k => k.isDown), right = dirs.includes('right') || !!kb?.r.some(k => k.isDown);
     const jumpDown = dirs.includes('jump') || !!kb?.j.some(k => k.isDown);
-    const tired = 1 - 0.15 * this.frame.hard; const run = 115 * tired; const slippery = hz === 'ice';
+    const tired = 1 - 0.15 * this.frame.hard; const run = PHYS.run * tired; const slippery = hz === 'ice';
     if (slippery) { const ax = (left ? -1 : right ? 1 : 0) * 500; body.setAccelerationX(ax); body.setDragX(ax === 0 ? 120 : 0); if (Math.abs(body.velocity.x) > run) body.setVelocityX(Math.sign(body.velocity.x) * run); }
     else { body.setAccelerationX(0); body.setVelocityX((left ? -run : right ? run : 0) + this.windForce); }
     if (this.windForce !== 0 && !left && !right && !slippery) body.setVelocityX(this.windForce);
     if (left) this.player.setFlipX(true); if (right) this.player.setFlipX(false);
     // jump: coyote + buffer + variable height
     const grounded = body.blocked.down || body.touching.down; if (grounded) this.coyote = 0.1; else this.coyote -= dt; this.jumpBuffer -= dt;
-    const jv = (hz === 'snow' ? 235 : 310) * (1 - 0.05 * this.frame.hard);
+    const jv = (hz === 'snow' ? PHYS.snowJump : PHYS.jump) * (1 - 0.05 * this.frame.hard);
     if (this.jumpBuffer > 0 && this.coyote > 0) { body.setVelocityY(-jv); this.jumpBuffer = 0; this.coyote = 0; this.player.setScale(0.8, 1.25); this.tweens.add({ targets: this.player, scaleX: 1, scaleY: 1, duration: 140 }); }
     if (!jumpDown && !this.jumpHeld && body.velocity.y < -80) body.setVelocityY(body.velocity.y * 0.55);
     if (!jumpDown) this.jumpHeld = false;

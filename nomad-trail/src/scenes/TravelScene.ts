@@ -24,8 +24,9 @@ export class TravelScene extends Phaser.Scene {
     };
     mk(300, 20, night ? PAL.night3 : bands[2], 18, true); mk(360, 30, night ? PAL.dusk0 : bands[3], 40, true); mk(430, 60, night ? PAL.night0 : PAL.earth0, 90, false);
     this.craft = this.add.container(-60, data.leg.transport === 'flight' ? 170 : 400);
-    const body = this.add.graphics(); body.fillStyle(PAL.white, 1); body.fillRect(0, 0, 44, 12); body.fillStyle(PAL.red, 1); body.fillRect(34, -4, 10, 6); body.fillStyle(PAL.sky1, 1); for (let i = 4; i < 32; i += 6) body.fillRect(i, 3, 3, 3); this.craft.add(body);
-    this.craft.add(txt(this, 22, -12, TRANSPORT_GLYPH[data.leg.transport] ?? '', 12, PAL.white).setOrigin(0.5) as any);
+    const texKey = 'tr_' + (data.leg.transport === 'flight' ? 'plane' : data.leg.transport);
+    if (this.textures.exists(texKey)) { const spr = this.add.image(22, 0, texKey).setOrigin(0.5).setScale(2); this.craft.add(spr); }
+    else { const body = this.add.graphics(); body.fillStyle(PAL.white, 1); body.fillRect(0, 0, 44, 12); body.fillStyle(PAL.red, 1); body.fillRect(34, -4, 10, 6); this.craft.add(body); this.craft.add(txt(this, 22, -12, TRANSPORT_GLYPH[data.leg.transport] ?? '', 12, PAL.white).setOrigin(0.5) as any); }
     this.tweens.add({ targets: this.craft, x: 330, duration: 2500, ease: 'Sine.InOut' });
     if (data.leg.transport === 'flight') this.tweens.add({ targets: this.craft, y: 130, duration: 1200, yoyo: true, ease: 'Sine.InOut' });
     txt(this, 180, 60, `${from?.name ?? run.cityId}  →  ${to?.name ?? data.leg.to}`, 14, PAL.white).setOrigin(0.5);

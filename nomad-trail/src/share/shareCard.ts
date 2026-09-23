@@ -1,4 +1,5 @@
 // End-of-run share card: 1080x1920 PNG rendered at 1/4 scale then upscaled crisp.
+import QRCode from 'qrcode';
 import type { RunState, City, Settings } from '../core/types';
 import { PAL, hex } from '../core/palette';
 import { makeCanvas, ditherGradient, R, P, glyph, rng, Ctx } from '../art/pixel';
@@ -37,7 +38,7 @@ export async function renderShareCard(state: RunState, cities: City[], settings?
     text(ctx, `SCORE ${state.ending?.score ?? 0}`, 24, 404, PAL.white, 1);
     if (settings?.bestScore) text(ctx, `BEST ${settings.bestScore}`, 150, 404, PAL.gray1, 1);
     // QR placeholder (21x21 modules) + url
-    const q = rng(99); R(ctx, W - 76, 416, 60, 60, PAL.white); for (let y = 0; y < 21; y++) for (let x = 0; x < 21; x++) { const fin = (x < 7 && y < 7) || (x > 13 && y < 7) || (x < 7 && y > 13); const on = fin ? ((x % 6 === 0 || y % 6 === 0 || (x % 6 >= 2 && x % 6 <= 4 && y % 6 >= 2 && y % 6 <= 4)) && !((x >= 7 && x <= 13) || (y >= 7 && y <= 13))) : q.chance(0.45); if (on) R(ctx, W - 74 + x * 2.6, 418 + y * 2.6, 3, 3, PAL.ink); }
+    { const qr = QRCode.create('https://cit.earth/trail', { errorCorrectionLevel: 'L' }); const n = qr.modules.size, m = 2, pad = 3, box = n * m + pad * 2; const qx = W - 16 - box, qy = 416; R(ctx, qx, qy, box, box, PAL.white); for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (qr.modules.get(y, x)) R(ctx, qx + pad + x * m, qy + pad + y * m, m, m, PAL.ink); }
     text(ctx, 'PLAY AT', 24, 430, PAL.gray1, 1); text(ctx, 'CIT.EARTH/TRAIL', 24, 442, PAL.neon, 1); text(ctx, 'PACK LIGHT. TRUST NO KETTLE.', 24, 462, PAL.gray1, 1);
   });
   const big = document.createElement('canvas'); big.width = W * 4; big.height = H * 4; const bc = big.getContext('2d')!; bc.imageSmoothingEnabled = false; bc.drawImage(small, 0, 0, big.width, big.height);

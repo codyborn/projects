@@ -7,5 +7,8 @@ import TravelScene from './scenes/TravelScene';
 import CityScene from './scenes/CityScene';
 import EventScene from './scenes/EventScene';
 import EndScene from './scenes/EndScene';
-// Added at integration: Coffee, Passport, Share (ART agent) and the six mini-games (MINIGAMES agent).
-export const SCENES: (typeof Phaser.Scene)[] = [BootScene, TitleScene, PackScene, RouteScene, TravelScene, CityScene, EventScene, EndScene] as any;
+import { CoffeeScene } from './scenes/CoffeeScene';
+import { PassportScene } from './scenes/PassportScene';
+import { ShareScene } from './share/ShareScene';
+import { MINIGAME_SCENES } from './minigames/devHarness';
+export const SCENES: (typeof Phaser.Scene)[] = [BootScene, TitleScene, PackScene, RouteScene, TravelScene, CityScene, EventScene, EndScene, CoffeeScene, PassportScene, ShareScene, ...MINIGAME_SCENES] as any;

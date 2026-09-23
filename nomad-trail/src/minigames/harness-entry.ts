@@ -1,0 +1,56 @@
+// Dev-only entry for harness.html: ?auto=1 drives every mini-game with synthetic input and reports results into #results.
+import Phaser from 'phaser';
+import { GAME_W, GAME_H, MINIGAME_KEYS, type MinigameLaunch } from '../core/types';
+import { PAL } from '../core/palette';
+import { launchHarness, MINIGAME_SCENES } from './devHarness';
+import { DEFAULT_LEVEL } from './CarryOnScene';
+
+const game = new Phaser.Game({ type: Phaser.CANVAS, parent: 'game', width: GAME_W, height: GAME_H, pixelArt: true, backgroundColor: PAL.night0,
+  physics: { default: 'arcade', arcade: { gravity: { x: 0, y: 900 } } }, scene: [] });
+(window as any).__game = game; const q = new URLSearchParams(location.search);
+const out = document.getElementById('results')!; const prog = (m: string) => { (window as any).__progress = m; document.getElementById('progress')!.textContent = m; };
+const errors: string[] = []; window.addEventListener('error', e => errors.push(String(e.message))); window.addEventListener('unhandledrejection', e => errors.push('rej:' + String((e as any).reason)));
+
+if (q.get('auto') === '1') {
+  MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
+  const runs: { key: string; payload?: any; energy: number }[] = [
+    { key: MINIGAME_KEYS.cooking, energy: 100 }, { key: MINIGAME_KEYS.cooking, energy: 20, payload: { id: 'x', name: 'Tacos', city: 'lapaz', ingredients: ['a'], health: 1, mood: 1, steps: [{ kind: 'season', count: 3 }, { kind: 'pour', count: 1 }, { kind: 'stir', count: 1 }] } },
+    ...(['bands', 'boulder', 'ferrata', 'trailrun', 'hike', 'swim', 'bogus'] as const).map(a => ({ key: MINIGAME_KEYS.workout, energy: a === 'hike' ? 30 : 100, payload: { activity: a, city: 'Test' } })),
+    { key: MINIGAME_KEYS.carryon, energy: 100 }, { key: MINIGAME_KEYS.carryon, energy: 40, payload: { ...DEFAULT_LEVEL, hazard: 'gust' } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { ...DEFAULT_LEVEL, hazard: 'rock' } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { ...DEFAULT_LEVEL, hazard: 'wave' } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { ...DEFAULT_LEVEL, hazard: 'otter' } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { ...DEFAULT_LEVEL, hazard: 'ice' } },
+    { key: MINIGAME_KEYS.kite, energy: 100 }, { key: MINIGAME_KEYS.airport, energy: 100 }, { key: MINIGAME_KEYS.airport, energy: 30 }, { key: MINIGAME_KEYS.laundry, energy: 100 },
+  ];
+  const results: any[] = []; let i = 0; let driver: number | undefined;
+  const mkPointer = (x: number, y: number, down: boolean) => { const p = game.input.activePointer; p.x = x; p.y = y; (p as any).worldX = x; (p as any).worldY = y; (p as any).isDown = down; return p; };
+  const next = () => {
+    if (driver) clearInterval(driver);
+    if (i >= runs.length) { out.textContent = JSON.stringify({ results, errors }); document.title = 'HARNESS_DONE'; return; }
+    const r = runs[i++]; const t0 = performance.now(); let doneCalls = 0;
+    const launch: MinigameLaunch = { energy: r.energy, difficulty: 0.5, payload: r.payload, onDone: (res) => { doneCalls++; results.push({ key: r.key, payload: r.payload?.activity || r.payload?.hazard || r.payload?.name || '', energy: r.energy, ...res, ms: Math.round(performance.now() - t0), doneCalls }); setTimeout(next, 300); } };
+    prog(`run ${i}/${runs.length} ${r.key} ${r.payload?.activity || r.payload?.hazard || ''}`);
+    game.scene.start(r.key, launch);
+    const scene = game.scene.getScene(r.key);
+    driver = window.setInterval(() => {
+      if (!scene.scene.isActive()) return;
+      const x = 20 + Math.random() * 320, y = 40 + Math.random() * 580;
+      const p = mkPointer(x, y, true); scene.input.emit('pointerdown', p);
+      // drag a little (stir / kite / carry-on swipe)
+      for (let k = 0; k < 4; k++) { const pm = mkPointer(x + Math.cos(k) * 30, y - k * 15 + Math.sin(k) * 30, true); scene.input.emit('pointermove', pm); }
+      setTimeout(() => { const pu = mkPointer(x, y - 60, false); scene.input.emit('pointerup', pu); }, 60);
+      const keys = [32, 37, 38, 39, 40, 49, 50, 51]; const kc = keys[Math.floor(Math.random() * keys.length)];
+      window.dispatchEvent(new KeyboardEvent('keydown', { keyCode: kc, which: kc, code: 'KeyX' } as any)); setTimeout(() => window.dispatchEvent(new KeyboardEvent('keyup', { keyCode: kc, which: kc } as any)), 80);
+      // interactive objects (boulder holds, airport bins/gates) get poked via emit
+      scene.children.list.forEach(o => { if ((o as any).input && Math.random() < 0.08) o.emit('pointerdown', p); });
+    }, 120);
+    // safety: if a scene never finishes in 150s, record and move on
+    setTimeout(() => { if (results.length < i) { results.push({ key: r.key, payload: r.payload?.activity || r.payload?.hazard || '', energy: r.energy, TIMEOUT: true }); scene.scene.stop(); next(); } }, 150000);
+  };
+  game.events.once('ready', () => {
+    if (q.get('fast') === '1') { // virtual clock: drive Phaser's TimeStep manually, ~30x real time
+      game.loop.stop(); let t = performance.now(); const fps = Number(q.get('fps') || 8);
+      setInterval(() => { for (let k = 0; k < fps; k++) { t += 16.67; game.loop.step(t); } }, 0);
+    }
+    setTimeout(next, 200);
+  });
+} else {
+  game.events.once('ready', () => launchHarness(game));
+}

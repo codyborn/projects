@@ -12,7 +12,7 @@
     "label": "Pet the otter",
     "text": "You pet the otter. It was worth it. Three days later the cut on your finger is hot and the fever arrives at 3 am. The hospital is very clean and very confused.",
     "effects": {
-     "health": -40,
+     "health": -34,
      "days": 4,
      "mood": -6,
      "sick": 3,
@@ -23,7 +23,7 @@
     "label": "Pet it, clean the cut after",
     "text": "You pet the otter. It was worth it. That night you clean the nick on your finger, and when it goes hot two days later the antibiotics are already in the backpack. You keep your week.",
     "effects": {
-     "health": -8,
+     "health": -7,
      "mood": 8,
      "unlockAchievement": "otter_lived"
     },
@@ -83,7 +83,7 @@
   "when": "day",
   "baseChance": 0.02,
   "effects": {
-   "health": -25,
+   "health": -21,
    "mood": -10,
    "energy": -10,
    "sick": 4,
@@ -99,7 +99,7 @@
   "when": "action",
   "baseChance": 0.12,
   "effects": {
-   "health": -18,
+   "health": -15,
    "energy": -20,
    "mood": -8,
    "days": 2,
@@ -110,7 +110,7 @@
   ],
   "mitigatedText": "Day {day}, {city}. Something you ate has opinions. The probiotics have counter-arguments. One rough night, not two days.",
   "mitigatedEffects": {
-   "health": -8,
+   "health": -7,
    "energy": -10,
    "mood": -4
   }
@@ -148,7 +148,7 @@
     "effects": {
      "energy": -30,
      "mood": -8,
-     "health": -5
+     "health": -4
     }
    }
   ]
@@ -200,7 +200,7 @@
   "when": "arrive",
   "baseChance": 0.7,
   "effects": {
-   "health": -15,
+   "health": -13,
    "energy": -25,
    "mood": -5
   },
@@ -294,7 +294,7 @@
   "when": "action",
   "baseChance": 0.1,
   "effects": {
-   "health": -8,
+   "health": -7,
    "mood": -6
   },
   "requiresCity": "roatan",
@@ -313,7 +313,7 @@
   "when": "action",
   "baseChance": 0.06,
   "effects": {
-   "health": -10,
+   "health": -8,
    "mood": 5
   },
   "requiresCity": "innsbruck"
@@ -327,7 +327,7 @@
   "effects": {
    "mood": 18,
    "energy": -25,
-   "health": -5,
+   "health": -4,
    "days": 1
   },
   "requiresCity": "munich"
@@ -361,7 +361,7 @@
   "when": "day",
   "baseChance": 0.05,
   "effects": {
-   "health": -4,
+   "health": -3,
    "mood": -4,
    "energy": -4
   },

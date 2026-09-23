@@ -14,7 +14,7 @@ export class RouteScene extends Phaser.Scene {
     rect(this, 0, 0, 360, 640, PAL.night0); this.cameras.main.fadeIn(250);
     const run = getRun(this); run.phase = 'route'; putRun(this, run);
     this.hud = new Hud(this); this.hud.refresh(run);
-    const cur = Data.city(run.cityId); const cx = 180, cy = 210, R = 96;
+    const cur = Data.city(run.cityId); const cx = 180, cy = 222, R = 88;
     const hook = (window as any).__nomadArt?.globe; let drewCustom = false; if (hook) { try { hook(this, cx, cy, R, run); drewCustom = true; } catch {} }
     if (!drewCustom) this.drawGlobe(cx, cy, R, run.route, cur);
     txt(this, 180, 100, `${cur?.name ?? run.cityId}, ${cur?.country ?? ''}`, 12, PAL.white).setOrigin(0.5);
@@ -22,12 +22,13 @@ export class RouteScene extends Phaser.Scene {
     const legs = Sim.availableLegs(run); const m = Sim.monthOf(run.day);
     txt(this, 12, 322, legs.length ? 'NEXT STOP' : 'NO ROUTES THIS MONTH', 10, PAL.sun2);
     txt(this, 348, 322, `${MONTHS[m - 1]} · day ${run.day}`, 8, PAL.gray2).setOrigin(1, 0);
-    const listC = this.add.container(0, 0); const mask = this.make.graphics({}); mask.fillRect(0, 336, 360, 246); listC.setMask(mask.createGeometryMask());
+    const listC = this.add.container(0, 0); const mask = this.make.graphics({}); mask.fillRect(0, 336, 360, 252); listC.setMask(mask.createGeometryMask());
     legs.forEach((leg, i) => listC.add(this.card(leg, 12, 340 + i * 62)));
     const total = legs.length * 62; if (total > 246) { const z = this.add.zone(180, 459, 360, 246).setInteractive({ draggable: true }); let sy = 0, s0 = 0; z.on('pointerdown', (p: any) => { s0 = p.y; }); z.on('drag', (p: any) => { const ny = Phaser.Math.Clamp(sy + (p.y - s0), -(total - 246), 0); listC.y = ny; }); z.on('dragend', () => { sy = listC.y; }); z.setDepth(-1); }
     if (!legs.length) { new Button(this, 180, 400, 'WAIT A WEEK HERE', () => { for (let i = 0; i < 7; i++) Sim.cityAction(run, 'rest'); putRun(this, run); this.scene.restart(); }, { w: 240, fill: PAL.dusk0 }); txt(this, 180, 440, 'Some legs only open in season (treks, campervans, Oktoberfest).', 8, PAL.gray2, { align: 'center', wrap: 300 }).setOrigin(0.5); }
-    new Button(this, 60, 610, '← STAY', () => this.scene.start('City'), { w: 100, h: 40, size: 10, fill: PAL.night2 });
-    if (this.scene.get('Passport')) new Button(this, 300, 610, 'PASSPORT', () => this.scene.start('Passport', { back: 'Route' }), { w: 100, h: 40, size: 10, fill: PAL.night2 });
+    rect(this, 0, 590, 360, 50, PAL.night0).setDepth(5);
+    new Button(this, 60, 616, '← STAY', () => this.scene.start('City'), { w: 100, h: 40, size: 10, fill: PAL.night2 }).setDepth(6);
+    if (this.scene.get('Passport')) new Button(this, 300, 616, 'PASSPORT', () => this.scene.start('Passport', { back: 'Route' }), { w: 100, h: 40, size: 10, fill: PAL.night2 }).setDepth(6);
   }
   private project(lat: number, lon: number, lon0: number, cx: number, cy: number, R: number) {
     const la = Phaser.Math.DegToRad(lat), lo = Phaser.Math.DegToRad(lon - lon0), la0 = Phaser.Math.DegToRad(18);

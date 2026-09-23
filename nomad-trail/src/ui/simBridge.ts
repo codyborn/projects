@@ -20,8 +20,32 @@ export interface SimApi {
   coffeePacked(state: RunState): boolean;
   save(state: RunState): void; load(): RunState | undefined; clearSave(): void;
   loadSettings(): Settings; saveSettings(s: Settings): void;
+  visibleAchievements(state: RunState): string[];
 }
-export const Sim: SimApi = Engine as unknown as SimApi;
+import { loadSettings as _loadSettings, saveSettings as _saveSettings, recordRun } from '../core/sim';
+export { recordRun };
+const E = Engine as any;
+/** Adapter: the engine returns StepResult {state, events: ResolvedEvent[]} and mutates nothing; scenes expect ids + plain states. */
+export const Sim: SimApi = {
+  gridSpecs: E.GRID,
+  createRun: (seed, start, dir) => E.createRun(seed, start, dir),
+  setPack: (state, packed) => { const r = E.setPack(state, packed); if (r.ok && r.state) Object.assign(state, r.state); return { ok: r.ok, errors: r.errors, weights: r.weights }; },
+  availableLegs: (state) => E.availableLegs(state),
+  travelTo: (state, cityId) => { const r = E.travelTo(state, cityId); if (r.error) console.warn('travelTo:', r.error); return { state: r.state, events: r.events.map((e: any) => e.id) }; },
+  cityAction: (state, action) => { const r = E.cityAction(state, action); if (r.error) console.warn('cityAction:', r.error); return { state: r.state, events: r.events.map((e: any) => e.id), minigame: r.minigame }; },
+  applyMinigameResult: (state, key, result) => E.applyMinigameResult(state, key, result).state,
+  resolveChoice: (state, eventId, idx) => { const r = E.resolveChoice(state, eventId, idx); if (r.error) console.warn('resolveChoice:', r.error); return r.state; },
+  checkEnding: (state) => E.checkEnding(state),
+  score: (state) => E.score(state),
+  monthOf: (day) => E.monthOf(day),
+  coffeePacked: (state) => E.coffeePacked(state),
+  save: (state) => E.save(state), load: () => E.load() ?? undefined, clearSave: () => E.clear(),
+  loadSettings: () => _loadSettings(), saveSettings: (s) => _saveSettings(s),
+  visibleAchievements: (state) => E.visibleAchievements(state),
+};
+/** Choices the engine will accept right now (filtered by accessible gear); EventScene must use these, not the raw definition. */
+export const pendingChoices = (state: RunState): { id: string; title: string; text: string; choices: any[] } | null => E.pendingChoices(state);
+export const engineEvents = (state: RunState) => E; // escape hatch
 const items = itemsJson as unknown as Item[]; const cities = citiesJson as unknown as City[]; const events = eventsJson as unknown as GameEvent[]; const dishes = dishesJson as unknown as Dish[];
 export const Data = {
   items, cities, events, dishes,

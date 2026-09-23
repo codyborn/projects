@@ -52,7 +52,11 @@ export class CoffeeScene extends Phaser.Scene {
       { targets: this.sky.container, y: -70, duration: 900, ease: 'Sine.easeInOut' },
     ], onComplete: () => this.finish() });
     void tl; void cityLbl;
-    if (!this.anims.exists('cf_grind')) this.anims.create({ key: 'cf_grind', frames: this.anims.generateFrameNumbers('cf_grinder', { frames: [0, 1] }), frameRate: 6 });
+    if (!this.textures.exists('cf_grinder')) buildCoffeeKit(this);
+    // the anim manager is global but scene textures can be rebuilt; always re-bind the frames to the live texture
+    if (this.anims.exists('cf_grind')) this.anims.remove('cf_grind');
+    const grFrames = this.textures.get('cf_grinder').getFrameNames().length >= 2 ? [0, 1] : [0];
+    this.anims.create({ key: 'cf_grind', frames: this.anims.generateFrameNumbers('cf_grinder', { frames: grFrames }), frameRate: 6 });
     this.input.once('pointerdown', () => this.finish());
     this.cameras.main.fadeIn(300, 11, 15, 26);
   }
