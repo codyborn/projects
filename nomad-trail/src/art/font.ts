@@ -100,6 +100,7 @@ const G: Record<string, string[]> = {
 '}':['01000','00100','00100','00010','00100','00100','01000'],
 '~':['00000','01010','01010','11111','01110','00000','01110'], // coffee cup glyph
 };
+export function __glyphs(): Record<string, string[]> { return G; }
 export const FONT_CHARS = Array.from({ length: 95 }, (_, i) => String.fromCharCode(32 + i)).join('');
 export const CW = 6, CH = 8; // cell size (5x7 glyph + 1px spacing)
 

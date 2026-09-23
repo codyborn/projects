@@ -129,7 +129,7 @@ export function stampTexture(scene: Phaser.Scene, city: Pick<City, 'id' | 'name'
     if (gold) { P(ctx, 6, 6, PAL.sun3); P(ctx, 37, 8, PAL.sun3); P(ctx, 8, 36, PAL.sun3); }
     if (dayLabel) { /* caller overlays text */ }
     // grunge: knock out random pixels for the inked look
-    const img = ctx.getImageData(0, 0, 44, 44); for (let i = 0; i < img.data.length; i += 4) if (img.data[i + 3] && r.chance(0.08)) img.data[i + 3] = 0; ctx.putImageData(img, 0, 0);
+    const img = ctx.getImageData(0, 0, 44, 44); for (let i = 0; i < img.data.length; i += 4) if (img.data[i + 3] && r.chance(0.035)) img.data[i + 3] = 0; ctx.putImageData(img, 0, 0);
   });
 }
 /** Tiny glyphs for stamps and map pins by stampIcon key. */
