@@ -1,0 +1,3478 @@
+[
+ {
+  "id": "miami",
+  "name": "Miami",
+  "country": "USA",
+  "region": "northamerica",
+  "lat": 25.76,
+  "lon": -80.19,
+  "hero": true,
+  "minStay": 3,
+  "suggestedStay": 14,
+  "climate": "hot",
+  "timezone": -5,
+  "dishes": [
+   "stonecrab",
+   "cubano"
+  ],
+  "activities": [
+   "swim",
+   "trailrun",
+   "bands"
+  ],
+  "hazard": "pigeon",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "foodpoisoning": 0.6
+  },
+  "legs": [
+   {
+    "to": "newyork",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   },
+   {
+    "to": "lapaz",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 2
+   },
+   {
+    "to": "roatan",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "lisbon",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 5
+   },
+   {
+    "to": "santiago",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "buenosaires",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 2
+   },
+   {
+    "to": "orangecounty",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 3
+   },
+   {
+    "to": "tokyo",
+    "transport": "flight",
+    "days": 2,
+    "energy": 34,
+    "timezones": 14
+   }
+  ],
+  "blurb": "Home base, allegedly. Ninety-six days here last year and the tan never took.",
+  "stampIcon": "palm"
+ },
+ {
+  "id": "newyork",
+  "name": "New York",
+  "country": "USA",
+  "region": "northamerica",
+  "lat": 40.71,
+  "lon": -74.01,
+  "hero": true,
+  "minStay": 3,
+  "suggestedStay": 10,
+  "climate": "temperate",
+  "timezone": -5,
+  "dishes": [
+   "pizza",
+   "bagel"
+  ],
+  "activities": [
+   "bands",
+   "trailrun"
+  ],
+  "hazard": "crowd",
+  "lodgings": [
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "lostphone": 2.0,
+   "airbnbcancel": 1.4
+  },
+  "legs": [
+   {
+    "to": "miami",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   },
+   {
+    "to": "london",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 5
+   },
+   {
+    "to": "lisbon",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 5
+   },
+   {
+    "to": "montreal",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   },
+   {
+    "to": "boulder",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 2
+   },
+   {
+    "to": "reykjavik",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 5,
+    "months": [
+     6,
+     7,
+     8,
+     9
+    ]
+   },
+   {
+    "to": "bozeman",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 2
+   },
+   {
+    "to": "tokyo",
+    "transport": "flight",
+    "days": 2,
+    "energy": 34,
+    "timezones": 14
+   },
+   {
+    "to": "hongkong",
+    "transport": "flight",
+    "days": 1,
+    "energy": 34,
+    "timezones": 13
+   }
+  ],
+  "blurb": "The team onsite city. Twenty days at a time, four times a year, always a hotel with a view of a wall.",
+  "stampIcon": "skyline"
+ },
+ {
+  "id": "boulder",
+  "name": "Boulder",
+  "country": "USA",
+  "region": "northamerica",
+  "lat": 40.01,
+  "lon": -105.27,
+  "hero": true,
+  "minStay": 5,
+  "suggestedStay": 21,
+  "climate": "temperate",
+  "timezone": -7,
+  "dishes": [
+   "greenchile",
+   "bisonburger"
+  ],
+  "activities": [
+   "trailrun",
+   "boulder",
+   "hike",
+   "ski"
+  ],
+  "hazard": "rock",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "altitude": 0.2,
+   "sunburn": 1.5
+  },
+  "legs": [
+   {
+    "to": "newyork",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 2
+   },
+   {
+    "to": "bozeman",
+    "transport": "car",
+    "days": 1,
+    "energy": 6,
+    "timezones": 0
+   },
+   {
+    "to": "lasvegas",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "orangecounty",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   }
+  ],
+  "blurb": "Trail runs at altitude, coffee at sea-level prices. The only American city that feels like a base.",
+  "stampIcon": "flatirons",
+  "altitude": 1655
+ },
+ {
+  "id": "bozeman",
+  "name": "Montana",
+  "country": "USA",
+  "region": "northamerica",
+  "lat": 45.68,
+  "lon": -111.04,
+  "hero": true,
+  "minStay": 5,
+  "suggestedStay": 21,
+  "climate": "cold",
+  "timezone": -7,
+  "dishes": [
+   "bisonburger",
+   "huckleberry"
+  ],
+  "activities": [
+   "hike",
+   "trailrun",
+   "ski"
+  ],
+  "hazard": "snow",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "wildlife": 2.0
+  },
+  "legs": [
+   {
+    "to": "newyork",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 2
+   },
+   {
+    "to": "boulder",
+    "transport": "car",
+    "days": 1,
+    "energy": 6,
+    "timezones": 0
+   },
+   {
+    "to": "montreal",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 2
+   }
+  ],
+  "blurb": "A Jeep Compass, a month, and more sky than a person needs.",
+  "stampIcon": "mountain",
+  "altitude": 1461
+ },
+ {
+  "id": "lasvegas",
+  "name": "Las Vegas",
+  "country": "USA",
+  "region": "northamerica",
+  "lat": 36.17,
+  "lon": -115.14,
+  "hero": false,
+  "minStay": 1,
+  "suggestedStay": 3,
+  "climate": "hot",
+  "timezone": -8,
+  "dishes": [
+   "buffet"
+  ],
+  "activities": [
+   "bands"
+  ],
+  "hazard": "crowd",
+  "lodgings": [
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "sleepless": 2.0
+  },
+  "legs": [
+   {
+    "to": "boulder",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "joshuatree",
+    "transport": "car",
+    "days": 1,
+    "energy": 6,
+    "timezones": 0
+   },
+   {
+    "to": "tokyo",
+    "transport": "flight",
+    "days": 1,
+    "energy": 38,
+    "timezones": 17
+   },
+   {
+    "to": "tokyo",
+    "transport": "flight",
+    "days": 1,
+    "energy": 38,
+    "timezones": 17
+   },
+   {
+    "to": "seoul",
+    "transport": "flight",
+    "days": 1,
+    "energy": 38,
+    "timezones": 17
+   }
+  ],
+  "blurb": "A layover that became five days. Nobody remembers why.",
+  "stampIcon": "dice"
+ },
+ {
+  "id": "joshuatree",
+  "name": "Joshua Tree",
+  "country": "USA",
+  "region": "northamerica",
+  "lat": 34.13,
+  "lon": -116.31,
+  "hero": false,
+  "minStay": 2,
+  "suggestedStay": 4,
+  "climate": "hot",
+  "timezone": -8,
+  "dishes": [
+   "chili"
+  ],
+  "activities": [
+   "boulder",
+   "hike"
+  ],
+  "hazard": "rock",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "sunburn": 1.5,
+   "nowifi": 2.0
+  },
+  "legs": [
+   {
+    "to": "lasvegas",
+    "transport": "car",
+    "days": 1,
+    "energy": 6,
+    "timezones": 0
+   },
+   {
+    "to": "orangecounty",
+    "transport": "car",
+    "days": 1,
+    "energy": 6,
+    "timezones": 0
+   }
+  ],
+  "blurb": "Bouldering by day, stars by night, an Airbnb with a hot tub and no wifi.",
+  "stampIcon": "cactus"
+ },
+ {
+  "id": "orangecounty",
+  "name": "Orange County",
+  "country": "USA",
+  "region": "northamerica",
+  "lat": 33.72,
+  "lon": -117.83,
+  "hero": false,
+  "minStay": 2,
+  "suggestedStay": 7,
+  "climate": "temperate",
+  "timezone": -8,
+  "dishes": [
+   "fishtacos"
+  ],
+  "activities": [
+   "swim",
+   "surf",
+   "bands"
+  ],
+  "hazard": "wave",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "goodday": 1.5
+  },
+  "legs": [
+   {
+    "to": "miami",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 3
+   },
+   {
+    "to": "boulder",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "joshuatree",
+    "transport": "car",
+    "days": 1,
+    "energy": 6,
+    "timezones": 0
+   },
+   {
+    "to": "lapaz",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "tokyo",
+    "transport": "flight",
+    "days": 1,
+    "energy": 38,
+    "timezones": 17
+   },
+   {
+    "to": "seoul",
+    "transport": "flight",
+    "days": 1,
+    "energy": 38,
+    "timezones": 17
+   }
+  ],
+  "blurb": "Family. Laundry that someone else folds. The Pacific gateway.",
+  "stampIcon": "sun"
+ },
+ {
+  "id": "montreal",
+  "name": "Montreal",
+  "country": "Canada",
+  "region": "northamerica",
+  "lat": 45.5,
+  "lon": -73.57,
+  "hero": false,
+  "minStay": 3,
+  "suggestedStay": 10,
+  "climate": "cold",
+  "timezone": -5,
+  "dishes": [
+   "poutine",
+   "bagel"
+  ],
+  "activities": [
+   "trailrun",
+   "bands"
+  ],
+  "hazard": "snow",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {},
+  "legs": [
+   {
+    "to": "newyork",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   },
+   {
+    "to": "bozeman",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 2
+   }
+  ],
+  "blurb": "Two weeks of bagels and the discovery that French is spoken faster here.",
+  "stampIcon": "maple"
+ },
+ {
+  "id": "lapaz",
+  "name": "La Paz",
+  "country": "Mexico",
+  "region": "mexico",
+  "lat": 24.14,
+  "lon": -110.31,
+  "hero": false,
+  "minStay": 2,
+  "suggestedStay": 5,
+  "climate": "hot",
+  "timezone": -7,
+  "dishes": [
+   "tacos",
+   "fishtacos"
+  ],
+  "activities": [
+   "swim",
+   "hike"
+  ],
+  "hazard": "wave",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "foodpoisoning": 1.6
+  },
+  "legs": [
+   {
+    "to": "miami",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 2
+   },
+   {
+    "to": "orangecounty",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "laventana",
+    "transport": "car",
+    "days": 1,
+    "energy": 6,
+    "timezones": 0
+   },
+   {
+    "to": "roatan",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   }
+  ],
+  "blurb": "Whale sharks, a rental car, the good kind of quiet.",
+  "stampIcon": "whale"
+ },
+ {
+  "id": "laventana",
+  "name": "La Ventana",
+  "country": "Mexico",
+  "region": "mexico",
+  "lat": 24.05,
+  "lon": -109.99,
+  "hero": true,
+  "minStay": 4,
+  "suggestedStay": 12,
+  "climate": "hot",
+  "timezone": -7,
+  "dishes": [
+   "tacos",
+   "fishtacos"
+  ],
+  "activities": [
+   "kite",
+   "swim",
+   "yoga"
+  ],
+  "hazard": "gust",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "windday": 2.5,
+   "foodpoisoning": 1.4
+  },
+  "legs": [
+   {
+    "to": "lapaz",
+    "transport": "car",
+    "days": 1,
+    "energy": 6,
+    "timezones": 0
+   },
+   {
+    "to": "santiago",
+    "transport": "flight",
+    "days": 2,
+    "energy": 22,
+    "timezones": 3
+   }
+  ],
+  "blurb": "Kiteboarding town. Wind every afternoon, NYE on the beach, nothing to do until 2 pm.",
+  "stampIcon": "kite"
+ },
+ {
+  "id": "roatan",
+  "name": "Roatan",
+  "country": "Honduras",
+  "region": "mexico",
+  "lat": 16.32,
+  "lon": -86.53,
+  "hero": true,
+  "minStay": 7,
+  "suggestedStay": 21,
+  "climate": "hot",
+  "timezone": -6,
+  "dishes": [
+   "baleada",
+   "ceviche"
+  ],
+  "activities": [
+   "swim",
+   "yoga",
+   "bands"
+  ],
+  "hazard": "wave",
+  "lodgings": [
+   {
+    "id": "coliving",
+    "name": "Co-living",
+    "cancelChance": 0.02,
+    "quiet": 1,
+    "moodPerDay": 3,
+    "energyPerDay": 0
+   },
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   }
+  ],
+  "eventWeights": {
+   "seaurchin": 2.0,
+   "foodpoisoning": 1.3,
+   "mosquito": 1.2
+  },
+  "legs": [
+   {
+    "to": "miami",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "santiago",
+    "transport": "flight",
+    "days": 2,
+    "energy": 18,
+    "timezones": 2
+   },
+   {
+    "to": "lapaz",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   }
+  ],
+  "blurb": "Vitalia. Five weeks on an island of biohackers and one very bad kettle.",
+  "stampIcon": "reef"
+ },
+ {
+  "id": "santiago",
+  "name": "Santiago",
+  "country": "Chile",
+  "region": "southamerica",
+  "lat": -33.45,
+  "lon": -70.67,
+  "hero": false,
+  "minStay": 3,
+  "suggestedStay": 7,
+  "climate": "temperate",
+  "timezone": -4,
+  "dishes": [
+   "ceviche",
+   "completo"
+  ],
+  "activities": [
+   "hike",
+   "bands",
+   "trailrun"
+  ],
+  "hazard": "crowd",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {},
+  "legs": [
+   {
+    "to": "miami",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "laventana",
+    "transport": "flight",
+    "days": 2,
+    "energy": 22,
+    "timezones": 3
+   },
+   {
+    "to": "roatan",
+    "transport": "flight",
+    "days": 2,
+    "energy": 18,
+    "timezones": 2
+   },
+   {
+    "to": "patagonia",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "buenosaires",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   }
+  ],
+  "blurb": "A week in the Andes' shadow before the wind country.",
+  "stampIcon": "andes",
+  "altitude": 520
+ },
+ {
+  "id": "patagonia",
+  "name": "Patagonia",
+  "country": "Chile",
+  "region": "southamerica",
+  "lat": -51.73,
+  "lon": -72.51,
+  "hero": true,
+  "minStay": 10,
+  "suggestedStay": 28,
+  "climate": "cold",
+  "timezone": -3,
+  "dishes": [
+   "asado",
+   "ceviche"
+  ],
+  "activities": [
+   "hike",
+   "trailrun",
+   "kite"
+  ],
+  "hazard": "gust",
+  "lodgings": [
+   {
+    "id": "coliving",
+    "name": "Co-living",
+    "cancelChance": 0.02,
+    "quiet": 1,
+    "moodPerDay": 3,
+    "energyPerDay": 0
+   },
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   }
+  ],
+  "eventWeights": {
+   "windday": 2.5,
+   "wildlife": 1.5
+  },
+  "legs": [
+   {
+    "to": "santiago",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "buenosaires",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   }
+  ],
+  "blurb": "Edge City. A month at the end of the world with a hundred other people who also work on the internet.",
+  "stampIcon": "peaks"
+ },
+ {
+  "id": "buenosaires",
+  "name": "Buenos Aires",
+  "country": "Argentina",
+  "region": "southamerica",
+  "lat": -34.6,
+  "lon": -58.38,
+  "hero": true,
+  "minStay": 5,
+  "suggestedStay": 14,
+  "climate": "temperate",
+  "timezone": -3,
+  "dishes": [
+   "asado",
+   "empanada"
+  ],
+  "activities": [
+   "bands",
+   "trailrun"
+  ],
+  "hazard": "crowd",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "lostphone": 1.6,
+   "sleepless": 1.5
+  },
+  "legs": [
+   {
+    "to": "miami",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 2
+   },
+   {
+    "to": "patagonia",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   },
+   {
+    "to": "iguazu",
+    "transport": "bus",
+    "days": 1,
+    "energy": 14,
+    "timezones": 0
+   },
+   {
+    "to": "lisbon",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 3
+   },
+   {
+    "to": "madrid",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 4
+   },
+   {
+    "to": "santiago",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   }
+  ],
+  "blurb": "DevConnect. Steak at midnight, meetings at ten, a city that never asked what time zone you were on.",
+  "stampIcon": "tango"
+ },
+ {
+  "id": "iguazu",
+  "name": "Iguazu",
+  "country": "Argentina",
+  "region": "southamerica",
+  "lat": -25.69,
+  "lon": -54.44,
+  "hero": false,
+  "minStay": 1,
+  "suggestedStay": 2,
+  "climate": "hot",
+  "timezone": -3,
+  "dishes": [
+   "empanada"
+  ],
+  "activities": [
+   "hike"
+  ],
+  "hazard": "mosquito",
+  "lodgings": [
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "mosquito": 2.0
+  },
+  "legs": [
+   {
+    "to": "buenosaires",
+    "transport": "bus",
+    "days": 1,
+    "energy": 14,
+    "timezones": 0
+   },
+   {
+    "to": "madrid",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 4
+   }
+  ],
+  "blurb": "Waterfalls that make Niagara look like a tap.",
+  "stampIcon": "falls"
+ },
+ {
+  "id": "lisbon",
+  "name": "Lisbon",
+  "country": "Portugal",
+  "region": "europe",
+  "lat": 38.72,
+  "lon": -9.14,
+  "hero": true,
+  "minStay": 5,
+  "suggestedStay": 14,
+  "climate": "temperate",
+  "timezone": 0,
+  "dishes": [
+   "pasteldenata",
+   "bacalhau"
+  ],
+  "activities": [
+   "trailrun",
+   "surf",
+   "bands"
+  ],
+  "hazard": "tram",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "airbnbcancel": 2.0
+  },
+  "legs": [
+   {
+    "to": "miami",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 5
+   },
+   {
+    "to": "newyork",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 5
+   },
+   {
+    "to": "buenosaires",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 3
+   },
+   {
+    "to": "carvoeiro",
+    "transport": "car",
+    "days": 1,
+    "energy": 6,
+    "timezones": 0
+   },
+   {
+    "to": "madrid",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 1
+   },
+   {
+    "to": "casablanca",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "london",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   }
+  ],
+  "blurb": "The European base. Hills, tiles, the Airbnb that cancelled on the day.",
+  "stampIcon": "tram"
+ },
+ {
+  "id": "carvoeiro",
+  "name": "Carvoeiro",
+  "country": "Portugal",
+  "region": "europe",
+  "lat": 37.1,
+  "lon": -8.47,
+  "hero": false,
+  "minStay": 3,
+  "suggestedStay": 7,
+  "climate": "hot",
+  "timezone": 0,
+  "dishes": [
+   "pasteldenata",
+   "bacalhau"
+  ],
+  "activities": [
+   "swim",
+   "hike",
+   "trailrun"
+  ],
+  "hazard": "wave",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "sunburn": 1.5
+  },
+  "legs": [
+   {
+    "to": "lisbon",
+    "transport": "car",
+    "days": 1,
+    "energy": 6,
+    "timezones": 0
+   },
+   {
+    "to": "madrid",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 1
+   }
+  ],
+  "blurb": "Cliffs, caves, a rental car with the turning radius of a boat.",
+  "stampIcon": "cliff"
+ },
+ {
+  "id": "madrid",
+  "name": "Madrid",
+  "country": "Spain",
+  "region": "europe",
+  "lat": 40.42,
+  "lon": -3.7,
+  "hero": false,
+  "minStay": 3,
+  "suggestedStay": 7,
+  "climate": "temperate",
+  "timezone": 1,
+  "dishes": [
+   "paella",
+   "tortilla"
+  ],
+  "activities": [
+   "bands",
+   "trailrun"
+  ],
+  "hazard": "crowd",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "sleepless": 1.5
+  },
+  "legs": [
+   {
+    "to": "buenosaires",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 4
+   },
+   {
+    "to": "iguazu",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 4
+   },
+   {
+    "to": "carvoeiro",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 1
+   },
+   {
+    "to": "lisbon",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 1
+   },
+   {
+    "to": "granada",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   },
+   {
+    "to": "marseille",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   }
+  ],
+  "blurb": "A week of late dinners and early meetings. The math does not work.",
+  "stampIcon": "bull",
+  "altitude": 650
+ },
+ {
+  "id": "granada",
+  "name": "Granada",
+  "country": "Spain",
+  "region": "europe",
+  "lat": 37.18,
+  "lon": -3.6,
+  "hero": true,
+  "minStay": 4,
+  "suggestedStay": 10,
+  "climate": "hot",
+  "timezone": 1,
+  "dishes": [
+   "paella",
+   "tortilla"
+  ],
+  "activities": [
+   "hike",
+   "boulder",
+   "trailrun"
+  ],
+  "hazard": "rock",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "goodday": 1.5
+  },
+  "legs": [
+   {
+    "to": "madrid",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   },
+   {
+    "to": "marseille",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   },
+   {
+    "to": "casablanca",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   }
+  ],
+  "blurb": "Free tapas with every drink. The Alhambra. The Sierra Nevada right there.",
+  "stampIcon": "alhambra",
+  "altitude": 740
+ },
+ {
+  "id": "london",
+  "name": "London",
+  "country": "UK",
+  "region": "europe",
+  "lat": 51.51,
+  "lon": -0.13,
+  "hero": true,
+  "minStay": 5,
+  "suggestedStay": 21,
+  "climate": "rainy",
+  "timezone": 0,
+  "dishes": [
+   "fishandchips",
+   "sundayroast"
+  ],
+  "activities": [
+   "bands",
+   "trailrun"
+  ],
+  "hazard": "pigeon",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "rain": 2.5
+  },
+  "legs": [
+   {
+    "to": "newyork",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 5
+   },
+   {
+    "to": "lisbon",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   },
+   {
+    "to": "brussels",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 1
+   },
+   {
+    "to": "edinburgh",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   },
+   {
+    "to": "reykjavik",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   },
+   {
+    "to": "marseille",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   }
+  ],
+  "blurb": "Six weeks of a city that charges rent on the air.",
+  "stampIcon": "bigben"
+ },
+ {
+  "id": "brussels",
+  "name": "Brussels",
+  "country": "Belgium",
+  "region": "europe",
+  "lat": 50.85,
+  "lon": 4.35,
+  "hero": false,
+  "minStay": 3,
+  "suggestedStay": 7,
+  "climate": "rainy",
+  "timezone": 1,
+  "dishes": [
+   "moules",
+   "frites"
+  ],
+  "activities": [
+   "bands"
+  ],
+  "hazard": "pigeon",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "rain": 1.5
+  },
+  "legs": [
+   {
+    "to": "london",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 1
+   },
+   {
+    "to": "amsterdam",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   }
+  ],
+  "blurb": "A week. Fries as a food group.",
+  "stampIcon": "waffle"
+ },
+ {
+  "id": "amsterdam",
+  "name": "Amsterdam",
+  "country": "Netherlands",
+  "region": "europe",
+  "lat": 52.37,
+  "lon": 4.9,
+  "hero": false,
+  "minStay": 3,
+  "suggestedStay": 7,
+  "climate": "rainy",
+  "timezone": 1,
+  "dishes": [
+   "stroopwafel",
+   "moules"
+  ],
+  "activities": [
+   "bands",
+   "trailrun"
+  ],
+  "hazard": "tram",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "rain": 1.5
+  },
+  "legs": [
+   {
+    "to": "brussels",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   },
+   {
+    "to": "munich",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   },
+   {
+    "to": "seoul",
+    "transport": "flight",
+    "days": 1,
+    "energy": 26,
+    "timezones": 8
+   }
+  ],
+  "blurb": "Bikes have right of way over everything, including you.",
+  "stampIcon": "bike"
+ },
+ {
+  "id": "marseille",
+  "name": "Marseille",
+  "country": "France",
+  "region": "europe",
+  "lat": 43.3,
+  "lon": 5.37,
+  "hero": false,
+  "minStay": 1,
+  "suggestedStay": 2,
+  "climate": "hot",
+  "timezone": 1,
+  "dishes": [
+   "bouillabaisse"
+  ],
+  "activities": [
+   "swim",
+   "hike"
+  ],
+  "hazard": "wave",
+  "lodgings": [
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {},
+  "legs": [
+   {
+    "to": "granada",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   },
+   {
+    "to": "madrid",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   },
+   {
+    "to": "london",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "hyeres",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   }
+  ],
+  "blurb": "One night. The bouillabaisse was worth the night.",
+  "stampIcon": "port"
+ },
+ {
+  "id": "hyeres",
+  "name": "Hyeres",
+  "country": "France",
+  "region": "europe",
+  "lat": 43.12,
+  "lon": 6.13,
+  "hero": true,
+  "minStay": 10,
+  "suggestedStay": 26,
+  "climate": "hot",
+  "timezone": 1,
+  "dishes": [
+   "bouillabaisse",
+   "ratatouille"
+  ],
+  "activities": [
+   "swim",
+   "trailrun",
+   "kite",
+   "bands"
+  ],
+  "hazard": "mosquito",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "mosquito": 3.0,
+   "goodday": 1.5
+  },
+  "legs": [
+   {
+    "to": "marseille",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   },
+   {
+    "to": "antibes",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   }
+  ],
+  "blurb": "Twenty-six days on the Riviera. Bread is the answer. The mosquitoes had questions.",
+  "stampIcon": "palm"
+ },
+ {
+  "id": "antibes",
+  "name": "Antibes",
+  "country": "France",
+  "region": "europe",
+  "lat": 43.58,
+  "lon": 7.12,
+  "hero": true,
+  "minStay": 5,
+  "suggestedStay": 21,
+  "climate": "hot",
+  "timezone": 1,
+  "dishes": [
+   "ratatouille",
+   "bouillabaisse"
+  ],
+  "activities": [
+   "swim",
+   "trailrun",
+   "bands"
+  ],
+  "hazard": "wave",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "mosquito": 1.5,
+   "sunburn": 1.5
+  },
+  "legs": [
+   {
+    "to": "hyeres",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   },
+   {
+    "to": "munich",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   },
+   {
+    "to": "innsbruck",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   }
+  ],
+  "blurb": "Nice, Monaco, the sea every morning. If you can't beat 'em.",
+  "stampIcon": "yacht"
+ },
+ {
+  "id": "edinburgh",
+  "name": "Edinburgh",
+  "country": "UK",
+  "region": "europe",
+  "lat": 55.95,
+  "lon": -3.19,
+  "hero": false,
+  "minStay": 1,
+  "suggestedStay": 2,
+  "climate": "rainy",
+  "timezone": 0,
+  "dishes": [
+   "haggis",
+   "fishandchips"
+  ],
+  "activities": [
+   "trailrun",
+   "hike"
+  ],
+  "hazard": "pigeon",
+  "lodgings": [
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "rain": 2.0
+  },
+  "legs": [
+   {
+    "to": "london",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   },
+   {
+    "to": "highlands",
+    "transport": "car",
+    "days": 1,
+    "energy": 6,
+    "timezones": 0
+   },
+   {
+    "to": "casablanca",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   }
+  ],
+  "blurb": "A night between the Highlands and Morocco. Rain both ways.",
+  "stampIcon": "castle"
+ },
+ {
+  "id": "highlands",
+  "name": "Scottish Highlands",
+  "country": "UK",
+  "region": "europe",
+  "lat": 57.27,
+  "lon": -6.22,
+  "hero": true,
+  "minStay": 10,
+  "suggestedStay": 40,
+  "climate": "rainy",
+  "timezone": 0,
+  "dishes": [
+   "haggis",
+   "sundayroast"
+  ],
+  "activities": [
+   "hike",
+   "trailrun",
+   "swim"
+  ],
+  "hazard": "rock",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "rain": 3.0,
+   "wildlife": 1.5,
+   "goodday": 1.5
+  },
+  "legs": [
+   {
+    "to": "edinburgh",
+    "transport": "car",
+    "days": 1,
+    "energy": 6,
+    "timezones": 0
+   },
+   {
+    "to": "reykjavik",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0,
+    "months": [
+     6,
+     7,
+     8,
+     9
+    ]
+   }
+  ],
+  "blurb": "Aviemore, Skye, Glencoe. Six weeks, twelve dry hours, the best of them all.",
+  "stampIcon": "stag"
+ },
+ {
+  "id": "reykjavik",
+  "name": "Iceland",
+  "country": "Iceland",
+  "region": "europe",
+  "lat": 64.15,
+  "lon": -21.94,
+  "hero": true,
+  "minStay": 5,
+  "suggestedStay": 8,
+  "climate": "cold",
+  "timezone": 0,
+  "dishes": [
+   "plokkfiskur",
+   "lamb"
+  ],
+  "activities": [
+   "hike",
+   "swim"
+  ],
+  "hazard": "ice",
+  "lodgings": [
+   {
+    "id": "campervan",
+    "name": "Campervan",
+    "cancelChance": 0.0,
+    "quiet": 2,
+    "moodPerDay": 4,
+    "energyPerDay": -1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   }
+  ],
+  "eventWeights": {
+   "rain": 2.0,
+   "windday": 1.5,
+   "goodday": 2.0
+  },
+  "legs": [
+   {
+    "to": "newyork",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 5
+   },
+   {
+    "to": "highlands",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   },
+   {
+    "to": "london",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   }
+  ],
+  "blurb": "A campervan, the ring road, sleep that never gets dark.",
+  "stampIcon": "geyser"
+ },
+ {
+  "id": "munich",
+  "name": "Munich",
+  "country": "Germany",
+  "region": "alps",
+  "lat": 48.14,
+  "lon": 11.58,
+  "hero": true,
+  "minStay": 3,
+  "suggestedStay": 7,
+  "climate": "temperate",
+  "timezone": 1,
+  "dishes": [
+   "weisswurst",
+   "kaiserschmarrn"
+  ],
+  "activities": [
+   "bands",
+   "trailrun",
+   "swim"
+  ],
+  "hazard": "crowd",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "oktoberfest": 3.0,
+   "sleepless": 1.5
+  },
+  "legs": [
+   {
+    "to": "amsterdam",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   },
+   {
+    "to": "antibes",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   },
+   {
+    "to": "innsbruck",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   },
+   {
+    "to": "hallstatt",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   },
+   {
+    "to": "nairobi",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 2
+   },
+   {
+    "to": "bangkok",
+    "transport": "flight",
+    "days": 1,
+    "energy": 26,
+    "timezones": 6
+   },
+   {
+    "to": "tokyo",
+    "transport": "flight",
+    "days": 1,
+    "energy": 26,
+    "timezones": 8
+   },
+   {
+    "to": "kathmandu",
+    "transport": "flight",
+    "days": 2,
+    "energy": 22,
+    "timezones": 5
+   }
+  ],
+  "blurb": "Oktoberfest in September. Nothing about this city makes sense and all of it is on time.",
+  "stampIcon": "pretzel",
+  "altitude": 520
+ },
+ {
+  "id": "innsbruck",
+  "name": "Innsbruck",
+  "country": "Austria",
+  "region": "alps",
+  "lat": 47.27,
+  "lon": 11.4,
+  "hero": true,
+  "minStay": 10,
+  "suggestedStay": 33,
+  "climate": "alpine",
+  "timezone": 1,
+  "dishes": [
+   "kaspressknoedel",
+   "kaiserschmarrn"
+  ],
+  "activities": [
+   "ferrata",
+   "boulder",
+   "hike",
+   "ski",
+   "trailrun"
+  ],
+  "hazard": "rock",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "goodday": 2.5,
+   "rockfall": 2.0,
+   "airbnbcancel": 1.3
+  },
+  "legs": [
+   {
+    "to": "antibes",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   },
+   {
+    "to": "munich",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   },
+   {
+    "to": "hallstatt",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   }
+  ],
+  "blurb": "The Nordkette out the window. Via ferrata on Saturdays, the climbing gym on Tuesdays. The best month of the year.",
+  "stampIcon": "edelweiss",
+  "altitude": 574
+ },
+ {
+  "id": "hallstatt",
+  "name": "Salzkammergut",
+  "country": "Austria",
+  "region": "alps",
+  "lat": 47.56,
+  "lon": 13.65,
+  "hero": false,
+  "minStay": 4,
+  "suggestedStay": 7,
+  "climate": "alpine",
+  "timezone": 1,
+  "dishes": [
+   "kaspressknoedel",
+   "kaiserschmarrn"
+  ],
+  "activities": [
+   "hike",
+   "swim",
+   "trailrun"
+  ],
+  "hazard": "rock",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "goodday": 2.0,
+   "rain": 1.3
+  },
+  "legs": [
+   {
+    "to": "innsbruck",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   },
+   {
+    "to": "munich",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   }
+  ],
+  "blurb": "Bad Goisern, Gosau, lakes you can drink from. Cut from a month to a week and still worth it.",
+  "stampIcon": "lake",
+  "altitude": 511
+ },
+ {
+  "id": "casablanca",
+  "name": "Casablanca",
+  "country": "Morocco",
+  "region": "africa",
+  "lat": 33.57,
+  "lon": -7.59,
+  "hero": false,
+  "minStay": 2,
+  "suggestedStay": 7,
+  "climate": "hot",
+  "timezone": 1,
+  "dishes": [
+   "tagine",
+   "couscous"
+  ],
+  "activities": [
+   "bands",
+   "trailrun"
+  ],
+  "hazard": "crowd",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "foodpoisoning": 1.8
+  },
+  "legs": [
+   {
+    "to": "granada",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   },
+   {
+    "to": "lisbon",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "dakhla",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   },
+   {
+    "to": "nairobi",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 2
+   },
+   {
+    "to": "edinburgh",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   }
+  ],
+  "blurb": "A week of tagine and the realization that the movie was not filmed here.",
+  "stampIcon": "lantern"
+ },
+ {
+  "id": "dakhla",
+  "name": "Dakhla",
+  "country": "Morocco",
+  "region": "africa",
+  "lat": 23.71,
+  "lon": -15.94,
+  "hero": true,
+  "minStay": 7,
+  "suggestedStay": 21,
+  "climate": "hot",
+  "timezone": 1,
+  "dishes": [
+   "tagine",
+   "couscous"
+  ],
+  "activities": [
+   "kite",
+   "swim",
+   "yoga",
+   "bands"
+  ],
+  "hazard": "gust",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "windday": 3.0,
+   "foodpoisoning": 1.5,
+   "sunburn": 2.0
+  },
+  "legs": [
+   {
+    "to": "casablanca",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   },
+   {
+    "to": "nairobi",
+    "transport": "flight",
+    "days": 2,
+    "energy": 18,
+    "timezones": 2
+   }
+  ],
+  "blurb": "Three weeks on a lagoon in the Sahara. Wind at 2 pm like a train timetable. The French have watches.",
+  "stampIcon": "dune"
+ },
+ {
+  "id": "nairobi",
+  "name": "Nairobi",
+  "country": "Kenya",
+  "region": "africa",
+  "lat": -1.29,
+  "lon": 36.82,
+  "hero": true,
+  "minStay": 4,
+  "suggestedStay": 10,
+  "climate": "hot",
+  "timezone": 3,
+  "dishes": [
+   "nyamachoma",
+   "ugali"
+  ],
+  "activities": [
+   "trailrun",
+   "hike",
+   "bands"
+  ],
+  "hazard": "yak",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "wildlife": 2.5,
+   "foodpoisoning": 1.5,
+   "mosquito": 1.5
+  },
+  "legs": [
+   {
+    "to": "dakhla",
+    "transport": "flight",
+    "days": 2,
+    "energy": 18,
+    "timezones": 2
+   },
+   {
+    "to": "casablanca",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 2
+   },
+   {
+    "to": "munich",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 2
+   },
+   {
+    "to": "bangkok",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 4
+   },
+   {
+    "to": "kathmandu",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 3
+   }
+  ],
+  "blurb": "The October gap. Altitude you do not notice until the run.",
+  "stampIcon": "acacia",
+  "altitude": 1795
+ },
+ {
+  "id": "seoul",
+  "name": "Seoul",
+  "country": "South Korea",
+  "region": "asia",
+  "lat": 37.57,
+  "lon": 126.98,
+  "hero": true,
+  "minStay": 4,
+  "suggestedStay": 7,
+  "climate": "temperate",
+  "timezone": 9,
+  "dishes": [
+   "bibimbap",
+   "kbbq"
+  ],
+  "activities": [
+   "bands",
+   "trailrun",
+   "hike"
+  ],
+  "hazard": "crowd",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "goodday": 1.5
+  },
+  "legs": [
+   {
+    "to": "orangecounty",
+    "transport": "flight",
+    "days": 1,
+    "energy": 38,
+    "timezones": 17
+   },
+   {
+    "to": "amsterdam",
+    "transport": "flight",
+    "days": 1,
+    "energy": 26,
+    "timezones": 8
+   },
+   {
+    "to": "hongkong",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "tokyo",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   },
+   {
+    "to": "lasvegas",
+    "transport": "flight",
+    "days": 1,
+    "energy": 38,
+    "timezones": 17
+   }
+  ],
+  "blurb": "A week of food that is both spicy and a personality.",
+  "stampIcon": "lantern"
+ },
+ {
+  "id": "chiangmai",
+  "name": "Chiang Mai",
+  "country": "Thailand",
+  "region": "asia",
+  "lat": 18.79,
+  "lon": 98.98,
+  "hero": false,
+  "minStay": 4,
+  "suggestedStay": 8,
+  "climate": "hot",
+  "timezone": 7,
+  "dishes": [
+   "khaosoi",
+   "padthai"
+  ],
+  "activities": [
+   "yoga",
+   "bands",
+   "hike"
+  ],
+  "hazard": "mosquito",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "foodpoisoning": 2.0,
+   "mosquito": 1.8
+  },
+  "legs": [
+   {
+    "to": "bangkok",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   },
+   {
+    "to": "hongkong",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   }
+  ],
+  "blurb": "Nomad capital, cafés per capita off the charts, khao soi for breakfast.",
+  "stampIcon": "temple",
+  "altitude": 310
+ },
+ {
+  "id": "bangkok",
+  "name": "Bangkok",
+  "country": "Thailand",
+  "region": "asia",
+  "lat": 13.76,
+  "lon": 100.5,
+  "hero": true,
+  "minStay": 3,
+  "suggestedStay": 7,
+  "climate": "hot",
+  "timezone": 7,
+  "dishes": [
+   "padthai",
+   "khaosoi"
+  ],
+  "activities": [
+   "bands",
+   "swim"
+  ],
+  "hazard": "tuktuk",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "foodpoisoning": 2.5,
+   "sleepless": 1.5
+  },
+  "legs": [
+   {
+    "to": "munich",
+    "transport": "flight",
+    "days": 1,
+    "energy": 26,
+    "timezones": 6
+   },
+   {
+    "to": "nairobi",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 4
+   },
+   {
+    "to": "kathmandu",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "chiangmai",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   },
+   {
+    "to": "hongkong",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   }
+  ],
+  "blurb": "Street food at 1 am, a tuk-tuk at 1:05, regret at 4.",
+  "stampIcon": "tuktuk"
+ },
+ {
+  "id": "hongkong",
+  "name": "Hong Kong",
+  "country": "China",
+  "region": "asia",
+  "lat": 22.32,
+  "lon": 114.17,
+  "hero": true,
+  "minStay": 3,
+  "suggestedStay": 7,
+  "climate": "hot",
+  "timezone": 8,
+  "dishes": [
+   "dimsum",
+   "wonton"
+  ],
+  "activities": [
+   "hike",
+   "trailrun",
+   "swim"
+  ],
+  "hazard": "crowd",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "rain": 1.5
+  },
+  "legs": [
+   {
+    "to": "kathmandu",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 2
+   },
+   {
+    "to": "chiangmai",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "bangkok",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "seoul",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "tokyo",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "newyork",
+    "transport": "flight",
+    "days": 1,
+    "energy": 34,
+    "timezones": 13
+   }
+  ],
+  "blurb": "Skyscrapers with hiking trails behind them. A week of dim sum and stairs.",
+  "stampIcon": "junk"
+ },
+ {
+  "id": "tokyo",
+  "name": "Tokyo",
+  "country": "Japan",
+  "region": "asia",
+  "lat": 35.68,
+  "lon": 139.65,
+  "hero": true,
+  "minStay": 5,
+  "suggestedStay": 20,
+  "climate": "temperate",
+  "timezone": 9,
+  "dishes": [
+   "ramen",
+   "sushi"
+  ],
+  "activities": [
+   "trailrun",
+   "bands",
+   "boulder"
+  ],
+  "hazard": "otter",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "otter": 1.0,
+   "goodday": 2.0
+  },
+  "legs": [
+   {
+    "to": "newyork",
+    "transport": "flight",
+    "days": 2,
+    "energy": 34,
+    "timezones": 14
+   },
+   {
+    "to": "orangecounty",
+    "transport": "flight",
+    "days": 1,
+    "energy": 38,
+    "timezones": 17
+   },
+   {
+    "to": "lasvegas",
+    "transport": "flight",
+    "days": 1,
+    "energy": 38,
+    "timezones": 17
+   },
+   {
+    "to": "munich",
+    "transport": "flight",
+    "days": 1,
+    "energy": 26,
+    "timezones": 8
+   },
+   {
+    "to": "hongkong",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "seoul",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   },
+   {
+    "to": "minakami",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   },
+   {
+    "to": "lasvegas",
+    "transport": "flight",
+    "days": 1,
+    "energy": 38,
+    "timezones": 17
+   },
+   {
+    "to": "miami",
+    "transport": "flight",
+    "days": 2,
+    "energy": 34,
+    "timezones": 14
+   }
+  ],
+  "blurb": "Three weeks. An animal café. An otter. A hospital. In that order.",
+  "stampIcon": "torii"
+ },
+ {
+  "id": "minakami",
+  "name": "Minakami",
+  "country": "Japan",
+  "region": "asia",
+  "lat": 36.78,
+  "lon": 138.99,
+  "hero": false,
+  "minStay": 2,
+  "suggestedStay": 4,
+  "climate": "alpine",
+  "timezone": 9,
+  "dishes": [
+   "ramen",
+   "soba"
+  ],
+  "activities": [
+   "hike",
+   "ski",
+   "swim"
+  ],
+  "hazard": "snow",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "goodday": 2.0
+  },
+  "legs": [
+   {
+    "to": "tokyo",
+    "transport": "train",
+    "days": 1,
+    "energy": 8,
+    "timezones": 0
+   }
+  ],
+  "blurb": "Nikko and Minakami: onsens, snow, a train that apologizes for being early.",
+  "stampIcon": "onsen",
+  "altitude": 500
+ },
+ {
+  "id": "kathmandu",
+  "name": "Kathmandu",
+  "country": "Nepal",
+  "region": "himalaya",
+  "lat": 27.72,
+  "lon": 85.32,
+  "hero": true,
+  "minStay": 2,
+  "suggestedStay": 4,
+  "climate": "temperate",
+  "timezone": 6,
+  "dishes": [
+   "dalbhat",
+   "momo"
+  ],
+  "activities": [
+   "hike",
+   "bands"
+  ],
+  "hazard": "crowd",
+  "lodgings": [
+   {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "cancelChance": 0.08,
+    "quiet": 2,
+    "moodPerDay": 2,
+    "energyPerDay": 1
+   },
+   {
+    "id": "hotel",
+    "name": "Hotel",
+    "cancelChance": 0.01,
+    "quiet": 3,
+    "moodPerDay": 1,
+    "energyPerDay": 3
+   },
+   {
+    "id": "hostel",
+    "name": "Hostel dorm",
+    "cancelChance": 0.0,
+    "quiet": 0,
+    "moodPerDay": -2,
+    "energyPerDay": -2
+   }
+  ],
+  "eventWeights": {
+   "foodpoisoning": 2.0
+  },
+  "legs": [
+   {
+    "to": "munich",
+    "transport": "flight",
+    "days": 2,
+    "energy": 22,
+    "timezones": 5
+   },
+   {
+    "to": "nairobi",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 3
+   },
+   {
+    "to": "manaslu",
+    "transport": "trek",
+    "days": 14,
+    "energy": 30,
+    "timezones": 0,
+    "months": [
+     10,
+     11
+    ]
+   },
+   {
+    "to": "bangkok",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "hongkong",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 2
+   }
+  ],
+  "blurb": "Permits, a duffel, the last real shower for two weeks.",
+  "stampIcon": "stupa",
+  "altitude": 1400
+ },
+ {
+  "id": "manaslu",
+  "name": "Manaslu Circuit",
+  "country": "Nepal",
+  "region": "himalaya",
+  "lat": 28.55,
+  "lon": 84.56,
+  "hero": true,
+  "minStay": 1,
+  "suggestedStay": 3,
+  "climate": "alpine",
+  "timezone": 6,
+  "dishes": [
+   "dalbhat",
+   "momo"
+  ],
+  "activities": [
+   "hike"
+  ],
+  "hazard": "yak",
+  "lodgings": [
+   {
+    "id": "teahouse",
+    "name": "Tea house",
+    "cancelChance": 0.0,
+    "quiet": 1,
+    "moodPerDay": 3,
+    "energyPerDay": -1
+   }
+  ],
+  "eventWeights": {
+   "altitude": 3.0,
+   "foodpoisoning": 1.5,
+   "goodday": 2.0
+  },
+  "legs": [
+   {
+    "to": "kathmandu",
+    "transport": "bus",
+    "days": 2,
+    "energy": 14,
+    "timezones": 0
+   }
+  ],
+  "blurb": "Fourteen days on foot around the eighth-highest mountain in the world. Dal bhat power, twenty-four hour.",
+  "stampIcon": "yak",
+  "altitude": 5106
+ }
+]

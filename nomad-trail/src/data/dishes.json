@@ -1,0 +1,1368 @@
+[
+ {
+  "id": "stonecrab",
+  "name": "Stone crab + key lime pie",
+  "city": "miami",
+  "ingredients": [
+   "stone crab",
+   "butter",
+   "lime",
+   "graham"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 4
+   },
+   {
+    "kind": "stir",
+    "count": 3
+   },
+   {
+    "kind": "pour",
+    "count": 2
+   }
+  ],
+  "health": 8,
+  "mood": 10
+ },
+ {
+  "id": "cubano",
+  "name": "Cubano sandwich",
+  "city": "miami",
+  "ingredients": [
+   "bread",
+   "pork",
+   "ham",
+   "pickles",
+   "mustard"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 4
+   },
+   {
+    "kind": "flip",
+    "count": 3
+   },
+   {
+    "kind": "season",
+    "count": 2
+   }
+  ],
+  "health": 6,
+  "mood": 8
+ },
+ {
+  "id": "pizza",
+  "name": "Dollar slice",
+  "city": "newyork",
+  "ingredients": [
+   "dough",
+   "sauce",
+   "mozzarella"
+  ],
+  "steps": [
+   {
+    "kind": "knead",
+    "count": 5
+   },
+   {
+    "kind": "pour",
+    "count": 2
+   },
+   {
+    "kind": "season",
+    "count": 3
+   }
+  ],
+  "health": 4,
+  "mood": 10
+ },
+ {
+  "id": "bagel",
+  "name": "Everything bagel + lox",
+  "city": "newyork",
+  "ingredients": [
+   "bagel",
+   "cream cheese",
+   "lox",
+   "capers"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 3
+   },
+   {
+    "kind": "stir",
+    "count": 2
+   },
+   {
+    "kind": "season",
+    "count": 3
+   }
+  ],
+  "health": 6,
+  "mood": 8
+ },
+ {
+  "id": "greenchile",
+  "name": "Green chile stew",
+  "city": "boulder",
+  "ingredients": [
+   "pork",
+   "green chile",
+   "potato",
+   "onion"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 6
+   },
+   {
+    "kind": "stir",
+    "count": 4
+   },
+   {
+    "kind": "season",
+    "count": 2
+   }
+  ],
+  "health": 10,
+  "mood": 7
+ },
+ {
+  "id": "bisonburger",
+  "name": "Bison burger",
+  "city": "bozeman",
+  "ingredients": [
+   "bison",
+   "bun",
+   "onion",
+   "cheddar"
+  ],
+  "steps": [
+   {
+    "kind": "knead",
+    "count": 3
+   },
+   {
+    "kind": "flip",
+    "count": 4
+   },
+   {
+    "kind": "season",
+    "count": 2
+   }
+  ],
+  "health": 9,
+  "mood": 9
+ },
+ {
+  "id": "huckleberry",
+  "name": "Huckleberry pancakes",
+  "city": "bozeman",
+  "ingredients": [
+   "flour",
+   "egg",
+   "huckleberries",
+   "butter"
+  ],
+  "steps": [
+   {
+    "kind": "stir",
+    "count": 5
+   },
+   {
+    "kind": "pour",
+    "count": 3
+   },
+   {
+    "kind": "flip",
+    "count": 4
+   }
+  ],
+  "health": 5,
+  "mood": 10
+ },
+ {
+  "id": "buffet",
+  "name": "The buffet",
+  "city": "lasvegas",
+  "ingredients": [
+   "everything"
+  ],
+  "steps": [
+   {
+    "kind": "pour",
+    "count": 6
+   },
+   {
+    "kind": "stir",
+    "count": 2
+   }
+  ],
+  "health": 2,
+  "mood": 6
+ },
+ {
+  "id": "chili",
+  "name": "Campfire chili",
+  "city": "joshuatree",
+  "ingredients": [
+   "beans",
+   "tomato",
+   "onion",
+   "cumin"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 4
+   },
+   {
+    "kind": "stir",
+    "count": 6
+   },
+   {
+    "kind": "season",
+    "count": 3
+   }
+  ],
+  "health": 8,
+  "mood": 7
+ },
+ {
+  "id": "fishtacos",
+  "name": "Fish tacos",
+  "city": "orangecounty",
+  "ingredients": [
+   "white fish",
+   "tortilla",
+   "cabbage",
+   "lime",
+   "crema"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 4
+   },
+   {
+    "kind": "flip",
+    "count": 3
+   },
+   {
+    "kind": "season",
+    "count": 2
+   },
+   {
+    "kind": "pour",
+    "count": 2
+   }
+  ],
+  "health": 9,
+  "mood": 10
+ },
+ {
+  "id": "poutine",
+  "name": "Poutine",
+  "city": "montreal",
+  "ingredients": [
+   "fries",
+   "cheese curds",
+   "gravy"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 4
+   },
+   {
+    "kind": "pour",
+    "count": 3
+   },
+   {
+    "kind": "stir",
+    "count": 2
+   }
+  ],
+  "health": 3,
+  "mood": 9
+ },
+ {
+  "id": "tacos",
+  "name": "Tacos al pastor",
+  "city": "lapaz",
+  "ingredients": [
+   "pork",
+   "pineapple",
+   "tortilla",
+   "onion",
+   "cilantro"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 5
+   },
+   {
+    "kind": "flip",
+    "count": 4
+   },
+   {
+    "kind": "season",
+    "count": 3
+   }
+  ],
+  "health": 9,
+  "mood": 10
+ },
+ {
+  "id": "baleada",
+  "name": "Baleadas",
+  "city": "roatan",
+  "ingredients": [
+   "flour tortilla",
+   "beans",
+   "cheese",
+   "egg"
+  ],
+  "steps": [
+   {
+    "kind": "knead",
+    "count": 4
+   },
+   {
+    "kind": "flip",
+    "count": 3
+   },
+   {
+    "kind": "pour",
+    "count": 2
+   }
+  ],
+  "health": 7,
+  "mood": 8
+ },
+ {
+  "id": "ceviche",
+  "name": "Ceviche",
+  "city": "santiago",
+  "ingredients": [
+   "white fish",
+   "lime",
+   "onion",
+   "cilantro",
+   "chili"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 6
+   },
+   {
+    "kind": "pour",
+    "count": 2
+   },
+   {
+    "kind": "stir",
+    "count": 3
+   },
+   {
+    "kind": "season",
+    "count": 2
+   }
+  ],
+  "health": 10,
+  "mood": 8
+ },
+ {
+  "id": "completo",
+  "name": "Completo italiano",
+  "city": "santiago",
+  "ingredients": [
+   "hot dog",
+   "avocado",
+   "tomato",
+   "mayo"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 3
+   },
+   {
+    "kind": "pour",
+    "count": 3
+   }
+  ],
+  "health": 3,
+  "mood": 7
+ },
+ {
+  "id": "asado",
+  "name": "Asado",
+  "city": "buenosaires",
+  "ingredients": [
+   "beef",
+   "salt",
+   "charcoal",
+   "chimichurri"
+  ],
+  "steps": [
+   {
+    "kind": "season",
+    "count": 4
+   },
+   {
+    "kind": "flip",
+    "count": 5
+   },
+   {
+    "kind": "chop",
+    "count": 3
+   }
+  ],
+  "health": 10,
+  "mood": 12
+ },
+ {
+  "id": "empanada",
+  "name": "Empanadas",
+  "city": "buenosaires",
+  "ingredients": [
+   "dough",
+   "beef",
+   "onion",
+   "egg",
+   "olives"
+  ],
+  "steps": [
+   {
+    "kind": "knead",
+    "count": 4
+   },
+   {
+    "kind": "chop",
+    "count": 4
+   },
+   {
+    "kind": "flip",
+    "count": 3
+   }
+  ],
+  "health": 7,
+  "mood": 8
+ },
+ {
+  "id": "pasteldenata",
+  "name": "Pastel de nata",
+  "city": "lisbon",
+  "ingredients": [
+   "pastry",
+   "egg yolk",
+   "sugar",
+   "cinnamon"
+  ],
+  "steps": [
+   {
+    "kind": "knead",
+    "count": 4
+   },
+   {
+    "kind": "pour",
+    "count": 3
+   },
+   {
+    "kind": "stir",
+    "count": 4
+   }
+  ],
+  "health": 4,
+  "mood": 12
+ },
+ {
+  "id": "bacalhau",
+  "name": "Bacalhau a bras",
+  "city": "lisbon",
+  "ingredients": [
+   "salt cod",
+   "potato",
+   "egg",
+   "onion",
+   "olives"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 5
+   },
+   {
+    "kind": "stir",
+    "count": 5
+   },
+   {
+    "kind": "season",
+    "count": 2
+   }
+  ],
+  "health": 9,
+  "mood": 7
+ },
+ {
+  "id": "paella",
+  "name": "Paella",
+  "city": "madrid",
+  "ingredients": [
+   "rice",
+   "saffron",
+   "shrimp",
+   "chicken",
+   "peppers"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 5
+   },
+   {
+    "kind": "stir",
+    "count": 6
+   },
+   {
+    "kind": "season",
+    "count": 3
+   }
+  ],
+  "health": 9,
+  "mood": 9
+ },
+ {
+  "id": "tortilla",
+  "name": "Tortilla espanola",
+  "city": "granada",
+  "ingredients": [
+   "egg",
+   "potato",
+   "onion",
+   "olive oil"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 5
+   },
+   {
+    "kind": "stir",
+    "count": 3
+   },
+   {
+    "kind": "flip",
+    "count": 3
+   }
+  ],
+  "health": 8,
+  "mood": 8
+ },
+ {
+  "id": "fishandchips",
+  "name": "Fish and chips",
+  "city": "london",
+  "ingredients": [
+   "cod",
+   "batter",
+   "potato",
+   "peas"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 4
+   },
+   {
+    "kind": "pour",
+    "count": 2
+   },
+   {
+    "kind": "flip",
+    "count": 4
+   },
+   {
+    "kind": "season",
+    "count": 2
+   }
+  ],
+  "health": 6,
+  "mood": 8
+ },
+ {
+  "id": "sundayroast",
+  "name": "Sunday roast",
+  "city": "london",
+  "ingredients": [
+   "beef",
+   "potatoes",
+   "carrots",
+   "gravy",
+   "yorkshire pudding"
+  ],
+  "steps": [
+   {
+    "kind": "season",
+    "count": 3
+   },
+   {
+    "kind": "chop",
+    "count": 5
+   },
+   {
+    "kind": "pour",
+    "count": 3
+   }
+  ],
+  "health": 9,
+  "mood": 9
+ },
+ {
+  "id": "moules",
+  "name": "Moules frites",
+  "city": "brussels",
+  "ingredients": [
+   "mussels",
+   "white wine",
+   "shallots",
+   "fries"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 3
+   },
+   {
+    "kind": "pour",
+    "count": 2
+   },
+   {
+    "kind": "stir",
+    "count": 4
+   }
+  ],
+  "health": 8,
+  "mood": 8
+ },
+ {
+  "id": "frites",
+  "name": "Frites with andalouse",
+  "city": "brussels",
+  "ingredients": [
+   "potato",
+   "oil",
+   "andalouse sauce"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 5
+   },
+   {
+    "kind": "flip",
+    "count": 3
+   },
+   {
+    "kind": "pour",
+    "count": 2
+   }
+  ],
+  "health": 3,
+  "mood": 8
+ },
+ {
+  "id": "stroopwafel",
+  "name": "Stroopwafels",
+  "city": "amsterdam",
+  "ingredients": [
+   "dough",
+   "caramel",
+   "cinnamon"
+  ],
+  "steps": [
+   {
+    "kind": "knead",
+    "count": 4
+   },
+   {
+    "kind": "flip",
+    "count": 4
+   },
+   {
+    "kind": "pour",
+    "count": 3
+   }
+  ],
+  "health": 3,
+  "mood": 10
+ },
+ {
+  "id": "bouillabaisse",
+  "name": "Bouillabaisse",
+  "city": "marseille",
+  "ingredients": [
+   "rockfish",
+   "saffron",
+   "fennel",
+   "tomato",
+   "rouille"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 6
+   },
+   {
+    "kind": "stir",
+    "count": 5
+   },
+   {
+    "kind": "season",
+    "count": 3
+   },
+   {
+    "kind": "pour",
+    "count": 2
+   }
+  ],
+  "health": 10,
+  "mood": 9
+ },
+ {
+  "id": "ratatouille",
+  "name": "Ratatouille",
+  "city": "hyeres",
+  "ingredients": [
+   "eggplant",
+   "zucchini",
+   "tomato",
+   "peppers",
+   "herbs"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 8
+   },
+   {
+    "kind": "stir",
+    "count": 4
+   },
+   {
+    "kind": "season",
+    "count": 3
+   }
+  ],
+  "health": 10,
+  "mood": 7
+ },
+ {
+  "id": "haggis",
+  "name": "Haggis, neeps and tatties",
+  "city": "highlands",
+  "ingredients": [
+   "haggis",
+   "turnip",
+   "potato",
+   "whisky"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 5
+   },
+   {
+    "kind": "stir",
+    "count": 3
+   },
+   {
+    "kind": "pour",
+    "count": 2
+   }
+  ],
+  "health": 7,
+  "mood": 8
+ },
+ {
+  "id": "plokkfiskur",
+  "name": "Plokkfiskur",
+  "city": "reykjavik",
+  "ingredients": [
+   "cod",
+   "potato",
+   "onion",
+   "bechamel"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 4
+   },
+   {
+    "kind": "stir",
+    "count": 5
+   },
+   {
+    "kind": "season",
+    "count": 2
+   }
+  ],
+  "health": 8,
+  "mood": 7
+ },
+ {
+  "id": "lamb",
+  "name": "Icelandic lamb soup",
+  "city": "reykjavik",
+  "ingredients": [
+   "lamb",
+   "root vegetables",
+   "herbs"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 5
+   },
+   {
+    "kind": "stir",
+    "count": 6
+   }
+  ],
+  "health": 9,
+  "mood": 8
+ },
+ {
+  "id": "weisswurst",
+  "name": "Weisswurst breakfast",
+  "city": "munich",
+  "ingredients": [
+   "weisswurst",
+   "pretzel",
+   "sweet mustard"
+  ],
+  "steps": [
+   {
+    "kind": "pour",
+    "count": 3
+   },
+   {
+    "kind": "chop",
+    "count": 2
+   },
+   {
+    "kind": "season",
+    "count": 2
+   }
+  ],
+  "health": 5,
+  "mood": 9
+ },
+ {
+  "id": "kaiserschmarrn",
+  "name": "Kaiserschmarrn",
+  "city": "innsbruck",
+  "ingredients": [
+   "flour",
+   "egg",
+   "milk",
+   "sugar",
+   "plum jam"
+  ],
+  "steps": [
+   {
+    "kind": "stir",
+    "count": 5
+   },
+   {
+    "kind": "pour",
+    "count": 2
+   },
+   {
+    "kind": "flip",
+    "count": 4
+   },
+   {
+    "kind": "season",
+    "count": 2
+   }
+  ],
+  "health": 5,
+  "mood": 12
+ },
+ {
+  "id": "kaspressknoedel",
+  "name": "Kaspressknoedel",
+  "city": "innsbruck",
+  "ingredients": [
+   "bread",
+   "graukase",
+   "onion",
+   "egg",
+   "broth"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 4
+   },
+   {
+    "kind": "knead",
+    "count": 5
+   },
+   {
+    "kind": "flip",
+    "count": 3
+   },
+   {
+    "kind": "pour",
+    "count": 2
+   }
+  ],
+  "health": 9,
+  "mood": 10
+ },
+ {
+  "id": "tagine",
+  "name": "Lamb tagine",
+  "city": "casablanca",
+  "ingredients": [
+   "lamb",
+   "apricots",
+   "almonds",
+   "cumin",
+   "couscous"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 5
+   },
+   {
+    "kind": "season",
+    "count": 4
+   },
+   {
+    "kind": "stir",
+    "count": 5
+   }
+  ],
+  "health": 10,
+  "mood": 9
+ },
+ {
+  "id": "couscous",
+  "name": "Friday couscous",
+  "city": "dakhla",
+  "ingredients": [
+   "couscous",
+   "vegetables",
+   "chickpeas",
+   "harissa"
+  ],
+  "steps": [
+   {
+    "kind": "stir",
+    "count": 5
+   },
+   {
+    "kind": "chop",
+    "count": 5
+   },
+   {
+    "kind": "season",
+    "count": 2
+   }
+  ],
+  "health": 9,
+  "mood": 7
+ },
+ {
+  "id": "nyamachoma",
+  "name": "Nyama choma",
+  "city": "nairobi",
+  "ingredients": [
+   "goat",
+   "salt",
+   "kachumbari",
+   "ugali"
+  ],
+  "steps": [
+   {
+    "kind": "season",
+    "count": 3
+   },
+   {
+    "kind": "flip",
+    "count": 5
+   },
+   {
+    "kind": "chop",
+    "count": 4
+   }
+  ],
+  "health": 9,
+  "mood": 9
+ },
+ {
+  "id": "ugali",
+  "name": "Ugali + sukuma wiki",
+  "city": "nairobi",
+  "ingredients": [
+   "maize flour",
+   "collard greens",
+   "onion",
+   "tomato"
+  ],
+  "steps": [
+   {
+    "kind": "stir",
+    "count": 6
+   },
+   {
+    "kind": "chop",
+    "count": 4
+   }
+  ],
+  "health": 8,
+  "mood": 6
+ },
+ {
+  "id": "bibimbap",
+  "name": "Bibimbap",
+  "city": "seoul",
+  "ingredients": [
+   "rice",
+   "egg",
+   "vegetables",
+   "gochujang",
+   "beef"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 6
+   },
+   {
+    "kind": "flip",
+    "count": 2
+   },
+   {
+    "kind": "stir",
+    "count": 4
+   },
+   {
+    "kind": "season",
+    "count": 2
+   }
+  ],
+  "health": 10,
+  "mood": 9
+ },
+ {
+  "id": "kbbq",
+  "name": "Korean BBQ",
+  "city": "seoul",
+  "ingredients": [
+   "pork belly",
+   "lettuce",
+   "kimchi",
+   "garlic"
+  ],
+  "steps": [
+   {
+    "kind": "flip",
+    "count": 6
+   },
+   {
+    "kind": "chop",
+    "count": 3
+   },
+   {
+    "kind": "season",
+    "count": 2
+   }
+  ],
+  "health": 8,
+  "mood": 11
+ },
+ {
+  "id": "khaosoi",
+  "name": "Khao soi",
+  "city": "chiangmai",
+  "ingredients": [
+   "egg noodles",
+   "coconut milk",
+   "curry paste",
+   "chicken",
+   "shallots"
+  ],
+  "steps": [
+   {
+    "kind": "stir",
+    "count": 5
+   },
+   {
+    "kind": "pour",
+    "count": 3
+   },
+   {
+    "kind": "chop",
+    "count": 4
+   },
+   {
+    "kind": "season",
+    "count": 2
+   }
+  ],
+  "health": 9,
+  "mood": 10
+ },
+ {
+  "id": "padthai",
+  "name": "Pad thai",
+  "city": "bangkok",
+  "ingredients": [
+   "rice noodles",
+   "shrimp",
+   "egg",
+   "peanuts",
+   "tamarind"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 4
+   },
+   {
+    "kind": "stir",
+    "count": 6
+   },
+   {
+    "kind": "flip",
+    "count": 2
+   },
+   {
+    "kind": "season",
+    "count": 3
+   }
+  ],
+  "health": 8,
+  "mood": 9
+ },
+ {
+  "id": "dimsum",
+  "name": "Dim sum",
+  "city": "hongkong",
+  "ingredients": [
+   "dough",
+   "shrimp",
+   "pork",
+   "ginger"
+  ],
+  "steps": [
+   {
+    "kind": "knead",
+    "count": 5
+   },
+   {
+    "kind": "chop",
+    "count": 4
+   },
+   {
+    "kind": "pour",
+    "count": 2
+   }
+  ],
+  "health": 8,
+  "mood": 10
+ },
+ {
+  "id": "wonton",
+  "name": "Wonton noodles",
+  "city": "hongkong",
+  "ingredients": [
+   "wonton",
+   "egg noodles",
+   "broth",
+   "bok choy"
+  ],
+  "steps": [
+   {
+    "kind": "knead",
+    "count": 4
+   },
+   {
+    "kind": "pour",
+    "count": 3
+   },
+   {
+    "kind": "stir",
+    "count": 3
+   }
+  ],
+  "health": 8,
+  "mood": 8
+ },
+ {
+  "id": "ramen",
+  "name": "Ramen",
+  "city": "tokyo",
+  "ingredients": [
+   "noodles",
+   "broth",
+   "pork",
+   "egg",
+   "scallion"
+  ],
+  "steps": [
+   {
+    "kind": "stir",
+    "count": 6
+   },
+   {
+    "kind": "chop",
+    "count": 3
+   },
+   {
+    "kind": "pour",
+    "count": 3
+   },
+   {
+    "kind": "season",
+    "count": 2
+   }
+  ],
+  "health": 9,
+  "mood": 11
+ },
+ {
+  "id": "sushi",
+  "name": "Sushi",
+  "city": "tokyo",
+  "ingredients": [
+   "rice",
+   "tuna",
+   "salmon",
+   "nori",
+   "wasabi"
+  ],
+  "steps": [
+   {
+    "kind": "stir",
+    "count": 4
+   },
+   {
+    "kind": "chop",
+    "count": 6
+   },
+   {
+    "kind": "knead",
+    "count": 3
+   }
+  ],
+  "health": 9,
+  "mood": 10
+ },
+ {
+  "id": "soba",
+  "name": "Soba",
+  "city": "minakami",
+  "ingredients": [
+   "buckwheat noodles",
+   "dashi",
+   "scallion",
+   "wasabi"
+  ],
+  "steps": [
+   {
+    "kind": "knead",
+    "count": 5
+   },
+   {
+    "kind": "pour",
+    "count": 3
+   },
+   {
+    "kind": "chop",
+    "count": 2
+   }
+  ],
+  "health": 8,
+  "mood": 8
+ },
+ {
+  "id": "dalbhat",
+  "name": "Dal bhat",
+  "city": "kathmandu",
+  "ingredients": [
+   "lentils",
+   "rice",
+   "spinach",
+   "pickle",
+   "cumin"
+  ],
+  "steps": [
+   {
+    "kind": "stir",
+    "count": 6
+   },
+   {
+    "kind": "chop",
+    "count": 4
+   },
+   {
+    "kind": "season",
+    "count": 3
+   },
+   {
+    "kind": "pour",
+    "count": 2
+   }
+  ],
+  "health": 10,
+  "mood": 8
+ },
+ {
+  "id": "momo",
+  "name": "Momos",
+  "city": "kathmandu",
+  "ingredients": [
+   "dough",
+   "buffalo",
+   "onion",
+   "ginger",
+   "chili sauce"
+  ],
+  "steps": [
+   {
+    "kind": "knead",
+    "count": 5
+   },
+   {
+    "kind": "chop",
+    "count": 4
+   },
+   {
+    "kind": "flip",
+    "count": 2
+   },
+   {
+    "kind": "pour",
+    "count": 2
+   }
+  ],
+  "health": 8,
+  "mood": 10
+ }
+]
