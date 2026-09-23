@@ -1622,5 +1622,123 @@
   "desc": "Dries in an hour. Smells in a week.",
   "real": false,
   "color": 10479576
+ },
+ {
+  "id": "kettlebell",
+  "name": "Travel kettlebell (12 lb)",
+  "label": "Kettlebell",
+  "weightLb": 12.0,
+  "w": 2,
+  "h": 2,
+  "tags": [
+   "fitness",
+   "trap"
+  ],
+  "desc": "Twelve pounds of commitment. The airline will weigh it. Your spine will weigh it.",
+  "real": false,
+  "color": 657938
+ },
+ {
+  "id": "books",
+  "name": "Five paperbacks",
+  "label": "Books x5",
+  "weightLb": 5.0,
+  "w": 2,
+  "h": 2,
+  "tags": [
+   "luxury"
+  ],
+  "desc": "The Kindle exists. You know the Kindle exists.",
+  "real": false,
+  "color": 11041102
+ },
+ {
+  "id": "wine",
+  "name": "Two bottles for hosts",
+  "label": "Wine x2",
+  "weightLb": 6.0,
+  "w": 2,
+  "h": 3,
+  "tags": [
+   "luxury"
+  ],
+  "desc": "Generous, breakable, six pounds.",
+  "real": false,
+  "color": 9124474
+ },
+ {
+  "id": "proteintub",
+  "name": "5 lb whey tub",
+  "label": "Whey tub",
+  "weightLb": 5.2,
+  "w": 2,
+  "h": 3,
+  "tags": [
+   "health",
+   "fitness"
+  ],
+  "desc": "Bought in bulk because it was cheaper. It was not cheaper.",
+  "real": false,
+  "color": 16052714
+ },
+ {
+  "id": "camerabody",
+  "name": "Mirrorless camera body",
+  "label": "Camera",
+  "weightLb": 1.6,
+  "w": 2,
+  "h": 2,
+  "tags": [
+   "camera",
+   "luxury"
+  ],
+  "desc": "For the photos the phone cannot take.",
+  "real": false,
+  "color": 657938
+ },
+ {
+  "id": "secondlaptop",
+  "name": "Second laptop",
+  "label": "Laptop #2",
+  "weightLb": 3.5,
+  "w": 4,
+  "h": 3,
+  "tags": [
+   "work",
+   "luxury"
+  ],
+  "desc": "Work laptop and personal laptop, because the two must never meet.",
+  "real": false,
+  "color": 7238788
+ },
+ {
+  "id": "hairdryer",
+  "name": "Travel hair dryer",
+  "label": "Hair dryer",
+  "weightLb": 1.8,
+  "w": 2,
+  "h": 2,
+  "tags": [
+   "luxury",
+   "trap"
+  ],
+  "desc": "Every hotel has one. Every single one.",
+  "real": false,
+  "color": 16740264
+ },
+ {
+  "id": "fulltripod",
+  "name": "Full-size tripod",
+  "label": "Tripod (big)",
+  "weightLb": 3.0,
+  "w": 1,
+  "h": 5,
+  "tags": [
+   "camera",
+   "luxury"
+  ],
+  "desc": "For the drone shots that need a ground shot too.",
+  "real": false,
+  "color": 3817291
  }
 ]

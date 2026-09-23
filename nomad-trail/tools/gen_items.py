@@ -126,6 +126,15 @@ X = [
  ('chargerbrick','Second laptop charger','Spare charger',0.6,1,2,['essential','work'],0,'For the day the first one stays in Lisbon.',False,'white',None),
  ('locks','TSA lock','Lock',0.2,1,1,['organizer'],0,'Keeps the honest people out.',False,'gray1',None),
  ('towel','Microfiber towel','Towel',0.4,2,1,['swim','organizer'],0,'Dries in an hour. Smells in a week.',False,'sea3',None),
+ # dense heavy things: the way a bag actually hits fifty pounds
+ ('kettlebell','Travel kettlebell (12 lb)','Kettlebell',12.0,2,2,['fitness','trap'],0,'Twelve pounds of commitment. The airline will weigh it. Your spine will weigh it.',False,'ink',None),
+ ('books','Five paperbacks','Books x5',5.0,2,2,['luxury'],0,'The Kindle exists. You know the Kindle exists.',False,'earth2',None),
+ ('wine','Two bottles for hosts','Wine x2',6.0,2,3,['luxury'],0,'Generous, breakable, six pounds.',False,'dusk2',None),
+ ('proteintub','5 lb whey tub','Whey tub',5.2,2,3,['health','fitness'],0,'Bought in bulk because it was cheaper. It was not cheaper.',False,'white',None),
+ ('camerabody','Mirrorless camera body','Camera',1.6,2,2,['camera','luxury'],0,'For the photos the phone cannot take.',False,'ink',None),
+ ('secondlaptop','Second laptop','Laptop #2',3.5,4,3,['work','luxury'],0,'Work laptop and personal laptop, because the two must never meet.',False,'gray1',None),
+ ('hairdryer','Travel hair dryer','Hair dryer',1.8,2,2,['luxury','trap'],0,'Every hotel has one. Every single one.',False,'pink',None),
+ ('fulltripod','Full-size tripod','Tripod (big)',3.0,1,5,['camera','luxury'],0,'For the drone shots that need a ground shot too.',False,'gray0',None),
 ]
 out=[]
 for (i,n,l,lb,w,h,tags,cd,d,real,col,link) in R+X:

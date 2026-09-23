@@ -2,27 +2,42 @@
  {
   "id": "otter",
   "title": "The otter",
-  "text": "Day {day}, {city}. An animal cafe. A sea otter with the eyes of a saint and the teeth of a can opener. You pet it. It was worth it. Three days later the cut on your finger is hot and the fever arrives at 3 am.",
+  "text": "Day {day}, {city}. An animal cafe. A sea otter with the eyes of a saint and the teeth of a can opener presses its paws to the glass and looks at you. Specifically at you. The handler nods toward the open tank.",
   "when": "action",
-  "baseChance": 0.55,
-  "effects": {
-   "health": -40,
-   "days": 4,
-   "mood": -10,
-   "sick": 3,
-   "unlockAchievement": "otter"
-  },
+  "baseChance": 0.35,
+  "effects": {},
   "requiresCity": "tokyo",
-  "mitigatedBy": [
-   "firstaid",
-   "antibiotics"
-  ],
-  "mitigatedText": "Day {day}, {city}. You pet the otter. It was worth it. You clean the cut that night, start the antibiotics when the finger goes hot, and keep your week.",
-  "mitigatedEffects": {
-   "health": -8,
-   "mood": 6,
-   "unlockAchievement": "otter_lived"
-  }
+  "choices": [
+   {
+    "label": "Pet the otter",
+    "text": "You pet the otter. It was worth it. Three days later the cut on your finger is hot and the fever arrives at 3 am. The hospital is very clean and very confused.",
+    "effects": {
+     "health": -40,
+     "days": 4,
+     "mood": -6,
+     "sick": 3,
+     "unlockAchievement": "otter"
+    }
+   },
+   {
+    "label": "Pet it, clean the cut after",
+    "text": "You pet the otter. It was worth it. That night you clean the nick on your finger, and when it goes hot two days later the antibiotics are already in the backpack. You keep your week.",
+    "effects": {
+     "health": -8,
+     "mood": 8,
+     "unlockAchievement": "otter_lived"
+    },
+    "requiresTag": "firstaid"
+   },
+   {
+    "label": "Keep your hands to yourself",
+    "text": "You do not pet the otter. The otter does not forgive you. Neither do you.",
+    "effects": {
+     "mood": -4,
+     "unlockAchievement": "otter_resisted"
+    }
+   }
+  ]
  },
  {
   "id": "backinjury",
@@ -84,9 +99,9 @@
   "when": "action",
   "baseChance": 0.12,
   "effects": {
-   "health": -25,
-   "energy": -25,
-   "mood": -10,
+   "health": -18,
+   "energy": -20,
+   "mood": -8,
    "days": 2,
    "sick": 2
   },
@@ -161,7 +176,7 @@
   "title": "The swarm",
   "text": "Sunset in {city}. The mosquitoes arrive like a shift change. You wake up with a constellation on each ankle and the sleep of a hunted animal.",
   "when": "day",
-  "baseChance": 0.14,
+  "baseChance": 0.07,
   "effects": {
    "energy": -12,
    "mood": -8,
@@ -223,7 +238,7 @@
   "title": "Wind day",
   "text": "The wind arrives at 2 pm like a train timetable. Everyone in {city} disappears to the water.",
   "when": "day",
-  "baseChance": 0.12,
+  "baseChance": 0.08,
   "effects": {
    "mood": -6
   },
@@ -322,7 +337,7 @@
   "title": "It rains",
   "text": "It rains in {city}. Not dramatically. Continuously. Everything you own is slightly damp.",
   "when": "day",
-  "baseChance": 0.1,
+  "baseChance": 0.05,
   "effects": {
    "mood": -6,
    "energy": -4
@@ -344,7 +359,7 @@
   "title": "Sunburn",
   "text": "You forgot the sunscreen for exactly one afternoon. Your shoulders will remember it for a week.",
   "when": "day",
-  "baseChance": 0.08,
+  "baseChance": 0.05,
   "effects": {
    "health": -4,
    "mood": -4,
@@ -364,7 +379,7 @@
   "title": "The upstairs neighbour",
   "text": "The Airbnb above yours in {city} is either a nightclub or a family of tap dancers. 3 am, 4 am, 5 am.",
   "when": "day",
-  "baseChance": 0.08,
+  "baseChance": 0.04,
   "effects": {
    "energy": -15,
    "mood": -6
@@ -397,7 +412,7 @@
   "title": "A good day",
   "text": "Day {day}, {city}. Nothing goes wrong. The coffee is right, the light is right, the work gets done by two and the mountain is still there at three. This is why.",
   "when": "day",
-  "baseChance": 0.08,
+  "baseChance": 0.04,
   "effects": {
    "mood": 10,
    "energy": 5
@@ -440,7 +455,7 @@
   "title": "Someone you know",
   "text": "A friend from two cities ago is, by coincidence, in {city} this week. Dinner turns into a weekend.",
   "when": "day",
-  "baseChance": 0.04,
+  "baseChance": 0.02,
   "effects": {
    "mood": 15,
    "energy": -8

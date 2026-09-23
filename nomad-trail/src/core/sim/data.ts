@@ -1,0 +1,14 @@
+import type { Item, City, GameEvent, Dish, ArcadeLevel } from '../types';
+import itemsJson from '../../data/items.json';
+import citiesJson from '../../data/cities.json';
+import eventsJson from '../../data/events.json';
+import dishesJson from '../../data/dishes.json';
+import levelsJson from '../../data/arcade_levels.json';
+export const ITEMS = itemsJson as unknown as Item[];
+export const CITIES = citiesJson as unknown as City[];
+export const EVENTS = eventsJson as unknown as GameEvent[];
+export const DISHES = dishesJson as unknown as Dish[];
+export const LEVELS = levelsJson as unknown as ArcadeLevel[];
+const byId = <T extends { id: string }>(a: T[]) => Object.fromEntries(a.map(x => [x.id, x])) as Record<string, T>;
+export const ITEM = byId(ITEMS), CITY = byId(CITIES), EVENT = byId(EVENTS), DISH = byId(DISHES);
+export const LEVEL_BY_CITY: Record<string, ArcadeLevel> = Object.fromEntries(LEVELS.map(l => [l.city, l]));

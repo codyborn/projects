@@ -65,6 +65,8 @@ E = [
 ]
 ENERGY = {'flight':18,'train':8,'bus':14,'car':6,'ferry':8,'campervan':10,'trek':30}
 legs = {k: [] for k in C}
+def wrap(d): return ((d+540)%360)-180
+E=[e for e in E if abs(wrap(C[e[0]][4]-C[e[1]][4]))<=110 or print('drop long-haul', e[0], e[1])]
 for e in E:
     a,b,t,d = e[:4]; months = e[4] if len(e)>4 else None
     for x,y in ((a,b),(b,a)):
@@ -90,6 +92,8 @@ def lodgings(cid):
     return [LODGE['airbnb'], LODGE['hotel'], LODGE['hostel']]
 cities=[]
 for cid,(name,country,region,lat,lon,hero,mins,sug,climate,tz,alt,dishes,acts,hazard,blurb,icon,ew) in C.items():
+    sug=max(sug,8) if cid not in ('manaslu','marseille','edinburgh','iguazu','lasvegas','joshuatree') else sug
+    mins=max(mins, round(sug*0.8))
     o=dict(id=cid,name=name,country=country,region=region,lat=lat,lon=lon,hero=hero,minStay=mins,suggestedStay=sug,climate=climate,timezone=tz,
            dishes=dishes,activities=acts,hazard=hazard,lodgings=lodgings(cid),eventWeights=ew,legs=legs[cid],blurb=blurb,stampIcon=icon)
     if alt: o['altitude']=alt

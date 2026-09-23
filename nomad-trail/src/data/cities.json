@@ -7,7 +7,7 @@
   "lat": 25.76,
   "lon": -80.19,
   "hero": true,
-  "minStay": 3,
+  "minStay": 11,
   "suggestedStay": 14,
   "climate": "hot",
   "timezone": -5,
@@ -99,13 +99,6 @@
     "days": 1,
     "energy": 22,
     "timezones": 3
-   },
-   {
-    "to": "tokyo",
-    "transport": "flight",
-    "days": 2,
-    "energy": 34,
-    "timezones": 14
    }
   ],
   "blurb": "Home base, allegedly. Ninety-six days here last year and the tan never took.",
@@ -119,7 +112,7 @@
   "lat": 40.71,
   "lon": -74.01,
   "hero": true,
-  "minStay": 3,
+  "minStay": 8,
   "suggestedStay": 10,
   "climate": "temperate",
   "timezone": -5,
@@ -209,20 +202,6 @@
     "days": 1,
     "energy": 18,
     "timezones": 2
-   },
-   {
-    "to": "tokyo",
-    "transport": "flight",
-    "days": 2,
-    "energy": 34,
-    "timezones": 14
-   },
-   {
-    "to": "hongkong",
-    "transport": "flight",
-    "days": 1,
-    "energy": 34,
-    "timezones": 13
    }
   ],
   "blurb": "The team onsite city. Twenty days at a time, four times a year, always a hotel with a view of a wall.",
@@ -236,7 +215,7 @@
   "lat": 40.01,
   "lon": -105.27,
   "hero": true,
-  "minStay": 5,
+  "minStay": 17,
   "suggestedStay": 21,
   "climate": "temperate",
   "timezone": -7,
@@ -323,7 +302,7 @@
   "lat": 45.68,
   "lon": -111.04,
   "hero": true,
-  "minStay": 5,
+  "minStay": 17,
   "suggestedStay": 21,
   "climate": "cold",
   "timezone": -7,
@@ -401,7 +380,7 @@
   "lat": 36.17,
   "lon": -115.14,
   "hero": false,
-  "minStay": 1,
+  "minStay": 2,
   "suggestedStay": 3,
   "climate": "hot",
   "timezone": -8,
@@ -461,13 +440,6 @@
     "days": 1,
     "energy": 38,
     "timezones": 17
-   },
-   {
-    "to": "seoul",
-    "transport": "flight",
-    "days": 1,
-    "energy": 38,
-    "timezones": 17
    }
   ],
   "blurb": "A layover that became five days. Nobody remembers why.",
@@ -481,7 +453,7 @@
   "lat": 34.13,
   "lon": -116.31,
   "hero": false,
-  "minStay": 2,
+  "minStay": 3,
   "suggestedStay": 4,
   "climate": "hot",
   "timezone": -8,
@@ -550,8 +522,8 @@
   "lat": 33.72,
   "lon": -117.83,
   "hero": false,
-  "minStay": 2,
-  "suggestedStay": 7,
+  "minStay": 6,
+  "suggestedStay": 8,
   "climate": "temperate",
   "timezone": -8,
   "dishes": [
@@ -627,13 +599,6 @@
     "days": 1,
     "energy": 38,
     "timezones": 17
-   },
-   {
-    "to": "seoul",
-    "transport": "flight",
-    "days": 1,
-    "energy": 38,
-    "timezones": 17
    }
   ],
   "blurb": "Family. Laundry that someone else folds. The Pacific gateway.",
@@ -647,7 +612,7 @@
   "lat": 45.5,
   "lon": -73.57,
   "hero": false,
-  "minStay": 3,
+  "minStay": 8,
   "suggestedStay": 10,
   "climate": "cold",
   "timezone": -5,
@@ -714,8 +679,8 @@
   "lat": 24.14,
   "lon": -110.31,
   "hero": false,
-  "minStay": 2,
-  "suggestedStay": 5,
+  "minStay": 6,
+  "suggestedStay": 8,
   "climate": "hot",
   "timezone": -7,
   "dishes": [
@@ -797,7 +762,7 @@
   "lat": 24.05,
   "lon": -109.99,
   "hero": true,
-  "minStay": 4,
+  "minStay": 10,
   "suggestedStay": 12,
   "climate": "hot",
   "timezone": -7,
@@ -868,7 +833,7 @@
   "lat": 16.32,
   "lon": -86.53,
   "hero": true,
-  "minStay": 7,
+  "minStay": 17,
   "suggestedStay": 21,
   "climate": "hot",
   "timezone": -6,
@@ -939,8 +904,8 @@
   "lat": -33.45,
   "lon": -70.67,
   "hero": false,
-  "minStay": 3,
-  "suggestedStay": 7,
+  "minStay": 6,
+  "suggestedStay": 8,
   "climate": "temperate",
   "timezone": -4,
   "dishes": [
@@ -1029,7 +994,7 @@
   "lat": -51.73,
   "lon": -72.51,
   "hero": true,
-  "minStay": 10,
+  "minStay": 22,
   "suggestedStay": 28,
   "climate": "cold",
   "timezone": -3,
@@ -1092,7 +1057,7 @@
   "lat": -34.6,
   "lon": -58.38,
   "hero": true,
-  "minStay": 5,
+  "minStay": 11,
   "suggestedStay": 14,
   "climate": "temperate",
   "timezone": -3,
@@ -1190,7 +1155,7 @@
   "lat": -25.69,
   "lon": -54.44,
   "hero": false,
-  "minStay": 1,
+  "minStay": 2,
   "suggestedStay": 2,
   "climate": "hot",
   "timezone": -3,
@@ -1249,7 +1214,7 @@
   "lat": 38.72,
   "lon": -9.14,
   "hero": true,
-  "minStay": 5,
+  "minStay": 11,
   "suggestedStay": 14,
   "climate": "temperate",
   "timezone": 0,
@@ -1354,8 +1319,8 @@
   "lat": 37.1,
   "lon": -8.47,
   "hero": false,
-  "minStay": 3,
-  "suggestedStay": 7,
+  "minStay": 6,
+  "suggestedStay": 8,
   "climate": "hot",
   "timezone": 0,
   "dishes": [
@@ -1424,8 +1389,8 @@
   "lat": 40.42,
   "lon": -3.7,
   "hero": false,
-  "minStay": 3,
-  "suggestedStay": 7,
+  "minStay": 6,
+  "suggestedStay": 8,
   "climate": "temperate",
   "timezone": 1,
   "dishes": [
@@ -1522,7 +1487,7 @@
   "lat": 37.18,
   "lon": -3.6,
   "hero": true,
-  "minStay": 4,
+  "minStay": 8,
   "suggestedStay": 10,
   "climate": "hot",
   "timezone": 1,
@@ -1600,7 +1565,7 @@
   "lat": 51.51,
   "lon": -0.13,
   "hero": true,
-  "minStay": 5,
+  "minStay": 17,
   "suggestedStay": 21,
   "climate": "rainy",
   "timezone": 0,
@@ -1697,8 +1662,8 @@
   "lat": 50.85,
   "lon": 4.35,
   "hero": false,
-  "minStay": 3,
-  "suggestedStay": 7,
+  "minStay": 6,
+  "suggestedStay": 8,
   "climate": "rainy",
   "timezone": 1,
   "dishes": [
@@ -1765,8 +1730,8 @@
   "lat": 52.37,
   "lon": 4.9,
   "hero": false,
-  "minStay": 3,
-  "suggestedStay": 7,
+  "minStay": 6,
+  "suggestedStay": 8,
   "climate": "rainy",
   "timezone": 1,
   "dishes": [
@@ -1821,13 +1786,6 @@
     "days": 1,
     "energy": 8,
     "timezones": 0
-   },
-   {
-    "to": "seoul",
-    "transport": "flight",
-    "days": 1,
-    "energy": 26,
-    "timezones": 8
    }
   ],
   "blurb": "Bikes have right of way over everything, including you.",
@@ -1841,7 +1799,7 @@
   "lat": 43.3,
   "lon": 5.37,
   "hero": false,
-  "minStay": 1,
+  "minStay": 2,
   "suggestedStay": 2,
   "climate": "hot",
   "timezone": 1,
@@ -1913,7 +1871,7 @@
   "lat": 43.12,
   "lon": 6.13,
   "hero": true,
-  "minStay": 10,
+  "minStay": 21,
   "suggestedStay": 26,
   "climate": "hot",
   "timezone": 1,
@@ -1985,7 +1943,7 @@
   "lat": 43.58,
   "lon": 7.12,
   "hero": true,
-  "minStay": 5,
+  "minStay": 17,
   "suggestedStay": 21,
   "climate": "hot",
   "timezone": 1,
@@ -2063,7 +2021,7 @@
   "lat": 55.95,
   "lon": -3.19,
   "hero": false,
-  "minStay": 1,
+  "minStay": 2,
   "suggestedStay": 2,
   "climate": "rainy",
   "timezone": 0,
@@ -2131,7 +2089,7 @@
   "lat": 57.27,
   "lon": -6.22,
   "hero": true,
-  "minStay": 10,
+  "minStay": 32,
   "suggestedStay": 40,
   "climate": "rainy",
   "timezone": 0,
@@ -2209,7 +2167,7 @@
   "lat": 64.15,
   "lon": -21.94,
   "hero": true,
-  "minStay": 5,
+  "minStay": 6,
   "suggestedStay": 8,
   "climate": "cold",
   "timezone": 0,
@@ -2279,8 +2237,8 @@
   "lat": 48.14,
   "lon": 11.58,
   "hero": true,
-  "minStay": 3,
-  "suggestedStay": 7,
+  "minStay": 6,
+  "suggestedStay": 8,
   "climate": "temperate",
   "timezone": 1,
   "dishes": [
@@ -2367,13 +2325,6 @@
     "timezones": 6
    },
    {
-    "to": "tokyo",
-    "transport": "flight",
-    "days": 1,
-    "energy": 26,
-    "timezones": 8
-   },
-   {
     "to": "kathmandu",
     "transport": "flight",
     "days": 2,
@@ -2393,7 +2344,7 @@
   "lat": 47.27,
   "lon": 11.4,
   "hero": true,
-  "minStay": 10,
+  "minStay": 26,
   "suggestedStay": 33,
   "climate": "alpine",
   "timezone": 1,
@@ -2475,8 +2426,8 @@
   "lat": 47.56,
   "lon": 13.65,
   "hero": false,
-  "minStay": 4,
-  "suggestedStay": 7,
+  "minStay": 6,
+  "suggestedStay": 8,
   "climate": "alpine",
   "timezone": 1,
   "dishes": [
@@ -2547,8 +2498,8 @@
   "lat": 33.57,
   "lon": -7.59,
   "hero": false,
-  "minStay": 2,
-  "suggestedStay": 7,
+  "minStay": 6,
+  "suggestedStay": 8,
   "climate": "hot",
   "timezone": 1,
   "dishes": [
@@ -2637,7 +2588,7 @@
   "lat": 23.71,
   "lon": -15.94,
   "hero": true,
-  "minStay": 7,
+  "minStay": 17,
   "suggestedStay": 21,
   "climate": "hot",
   "timezone": 1,
@@ -2710,7 +2661,7 @@
   "lat": -1.29,
   "lon": 36.82,
   "hero": true,
-  "minStay": 4,
+  "minStay": 8,
   "suggestedStay": 10,
   "climate": "hot",
   "timezone": 3,
@@ -2804,8 +2755,8 @@
   "lat": 37.57,
   "lon": 126.98,
   "hero": true,
-  "minStay": 4,
-  "suggestedStay": 7,
+  "minStay": 6,
+  "suggestedStay": 8,
   "climate": "temperate",
   "timezone": 9,
   "dishes": [
@@ -2849,20 +2800,6 @@
   },
   "legs": [
    {
-    "to": "orangecounty",
-    "transport": "flight",
-    "days": 1,
-    "energy": 38,
-    "timezones": 17
-   },
-   {
-    "to": "amsterdam",
-    "transport": "flight",
-    "days": 1,
-    "energy": 26,
-    "timezones": 8
-   },
-   {
     "to": "hongkong",
     "transport": "flight",
     "days": 1,
@@ -2875,13 +2812,6 @@
     "days": 1,
     "energy": 18,
     "timezones": 0
-   },
-   {
-    "to": "lasvegas",
-    "transport": "flight",
-    "days": 1,
-    "energy": 38,
-    "timezones": 17
    }
   ],
   "blurb": "A week of food that is both spicy and a personality.",
@@ -2895,7 +2825,7 @@
   "lat": 18.79,
   "lon": 98.98,
   "hero": false,
-  "minStay": 4,
+  "minStay": 6,
   "suggestedStay": 8,
   "climate": "hot",
   "timezone": 7,
@@ -2967,8 +2897,8 @@
   "lat": 13.76,
   "lon": 100.5,
   "hero": true,
-  "minStay": 3,
-  "suggestedStay": 7,
+  "minStay": 6,
+  "suggestedStay": 8,
   "climate": "hot",
   "timezone": 7,
   "dishes": [
@@ -3058,8 +2988,8 @@
   "lat": 22.32,
   "lon": 114.17,
   "hero": true,
-  "minStay": 3,
-  "suggestedStay": 7,
+  "minStay": 6,
+  "suggestedStay": 8,
   "climate": "hot",
   "timezone": 8,
   "dishes": [
@@ -3136,13 +3066,6 @@
     "days": 1,
     "energy": 18,
     "timezones": 1
-   },
-   {
-    "to": "newyork",
-    "transport": "flight",
-    "days": 1,
-    "energy": 34,
-    "timezones": 13
    }
   ],
   "blurb": "Skyscrapers with hiking trails behind them. A week of dim sum and stairs.",
@@ -3156,7 +3079,7 @@
   "lat": 35.68,
   "lon": 139.65,
   "hero": true,
-  "minStay": 5,
+  "minStay": 16,
   "suggestedStay": 20,
   "climate": "temperate",
   "timezone": 9,
@@ -3202,13 +3125,6 @@
   },
   "legs": [
    {
-    "to": "newyork",
-    "transport": "flight",
-    "days": 2,
-    "energy": 34,
-    "timezones": 14
-   },
-   {
     "to": "orangecounty",
     "transport": "flight",
     "days": 1,
@@ -3221,13 +3137,6 @@
     "days": 1,
     "energy": 38,
     "timezones": 17
-   },
-   {
-    "to": "munich",
-    "transport": "flight",
-    "days": 1,
-    "energy": 26,
-    "timezones": 8
    },
    {
     "to": "hongkong",
@@ -3256,13 +3165,6 @@
     "days": 1,
     "energy": 38,
     "timezones": 17
-   },
-   {
-    "to": "miami",
-    "transport": "flight",
-    "days": 2,
-    "energy": 34,
-    "timezones": 14
    }
   ],
   "blurb": "Three weeks. An animal café. An otter. A hospital. In that order.",
@@ -3276,8 +3178,8 @@
   "lat": 36.78,
   "lon": 138.99,
   "hero": false,
-  "minStay": 2,
-  "suggestedStay": 4,
+  "minStay": 6,
+  "suggestedStay": 8,
   "climate": "alpine",
   "timezone": 9,
   "dishes": [
@@ -3340,8 +3242,8 @@
   "lat": 27.72,
   "lon": 85.32,
   "hero": true,
-  "minStay": 2,
-  "suggestedStay": 4,
+  "minStay": 6,
+  "suggestedStay": 8,
   "climate": "temperate",
   "timezone": 6,
   "dishes": [
@@ -3435,7 +3337,7 @@
   "lat": 28.55,
   "lon": 84.56,
   "hero": true,
-  "minStay": 1,
+  "minStay": 2,
   "suggestedStay": 3,
   "climate": "alpine",
   "timezone": 6,
