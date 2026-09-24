@@ -10,9 +10,11 @@ import { Sim, Data, getRun, putRun } from '../ui/simBridge';
 export class RouteScene extends Phaser.Scene {
   static KEY = 'Route'; private pulse?: Phaser.GameObjects.Arc; private hud!: Hud;
   constructor() { super(RouteScene.KEY); }
-  create() {
+  private preview = false;
+  create(data: { preview?: boolean } = {}) {
+    this.preview = !!data.preview;
     rect(this, 0, 0, 360, 640, PAL.night0); this.cameras.main.fadeIn(250);
-    const run = getRun(this); run.phase = 'route'; putRun(this, run);
+    const run = getRun(this); if (!this.preview) { run.phase = 'route'; putRun(this, run); }
     this.hud = new Hud(this); this.hud.refresh(run);
     const cur = Data.city(run.cityId); const cx = 180, cy = 208, R = 80;
     const hook = (window as any).__nomadArt?.globe; let drewCustom = false; if (hook) { try { hook(this, cx, cy, R, run); drewCustom = true; } catch {} }
@@ -25,14 +27,14 @@ export class RouteScene extends Phaser.Scene {
     txt(this, 12, 296, 'CONTINENTS', 8, PAL.gray2); const cw = (360 - 116) / ALL.length;
     ALL.forEach((name, i) => { const lit = visited.has(name); const x0 = 116 + i * cw; rect(this, x0, 292, cw - 4, 16, lit ? PAL.night3 : PAL.night1, lit ? PAL.neon : PAL.night3); txt(this, x0 + (cw - 4) / 2, 300, short[name] ?? name.slice(0, 4).toUpperCase(), 8, lit ? PAL.neon : PAL.gray0).setOrigin(0.5); });
     const legs = Sim.availableLegs(run); const m = Sim.monthOf(run.day);
-    txt(this, 12, 322, legs.length ? 'NEXT STOP' : 'NO ROUTES THIS MONTH', 10, PAL.sun2);
+    txt(this, 12, 322, this.preview ? 'FROM HERE YOU COULD GO' : legs.length ? 'NEXT STOP' : 'NO ROUTES THIS MONTH', 10, PAL.sun2);
     txt(this, 348, 322, `${MONTHS[m - 1]} · day ${run.day}`, 8, PAL.gray2).setOrigin(1, 0);
     const listC = this.add.container(0, 0); const mask = this.make.graphics({}); mask.fillRect(0, 336, 360, 246); listC.setMask(mask.createGeometryMask());
     legs.forEach((leg, i) => listC.add(this.card(leg, 12, 340 + i * 62)));
     const total = legs.length * 62; if (total > 246) { const z = this.add.zone(180, 459, 360, 246).setInteractive({ draggable: true }); let sy = 0, s0 = 0; z.on('pointerdown', (p: any) => { s0 = p.y; }); z.on('drag', (p: any) => { const ny = Phaser.Math.Clamp(sy + (p.y - s0), -(total - 246), 0); listC.y = ny; }); z.on('dragend', () => { sy = listC.y; }); z.setDepth(-1); }
     if (!legs.length) { new Button(this, 180, 400, 'WAIT A WEEK HERE', () => { for (let i = 0; i < 7; i++) Sim.cityAction(run, 'rest'); putRun(this, run); this.scene.restart(); }, { w: 240, fill: PAL.dusk0 }); txt(this, 180, 440, 'Some legs only open in season (treks, campervans, Oktoberfest).', 8, PAL.gray2, { align: 'center', wrap: 300 }).setOrigin(0.5); }
     rect(this, 0, 582, 360, 58, PAL.night0).setDepth(5); rect(this, 0, 582, 360, 1, PAL.night3).setDepth(5);
-    new Button(this, 60, 614, '← STAY', () => this.scene.start('City'), { w: 100, h: 44, size: 10, fill: PAL.night2 }).setDepth(6);
+    new Button(this, 60, 614, this.preview ? '← BACK' : '← STAY', () => this.scene.start('City'), { w: 100, h: 44, size: 10, fill: PAL.night2 }).setDepth(6);
     if (this.scene.get('Passport')) new Button(this, 300, 614, 'PASSPORT', () => this.scene.start('Passport', { back: 'Route' }), { w: 100, h: 44, size: 10, fill: PAL.night2 }).setDepth(6);
   }
   private project(lat: number, lon: number, lon0: number, cx: number, cy: number, R: number) {
@@ -60,10 +62,10 @@ export class RouteScene extends Phaser.Scene {
     if ((leg as any).longHaul) p.add(txt(this, 200, 12, 'LONG HAUL', 8, PAL.pink) as any);
     p.add(txt(this, 10, 30, `${c?.country ?? ''} · ${leg.days}d · energy −${leg.energy}${leg.timezones ? ` · ${Math.abs(leg.timezones)}h lag` : ''}${leg.months ? ' · in season' : ''}`, 8, PAL.gray2) as any);
     if (typeof fare === 'number') p.add(txt(this, 326, 12, `$${Math.round(fare)}`, 8, PAL.sun2).setOrigin(1, 0.5) as any);
-    p.add(txt(this, 326, 36, 'GO →', 12, PAL.neon).setOrigin(1, 0.5) as any);
+    if (!this.preview) p.add(txt(this, 326, 36, 'GO →', 12, PAL.neon).setOrigin(1, 0.5) as any);
     p.setSize(336, 56); p.setInteractive(new Phaser.Geom.Rectangle(168, 28, 336, 56), Phaser.Geom.Rectangle.Contains);
     p.on('pointerdown', () => this.tweens.add({ targets: p, scaleX: 0.98, scaleY: 0.96, duration: 60, yoyo: true }));
-    p.on('pointerup', (ptr: Phaser.Input.Pointer) => { if (Math.abs(ptr.downY - ptr.upY) > 12) return; this.go(leg); });
+    p.on('pointerup', (ptr: Phaser.Input.Pointer) => { if (this.preview || Math.abs(ptr.downY - ptr.upY) > 12) return; this.go(leg); });
     return p;
   }
   private go(leg: Leg) { const run = getRun(this); if (run.energy < 10) toast(this, 'Running on fumes. Consider resting first.', PAL.sun1, 1200); this.cameras.main.fadeOut(200, 0, 0, 0); this.time.delayedCall(210, () => this.scene.start('Travel', { leg })); }

@@ -7,11 +7,11 @@ import { Hud } from '../ui/hud';
 import { toast } from '../ui/Toast';
 import { Sim, Data, getRun, putRun } from '../ui/simBridge';
 import { launchOnTop } from '../ui/overlay';
-const ACTIONS: { a: CityAction; label: string; icon: string; tip: string }[] = [
+const ACTIONS: { a: CityAction | 'map'; label: string; icon: string; tip: string }[] = [
   { a: 'work', label: 'WORK WEEK', icon: '💻', tip: 'a remote day' }, { a: 'explore', label: 'EXPLORE', icon: '🧭', tip: 'mood up, mild risk' },
-  { a: 'train', label: 'TRAIN', icon: '🏋', tip: 'stay fit' }, { a: 'cook', label: 'COOK', icon: '🍳', tip: 'local dish' },
+  { a: 'train', label: 'WORK OUT', icon: '🏋', tip: 'stay fit' }, { a: 'cook', label: 'COOK', icon: '🍳', tip: 'local dish' },
   { a: 'rest', label: 'REST', icon: '🛏', tip: 'energy up' }, { a: 'laundry', label: 'LAUNDRY', icon: '🧺', tip: 'a day, clean clothes' },
-  { a: 'checkroom', label: 'CHECK ROOM', icon: '🔍', tip: 'forget nothing' }, { a: 'moveon', label: 'MOVE ON', icon: '✈', tip: 'pick the next city' } ];
+  { a: 'map', label: 'MAP', icon: '🌍', tip: 'where you are' }, { a: 'moveon', label: 'MOVE ON', icon: '✈', tip: 'pick the next city' } ];
 /** City: arrival card, HUD, day actions, log. Launches mini-games, Coffee, Event as overlays and pauses itself. */
 export class CityScene extends Phaser.Scene {
   static KEY = 'City'; private hud!: Hud; private logLbl!: Label; private busy = false; private lastDay = -1; private btns: Button[] = [];
@@ -52,7 +52,8 @@ export class CityScene extends Phaser.Scene {
     parts.push(new Button(this, 180, 410, 'SETTLE IN', () => parts.forEach(x => x.destroy()), { w: 200, fill: PAL.sea1 }));
     parts.forEach((x, i) => (x as any).setDepth?.(20 + i));   // above the skyline (depth 1) and the HUD (50 is fine to sit under)
   }
-  private act(a: CityAction) {
+  private act(a: CityAction | 'map') {
+    if (a === 'map') { this.scene.start('Route', { preview: true }); return; }
     if (this.busy) return; this.busy = true; this.btns.forEach(b => b.setDisabled(true));
     const run = getRun(this);
     if (a === 'work' && Sim.isWeekend(run.day)) { toast(this, 'No work on weekends. Explore, cook, rest.', PAL.sun1, 1400); this.busy = false; this.btns.forEach(b => b.setDisabled(false)); this.refreshWorkBtn(run.day); return; }

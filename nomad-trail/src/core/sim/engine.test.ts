@@ -38,7 +38,7 @@ describe('data integrity', () => {
     expect(CITY.nairobi).toBeUndefined(); expect(CITY[HOME_CITY]).toBeDefined();
     for (const c of CITIES) { for (const l of c.legs) expect(CITY[l.to], `${c.id}->${l.to}`).toBeDefined(); for (const d of c.dishes) expect(DISH[d], d).toBeDefined(); for (const e of Object.keys(c.eventWeights)) expect(EVENT[e], `${c.id} weights ${e}`).toBeDefined(); }
     for (const d of DISHES) expect(CITY[d.city], d.city).toBeDefined();
-    for (const l of LEVELS) { expect(CITY[l.city]).toBeDefined(); expect(l.tiles.length).toBe(20); for (const r of l.tiles) expect(r.length).toBe(23); }
+    for (const l of LEVELS.filter(l => l.city !== 'generic')) { expect(CITY[l.city]).toBeDefined(); expect(l.tiles.length).toBe(20); for (const r of l.tiles) expect(r.length).toBe(23); }
     for (const e of EVENTS) if (e.requiresCity) expect(CITY[e.requiresCity]).toBeDefined();
   });
   it('every dish a city offers is local to that city or its region', () => {

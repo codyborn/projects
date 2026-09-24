@@ -243,8 +243,10 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       events.push(...rollEvents(s, 'action', ctx, rngFor(s, 4), 1)); break; }
     case 'rest': {
       s.workStreak = 0; events = tickDay(s, rng, { rest: true }); s.energy = clamp(s.energy + 28, 0, energyCap(s)); s.mood = clamp(s.mood + 2, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: DAILY.rest });
-      const lvl = LEVEL_BY_CITY[s.cityId];
-      if (hasTag(s, 'switch') && lvl) { checkEnding(s); return { state: s, events, minigame: { key: MINIGAME_KEYS.carryon, payload: { level: lvl, city: city.id }, difficulty: diff } }; }
+      // The handheld console: on a rest day it offers Carry-On, a platformer level for this city (a hand-built one where it exists,
+      // the generic layout with this city's hazard elsewhere). Once per city, and not again once the stamp is gold.
+      const lvl = LEVEL_BY_CITY[s.cityId] ?? (LEVEL_BY_CITY['generic'] ? { ...LEVEL_BY_CITY['generic'], city: city.name, hazard: city.hazard } : undefined);
+      if (hasTag(s, 'switch') && lvl && s.stamps[s.cityId] !== 'gold' && !hasFlag(s, 'carryon_' + s.cityId)) { setFlag(s, 'carryon_' + s.cityId, true); checkEnding(s); return { state: s, events, minigame: { key: MINIGAME_KEYS.carryon, payload: { level: lvl, city: city.id }, difficulty: diff } }; }
       break; }
     case 'laundry': if (locked) return { state, events: [], error: 'The clothes are in the suitcase. The suitcase is somewhere else.' }; s.workStreak = 0; events = tickDay(s, rng); s.cleanClothes = s.maxClothes; s.energy = clamp(s.energy - 4, 0, energyCap(s)); s.mood = clamp(s.mood - 2, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: DAILY.laundry }); checkEnding(s); return { state: s, events, minigame: { key: MINIGAME_KEYS.laundry, payload: { items: s.items.length }, difficulty: diff } };
     case 'train': {
