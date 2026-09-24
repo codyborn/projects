@@ -3,7 +3,8 @@ import type { ArcadeLevel } from '../core/types';
 import { PAL } from '../core/palette';
 
 export const TILE = 16;
-export const PAR_DEFAULT = 45;
+export const PAR_DEFAULT = 30;
+export const MAX_STAMPS = 8;
 /** Player physics used by CarryOnScene; the validator mirrors them. */
 export const PHYS = { jump: 310, gravity: 900, run: 115, snowJump: 235 };
 
@@ -33,6 +34,16 @@ export const DEFAULT_LEVEL: ArcadeLevel = {
     '#######################',
   ],
 };
+
+/** Keep at most `max` stamp pieces, the ones nearest the start (Manhattan), turning the rest into empty tiles. Pure. */
+export function trimStamps(level: ArcadeLevel, max = MAX_STAMPS): ArcadeLevel {
+  const rows = level.tiles.map(r => [...r]); let sx = 0, sy = 0; const stamps: [number, number][] = [];
+  rows.forEach((r, y) => r.forEach((c, x) => { if (c === 'S') { sx = x; sy = y; } if (c === '*') stamps.push([x, y]); }));
+  if (stamps.length <= max) return level;
+  stamps.sort((a, b) => (Math.abs(a[0] - sx) + Math.abs(a[1] - sy)) - (Math.abs(b[0] - sx) + Math.abs(b[1] - sy)));
+  for (const [x, y] of stamps.slice(max)) rows[y][x] = '.';
+  return { ...level, tiles: rows.map(r => r.join('')), stampPieces: max };
+}
 
 /**
  * Reachability check with the real jump kinematics: BFS over standable cells from S. A jump from a standing cell can land on a

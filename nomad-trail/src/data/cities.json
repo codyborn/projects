@@ -202,6 +202,13 @@
     "days": 1,
     "energy": 18,
     "timezones": 2
+   },
+   {
+    "to": "orangecounty",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 3
    }
   ],
   "blurb": "The team onsite city. Twenty days at a time, four times a year, always a hotel with a view of a wall.",
@@ -366,6 +373,13 @@
     "days": 1,
     "energy": 18,
     "timezones": 2
+   },
+   {
+    "to": "orangecounty",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
    }
   ],
   "blurb": "A Jeep Compass, a month, and more sky than a person needs.",
@@ -428,16 +442,30 @@
     "timezones": 0
    },
    {
+    "to": "orangecounty",
+    "transport": "car",
+    "days": 1,
+    "energy": 6,
+    "timezones": 0
+   },
+   {
     "to": "tokyo",
     "transport": "flight",
-    "days": 1,
+    "days": 2,
     "energy": 38,
     "timezones": 17
    },
    {
     "to": "tokyo",
     "transport": "flight",
-    "days": 1,
+    "days": 2,
+    "energy": 38,
+    "timezones": 17
+   },
+   {
+    "to": "seoul",
+    "transport": "flight",
+    "days": 2,
     "energy": 38,
     "timezones": 17
    }
@@ -511,7 +539,7 @@
     "timezones": 0
    }
   ],
-  "blurb": "Bouldering by day, stars by night, an Airbnb with a hot tub and no wifi.",
+  "blurb": "Bouldering by day, stars by night, a hot tub in the desert.",
   "stampIcon": "cactus"
  },
  {
@@ -521,9 +549,9 @@
   "region": "northamerica",
   "lat": 33.72,
   "lon": -117.83,
-  "hero": false,
-  "minStay": 8,
-  "suggestedStay": 10,
+  "hero": true,
+  "minStay": 2,
+  "suggestedStay": 6,
   "climate": "temperate",
   "timezone": -8,
   "dishes": [
@@ -596,12 +624,54 @@
    {
     "to": "tokyo",
     "transport": "flight",
-    "days": 1,
+    "days": 2,
     "energy": 38,
     "timezones": 17
+   },
+   {
+    "to": "seoul",
+    "transport": "flight",
+    "days": 2,
+    "energy": 38,
+    "timezones": 17
+   },
+   {
+    "to": "lasvegas",
+    "transport": "car",
+    "days": 1,
+    "energy": 6,
+    "timezones": 0
+   },
+   {
+    "to": "newyork",
+    "transport": "flight",
+    "days": 1,
+    "energy": 22,
+    "timezones": 3
+   },
+   {
+    "to": "bozeman",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
+    "to": "hongkong",
+    "transport": "flight",
+    "days": 2,
+    "energy": 38,
+    "timezones": 16
+   },
+   {
+    "to": "laventana",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
    }
   ],
-  "blurb": "Family. Laundry that someone else folds. The Pacific gateway.",
+  "blurb": "Home. Family, laundry that someone else folds, and the Pacific as the front door.",
   "stampIcon": "sun"
  },
  {
@@ -685,7 +755,7 @@
   "timezone": -7,
   "dishes": [
    "tacos",
-   "fishtacos"
+   "bajatacos"
   ],
   "activities": [
    "swim",
@@ -767,8 +837,8 @@
   "climate": "hot",
   "timezone": -7,
   "dishes": [
-   "tacos",
-   "fishtacos"
+   "bajatacos",
+   "tacos"
   ],
   "activities": [
    "kite",
@@ -808,6 +878,13 @@
   },
   "legs": [
    {
+    "to": "orangecounty",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 1
+   },
+   {
     "to": "lapaz",
     "transport": "car",
     "days": 1,
@@ -817,7 +894,7 @@
    {
     "to": "santiago",
     "transport": "flight",
-    "days": 2,
+    "days": 1,
     "energy": 22,
     "timezones": 3
    }
@@ -839,7 +916,7 @@
   "timezone": -6,
   "dishes": [
    "baleada",
-   "ceviche"
+   "conchsoup"
   ],
   "activities": [
    "swim",
@@ -881,7 +958,7 @@
    {
     "to": "santiago",
     "transport": "flight",
-    "days": 2,
+    "days": 1,
     "energy": 18,
     "timezones": 2
    },
@@ -893,7 +970,7 @@
     "timezones": 1
    }
   ],
-  "blurb": "Vitalia. Five weeks on an island of biohackers and one very bad kettle.",
+  "blurb": "Five weeks on an island of biohackers, reef, and one road.",
   "stampIcon": "reef"
  },
  {
@@ -956,14 +1033,14 @@
    {
     "to": "laventana",
     "transport": "flight",
-    "days": 2,
+    "days": 1,
     "energy": 22,
     "timezones": 3
    },
    {
     "to": "roatan",
     "transport": "flight",
-    "days": 2,
+    "days": 1,
     "energy": 18,
     "timezones": 2
    },
@@ -1125,14 +1202,14 @@
    {
     "to": "lisbon",
     "transport": "flight",
-    "days": 1,
+    "days": 2,
     "energy": 22,
     "timezones": 3
    },
    {
     "to": "madrid",
     "transport": "flight",
-    "days": 1,
+    "days": 2,
     "energy": 22,
     "timezones": 4
    },
@@ -1198,7 +1275,7 @@
    {
     "to": "madrid",
     "transport": "flight",
-    "days": 1,
+    "days": 2,
     "energy": 22,
     "timezones": 4
    }
@@ -1275,7 +1352,7 @@
    {
     "to": "buenosaires",
     "transport": "flight",
-    "days": 1,
+    "days": 2,
     "energy": 22,
     "timezones": 3
    },
@@ -1308,7 +1385,7 @@
     "timezones": 0
    }
   ],
-  "blurb": "The European base. Hills, tiles, the Airbnb that cancelled on the day.",
+  "blurb": "The European base. Hills, tiles, a tram that arrives when it feels like it.",
   "stampIcon": "tram"
  },
  {
@@ -1435,14 +1512,14 @@
    {
     "to": "buenosaires",
     "transport": "flight",
-    "days": 1,
+    "days": 2,
     "energy": 22,
     "timezones": 4
    },
    {
     "to": "iguazu",
     "transport": "flight",
-    "days": 1,
+    "days": 2,
     "energy": 22,
     "timezones": 4
    },
@@ -1786,6 +1863,13 @@
     "days": 1,
     "energy": 8,
     "timezones": 0
+   },
+   {
+    "to": "seoul",
+    "transport": "flight",
+    "days": 2,
+    "energy": 26,
+    "timezones": 8
    }
   ],
   "blurb": "Bikes have right of way over everything, including you.",
@@ -1932,7 +2016,7 @@
     "timezones": 0
    }
   ],
-  "blurb": "Twenty-six days on the Riviera. Bread is the answer. The mosquitoes had questions.",
+  "blurb": "Twenty-six days on the Riviera. Bread is the answer to most things.",
   "stampIcon": "palm"
  },
  {
@@ -1988,6 +2072,13 @@
    "sunburn": 1.5
   },
   "legs": [
+   {
+    "to": "casablanca",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   },
    {
     "to": "hyeres",
     "transport": "train",
@@ -2283,6 +2374,20 @@
   },
   "legs": [
    {
+    "to": "dakhla",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   },
+   {
+    "to": "casablanca",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
+   },
+   {
     "to": "amsterdam",
     "transport": "train",
     "days": 1,
@@ -2311,23 +2416,23 @@
     "timezones": 0
    },
    {
-    "to": "nairobi",
-    "transport": "flight",
-    "days": 1,
-    "energy": 18,
-    "timezones": 2
-   },
-   {
     "to": "bangkok",
     "transport": "flight",
-    "days": 1,
+    "days": 2,
     "energy": 26,
     "timezones": 6
    },
    {
-    "to": "kathmandu",
+    "to": "tokyo",
     "transport": "flight",
     "days": 2,
+    "energy": 26,
+    "timezones": 8
+   },
+   {
+    "to": "kathmandu",
+    "transport": "flight",
+    "days": 1,
     "energy": 22,
     "timezones": 5
    }
@@ -2563,11 +2668,18 @@
     "timezones": 0
    },
    {
-    "to": "nairobi",
+    "to": "munich",
     "transport": "flight",
     "days": 1,
     "energy": 18,
-    "timezones": 2
+    "timezones": 0
+   },
+   {
+    "to": "antibes",
+    "transport": "flight",
+    "days": 1,
+    "energy": 18,
+    "timezones": 0
    },
    {
     "to": "edinburgh",
@@ -2643,109 +2755,22 @@
     "timezones": 0
    },
    {
-    "to": "nairobi",
-    "transport": "flight",
-    "days": 2,
-    "energy": 18,
-    "timezones": 2
-   }
-  ],
-  "blurb": "Three weeks on a lagoon in the Sahara. Wind at 2 pm like a train timetable. The French have watches.",
-  "stampIcon": "dune"
- },
- {
-  "id": "nairobi",
-  "name": "Nairobi",
-  "country": "Kenya",
-  "region": "africa",
-  "lat": -1.29,
-  "lon": 36.82,
-  "hero": true,
-  "minStay": 10,
-  "suggestedStay": 12,
-  "climate": "hot",
-  "timezone": 3,
-  "dishes": [
-   "nyamachoma",
-   "ugali"
-  ],
-  "activities": [
-   "trailrun",
-   "hike",
-   "bands"
-  ],
-  "hazard": "yak",
-  "lodgings": [
-   {
-    "id": "airbnb",
-    "name": "Airbnb",
-    "cancelChance": 0.08,
-    "quiet": 2,
-    "moodPerDay": 2,
-    "energyPerDay": 1
-   },
-   {
-    "id": "hotel",
-    "name": "Hotel",
-    "cancelChance": 0.01,
-    "quiet": 3,
-    "moodPerDay": 1,
-    "energyPerDay": 3
-   },
-   {
-    "id": "hostel",
-    "name": "Hostel dorm",
-    "cancelChance": 0.0,
-    "quiet": 0,
-    "moodPerDay": -2,
-    "energyPerDay": -2
-   }
-  ],
-  "eventWeights": {
-   "wildlife": 2.5,
-   "foodpoisoning": 1.5,
-   "mosquito": 1.5
-  },
-  "legs": [
-   {
-    "to": "dakhla",
-    "transport": "flight",
-    "days": 2,
-    "energy": 18,
-    "timezones": 2
-   },
-   {
-    "to": "casablanca",
-    "transport": "flight",
-    "days": 1,
-    "energy": 18,
-    "timezones": 2
-   },
-   {
     "to": "munich",
     "transport": "flight",
     "days": 1,
     "energy": 18,
-    "timezones": 2
+    "timezones": 0
    },
    {
     "to": "bangkok",
     "transport": "flight",
-    "days": 1,
-    "energy": 22,
-    "timezones": 4
-   },
-   {
-    "to": "kathmandu",
-    "transport": "flight",
-    "days": 1,
-    "energy": 22,
-    "timezones": 3
+    "days": 2,
+    "energy": 26,
+    "timezones": 6
    }
   ],
-  "blurb": "The October gap. Altitude you do not notice until the run.",
-  "stampIcon": "acacia",
-  "altitude": 1795
+  "blurb": "Three weeks on a lagoon in the Sahara. The French have watches.",
+  "stampIcon": "dune"
  },
  {
   "id": "seoul",
@@ -2800,6 +2825,20 @@
   },
   "legs": [
    {
+    "to": "orangecounty",
+    "transport": "flight",
+    "days": 2,
+    "energy": 38,
+    "timezones": 17
+   },
+   {
+    "to": "amsterdam",
+    "transport": "flight",
+    "days": 2,
+    "energy": 26,
+    "timezones": 8
+   },
+   {
     "to": "hongkong",
     "transport": "flight",
     "days": 1,
@@ -2812,6 +2851,13 @@
     "days": 1,
     "energy": 18,
     "timezones": 0
+   },
+   {
+    "to": "lasvegas",
+    "transport": "flight",
+    "days": 2,
+    "energy": 38,
+    "timezones": 17
    }
   ],
   "blurb": "A week of food that is both spicy and a personality.",
@@ -2885,7 +2931,7 @@
     "timezones": 1
    }
   ],
-  "blurb": "Nomad capital, caf\u00e9s per capita off the charts, khao soi for breakfast.",
+  "blurb": "Nomad capital, cafés per capita off the charts, khao soi for breakfast.",
   "stampIcon": "temple",
   "altitude": 310
  },
@@ -2942,18 +2988,18 @@
   },
   "legs": [
    {
-    "to": "munich",
+    "to": "dakhla",
     "transport": "flight",
-    "days": 1,
+    "days": 2,
     "energy": 26,
     "timezones": 6
    },
    {
-    "to": "nairobi",
+    "to": "munich",
     "transport": "flight",
-    "days": 1,
-    "energy": 22,
-    "timezones": 4
+    "days": 2,
+    "energy": 26,
+    "timezones": 6
    },
    {
     "to": "kathmandu",
@@ -3032,6 +3078,13 @@
    "rain": 1.5
   },
   "legs": [
+   {
+    "to": "orangecounty",
+    "transport": "flight",
+    "days": 2,
+    "energy": 38,
+    "timezones": 16
+   },
    {
     "to": "kathmandu",
     "transport": "flight",
@@ -3127,16 +3180,23 @@
    {
     "to": "orangecounty",
     "transport": "flight",
-    "days": 1,
+    "days": 2,
     "energy": 38,
     "timezones": 17
    },
    {
     "to": "lasvegas",
     "transport": "flight",
-    "days": 1,
+    "days": 2,
     "energy": 38,
     "timezones": 17
+   },
+   {
+    "to": "munich",
+    "transport": "flight",
+    "days": 2,
+    "energy": 26,
+    "timezones": 8
    },
    {
     "to": "hongkong",
@@ -3162,12 +3222,12 @@
    {
     "to": "lasvegas",
     "transport": "flight",
-    "days": 1,
+    "days": 2,
     "energy": 38,
     "timezones": 17
    }
   ],
-  "blurb": "Three weeks. An animal caf\u00e9. An otter. A hospital. In that order.",
+  "blurb": "Three weeks of convenience stores, alleys, animal cafes and trains that apologize for being early.",
   "stampIcon": "torii"
  },
  {
@@ -3288,16 +3348,9 @@
    {
     "to": "munich",
     "transport": "flight",
-    "days": 2,
-    "energy": 22,
-    "timezones": 5
-   },
-   {
-    "to": "nairobi",
-    "transport": "flight",
     "days": 1,
     "energy": 22,
-    "timezones": 3
+    "timezones": 5
    },
    {
     "to": "manaslu",

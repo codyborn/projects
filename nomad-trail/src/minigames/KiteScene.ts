@@ -3,7 +3,8 @@ import { PAL } from '../core/palette';
 import { MINIGAME_KEYS, type MinigameLaunch } from '../core/types';
 import { MinigameFrame, Meter, W, H, clamp, normalizeLaunch, txt } from './_shared';
 
-/** Kiteboarding: keep the kite in the power zone as gusts shift it; tap to jump off the swell peaks. 45s. */
+/** Kiteboarding: keep the kite in the power zone as gusts shift it; tap to jump off the swell peaks. 35s. */
+const DUR = 35;
 export class KiteScene extends Phaser.Scene {
   private frame!: MinigameFrame; private launch!: MinigameLaunch; private g!: Phaser.GameObjects.Graphics; private meter!: Meter;
   private kiteA = 0; private zoneC = 0; private zoneTarget = 0; private zoneW = 0.5; private speed = 0; private inZone = 0; private elapsed = 0; private jumps = 0; private wipeouts = 0; private airborne = 0; private riderY = 0; private gustWarn = 0; private dragging = false;
@@ -18,6 +19,7 @@ export class KiteScene extends Phaser.Scene {
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { if (p.y < 420) this.dragging = true; }); this.input.on('pointerup', () => { this.dragging = false; });
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => { if (this.dragging && this.frame.active) this.kiteA = clamp((p.x - W / 2) / 140, -1, 1); });
     this.frame.onTap(p => { if (p && p.y < 420) return; this.tryJump(); }); this.input.keyboard?.on('keydown-UP', () => this.tryJump());
+    this.frame.scoreNow = () => 60 * (this.inZone / DUR) + Math.min(40, this.jumps * 8) - this.wipeouts * 4;
     this.frame.intro('Drag the kite left/right to stay in the bright power zone. Gusts move it. Tap the water when a wave peaks under you to jump.', () => { this.tick = this.time.addEvent({ delay: 16, loop: true, callback: () => this.step(0.016) }); });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.tick?.remove());
   }
@@ -49,7 +51,7 @@ export class KiteScene extends Phaser.Scene {
     g.fillStyle(PAL.ink).fillRect(rx - 22, ry + 10, 44, 6); g.fillStyle(PAL.sun2).fillRect(rx - 20, ry + 10, 40, 4); g.fillStyle(PAL.earth3).fillRect(rx - 5, ry - 12, 10, 22); g.fillStyle(PAL.ink).fillRect(rx - 4, ry - 20, 8, 8);
     if (this.speed > 0.3 && this.airborne <= 0) for (let i = 0; i < 5; i++) g.fillStyle(PAL.white, 0.6).fillCircle(rx - 24 - i * 6 - Math.random() * 6, ry + 12 + Math.random() * 6, 2 + this.speed * 2);
     if (bump > 0.5 && this.airborne <= 0) txt(this, cx, 470, 'TAP', 10, PAL.white).setName('tapcue').setDepth(9); else this.children.list.filter(o => o.name === 'tapcue').forEach(o => o.destroy());
-    this.meter.set(this.speed, PAL.neon); this.frame.setTimer(`${Math.max(0, Math.ceil(45 - this.elapsed))}s`); this.frame.setProgress(`${this.jumps} jumps`);
-    if (this.elapsed >= 45) this.frame.finish(60 * (this.inZone / 45) + Math.min(40, this.jumps * 8) - this.wipeouts * 4);
+    this.meter.set(this.speed, PAL.neon); this.frame.setTimer(`${Math.max(0, Math.ceil(DUR - this.elapsed))}s`); this.frame.setProgress(`${this.jumps} jumps`);
+    if (this.elapsed >= DUR) this.frame.finish(this.frame.scoreNow());
   }
 }

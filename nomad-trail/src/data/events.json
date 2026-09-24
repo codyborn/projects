@@ -23,7 +23,7 @@
     "label": "Pet it, clean the cut after",
     "text": "You pet the otter. It was worth it. That night you clean the nick on your finger, and when it goes hot two days later the antibiotics are already in the backpack. You keep your week.",
     "effects": {
-     "health": -7,
+     "health": -8,
      "mood": 8,
      "unlockAchievement": "otter_lived"
     },
@@ -97,7 +97,7 @@
   "title": "Food poisoning",
   "text": "Day {day}, {city}. Something you ate has opinions. You spend two days learning the bathroom tile pattern by heart.",
   "when": "action",
-  "baseChance": 0.12,
+  "baseChance": 0.135,
   "effects": {
    "health": -15,
    "energy": -20,
@@ -106,7 +106,7 @@
    "sick": 2
   },
   "mitigatedBy": [
-   "probiotics"
+   "meds"
   ],
   "mitigatedText": "Day {day}, {city}. Something you ate has opinions. The probiotics have counter-arguments. One rough night, not two days.",
   "mitigatedEffects": {
@@ -118,40 +118,13 @@
  {
   "id": "airbnbcancel",
   "title": "Cancelled on arrival",
-  "text": "You land in {city}. The Airbnb host has cancelled 'due to unforeseen circumstances', which is to say a better booking. It is 6 pm and everything you own is on your back.",
+  "text": "You land in {city}. The host has cancelled 'due to unforeseen circumstances', which is to say a better booking. It is 6 pm, everything you own is on your back, and the only hotel with a room is across town. You get there. You do not enjoy getting there.",
   "when": "arrive",
   "baseChance": 0.08,
   "effects": {
-   "mood": -10
-  },
-  "choices": [
-   {
-    "label": "Hotel across town",
-    "text": "A real bed, a real desk, a lost day of admin and a taxi that takes the scenic route.",
-    "effects": {
-     "days": 1,
-     "mood": -4,
-     "energy": 5
-    }
-   },
-   {
-    "label": "Hostel dorm tonight",
-    "text": "Six strangers, one snorer, a locker your laptop barely fits in. You live.",
-    "effects": {
-     "mood": -12,
-     "energy": -15
-    }
-   },
-   {
-    "label": "Airport floor",
-    "text": "You know the airport. The airport knows you. Neither of you sleeps.",
-    "effects": {
-     "energy": -30,
-     "mood": -8,
-     "health": -4
-    }
-   }
-  ]
+   "energy": -20,
+   "mood": -12
+  }
  },
  {
   "id": "forgot",
@@ -207,10 +180,10 @@
   "requiresCity": "manaslu",
   "mitigatedBy": [
    "meds",
-   "electrolytes",
-   "water"
+   "water",
+   "health"
   ],
-  "mitigatedText": "Above 3,500 m in {city}. Diamox tingles in your fingers, electrolytes in the bottle, a rest day in the plan. The headache stays a rumour.",
+  "mitigatedText": "Above 3,500 m in {city}. Altitude pills tingle in your fingers, electrolytes in the bottle, a rest day in the plan. The headache stays a rumour.",
   "mitigatedEffects": {
    "energy": -12
   }
@@ -270,7 +243,7 @@
   "mitigatedBy": [
    "essential"
   ],
-  "mitigatedText": "Somewhere in {city} your phone stops being yours. The spare phone comes out of the backpack, the YubiKey logs you back in. A bad evening instead of a bad week.",
+  "mitigatedText": "Somewhere in {city} your phone stops being yours. The old phone comes out of the backpack and logs you back into everything. A bad evening instead of a bad week.",
   "mitigatedEffects": {
    "mood": -6
   }
@@ -377,7 +350,7 @@
  {
   "id": "sleepless",
   "title": "The upstairs neighbour",
-  "text": "The Airbnb above yours in {city} is either a nightclub or a family of tap dancers. 3 am, 4 am, 5 am.",
+  "text": "The apartment above yours in {city} is either a nightclub or a family of tap dancers. 3 am, 4 am, 5 am.",
   "when": "day",
   "baseChance": 0.04,
   "effects": {
@@ -387,7 +360,7 @@
   "mitigatedBy": [
    "sleep"
   ],
-  "mitigatedText": "The Airbnb above yours is a nightclub. Earplugs in. You hear nothing until the alarm.",
+  "mitigatedText": "The apartment above yours is a nightclub. Earplugs in. You hear nothing until the alarm.",
   "mitigatedEffects": {
    "energy": -3
   }
@@ -496,7 +469,7 @@
  {
   "id": "lostcharger",
   "title": "One cable short",
-  "text": "The Garmin cable is in the last hotel. The watch dies on day three and you become a person who does not know how far they walked.",
+  "text": "The watch cable is in the last hotel. The watch dies on day three and you become a person who does not know how far they walked.",
   "when": "leave",
   "baseChance": 0.05,
   "effects": {
@@ -525,7 +498,7 @@
  {
   "id": "coffeeshop",
   "title": "The cafe",
-  "text": "You find the cafe in {city}. Not a cafe: the cafe. You will structure the rest of the stay around it.",
+  "text": "You find the cafe in {city}. Not a cafe: THE cafe. You will structure the rest of the stay around it.",
   "when": "action",
   "baseChance": 0.08,
   "effects": {

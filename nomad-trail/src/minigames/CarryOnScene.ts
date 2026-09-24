@@ -3,14 +3,16 @@ import { PAL } from '../core/palette';
 import { MINIGAME_KEYS, type ArcadeLevel, type Hazard, type MinigameLaunch } from '../core/types';
 import { MinigameFrame, W, H, clamp, normalizeLaunch, panel, txt, pixTexture } from './_shared';
 
-import { TILE, PAR_DEFAULT, PHYS, DEFAULT_LEVEL, validateLevel } from './carryonLevel';
+import { TILE, PAR_DEFAULT, PHYS, DEFAULT_LEVEL, validateLevel, trimStamps } from './carryonLevel';
 export { DEFAULT_LEVEL, validateLevel } from './carryonLevel';
 const WORLD_Y = 160;           // world top on screen
-const HARD_CAP = 120;
+const HARD_CAP = 60;           // seconds of play; auto-finish with partial credit
+const RAMP_AT = 40;            // seconds until hazards reach full (1.8x) speed/frequency
 
 interface Mover { spr: Phaser.GameObjects.Rectangle | Phaser.GameObjects.Image; vx: number; vy: number; kind: Hazard; t: number; x0: number; y0: number; dir: number; alive: boolean; w: number; h: number; }
 
-/** Carry-On: the Switch's game-within-a-game. One-screen platformer, a level per city, collect the stamp pieces. */
+/** Carry-On: the Switch's game-within-a-game. One-screen platformer, a level per city, collect the stamp pieces (max 8).
+ *  Hazards ramp to 1.8x by 40 s; par 30 s; hard cap 60 s with partial credit. */
 export class CarryOnScene extends Phaser.Scene {
   private frame!: MinigameFrame; private launch!: MinigameLaunch; private level!: ArcadeLevel;
   private ox = 0; private cols = 23; private rows = 20;
@@ -19,15 +21,16 @@ export class CarryOnScene extends Phaser.Scene {
   private hearts = 3; private collected = 0; private total = 0; private t0 = 0; private iframes = 0; private windForce = 0; private windT = 0; private waterY = 0; private waterDir = 1;
   private keys: { left: boolean; right: boolean; jump: boolean } = { left: false, right: false, jump: false };
   private jumpHeld = false; private jumpBuffer = 0; private coyote = 0; private touchDirs = new Map<number, 'left' | 'right' | 'jump'>(); private swipeStart = new Map<number, number>();
+  private skyline: { spr: Phaser.GameObjects.Rectangle; spd: number; w: number }[] = []; private rockT = 0;
   private heartsText!: Phaser.GameObjects.Text; private stampText!: Phaser.GameObjects.Text; private timeText!: Phaser.GameObjects.Text; private windStreaks!: Phaser.GameObjects.Graphics; private water!: Phaser.GameObjects.Rectangle;
   private ended = false;
 
   constructor() { super(MINIGAME_KEYS.carryon); }
   init(data: any) {
     this.launch = normalizeLaunch(data); const p = this.launch.payload;
-    this.level = (p && Array.isArray(p.tiles) && p.tiles.length) ? p as ArcadeLevel : DEFAULT_LEVEL;
+    this.level = trimStamps((p && Array.isArray(p.tiles) && p.tiles.length) ? p as ArcadeLevel : DEFAULT_LEVEL);
     this.rows = this.level.tiles.length; this.cols = Math.max(...this.level.tiles.map(r => r.length)); this.ox = Math.round((W - this.cols * TILE) / 2);
-    this.hearts = 3; this.collected = 0; this.total = 0; this.stamps = []; this.spikes = []; this.movers = []; this.spawners = []; this.ended = false; this.iframes = 0; this.windForce = 0; this.waterY = 0; this.touchDirs.clear(); this.swipeStart.clear();
+    this.hearts = 3; this.collected = 0; this.total = 0; this.stamps = []; this.spikes = []; this.movers = []; this.spawners = []; this.ended = false; this.iframes = 0; this.windForce = 0; this.waterY = 0; this.touchDirs.clear(); this.swipeStart.clear(); this.skyline = []; this.rockT = 0; this.windT = 0;
     const issues = validateLevel(this.level); if (issues.length) console.warn('[CarryOn] level issues:', this.level.city, issues);
   }
 
@@ -38,7 +41,9 @@ export class CarryOnScene extends Phaser.Scene {
     this.makeTextures(fg);
     // world backdrop + parallax skyline silhouettes
     const wh = this.rows * TILE; this.add.rectangle(W / 2, WORLD_Y + wh / 2, W, wh, bg).setDepth(0);
-    const sky = this.add.graphics().setDepth(1); for (let i = 0; i < 14; i++) { const bw = Phaser.Math.Between(14, 40), bh = Phaser.Math.Between(40, 160); sky.fillStyle(mid, 0.6).fillRect(i * 27 - 10, WORLD_Y + wh - bh, bw, bh); for (let k = 0; k < 6; k++) if (Math.random() < 0.4) sky.fillStyle(PAL.sun2, 0.35).fillRect(i * 27 - 6 + (k % 2) * 8, WORLD_Y + wh - bh + 8 + Math.floor(k / 2) * 12, 3, 3); }
+    // scrolling parallax silhouettes: recycled only once fully off the left edge (x + w < 0), respawned off the right edge
+    const spawnSil = (x: number) => { const bw = Phaser.Math.Between(18, 44), bh = Phaser.Math.Between(40, 170); const r = this.add.rectangle(x + bw / 2, WORLD_Y + wh - bh / 2, bw, bh, mid, 0.6).setDepth(1); this.skyline.push({ spr: r, spd: 6 + bh / 12, w: bw }); };
+    for (let x = -10; x < W + 60; x += Phaser.Math.Between(24, 40)) spawnSil(x);
     // tiles
     this.solids = this.physics.add.staticGroup(); this.oneways = this.physics.add.staticGroup(); let sx = 1, sy = 1;
     this.level.tiles.forEach((row, y) => [...row].forEach((c, x) => {
@@ -57,7 +62,8 @@ export class CarryOnScene extends Phaser.Scene {
     this.spawnInitialHazards();
     this.drawBezel();
     this.setupInput();
-    this.frame.intro(`Collect the ${this.total} stamp pieces. Dodge the ${this.level.hazard}s. Left | Right | Jump.`, () => { this.t0 = this.time.now; });
+    this.frame.capSec = HARD_CAP; this.frame.scoreNow = () => (this.collected / Math.max(1, this.total)) * 70;
+    this.frame.intro(`Collect the ${this.total} stamp pieces. Dodge the ${this.level.hazard}s. It speeds up. Left | Right | Jump.`, () => { this.t0 = this.time.now; });
     this.frame.hud();
   }
 
@@ -152,26 +158,30 @@ export class CarryOnScene extends Phaser.Scene {
     if (this.iframes > 0) { this.iframes -= dt; this.player.setAlpha(Math.sin(this.iframes * 40) > 0 ? 1 : 0.3); } else { this.player.setAlpha(1); for (const sp of this.spikes) if (Phaser.Geom.Intersects.RectangleToRectangle(pr, sp)) { this.hurt(); break; } }
     // hazards
     this.updateHazards(dt, pr);
+    // parallax scroll + cull (a silhouette is recycled only when its right edge has left the world)
+    for (const sl of this.skyline) { sl.spr.x -= sl.spd * dt * this.ramp(); if (sl.spr.x + sl.w / 2 < 0) { const bw = Phaser.Math.Between(18, 44), bh = Phaser.Math.Between(40, 170); sl.spr.setSize(bw, bh); sl.spr.setPosition(W + bw / 2 + Phaser.Math.Between(0, 30), WORLD_Y + wh - bh / 2); sl.w = bw; sl.spd = 6 + bh / 12; } }
     // timer
-    const el = (this.time.now - this.t0) / 1000; const par = this.level.parTime || PAR_DEFAULT; this.timeText.setText(`${el.toFixed(1)}s  par ${par}s`).setColor(el > par ? '#ff6fa8' : '#b4b9c4'); this.frame.setTimer(''); this.frame.setProgress(`${this.collected}/${this.total}`);
-    if (el > HARD_CAP) { this.ended = true; this.frame.finish((this.collected / this.total) * 40, true); }
+    const el = (this.time.now - this.t0) / 1000; const par = this.level.parTime || PAR_DEFAULT; this.timeText.setText(`${el.toFixed(1)}s  par ${par}s  x${this.ramp().toFixed(1)}`).setColor(el > par ? '#ff6fa8' : '#b4b9c4'); this.frame.setTimer(''); this.frame.setProgress(`${this.collected}/${this.total}`);
+    if (el > HARD_CAP) { this.ended = true; this.frame.finish(this.frame.scoreNow()); }
   }
 
+  /** Difficulty ramp: 1.0 at 0 s -> 1.8 at RAMP_AT s of play. Scales hazard speeds, spawn rates, wind and homing. */
+  private ramp() { const el = this.t0 ? (this.time.now - this.t0) / 1000 : 0; return 1 + 0.8 * clamp(el / RAMP_AT, 0, 1); }
   private updateHazards(dt: number, pr: Phaser.Geom.Rectangle) {
-    const hz = this.level.hazard; const wh = this.rows * TILE; const body = this.player.body as Phaser.Physics.Arcade.Body;
+    const hz = this.level.hazard; const wh = this.rows * TILE; const body = this.player.body as Phaser.Physics.Arcade.Body; const rp = this.ramp();
     // environmental
-    if (hz === 'gust') { this.windT += dt; const cyc = 5 - 1.5 * this.launch.difficulty; const ph = this.windT % cyc; this.windStreaks.clear();
+    if (hz === 'gust') { this.windT += dt * rp; const cyc = 5 - 1.5 * this.launch.difficulty; const ph = this.windT % cyc; this.windStreaks.clear();
       if (ph > cyc - 1.2 && ph < cyc - 0.2) { const d = Math.sin(this.windT * 0.3) > 0 ? 1 : -1; (this as any)._gd = d; for (let i = 0; i < 8; i++) this.windStreaks.fillStyle(PAL.white, 0.35).fillRect(((i * 53 + this.windT * 400 * d) % W + W) % W, WORLD_Y + 20 + i * 36, 30, 1); this.windForce = 0; }
-      else if (ph >= cyc - 0.2 || ph < 0.9) { const d = ((this as any)._gd as number) || 1; this.windForce = 90 * d; for (let i = 0; i < 16; i++) this.windStreaks.fillStyle(PAL.sky3, 0.6).fillRect(((i * 41 + this.windT * 700 * d) % W + W) % W, WORLD_Y + 10 + i * 19, 50, 2); } else this.windForce = 0; }
-    if (hz === 'rock') { this.windT += dt; const every = 1.6 - 0.6 * this.launch.difficulty; if (this.windT > every) { this.windT = 0; const p = Phaser.Utils.Array.GetRandom(this.spawners.length ? this.spawners : [{ x: this.ox + TILE * Phaser.Math.Between(2, this.cols - 3), y: WORLD_Y + TILE }]); const spr = this.add.rectangle(p.x, p.y, 12, 12, PAL.gray1).setStrokeStyle(1, PAL.ink).setDepth(5); this.movers.push({ spr, vx: 0, vy: 0, kind: 'rock', t: 0, x0: p.x, y0: p.y, dir: 1, alive: true, w: 12, h: 12 }); } }
-    if (hz === 'wave') { this.windT += dt; const amp = TILE * (4 + 3 * this.launch.difficulty); const base = WORLD_Y + wh - TILE; this.waterY = base - Math.max(0, Math.sin(this.windT * 0.5)) * amp; this.water.setPosition(W / 2, this.waterY + 200); if (this.player.y - 4 > this.waterY) { this.hurt(); this.player.setPosition(this.player.x, this.waterY - 30); body.setVelocityY(-200); } }
+      else if (ph >= cyc - 0.2 || ph < 0.9) { const d = ((this as any)._gd as number) || 1; this.windForce = 90 * rp * d; for (let i = 0; i < 16; i++) this.windStreaks.fillStyle(PAL.sky3, 0.6).fillRect(((i * 41 + this.windT * 700 * d) % W + W) % W, WORLD_Y + 10 + i * 19, 50, 2); } else this.windForce = 0; }
+    if (hz === 'rock') { this.rockT += dt; const every = (1.6 - 0.6 * this.launch.difficulty) / rp; if (this.rockT > every) { this.rockT = 0; const p = Phaser.Utils.Array.GetRandom(this.spawners.length ? this.spawners : [{ x: this.ox + TILE * Phaser.Math.Between(2, this.cols - 3), y: WORLD_Y + TILE }]); const spr = this.add.rectangle(p.x, p.y, 12, 12, PAL.gray1).setStrokeStyle(1, PAL.ink).setDepth(5); this.movers.push({ spr, vx: 0, vy: 0, kind: 'rock', t: 0, x0: p.x, y0: p.y, dir: 1, alive: true, w: 12, h: 12 }); } }
+    if (hz === 'wave') { this.windT += dt * rp; const amp = TILE * (4 + 3 * this.launch.difficulty); const base = WORLD_Y + wh - TILE; this.waterY = base - Math.max(0, Math.sin(this.windT * 0.5)) * amp; this.water.setPosition(W / 2, this.waterY + 200); if (this.player.y - 4 > this.waterY) { this.hurt(); this.player.setPosition(this.player.x, this.waterY - 30); body.setVelocityY(-200); } }
     for (const m of this.movers) {
       if (!m.alive) continue; m.t += dt; const s = m.spr;
       switch (m.kind) {
-        case 'otter': case 'tuktuk': case 'tram': case 'crowd': case 'yak': { const sp = m.kind === 'yak' ? (Math.abs(this.player.x - s.x) < 80 ? m.vx * 2.2 : m.vx) : m.vx; s.x += sp * m.dir * dt; const ahead = s.x + (m.w / 2 + 2) * m.dir; if (this.isSolidAt(ahead, s.y) || !this.isSolidAt(ahead, s.y + m.h / 2 + 4) && m.kind !== 'tuktuk' && m.kind !== 'tram') m.dir *= -1; if (s.x < this.ox + TILE || s.x > this.ox + (this.cols - 1) * TILE) m.dir *= -1; break; }
-        case 'mosquito': { const hx = Math.sign(this.player.x - s.x), hy = Math.sign(this.player.y - s.y); s.x += (hx * 18 + Math.sin(m.t * 6) * 30) * dt; s.y += (hy * 14 + Math.cos(m.t * 5) * 30) * dt; s.x = clamp(s.x, this.ox + TILE, this.ox + (this.cols - 1) * TILE); s.y = clamp(s.y, WORLD_Y + TILE, WORLD_Y + wh - TILE); break; }
-        case 'pigeon': { s.x += m.vx * m.dir * dt; s.y = m.y0 + Math.sin(m.t * 1.6) * 60; if (s.x < this.ox + TILE || s.x > this.ox + (this.cols - 1) * TILE) m.dir *= -1; break; }
-        case 'rock': { m.vy += 500 * dt; s.y += m.vy * dt; if (this.isSolidAt(s.x, s.y + 7)) { m.alive = false; this.tweens.add({ targets: s, alpha: 0, scale: 1.6, duration: 150, onComplete: () => s.destroy() }); } break; }
+        case 'otter': case 'tuktuk': case 'tram': case 'crowd': case 'yak': { const sp = (m.kind === 'yak' ? (Math.abs(this.player.x - s.x) < 80 ? m.vx * 2.2 : m.vx) : m.vx) * rp; s.x += sp * m.dir * dt; const ahead = s.x + (m.w / 2 + 2) * m.dir; if (this.isSolidAt(ahead, s.y) || !this.isSolidAt(ahead, s.y + m.h / 2 + 4) && m.kind !== 'tuktuk' && m.kind !== 'tram') m.dir *= -1; if (s.x < this.ox + TILE || s.x > this.ox + (this.cols - 1) * TILE) m.dir *= -1; break; }
+        case 'mosquito': { const hx = Math.sign(this.player.x - s.x), hy = Math.sign(this.player.y - s.y); s.x += (hx * 18 * rp + Math.sin(m.t * 6) * 30) * dt; s.y += (hy * 14 * rp + Math.cos(m.t * 5) * 30) * dt; s.x = clamp(s.x, this.ox + TILE, this.ox + (this.cols - 1) * TILE); s.y = clamp(s.y, WORLD_Y + TILE, WORLD_Y + wh - TILE); break; }
+        case 'pigeon': { s.x += m.vx * rp * m.dir * dt; s.y = m.y0 + Math.sin(m.t * 1.6) * 60; if (s.x < this.ox + TILE || s.x > this.ox + (this.cols - 1) * TILE) m.dir *= -1; break; }
+        case 'rock': { m.vy += 500 * rp * dt; s.y += m.vy * dt; if (this.isSolidAt(s.x, s.y + 7)) { m.alive = false; this.tweens.add({ targets: s, alpha: 0, scale: 1.6, duration: 150, onComplete: () => s.destroy() }); } break; }
         default: break;
       }
       if (m.alive && this.iframes <= 0 && Phaser.Geom.Intersects.RectangleToRectangle(pr, new Phaser.Geom.Rectangle(s.x - m.w / 2, s.y - m.h / 2, m.w, m.h))) { this.hurt(Math.sign(this.player.x - s.x) || 1); }

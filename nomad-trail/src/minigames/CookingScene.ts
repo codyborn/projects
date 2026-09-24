@@ -14,13 +14,20 @@ const STEP_TEXT: Record<DishStep['kind'], string> = {
 
 /** Cooking-Mama style: a dish is a sequence of micro-tasks. Score = mean accuracy. */
 export class CookingScene extends Phaser.Scene {
-  private frame!: MinigameFrame; private launch!: MinigameLaunch; private dish!: Dish;
+  private frame!: MinigameFrame; private launch!: MinigameLaunch; private dish!: Dish; private cityLabel = '';
   private stepIdx = 0; private accuracies: number[] = [];
   private work!: Phaser.GameObjects.Graphics; private plate!: Phaser.GameObjects.Graphics; private stepText!: Phaser.GameObjects.Text; private hint!: Phaser.GameObjects.Text;
   private meter!: Meter; private cleanup: (() => void)[] = []; private stepTimer?: Phaser.Time.TimerEvent;
 
   constructor() { super(MINIGAME_KEYS.cooking); }
-  init(data: any) { this.launch = normalizeLaunch(data); this.dish = (this.launch.payload && this.launch.payload.steps) ? this.launch.payload as Dish : DEFAULT_DISH; this.stepIdx = 0; this.accuracies = []; this.cleanup = []; }
+  init(data: any) {
+    this.launch = normalizeLaunch(data); const p = this.launch.payload || {};
+    const raw: Dish = (p.steps ? p : p.dish && p.dish.steps ? p.dish : DEFAULT_DISH) as Dish;
+    this.dish = { ...raw, steps: raw.steps.slice(0, 5) };            // at most 5 steps so a dish fits the play cap
+    // city tie: payload.cityName (pretty) > payload.city (id) > dish.city (id)
+    this.cityLabel = String(p.cityName || p.city || raw.city || '').replace(/[-_]/g, ' ');
+    this.stepIdx = 0; this.accuracies = []; this.cleanup = [];
+  }
 
   create() {
     this.frame = new MinigameFrame(this, this.launch, this.dish.name);
@@ -30,12 +37,14 @@ export class CookingScene extends Phaser.Scene {
     this.add.rectangle(W / 2, 300, W, 4, PAL.earth0);
     this.plate = this.add.graphics().setDepth(2);
     this.drawPlate();
-    txt(this, W / 2, 46, this.dish.ingredients.join(' · '), 9, PAL.gray2);
+    if (this.cityLabel) txt(this, W / 2, 44, `A ${this.cityLabel.toUpperCase()} DISH`, 9, PAL.sun3);
+    txt(this, W / 2, 60, this.dish.ingredients.join(' · '), 9, PAL.gray2);
     this.stepText = txt(this, W / 2, 330, '', 14, PAL.sun2).setDepth(5);
     this.hint = txt(this, W / 2, 610, '', 10, PAL.gray2).setDepth(5);
     this.work = this.add.graphics().setDepth(4);
     this.meter = new Meter(this, 40, 590, W - 80, 8);
     this.frame.hud();
+    this.frame.scoreNow = () => { const done = this.accuracies; return done.length ? (done.reduce((a, b) => a + b, 0) / done.length) * 100 * (0.6 + 0.4 * done.length / this.dish.steps.length) : 40; };
     this.frame.intro(`${this.dish.steps.length} steps. Follow each instruction.`, () => this.nextStep());
   }
 
@@ -82,7 +91,7 @@ export class CookingScene extends Phaser.Scene {
     } });
     const handler = () => { taps++; const ph = (knife as any).ph as number; if (Math.abs(ph - bandC) <= bandW / 2) { hits++; this.frame.flash(PAL.neon, 40); } else this.frame.shake(60, 0.002); if (hits >= need) this.endStep(hits / Math.max(taps, need)); };
     this.frame.onTap(handler);
-    this.stepTimer = this.time.delayedCall(need * 1800 + 2000, () => this.endStep(hits / Math.max(taps, need) * 0.8));
+    this.stepTimer = this.time.delayedCall(need * 1100 + 1500, () => this.endStep(hits / Math.max(taps, need) * 0.8));
     this.cleanup.push(() => { tick.remove(); knife.destroy(); this.removeTap(handler); });
   }
 
@@ -97,7 +106,7 @@ export class CookingScene extends Phaser.Scene {
     const up = () => { lastA = null; };
     this.input.on('pointermove', move); this.input.on('pointerup', up);
     const kb = this.input.keyboard; const key = kb?.on('keydown-RIGHT', () => { acc += 0.6; ang += 0.6; draw(); if (acc >= need) this.endStep(1); });
-    const limit = st.count * 3000 / this.frame.speed + 1500;
+    const limit = st.count * 2000 / this.frame.speed + 1200;
     this.stepTimer = this.time.delayedCall(limit, () => this.endStep(acc / need));
     this.cleanup.push(() => { this.input.off('pointermove', move); this.input.off('pointerup', up); key?.off('keydown-RIGHT'); spoon.destroy(); });
   }
@@ -114,7 +123,7 @@ export class CookingScene extends Phaser.Scene {
     } });
     const h = () => { tries++; const ph = (this.work as any).ph as number; if (ph > 1 - win) { hits++; this.frame.flash(PAL.neon, 40); this.meter.set(hits / need); } else this.frame.shake(60, 0.002); if (hits >= need) this.endStep(hits / tries); };
     this.frame.onTap(h);
-    this.stepTimer = this.time.delayedCall(need * 2600 + 2000, () => this.endStep(hits / Math.max(tries, need) * 0.8));
+    this.stepTimer = this.time.delayedCall(need * 1700 + 1500, () => this.endStep(hits / Math.max(tries, need) * 0.8));
     this.cleanup.push(() => { tick.remove(); this.removeTap(h); });
   }
 
@@ -127,7 +136,7 @@ export class CookingScene extends Phaser.Scene {
     draw();
     const h = () => { taps++; this.children.list.filter(o => o.name === 'sn').forEach(o => o.destroy()); draw(); this.frame.shake(40, 0.001); idle?.remove(); idle = this.time.delayedCall(1100 + this.frame.hard * 300, () => this.endStep(1 - Math.abs(taps - need) / need)); };
     this.frame.onTap(h);
-    this.stepTimer = this.time.delayedCall(need * 900 + 5000, () => this.endStep(taps === 0 ? 0 : 1 - Math.abs(taps - need) / need));
+    this.stepTimer = this.time.delayedCall(need * 600 + 3500, () => this.endStep(taps === 0 ? 0 : 1 - Math.abs(taps - need) / need));
     this.cleanup.push(() => { idle?.remove(); this.removeTap(h); this.children.list.filter(o => o.name === 'sn').forEach(o => o.destroy()); });
   }
 
@@ -144,6 +153,7 @@ export class CookingScene extends Phaser.Scene {
     const down = () => { if (this.frame.active) holding = true; }; const up = () => { if (!holding || done) return; holding = false; done = true; const d = Math.abs(fill - bandC); this.endStep(d <= bandW / 2 ? 1 : clamp(1 - (d - bandW / 2) / 0.3, 0, 0.7)); };
     this.input.on('pointerdown', down); this.input.on('pointerup', up);
     const kb = this.input.keyboard; kb?.on('keydown-SPACE', down); kb?.on('keyup-SPACE', up);
+    this.stepTimer = this.time.delayedCall(8000, () => { if (!done) { done = true; this.endStep(fill > 0 ? clamp(1 - Math.abs(fill - bandC) / 0.4, 0, 0.5) : 0); } });
     this.cleanup.push(() => { tick.remove(); this.input.off('pointerdown', down); this.input.off('pointerup', up); kb?.off('keydown-SPACE', down); kb?.off('keyup-SPACE', up); });
   }
 
@@ -154,7 +164,7 @@ export class CookingScene extends Phaser.Scene {
       this.work.clear(); this.work.fillStyle(PAL.earth3).fillEllipse(W / 2, 460 + squish * 10, 110 + squish * 30, 70 - squish * 20); this.work.fillStyle(PAL.earth2, 0.5).fillEllipse(W / 2 - 20, 445, 30, 14); this.meter.set(taps / need); } });
     const h = () => { taps++; squish = 1; if (taps >= need) this.endStep(1); };
     this.frame.onTap(h);
-    this.stepTimer = this.time.delayedCall(need * 450 / (1 - 0.2 * this.frame.hard) + 1500, () => this.endStep(taps / need));
+    this.stepTimer = this.time.delayedCall(need * 350 / (1 - 0.2 * this.frame.hard) + 1200, () => this.endStep(taps / need));
     this.cleanup.push(() => { tick.remove(); this.removeTap(h); });
   }
 

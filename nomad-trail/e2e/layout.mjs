@@ -23,7 +23,7 @@ const settle = async (max = 12) => {
 };
 
 await pg.goto('http://localhost:4173/trail/', { waitUntil: 'networkidle0' }); await pg.waitForFunction(() => window.__nomad?.ready); await sleep(1200); await shot('title');
-await pg.evaluate(() => window.__nomad.newRun('miami', 'east')); await sleep(900); await pg.evaluate(() => window.__nomad.autoPack('balanced')); await sleep(600); await pg.evaluate(() => window.__nomad.goto('Pack')); await sleep(900); await shot('pack');
+await pg.evaluate(() => window.__nomad.newRun('orangecounty', 'east')); await sleep(900); await pg.evaluate(() => window.__nomad.autoPack('balanced')); await sleep(600); await pg.evaluate(() => window.__nomad.goto('Pack')); await sleep(900); await shot('pack');
 await pg.evaluate(() => window.__nomad.depart()); await sleep(1200); await shot('route');
 await pg.evaluate(() => window.__nomad.travelFirst()); await sleep(3600); await shot('travel-event'); await settle(); await sleep(400); await shot('city-arrival');
 await pg.evaluate(() => { const c = window.__nomad.game.scene.getScene('City'); c.children.list.filter(o => o.type === 'Container' || o.type === 'Rectangle').length; }); 

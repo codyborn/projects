@@ -9,10 +9,11 @@ import { px, R, rng, seedOf } from '../art/pixel';
 import { Audio } from '../audio/synth';
 
 export class PassportScene extends Phaser.Scene {
-  private page = 0; private pageObjs: Phaser.GameObjects.GameObject[] = []; private onClose?: () => void;
+  private page = 0; private pageObjs: Phaser.GameObjects.GameObject[] = []; private onClose?: () => void; private backKey?: string;
   constructor() { super('Passport'); }
-  init(d?: { onClose?: () => void }) { this.onClose = d?.onClose; this.page = 0; }
+  init(d?: { onClose?: () => void; back?: string }) { this.onClose = d?.onClose; this.backKey = d?.back; this.page = 0; }
   create() {
+    this.scene.bringToTop();
     buildPixelFont(this);
     const run = this.registry.get('run') as RunState | undefined; const cities = (this.registry.get('cities') as City[] | undefined) || [];
     this.add.rectangle(0, 0, GAME_W, GAME_H, PAL.night0, 0.85).setOrigin(0).setInteractive();
@@ -40,7 +41,7 @@ export class PassportScene extends Phaser.Scene {
     let sx = 0; this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { sx = p.x; });
     this.input.on('pointerup', (p: Phaser.Input.Pointer) => { const dx = p.x - sx; if (Math.abs(dx) > 40) { const np = Phaser.Math.Clamp(this.page + (dx < 0 ? 1 : -1), 0, pages - 1); if (np !== this.page) { this.page = np; Audio.playSfx('whoosh'); render(); } } });
     const close = ptext(this, GAME_W - 24, 24, 'X', PAL.white, 2).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    close.on('pointerdown', () => { Audio.playSfx('back'); const cb = this.onClose; this.scene.stop(); cb && cb(); });
+    close.on('pointerdown', () => { Audio.playSfx('back'); const cb = this.onClose; const back = this.backKey; this.scene.stop(); if (cb) cb(); else if (back) this.scene.start(back); else this.scene.start('Title'); });
     this.cameras.main.fadeIn(200, 11, 15, 26);
   }
 }

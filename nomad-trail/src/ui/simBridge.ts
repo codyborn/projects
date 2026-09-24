@@ -1,6 +1,7 @@
 // Thin adapter between scenes and the SIM agent's engine. Scenes import ONLY from here (never from ../core/sim directly).
 import { Sim as Engine } from '../core/sim';
 import type { RunState, PackedItem, Leg, CityAction, MinigameResult, Ending, Item, City, GameEvent, Settings, Dish } from '../core/types';
+import { CONTINENT_OF } from '../core/types';
 import itemsJson from '../data/items.json';
 import citiesJson from '../data/cities.json';
 import eventsJson from '../data/events.json';
@@ -21,6 +22,8 @@ export interface SimApi {
   save(state: RunState): void; load(): RunState | undefined; clearSave(): void;
   loadSettings(): Settings; saveSettings(s: Settings): void;
   visibleAchievements(state: RunState): string[];
+  continentsVisited(state: RunState): string[];
+  CONTINENTS_ALL: string[];
 }
 import { loadSettings as _loadSettings, saveSettings as _saveSettings, recordRun } from '../core/sim';
 export { recordRun };
@@ -42,6 +45,9 @@ export const Sim: SimApi = {
   save: (state) => E.save(state), load: () => E.load() ?? undefined, clearSave: () => E.clear(),
   loadSettings: () => _loadSettings(), saveSettings: (s) => _saveSettings(s),
   visibleAchievements: (state) => E.visibleAchievements(state),
+  // engine may lag behind the scenes: derive from city regions when the engine has no continent helpers yet
+  continentsVisited: (state) => E.continentsVisited ? E.continentsVisited(state) : Array.from(new Set(state.visited.map(id => { const c = cities.find(x => x.id === id); return c ? (CONTINENT_OF[c.region] as string) : ''; }).filter(x => !!x))),
+  CONTINENTS_ALL: E.CONTINENTS_ALL ?? ['North America', 'South America', 'Europe', 'Africa', 'Asia'],
 };
 /** Choices the engine will accept right now (filtered by accessible gear); EventScene must use these, not the raw definition. */
 export const pendingChoices = (state: RunState): { id: string; title: string; text: string; choices: any[] } | null => E.pendingChoices(state);

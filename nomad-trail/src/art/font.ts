@@ -99,19 +99,26 @@ const G: Record<string, string[]> = {
 '|':['00100','00100','00100','00100','00100','00100','00100'],
 '}':['01000','00100','00100','00010','00100','00100','01000'],
 '~':['00000','01010','01010','11111','01110','00000','01110'], // coffee cup glyph
+'\u00b7':['00000','00000','00000','01100','01100','00000','00000'], // middle dot
+'\u2192':['00000','00100','00010','11111','00010','00100','00000'], // →
+'\u2190':['00000','00100','01000','11111','01000','00100','00000'], // ←
+'\u2014':['00000','00000','00000','11111','00000','00000','00000'], // em dash
+'\u2019':['01000','01000','10000','00000','00000','00000','00000'], // ’
+'\u2026':['00000','00000','00000','00000','00000','00000','10101'], // …
 };
 export function __glyphs(): Record<string, string[]> { return G; }
-export const FONT_CHARS = Array.from({ length: 95 }, (_, i) => String.fromCharCode(32 + i)).join('');
+const EXTRA = '\u00b7\u2192\u2190\u2014\u2019\u2026';
+export const FONT_CHARS = Array.from({ length: 95 }, (_, i) => String.fromCharCode(32 + i)).join('') + EXTRA;
 export const CW = 6, CH = 8; // cell size (5x7 glyph + 1px spacing)
 
 /** Build the 'pix' bitmap font (white glyphs, tint at use) plus 'pix2' (2x). Idempotent. */
 export function buildPixelFont(scene: Phaser.Scene) {
   for (const [key, s] of [['pix', 1], ['pix2', 2]] as const) {
     if (scene.cache.bitmapFont.exists(key)) continue;
-    const perRow = 19, rows = 5;
+    const perRow = 19, rows = 6;
     const canvas = makeCanvas(CW * s * perRow, CH * s * rows, ctx => {
-      for (let i = 0; i < 95; i++) {
-        const ch = String.fromCharCode(32 + i); const pat = G[ch] || G['?'];
+      for (let i = 0; i < FONT_CHARS.length; i++) {
+        const ch = FONT_CHARS[i]; const pat = G[ch] || G['?'];
         glyph(ctx, pat, (i % perRow) * CW * s, Math.floor(i / perRow) * CH * s, PAL.white, s);
       }
     });

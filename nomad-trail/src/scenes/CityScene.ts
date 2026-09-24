@@ -6,6 +6,7 @@ import { Panel, dimmer } from '../ui/Panel';
 import { Hud } from '../ui/hud';
 import { toast } from '../ui/Toast';
 import { Sim, Data, getRun, putRun } from '../ui/simBridge';
+import { launchOnTop } from '../ui/overlay';
 const ACTIONS: { a: CityAction; label: string; icon: string; tip: string }[] = [
   { a: 'work', label: 'WORK WEEK', icon: '💻', tip: 'a remote day' }, { a: 'explore', label: 'EXPLORE', icon: '🧭', tip: 'mood up, mild risk' },
   { a: 'train', label: 'TRAIN', icon: '🏋', tip: 'stay fit' }, { a: 'cook', label: 'COOK', icon: '🍳', tip: 'local dish' },
@@ -23,11 +24,12 @@ export class CityScene extends Phaser.Scene {
     // vista
     let drew = false; const hook = (window as any).__nomadArt?.skyline; if (hook) { try { hook(this, run.cityId, 0, 86, 360, 150); drew = true; } catch {} }
     if (!drew) this.fallbackVista(run.cityId, city?.climate ?? 'temperate');
-    txt(this, 12, 96, (city?.name ?? run.cityId).toUpperCase(), 16, PAL.white).setDepth(3); txt(this, 12, 116, `${city?.country ?? ''} · stay day ${run.stayDays + 1}`, 8, PAL.gray2).setDepth(3);
+    { const name = (city?.name ?? run.cityId).toUpperCase(); const plateW = Math.min(300, Math.max(150, 20 + name.length * 13)); const plate = this.add.graphics().setDepth(2); plate.fillStyle(PAL.night0, 0.82); plate.fillRect(6, 90, plateW, 40); plate.fillStyle(PAL.sun1, 1); plate.fillRect(6, 90, 3, 40); }
+    txt(this, 14, 96, (city?.name ?? run.cityId).toUpperCase(), 16, PAL.white).setDepth(3); txt(this, 14, 116, `${city?.country ?? ''} · stay day ${run.stayDays + 1}`, 8, PAL.gray2).setDepth(3);
     this.hud = new Hud(this); this.hud.refresh(run);
     new Panel(this, 12, 244, 336, 118, { fill: PAL.night1, border: PAL.night3 }); this.logLbl = txt(this, 20, 250, '', 8, PAL.gray2, { wrap: 320 }); this.refreshLog();
     ACTIONS.forEach((act, i) => { const b = new Button(this, 96 + (i % 2) * 168, 392 + Math.floor(i / 2) * 56, act.label, () => this.act(act.a), { w: 160, h: 48, size: 11, icon: act.icon, fill: act.a === 'moveon' ? PAL.sea0 : PAL.night2 }); this.btns.push(b); });
-    txt(this, 180, 620, 'each action is a day · work week is five', 8, PAL.gray0).setOrigin(0.5);
+    txt(this, 180, 620, 'one action = one day · work = five', 8, PAL.gray0).setOrigin(0.5);
     if (data.arrived) this.arrivalCard();
   }
   private fallbackVista(cityId: string, climate: string) {
@@ -47,28 +49,32 @@ export class CityScene extends Phaser.Scene {
     stamp.add([txt(this, 0, -4, (city?.name ?? '').slice(0, 10).toUpperCase(), 8, gold ? PAL.sun2 : PAL.red).setOrigin(0.5) as any, txt(this, 0, 8, `DAY ${run.day}`, 8, gold ? PAL.sun2 : PAL.red).setOrigin(0.5) as any]); stamp.setAngle(-14); parts.push(stamp);
     this.tweens.add({ targets: stamp, scaleX: 1, scaleY: 1, alpha: 1, duration: 260, ease: 'Quad.In', onComplete: () => this.cameras.main.shake(60, 0.004) });
     parts.push(new Button(this, 180, 410, 'SETTLE IN', () => parts.forEach(x => x.destroy()), { w: 200, fill: PAL.sea1 }));
+    parts.forEach((x, i) => (x as any).setDepth?.(20 + i));   // above the skyline (depth 1) and the HUD (50 is fine to sit under)
   }
   private act(a: CityAction) {
     if (this.busy) return; this.busy = true; this.btns.forEach(b => b.setDisabled(true));
     const run = getRun(this); let res = Sim.cityAction(run, a);
     if (a === 'work') { // work week: up to 5 days, stop early on events, ending, or bag trouble
       for (let i = 1; i < 5 && !res.events.length && !res.minigame && !Sim.checkEnding(res.state) && res.state.cleanClothes > 0; i++) res = Sim.cityAction(res.state, a);
+      // collapse the five identical 'work day' log lines into one
+      { const lg = res.state.log; let n = 0; while (n < 5 && lg.length - 1 - n >= 0 && lg[lg.length - 1 - n].text === lg[lg.length - 1].text) n++; if (n > 1) { const last = lg[lg.length - 1]; lg.splice(lg.length - n, n, { day: last.day, city: last.city, text: `A work week. ${n} days of meetings at odd hours, the laptop on a kitchen table.` }); } }
     }
     putRun(this, res.state); this.hud.refresh(res.state); this.refreshLog();
     const queue: (() => Promise<void>)[] = [];
+    // order: the morning (coffee) first, then whatever the day brought, then the mini-game the action asked for
+    if (res.state.day !== this.lastDay && res.state.stayDays === 1 && Sim.coffeePacked(res.state) && this.scene.get('Coffee') && a !== 'moveon') { const c = Data.city(res.state.cityId); queue.push(() => this.overlay('Coffee', { cityId: res.state.cityId, day: res.state.day, climate: c?.climate, region: c?.region })); }
     for (const id of res.events) queue.push(() => this.overlay('Event', { eventId: id }));
     if (res.minigame) queue.push(() => this.minigame(res.minigame!));
-    if (res.state.day !== this.lastDay && res.state.stayDays === 1 && Sim.coffeePacked(res.state) && this.scene.get('Coffee') && a !== 'moveon') { const c = Data.city(res.state.cityId); queue.push(() => this.overlay('Coffee', { cityId: res.state.cityId, day: res.state.day, climate: c?.climate, region: c?.region })); }
     this.lastDay = res.state.day;
     (async () => { for (const q of queue) await q(); this.after(a); })();
   }
-  private overlay(key: string, data: any) { return new Promise<void>(resolve => { this.scene.launch(key, { ...data, onDone: () => { if (this.scene.isActive(key) || this.scene.isPaused(key)) this.scene.stop(key); this.scene.resume(); resolve(); } }); this.scene.bringToTop(key); this.scene.pause(); }); }
+  private overlay(key: string, data: any) { return new Promise<void>(resolve => { launchOnTop(this, key, { ...data, onDone: () => { if (this.scene.isActive(key) || this.scene.isPaused(key)) this.scene.stop(key); this.scene.resume(); resolve(); } }); this.scene.pause(); }); }
   private minigame(m: { key: string; payload?: any; difficulty: number }) {
     return new Promise<void>(resolve => {
       const run = getRun(this); const finish = (r: MinigameResult) => { const s = Sim.applyMinigameResult(getRun(this), m.key, r); putRun(this, s); this.hud.refresh(s); toast(this, r.failed ? 'that did not go well' : r.perfect ? 'PERFECT' : `score ${Math.round(r.score)}`, r.failed ? PAL.red : PAL.neon); resolve(); };
       if (!this.scene.get(m.key)) { toast(this, `(${m.key} not installed yet)`, PAL.gray2, 900); finish({ score: 50, perfect: false, failed: false }); return; }
       const launch: MinigameLaunch = { energy: run.energy, difficulty: m.difficulty, payload: m.payload, onDone: (r) => { if (this.scene.isActive(m.key) || this.scene.isPaused(m.key)) this.scene.stop(m.key); this.scene.resume(); finish(r); } };
-      this.scene.launch(m.key, launch); this.scene.bringToTop(m.key); this.scene.pause();
+      launchOnTop(this, m.key, launch); this.scene.pause();
     });
   }
   private after(a: CityAction) {

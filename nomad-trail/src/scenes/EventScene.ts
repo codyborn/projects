@@ -5,26 +5,35 @@ import { Button } from '../ui/Button';
 import { Panel, dimmer } from '../ui/Panel';
 import { typewrite } from '../ui/typewriter';
 import { Sim, Data, getRun, putRun, pendingChoices } from '../ui/simBridge';
-/** Modal event card. Launched (not started) over Travel/City with { eventId, onDone }. */
+/** Modal event card. Launched (not started) over Travel/City with { eventId, onDone }.
+ *  Layout: header (day · city) at the top of the panel, title below it, body below the title's rendered height, then choices. */
 export class EventScene extends Phaser.Scene {
   static KEY = 'Event';
   constructor() { super(EventScene.KEY); }
   create(data: { eventId: string; onDone: () => void }) {
+    this.scene.bringToTop();
     const run = getRun(this); const ev: GameEvent = Data.event(data.eventId) ?? { id: data.eventId, title: 'Something happened', text: run.log[run.log.length - 1]?.text ?? '...', when: 'day', baseChance: 0, effects: {} } as GameEvent;
-    dimmer(this, 0.7); const p = new Panel(this, 16, 120, 328, 400, { fill: PAL.night1, border: PAL.sun1 }); p.setScale(0.9); this.tweens.add({ targets: p, scaleX: 1, scaleY: 1, duration: 160, ease: 'Back.Out' });
-    const city = Data.city(run.cityId); const fill = (s: string) => s.replace('{city}', city?.name ?? run.cityId).replace('{day}', String(run.day)).replace('{item}', Data.item(run.lostItems[run.lostItems.length - 1] ?? '')?.label ?? 'something');
-    txt(this, 180, 138, `DAY ${run.day} · ${(city?.name ?? '').toUpperCase()}`, 8, PAL.gray2).setOrigin(0.5);
-    txt(this, 180, 160, fill(ev.title).toUpperCase(), 14, PAL.sun2, { align: 'center', wrap: 300 }).setOrigin(0.5);
-    const body = txt(this, 32, 190, '', 11, PAL.white, { wrap: 296 });
+    const city = Data.city(run.cityId); const fill = (s: string) => s.replace(/\{city\}/g, city?.name ?? run.cityId).replace(/\{day\}/g, String(run.day)).replace(/\{item\}/g, Data.item(run.lostItems[run.lostItems.length - 1] ?? '')?.label ?? 'something');
     const tags = new Set(run.items.map(i => Data.item(i.id)?.tags ?? []).flat());
-    const mitigated = ev.mitigatedBy?.some(t => tags.has(t)) ?? false; const text = fill(ev.text) + (mitigated && ev.mitigatedText ? '\n\n' + fill(ev.mitigatedText) : '');
-    const tw = typewrite(this, body, text, 60); this.input.once('pointerdown', () => tw.skip());
+    const mitigated = (ev.mitigatedBy?.some(t => tags.has(t)) ?? false) && !!ev.mitigatedText;
+    const text = fill(mitigated ? ev.mitigatedText! : ev.text);           // one or the other, never both
     const pend = run.pendingEvent === ev.id ? pendingChoices(run) : null; const choices = (pend?.choices ?? []) as any[];
     this.choices = choices; this.onDone = data.onDone; this.evId = ev.id;
+    // measure first, then lay out: title height and body height decide the panel size
+    const PX = 16, PW = 328, TOP = 100;
+    const header = txt(this, 180, TOP + 12, `DAY ${run.day} · ${(city?.name ?? '').toUpperCase()}`, 8, PAL.gray2).setOrigin(0.5, 0);
+    const title = txt(this, 180, TOP + 28, fill(ev.title).toUpperCase(), 12, PAL.sun2, { align: 'center', wrap: 290 }).setOrigin(0.5, 0);
+    const bodyY = TOP + 28 + Math.max(14, title.height) + 12;
+    const body = txt(this, PX + 16, bodyY, text, 10, PAL.white, { wrap: PW - 32 }); const bodyH = Math.max(40, body.height); body.setText('');
+    const ROW = 72; const choiceRows = choices.length ? Math.min(3, choices.length) : 1; const footerH = choices.length ? choiceRows * ROW + 8 : 78;
+    const panelH = Math.min(520, bodyY - TOP + bodyH + 16 + footerH);
+    dimmer(this, 0.7).setDepth(-2); const p = new Panel(this, PX, TOP, PW, panelH, { fill: PAL.night1, border: PAL.sun1 }); p.setDepth(-1); p.setScale(0.96); this.tweens.add({ targets: p, scaleX: 1, scaleY: 1, duration: 140, ease: 'Back.Out' });
+    header.setDepth(1); title.setDepth(1); body.setDepth(1);
+    const tw = typewrite(this, body, text, 60); this.input.once('pointerdown', () => tw.skip());
     tw.done.then(() => {
-      let y = 320 + Math.min(120, Math.max(0, body.height - 100));
-      if (choices.length) choices.slice(0, 3).forEach((c, i) => { const b = new Button(this, 180, y, c.label, () => { const s = Sim.resolveChoice(getRun(this), ev.id, i); putRun(this, s); data.onDone(); }, { w: 296, h: 46, fill: PAL.dusk0, size: 11 }); const eff = txt(this, 180, y + 30, this.fmt(c.effects), 8, PAL.gray2).setOrigin(0.5); b.setAlpha(0); eff.setAlpha(0); this.tweens.add({ targets: [b, eff], alpha: 1, duration: 200, delay: i * 80 }); y += 58; });
-      else { txt(this, 180, y - 4, this.fmt(mitigated && ev.mitigatedEffects ? ev.mitigatedEffects : ev.effects), 9, PAL.gray2, { align: 'center' }).setOrigin(0.5); new Button(this, 180, y + 30, 'CONTINUE', () => data.onDone(), { w: 296, h: 46, fill: PAL.dusk0 }); }
+      let y = bodyY + bodyH + 16 + 22;
+      if (choices.length) choices.slice(0, 3).forEach((c, i) => { const b = new Button(this, 180, y, c.label, () => { const s = Sim.resolveChoice(getRun(this), ev.id, i); putRun(this, s); data.onDone(); }, { w: 296, h: 44, fill: PAL.dusk0, size: 10 }); const eff = txt(this, 180, y + 28, this.fmt(c.effects), 8, PAL.gray2, { align: 'center', wrap: 296 }).setOrigin(0.5, 0); b.setAlpha(0); eff.setAlpha(0); this.tweens.add({ targets: [b, eff], alpha: 1, duration: 200, delay: i * 80 }); y += ROW; });
+      else { txt(this, 180, y - 8, this.fmt(mitigated && ev.mitigatedEffects ? ev.mitigatedEffects : ev.effects), 8, PAL.gray2, { align: 'center', wrap: 296 }).setOrigin(0.5, 0); new Button(this, 180, y + 30, 'CONTINUE', () => data.onDone(), { w: 296, h: 44, fill: PAL.dusk0 }); }
     });
   }
   private choices: any[] = []; private onDone: () => void = () => {}; private evId = '';

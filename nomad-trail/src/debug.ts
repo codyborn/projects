@@ -21,7 +21,7 @@ export function installDebug(game: Phaser.Game) {
     goto: go,
     state: run,
     hasSave: () => !!SimMod?.load?.(),
-    newRun: (start = 'miami', dir: 'east' | 'west' = 'east', seed?: number) => { const s = SimMod.createRun(seed ?? (Date.now() % 100000), start, dir); setRun(s); go('Pack'); },
+    newRun: (start = 'orangecounty', dir: 'east' | 'west' = 'east', seed?: number) => { const s = SimMod.createRun(seed ?? (Date.now() % 100000), start, dir); setRun(s); go('Pack'); },
     autoPack: (style: 'balanced' | 'heavy' | 'light' = 'balanced') => {
       const s = run()!; const pick = buildPack(style === 'light' ? 'smart' : style === 'heavy' ? 'heavy' : 'random', makeRng(s.seed));
       const res = SimMod.setPack(s, pick); setRun(res.state ?? s); return { ok: res.ok, errors: res.errors, weights: res.weights };

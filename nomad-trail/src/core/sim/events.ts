@@ -86,10 +86,12 @@ export function recomputeClothes(s: RunState) {
 }
 export const energyCap = (s: RunState) => (s.backInjuryDays > 0 ? 50 : 100);
 
-/** Rolls all events for a moment. Applies direct effects; a choice-event becomes pending (max one). */
-export function rollEvents(s: RunState, when: GameEvent['when'], ctx: RollCtx, rng: Rng, max = 2): ResolvedEvent[] {
+/** Events that only make sense once you are actually in the booked lodging. Suppressed on a day the booking was cancelled. */
+export const LODGING_DEPENDENT = new Set(['nowifi', 'hostgift', 'sleepless']);
+/** Rolls all events for a moment. Applies direct effects; a choice-event becomes pending (max one). `filter` narrows the candidates. */
+export function rollEvents(s: RunState, when: GameEvent['when'], ctx: RollCtx, rng: Rng, max = 2, filter?: (e: GameEvent) => boolean): ResolvedEvent[] {
   const out: ResolvedEvent[] = [];
-  const cands = EVENTS.filter(e => e.when === when).map(e => ({ e, ...eventChance(e, s, ctx) })).filter(c => c.chance > 0);
+  const cands = EVENTS.filter(e => e.when === when && (!filter || filter(e))).map(e => ({ e, ...eventChance(e, s, ctx) })).filter(c => c.chance > 0);
   // shuffle so the first-listed events do not dominate the cap
   for (let i = cands.length - 1; i > 0; i--) { const j = rng.int(0, i); [cands[i], cands[j]] = [cands[j], cands[i]]; }
   for (const c of cands) {

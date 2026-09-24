@@ -15,7 +15,7 @@ console.log('cities tested', ids.length, 'bad:', bad.length); bad.forEach(l => c
 // also the Travel scene per transport
 for (const tr of ['flight','train','bus','ferry','campervan','trek','car']) {
   errs = [];
-  await pg.evaluate((tr) => { const n = window.__nomad; n.newRun('miami','east'); n.autoPack('balanced'); n.depart(); const s = n.state(); n.goto('Travel', { leg: { to: 'newyork', transport: tr, days: 1, energy: 10, timezones: 0 } }); }, tr);
+  await pg.evaluate((tr) => { const n = window.__nomad; n.newRun('orangecounty','east'); n.autoPack('balanced'); n.depart(); const s = n.state(); n.goto('Travel', { leg: { to: 'newyork', transport: tr, days: 1, energy: 10, timezones: 0 } }); }, tr);
   await new Promise(r => setTimeout(r, 3500));
   const act = await pg.evaluate(() => window.__nomad.activeScenes());
   console.log('transport', tr, '->', act.join(','), errs.length ? 'ERR ' + errs.join(' | ') : '');

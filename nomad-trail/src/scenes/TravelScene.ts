@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { Leg, Region } from '../core/types';
 import { PAL, txt, rect, TRANSPORT_GLYPH } from '../ui/theme';
 import { Sim, Data, getRun, putRun } from '../ui/simBridge';
+import { launchOnTop } from '../ui/overlay';
 const REGION_BANDS: Record<Region, number[]> = {
   northamerica: [PAL.sky1, PAL.sky2, PAL.grass1, PAL.grass0], mexico: [PAL.sun2, PAL.sky2, PAL.earth3, PAL.earth2], southamerica: [PAL.sky0, PAL.sky1, PAL.grass2, PAL.earth1],
   europe: [PAL.sky1, PAL.sky3, PAL.grass2, PAL.grass1], alps: [PAL.sky0, PAL.sky2, PAL.white, PAL.gray1], africa: [PAL.sun1, PAL.sun2, PAL.earth3, PAL.earth2],
@@ -29,7 +30,7 @@ export class TravelScene extends Phaser.Scene {
     else { const body = this.add.graphics(); body.fillStyle(PAL.white, 1); body.fillRect(0, 0, 44, 12); body.fillStyle(PAL.red, 1); body.fillRect(34, -4, 10, 6); this.craft.add(body); this.craft.add(txt(this, 22, -12, TRANSPORT_GLYPH[data.leg.transport] ?? '', 12, PAL.white).setOrigin(0.5) as any); }
     this.tweens.add({ targets: this.craft, x: 330, duration: 2500, ease: 'Sine.InOut' });
     if (data.leg.transport === 'flight') this.tweens.add({ targets: this.craft, y: 130, duration: 1200, yoyo: true, ease: 'Sine.InOut' });
-    txt(this, 180, 60, `${from?.name ?? run.cityId}  →  ${to?.name ?? data.leg.to}`, 14, PAL.white).setOrigin(0.5);
+    txt(this, 180, 60, `${from?.name ?? run.cityId} → ${to?.name ?? data.leg.to}`, 11, PAL.white, { align: 'center', wrap: 340 }).setOrigin(0.5);
     txt(this, 180, 82, `${data.leg.days} day${data.leg.days > 1 ? 's' : ''} by ${data.leg.transport}`, 10, PAL.gray2).setOrigin(0.5);
     const tip = txt(this, 180, 560, this.tipFor(data.leg), 9, PAL.sun3, { align: 'center', wrap: 300 }).setOrigin(0.5); this.tweens.add({ targets: tip, alpha: 0.6, duration: 800, yoyo: true, repeat: -1 });
     this.time.delayedCall(2500, () => this.resolve(data.leg));
@@ -47,7 +48,7 @@ export class TravelScene extends Phaser.Scene {
     const showBeats = (i: number, then: () => void) => { if (i >= beats.length) return then(); const t = txt(this, 180, 470, beats[i], 11, PAL.sun2, { align: 'center', wrap: 300 }).setOrigin(0.5).setAlpha(0); this.tweens.add({ targets: t, alpha: 1, y: 462, duration: 250 }); this.time.delayedCall(1500, () => showBeats(i + 1, then)); };
     const events = [...res.events];
     const runEvents = () => { const id = events.shift(); if (!id) { const end = Sim.checkEnding(getRun(this)); if (end) { const r = getRun(this); r.ending = end; r.phase = 'ended'; putRun(this, r); return this.scene.start('End'); } return this.scene.start('City', { arrived: true }); }
-      this.scene.launch('Event', { eventId: id, onDone: () => { this.scene.stop('Event'); runEvents(); } }); this.scene.bringToTop('Event'); };
+      launchOnTop(this, 'Event', { eventId: id, onDone: () => { this.scene.stop('Event'); runEvents(); } }); };
     showBeats(0, runEvents);
   }
 }

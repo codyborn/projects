@@ -1,8 +1,8 @@
-import type { RunState, PackedItem, Bag, ItemTag, CityAction, Ending, Leg, City, EventChoice } from '../types';
-import { MINIGAME_KEYS, type MinigameResult } from '../types';
-import { ITEM, CITY, CITIES, EVENT, DISH, LEVEL_BY_CITY } from './data';
+import type { RunState, PackedItem, Bag, ItemTag, CityAction, Ending, Leg, City, EventChoice, Continent } from '../types';
+import { MINIGAME_KEYS, CONTINENT_OF, type MinigameResult } from '../types';
+import { ITEM, ITEMS, CITY, CITIES, EVENT, DISH, LEVEL_BY_CITY } from './data';
 import { makeRng, hash32, type Rng } from './rng';
-import { rollEvents, applyEffects, hasTag, hasFlag, setFlag, clamp, monthOf, energyCap, recomputeClothes, fmt, accessibleItems, visibleAchievements, availableChoices, type ResolvedEvent } from './events';
+import { rollEvents, applyEffects, hasTag, hasFlag, setFlag, clamp, monthOf, energyCap, recomputeClothes, fmt, accessibleItems, visibleAchievements, availableChoices, LODGING_DEPENDENT, type ResolvedEvent } from './events';
 import { saveRun, loadRun, clearRun } from './save';
 
 export const GRID = {
@@ -11,6 +11,9 @@ export const GRID = {
 } as const;
 export const TOTAL_DAYS = 365;
 export const HOME_PROGRESS_DEG = 330;   // longitude to cover before the flight home unlocks
+export const HOME_CITY = 'orangecounty'; // every run starts and ends here
+export const HOME_MIN_CONTINENTS = 4;    // the flight home also needs four of the five continents in the passport
+export const CONTINENTS_ALL: Continent[] = ['North America', 'South America', 'Europe', 'Africa', 'Asia'];
 
 export interface PackValidation { ok: boolean; errors: string[]; weights: Record<Bag, number>; ratio: number; state?: RunState; }
 export interface MinigameRequest { key: string; payload: any; difficulty: number; }
@@ -21,8 +24,8 @@ const clone = <T>(s: T): T => JSON.parse(JSON.stringify(s));
 const rngFor = (s: RunState, salt = 0): Rng => makeRng(hash32(s.seed, s.day, s.log.length, s.route.length, salt));
 const wrap = (d: number) => ((d + 540) % 360) - 180;
 
-export function createRun(seed: number, startCity: 'miami' | 'newyork' | string = 'miami', direction: 'east' | 'west' = 'east'): RunState {
-  if (!CITY[startCity]) throw new Error('unknown start city ' + startCity);
+export function createRun(seed: number, _startCity: string = HOME_CITY, direction: 'east' | 'west' = 'east'): RunState {
+  const startCity = HOME_CITY;  // the start city argument is kept for API compatibility; the trail always starts and ends at home
   return { version: 1, seed, day: 1, startCity, cityId: startCity, direction, health: 100, energy: 85, mood: 80, cleanClothes: 3, maxClothes: 3,
     items: [], lostItems: [], bagLockedDays: 0, wheelBroken: false, backInjuryDays: 0, sickDays: 0, fatigue: 0, legsLast30: [],
     visited: [startCity], stamps: { [startCity]: 'plain' }, route: [startCity], achievements: [], log: [{ day: 1, city: startCity, text: `Day 1, ${CITY[startCity].name}. Two bags, one year, the whole planet. Pack.` }],
@@ -60,7 +63,8 @@ export function setPack(state: RunState, items: PackedItem[]): PackValidation {
   if (v.ratio >= 0.95) s.log.push({ day: s.day, city: s.cityId, text: 'The bag is at the limit. Your back has noted this.' });
   return { ...v, state: s };
 }
-export const coffeePacked = (s: RunState) => accessibleItems(s).some(p => ITEM[p.id]?.tags.includes('coffee') && !ITEM[p.id]?.tags.includes('kettle') && p.id !== 'nze') || accessibleItems(s).some(p => p.id === 'nze');
+export const coffeePacked = (s: RunState) => accessibleItems(s).some(p => ITEM[p.id]?.tags.includes('coffee'));
+export const bundles = () => ITEMS;
 export const totalWeight = (s: RunState) => round1(bagWeight(s.items, 'checked') + bagWeight(s.items, 'backpack'));
 
 // ---------- Route ----------
@@ -73,34 +77,50 @@ export function progress(s: RunState): number {
   }
   return p;
 }
-export function homeUnlocked(s: RunState) { return progress(s) >= HOME_PROGRESS_DEG; }
+export function homeUnlocked(s: RunState) { return progress(s) >= HOME_PROGRESS_DEG && continentsVisited(s).length >= HOME_MIN_CONTINENTS; }
+/** What still stands between the player and the flight home (for the route screen). */
+export function homeRequirements(s: RunState) {
+  const p = progress(s), c = continentsVisited(s).length;
+  return { progress: Math.round(p), needProgress: HOME_PROGRESS_DEG, continents: c, needContinents: HOME_MIN_CONTINENTS, unlocked: p >= HOME_PROGRESS_DEG && c >= HOME_MIN_CONTINENTS };
+}
+/** Continents touched so far, in visit order. The second goal: all five. */
+export function continentsVisited(s: RunState): Continent[] {
+  const out: Continent[] = [];
+  for (const id of s.visited) { const c = CITY[id]; if (!c) continue; const k = CONTINENT_OF[c.region]; if (!out.includes(k)) out.push(k); }
+  return out;
+}
+const aheadOf = (s: RunState, here: City, to: City) => { const d = wrap(to.lon - here.lon); return s.direction === 'east' ? d : -d; };
+const fallbackFlight = (s: RunState, here: City, c: City, home: boolean): AvailableLeg => {
+  const tz = Math.abs(c.timezone - here.timezone);
+  return { to: c.id, transport: 'flight', days: tz > 6 ? 2 : 1, energy: (home ? 18 : 22) + Math.floor(tz / 3) * 4, timezones: tz, city: c, home };
+};
+/** Legs on offer: forward progress first (most ahead at the top), at most one near-sideways option, nothing more than 20 degrees backwards. */
 export function availableLegs(s: RunState): AvailableLeg[] {
   const here = CITY[s.cityId]; const month = monthOf(s.day);
-  const out: AvailableLeg[] = [];
+  let out: AvailableLeg[] = [];
   for (const l of here.legs) {
     const to = CITY[l.to]; if (!to) continue;
-    const d = wrap(to.lon - here.lon); const ahead = s.direction === 'east' ? d : -d;
-    if (ahead < -30) continue;                                  // no big backtracks
+    if (aheadOf(s, here, to) < -20) continue;                       // no backtracks
     if (l.months && !l.months.includes(monthOf(s.day + l.days))) continue;
-    if (l.to === s.startCity && !homeUnlocked(s)) continue;      // no early return
+    if (l.to === s.startCity && !homeUnlocked(s)) continue;         // no early return
     if (l.to !== s.startCity && s.visited.includes(l.to)) continue; // no revisits: the trail only goes forward
     out.push({ ...l, city: to, home: l.to === s.startCity });
   }
   // Dead end (every neighbour already visited): you can always fly. Offer the 3 nearest unvisited cities ahead.
   if (!out.some(o => !o.home)) {
     const cands = CITIES.filter(c => c.id !== s.cityId && !s.visited.includes(c.id) && c.id !== s.startCity)
-      .map(c => { const d = wrap(c.lon - here.lon); const ahead = s.direction === 'east' ? d : -d; return { c, ahead }; })
-      .filter(x => x.ahead > -30).sort((a, b) => Math.abs(a.ahead) - Math.abs(b.ahead)).slice(0, 3);
+      .map(c => ({ c, ahead: aheadOf(s, here, c) }))
+      .filter(x => x.ahead > -20).sort((a, b) => Math.abs(a.ahead) - Math.abs(b.ahead)).slice(0, 3);
     for (const { c } of cands) {
       const l = c.legs.find(l => l.months); if (l && !l.months!.includes(month)) continue;
-      const tz = Math.abs(c.timezone - here.timezone);
-      out.push({ to: c.id, transport: 'flight', days: tz > 6 ? 3 : 2, energy: 30 + Math.floor(tz / 3) * 4, timezones: tz, city: c, home: false });
+      out.push(fallbackFlight(s, here, c, false));
     }
   }
-  if (homeUnlocked(s) && s.cityId !== s.startCity && !out.some(o => o.home) && here.legs.some(l => l.transport === 'flight')) {
-    const home = CITY[s.startCity]; const tz = Math.abs(home.timezone - here.timezone);
-    out.push({ to: s.startCity, transport: 'flight', days: tz > 6 ? 2 : 1, energy: 18 + Math.floor(tz / 3) * 4, timezones: tz, city: home, home: true });
-  }
+  if (homeUnlocked(s) && s.cityId !== s.startCity && !out.some(o => o.home) && here.legs.some(l => l.transport === 'flight')) out.push(fallbackFlight(s, here, CITY[s.startCity], true));
+  // rank: home flight first when available, then by forward progress; keep at most one sideways (< 8 degrees ahead) option
+  out.sort((a, b) => Number(b.home) - Number(a.home) || aheadOf(s, here, b.city) - aheadOf(s, here, a.city));
+  let sideways = 0;
+  out = out.filter(o => { if (o.home || aheadOf(s, here, o.city) >= 8) return true; return sideways++ < 1; });
   return out;
 }
 
@@ -129,7 +149,11 @@ export function travelTo(state: RunState, cityId: string): StepResult {
   if (!s.stamps[cityId]) s.stamps[cityId] = 'plain';
   s.stayDays = 0; s.phase = 'city';
   const lodging = leg.city.lodgings[0];
-  events.push(...rollEvents(s, 'arrive', { ...ctx, lodgingCancel: lodging?.cancelChance ?? 0 }, rngFor(s, 2), 2));
+  const arriveCtx = { ...ctx, lodgingCancel: lodging?.cancelChance ?? 0 };
+  const cancelled = rollEvents(s, 'arrive', arriveCtx, rngFor(s, 2), 1, e => e.id === 'airbnbcancel');
+  events.push(...cancelled, ...rollEvents(s, 'arrive', arriveCtx, rngFor(s, 7), cancelled.length ? 1 : 2, e => e.id !== 'airbnbcancel' && !(cancelled.length && LODGING_DEPENDENT.has(e.id))));
+  const conts = continentsVisited(s);
+  if (conts.length === CONTINENTS_ALL.length && !s.achievements.includes('fivecontinents')) { s.achievements.push('fivecontinents'); s.log.push({ day: s.day, city: cityId, text: 'Five continents. The passport is running out of pages.' }); }
   if (leg.city.altitude && leg.city.altitude >= 3500 && !events.some(e => e.id === 'altitude')) { /* altitude event already weighted; nothing */ }
   if (leg.home) { s.log.push({ day: s.day, city: cityId, text: `Day ${s.day}. ${leg.city.name} again. The same skyline, a different person under it.` }); }
   checkEnding(s);
@@ -145,7 +169,7 @@ function tickDay(s: RunState, rng: Rng, opts: { rest?: boolean } = {}): Resolved
   s.energy += 5 + (lodging?.energyPerDay ?? 0) + (opts.rest ? 0 : 0);
   s.mood += (lodging?.moodPerDay ?? 0) - 1;
   // slow wear: the year itself is the opponent. Routine (training, cooking, supplements) pushes back.
-  s.health -= 0.10 + s.day * 0.0017 + (s.energy < 40 ? 0.35 : 0) + (hasTag(s, 'fitness') ? 0 : 0.2);
+  s.health -= 0.12 + s.day * 0.0021 + (s.energy < 40 ? 0.35 : 0) + (hasTag(s, 'fitness') ? 0 : 0.2);
   if (coffeePacked(s)) { s.energy += 15; s.mood += 2; s.coffeeMornings += 1; }
   if (s.sickDays > 0) { s.sickDays -= 1; s.health -= 4; s.energy -= 5; }
   if (s.backInjuryDays > 0) s.backInjuryDays -= 1;
@@ -186,6 +210,7 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       return { state: s, events: [], minigame: { key: MINIGAME_KEYS.workout, payload: { activity, city: city.id }, difficulty: diff } }; }
     case 'cook': {
       const dish = DISH[city.dishes[(s.stayDays + s.route.length) % city.dishes.length]] ?? DISH[city.dishes[0]];
+      s.pendingDish = dish.id;
       return { state: s, events: [], minigame: { key: MINIGAME_KEYS.cooking, payload: { dish, city: city.id }, difficulty: diff } }; }
     case 'checkroom': setFlag(s, 'roomchecked', true); s.energy = clamp(s.energy - 2, 0, energyCap(s)); s.log.push({ day: s.day, city: s.cityId, text: 'You check under the bed, behind the door, in the shower. Twice.' }); return { state: s, events: [] };
     case 'moveon': {
@@ -205,7 +230,7 @@ export function applyMinigameResult(state: RunState, key: string, result: Miniga
       events = tickDay(s, rng); s.energy = clamp(s.energy - 10, 0, energyCap(s)); s.health = clamp(s.health + 2 + Math.round(score * 5), 0, 100); s.mood = clamp(s.mood + 3 + Math.round(score * 6), 0, 100);
       if (result.perfect) unlock(s, 'ironbody'); s.log.push({ day: s.day, city: s.cityId, text: result.failed ? 'Training, badly. Still counts.' : `Training in ${city.name}. ${result.perfect ? 'Flawless.' : 'Good enough.'}` }); break; }
     case MINIGAME_KEYS.cooking: {
-      events = tickDay(s, rng); const dish = DISH[city.dishes[(s.stayDays - 1 + s.route.length) % city.dishes.length]] ?? DISH[city.dishes[0]];
+      events = tickDay(s, rng); const dish = (s.pendingDish && DISH[s.pendingDish]) || DISH[city.dishes[0]]; s.pendingDish = undefined;
       s.health = clamp(s.health + Math.round(dish.health * score), 0, 100); s.mood = clamp(s.mood + Math.round(dish.mood * score), 0, 100); s.energy = clamp(s.energy - 5, 0, energyCap(s));
       if (result.perfect) unlock(s, 'chef'); if (result.failed) s.mood = clamp(s.mood - 4, 0, 100);
       s.log.push({ day: s.day, city: s.cityId, text: result.failed ? `You attempt ${dish.name}. The kitchen survives.` : `You cook ${dish.name}. ${result.perfect ? 'Better than the restaurant.' : 'Nobody complains.'}` }); break; }
@@ -238,7 +263,8 @@ export function resolveChoice(state: RunState, eventId: string, choiceIndex: num
 export function score(s: RunState): number {
   const daysLeft = Math.max(0, TOTAL_DAYS - s.day);
   const gold = Object.values(s.stamps).filter(v => v === 'gold').length;
-  const base = s.visited.length * 25 + gold * 30 + visibleAchievements(s).length * 40 + s.coffeeMornings;
+  const conts = continentsVisited(s).length;
+  const base = s.visited.length * 25 + gold * 30 + visibleAchievements(s).length * 40 + s.coffeeMornings + conts * 150 + (conts === CONTINENTS_ALL.length ? 500 : 0);
   return s.ending?.kind === 'win' ? base + daysLeft * 2 + s.health * 3 + s.mood + 500 : Math.round(base * 0.6);
 }
 export function checkEnding(s: RunState): Ending | undefined {
@@ -249,9 +275,25 @@ export function checkEnding(s: RunState): Ending | undefined {
   else if (s.mood <= 0) e = { kind: 'flewhome', text: `Day ${s.day}. You book the flight home from ${CITY[s.cityId].name} without telling anyone. ${home} is nice this time of year.`, score: 0 };
   else if (s.day > TOTAL_DAYS) e = { kind: 'outofdays', text: `Day 366. The year ends in ${CITY[s.cityId].name}, ${Math.round(Math.max(0, HOME_PROGRESS_DEG + 60 - progress(s)))} degrees of longitude from home. Next year, maybe.`, score: 0 };
   else if (s.cityId === s.startCity && s.route.length > 1 && homeUnlocked(s)) e = { kind: 'win', text: `Day ${s.day}. ${home}. ${s.visited.length} cities, ${365 - s.day} days to spare, ${s.lostItems.length} things left in ${s.lostItems.length === 1 ? 'a room' : 'rooms'} around the world. You circled it.`, score: 0 };
-  if (e) { s.ending = e; s.phase = 'ended'; s.pendingEvent = undefined; e.score = score(s); s.log.push({ day: s.day, city: s.cityId, text: e.text }); }
+  if (e) { e.cause = endingCause(s, e.kind); s.ending = e; s.phase = 'ended'; s.pendingEvent = undefined; e.score = score(s); s.log.push({ day: s.day, city: s.cityId, text: e.text }); }
   return e;
 }
+/** One line for the share card: what did it, where, when. Derived from the last damaging event in the log. */
+export function endingCause(s: RunState, kind: Ending['kind']): string {
+  const city = CITY[s.cityId]?.name ?? s.cityId;
+  let last: string | undefined;
+  for (let i = s.log.length - 1; i >= 0 && !last; i--) { const t = s.log[i].text; for (const [id, phrase] of Object.entries(CAUSE_PHRASE)) if (EVENT[id] && t.startsWith(EVENT[id].title)) { last = phrase; break; } }
+  const conts = continentsVisited(s).length;
+  switch (kind) {
+    case 'hospital': return last ? `Hospitalised in ${city} after ${last}, day ${s.day}` : `Hospitalised in ${city}, worn down by the road, day ${s.day}`;
+    case 'flewhome': return `Flew home from ${city} on day ${s.day}, mood zero`;
+    case 'outofdays': return `Ran out of days in ${city}, ${conts} of 5 continents`;
+    case 'win': return `Home to ${city} on day ${s.day}, ${conts} continent${conts === 1 ? '' : 's'}`;
+    default: return `Left the trail in ${city} on day ${s.day}`;
+  }
+}
+/** How each damaging event reads in the cause line. */
+const CAUSE_PHRASE: Record<string, string> = { otter: 'the otter', kettle: 'the kettle', foodpoisoning: 'food poisoning', backinjury: 'a thrown-out back', altitude: 'thin air', seaurchin: 'a sea urchin', rockfall: 'rockfall', mosquito: 'the mosquitoes', oktoberfest: 'Oktoberfest', sunburn: 'sunburn' };
 
 export function pendingChoices(s: RunState): { id: string; title: string; text: string; choices: EventChoice[] } | null {
   if (!s.pendingEvent) return null; const ev = EVENT[s.pendingEvent]; if (!ev?.choices) return null;
@@ -259,9 +301,9 @@ export function pendingChoices(s: RunState): { id: string; title: string; text: 
 }
 
 export const Sim = {
-  GRID, TOTAL_DAYS, CITIES, CITY, ITEM, DISH, LEVEL_BY_CITY,
-  createRun, validatePack, setPack, bagWeight, weightRatio, totalWeight, coffeePacked, hasTag, hasFlag,
-  availableLegs, travelTo, cityAction, applyMinigameResult, resolveChoice, pendingChoices, checkEnding, score, progress, homeUnlocked, monthOf,
+  GRID, TOTAL_DAYS, HOME_CITY, HOME_MIN_CONTINENTS, HOME_PROGRESS_DEG, CONTINENTS_ALL, CITIES, CITY, ITEM, DISH, LEVEL_BY_CITY,
+  createRun, validatePack, setPack, bagWeight, weightRatio, totalWeight, coffeePacked, bundles, hasTag, hasFlag,
+  availableLegs, travelTo, cityAction, applyMinigameResult, resolveChoice, pendingChoices, checkEnding, score, progress, homeUnlocked, homeRequirements, continentsVisited, endingCause, monthOf,
   visibleAchievements, energyCap, accessibleItems,
   save: saveRun, load: loadRun, clear: clearRun,
 };

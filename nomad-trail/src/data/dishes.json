@@ -322,6 +322,65 @@
   "mood": 10
  },
  {
+  "id": "bajatacos",
+  "name": "Baja fish tacos",
+  "city": "lapaz",
+  "ingredients": [
+   "white fish",
+   "tortilla",
+   "cabbage",
+   "lime",
+   "crema"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 4
+   },
+   {
+    "kind": "flip",
+    "count": 3
+   },
+   {
+    "kind": "season",
+    "count": 2
+   },
+   {
+    "kind": "pour",
+    "count": 2
+   }
+  ],
+  "health": 9,
+  "mood": 10
+ },
+ {
+  "id": "conchsoup",
+  "name": "Sopa de caracol",
+  "city": "roatan",
+  "ingredients": [
+   "conch",
+   "coconut milk",
+   "plantain",
+   "cilantro"
+  ],
+  "steps": [
+   {
+    "kind": "chop",
+    "count": 5
+   },
+   {
+    "kind": "stir",
+    "count": 5
+   },
+   {
+    "kind": "pour",
+    "count": 2
+   }
+  ],
+  "health": 9,
+  "mood": 9
+ },
+ {
   "id": "baleada",
   "name": "Baleadas",
   "city": "roatan",
@@ -986,56 +1045,6 @@
   ],
   "health": 9,
   "mood": 7
- },
- {
-  "id": "nyamachoma",
-  "name": "Nyama choma",
-  "city": "nairobi",
-  "ingredients": [
-   "goat",
-   "salt",
-   "kachumbari",
-   "ugali"
-  ],
-  "steps": [
-   {
-    "kind": "season",
-    "count": 3
-   },
-   {
-    "kind": "flip",
-    "count": 5
-   },
-   {
-    "kind": "chop",
-    "count": 4
-   }
-  ],
-  "health": 9,
-  "mood": 9
- },
- {
-  "id": "ugali",
-  "name": "Ugali + sukuma wiki",
-  "city": "nairobi",
-  "ingredients": [
-   "maize flour",
-   "collard greens",
-   "onion",
-   "tomato"
-  ],
-  "steps": [
-   {
-    "kind": "stir",
-    "count": 6
-   },
-   {
-    "kind": "chop",
-    "count": 4
-   }
-  ],
-  "health": 8,
-  "mood": 6
  },
  {
   "id": "bibimbap",

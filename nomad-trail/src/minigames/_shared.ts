@@ -69,6 +69,17 @@ export class MinigameFrame {
   private tapHandlers: Array<(p?: Phaser.Input.Pointer) => void> = [];
   private tapListenerInstalled = false;
   active = false;
+  /** Hard cap on play time (seconds, after the READY card). Every game auto-finishes at the cap with scoreNow(). Default keeps
+   *  total wall-clock (1 s intro + play + 1.5 s result) under 40 s. Games may override before intro(): Carry-On uses 60. */
+  capSec = 36;
+  /** Current score 0..100 if the game were to end right now; games set this so the cap can finish them fairly. */
+  scoreNow: () => number = () => 50;
+  private capTimer?: Phaser.Time.TimerEvent;
+  private playStart = 0;
+  /** seconds of play so far (0 during the intro) */
+  get elapsed() { return this.playStart ? Math.max(0, (this.scene.time.now - this.playStart) / 1000) : 0; }
+  /** seconds left before the cap */
+  get remaining() { return Math.max(0, this.capSec - this.elapsed); }
 
   constructor(public scene: Phaser.Scene, public launch: MinigameLaunch, public title: string) {
     const e = clamp(launch.energy, 0, 100);
@@ -76,7 +87,7 @@ export class MinigameFrame {
     this.window = clamp(1 - 0.35 * this.hard - 0.3 * launch.difficulty, 0.35, 1);
     this.lag = Math.round(this.hard * 140);
     this.speed = 0.85 + 0.5 * launch.difficulty + 0.15 * this.hard;
-    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.tapHandlers = []; this.active = false; });
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.tapHandlers = []; this.active = false; this.capTimer?.remove(); });
   }
 
   /** Dim overlay + title + instruction + READY for ~1s, then cb(). */
@@ -93,7 +104,9 @@ export class MinigameFrame {
     s.tweens.add({ targets: t3, scale: { from: 1.3, to: 1 }, duration: 300, ease: 'Back.Out' });
     s.time.delayedCall(1000, () => {
       this.introObjs.forEach(o => o.destroy()); this.introObjs = [];
-      this.active = true; cb();
+      this.active = true; this.playStart = s.time.now;
+      this.capTimer = s.time.delayedCall(this.capSec * 1000, () => { if (!this.finished) this.finish(this.scoreNow()); });
+      cb();
     });
   }
 
@@ -139,8 +152,8 @@ export class MinigameFrame {
 
   /** Show result card for 1.5s then onDone once and stop the scene. */
   finish(score: number, forceFail = false) {
-    if (this.finished) return; this.finished = true; this.active = false;
-    score = Math.round(clamp(score, 0, 100));
+    if (this.finished) return; this.finished = true; this.active = false; this.capTimer?.remove();
+    score = Math.round(clamp(Number.isFinite(score) ? score : 0, 0, 100));
     const failed = forceFail || score < 50, perfect = !failed && score >= 95;
     const label = perfect ? 'PERFECT' : failed ? 'FAILED' : 'NICE';
     const color = perfect ? PAL.sun2 : failed ? PAL.red : PAL.neon;

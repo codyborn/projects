@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { PAL, txt, rect, GAME_W, GAME_H } from '../ui/theme';
 import { Button } from '../ui/Button';
 import { Panel, dimmer } from '../ui/Panel';
-import { Sim, getSettings, putSettings, putRun, Data } from '../ui/simBridge';
+import { Sim, getSettings, putSettings, putRun } from '../ui/simBridge';
 import type { RunState } from '../core/types';
 /** Title: twilight gradient, drifting pixel clouds, New Run / Continue / Passport / mute. */
 export class TitleScene extends Phaser.Scene {
@@ -19,9 +19,9 @@ export class TitleScene extends Phaser.Scene {
     const g = this.add.graphics(); g.fillStyle(PAL.night0, 1); let x = 0; while (x < GAME_W) { const w = 12 + Math.floor(Math.random() * 30), h = 20 + Math.floor(Math.random() * 90); g.fillRect(x, 352 - h, w, h); if (Math.random() < 0.5) { g.fillStyle(PAL.sun2, 0.9); for (let wy = 352 - h + 6; wy < 346; wy += 8) for (let wx = x + 3; wx < x + w - 3; wx += 6) if (Math.random() < 0.35) g.fillRect(wx, wy, 2, 3); g.fillStyle(PAL.night0, 1); } x += w + 2; }
     const hook = (window as any).__nomadArt?.titleArt; if (hook) { try { hook(this); } catch {} }
     txt(this, 180, 96, 'THE', 14, PAL.sun3).setOrigin(0.5);
-    const logo = txt(this, 180, 130, 'NOMAD TRAIL', 32, PAL.white).setOrigin(0.5);
+    const logo = txt(this, 180, 130, 'NOMAD TRAIL', 24, PAL.white).setOrigin(0.5);
     this.tweens.add({ targets: logo, y: 134, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
-    txt(this, 180, 166, 'Circumnavigate the planet in 365 days.\nPack light. Trust no kettle.', 10, PAL.sun3, { align: 'center' }).setOrigin(0.5);
+    txt(this, 180, 172, 'Circumnavigate the planet\nin 365 days.\nPack light. Trust no kettle.', 9, PAL.sun3, { align: 'center', wrap: 340 }).setOrigin(0.5);
     const saved = Sim.load(); const settings = getSettings(this);
     let y = 400;
     if (saved && saved.phase !== 'ended') { new Button(this, 180, y, `CONTINUE  ·  day ${saved.day}`, () => this.resume(saved), { w: 240, fill: PAL.dusk1 }); y += 56; }
@@ -29,8 +29,8 @@ export class TitleScene extends Phaser.Scene {
     if (saved) { if (this.scene.get('Passport')) { new Button(this, 180, y, 'PASSPORT', () => { this.registry.set('run', saved); this.scene.start('Passport', { back: 'Title' }); }, { w: 240 }); y += 56; } }
     const mute = new Button(this, 40, 600, settings.muted ? '🔇' : '🔊', () => { settings.muted = !settings.muted; putSettings(this, settings); mute.setLabel(settings.muted ? '🔇' : '🔊'); this.sound.mute = settings.muted; }, { w: 48, h: 44, fill: PAL.night2 });
     this.sound.mute = settings.muted;
-    txt(this, 180, 604, `Based on actual events.${settings.runs ? `  Runs: ${settings.runs}  Best: ${settings.bestScore}` : ''}`, 8, PAL.gray1, { align: 'center' }).setOrigin(0.5);
-    txt(this, 180, 620, 'A Citizen Earth production', 8, PAL.gray0).setOrigin(0.5);
+    txt(this, 180, 604, 'Based on actual events.', 8, PAL.gray1, { align: 'center' }).setOrigin(0.5);
+    txt(this, 180, 620, settings.runs ? `Runs ${settings.runs} · Best ${settings.bestScore}` : 'A Citizen Earth production', 8, PAL.gray0).setOrigin(0.5);
   }
   update(_t: number, dt: number) { for (const c of this.clouds) { c.x += (c as any).spd * dt / 1000; if (c.x > GAME_W) c.x = -c.width; } }
   private resume(saved: RunState) {
@@ -39,17 +39,16 @@ export class TitleScene extends Phaser.Scene {
     this.scene.start(next, { resumed: true });
   }
   private newRun(hasSave: boolean) {
-    const dim = dimmer(this, 0.7); const p = new Panel(this, 20, 160, 320, 330, { fill: PAL.night1 });
+    const dim = dimmer(this, 0.7); const p = new Panel(this, 20, 180, 320, 290, { fill: PAL.night1 });
     const items: Phaser.GameObjects.GameObject[] = [dim, p];
-    items.push(txt(this, 180, 180, hasSave ? 'This replaces your saved run.' : 'A new year begins.', 10, PAL.sun1).setOrigin(0.5) as any);
-    items.push(txt(this, 180, 210, 'Start and finish in', 12, PAL.gray2).setOrigin(0.5) as any);
-    let start = 'miami', dir: 'east' | 'west' = 'east';
-    const starts = Data.cities.filter(c => c.id === 'miami' || c.id === 'newyork'); if (!starts.length) starts.push(Data.cities[0]);
-    const sb: Button[] = []; starts.forEach((c, i) => { const b = new Button(this, 100 + i * 160, 248, c.name.toUpperCase(), () => { start = c.id; sb.forEach((x, j) => x.setAlpha(j === i ? 1 : 0.5)); }, { w: 140, fill: PAL.sea0 }); sb.push(b); items.push(b); }); sb.forEach((x, j) => x.setAlpha(j === 0 ? 1 : 0.5));
-    items.push(txt(this, 180, 300, 'Heading', 12, PAL.gray2).setOrigin(0.5) as any);
-    const db: Button[] = []; (['east', 'west'] as const).forEach((d, i) => { const b = new Button(this, 100 + i * 160, 338, d === 'east' ? 'EAST  →' : '←  WEST', () => { dir = d; db.forEach((x, j) => x.setAlpha(j === i ? 1 : 0.5)); }, { w: 140, fill: PAL.dusk0 }); db.push(b); items.push(b); }); db[1].setAlpha(0.5);
-    items.push(new Button(this, 180, 420, 'START PACKING', () => { const s = Sim.createRun(Date.now() % 1e9, start, dir); putRun(this, s); this.scene.start('Pack'); }, { w: 240, fill: PAL.sun0 }));
-    items.push(new Button(this, 180, 470, 'back', () => items.forEach(i => i.destroy()), { w: 120, h: 36, size: 10, fill: PAL.night2 }));
+    items.push(txt(this, 180, 200, hasSave ? 'This replaces your saved run.' : 'A new year begins.', 10, PAL.sun1).setOrigin(0.5) as any);
+    items.push(txt(this, 180, 232, 'Start and finish: Orange County', 9, PAL.gray2).setOrigin(0.5) as any);
+    const start = 'orangecounty'; let dir: 'east' | 'west' = 'east';
+    items.push(txt(this, 180, 270, 'Heading', 12, PAL.gray2).setOrigin(0.5) as any);
+    const db: Button[] = []; (['east', 'west'] as const).forEach((d, i) => { const b = new Button(this, 100 + i * 160, 310, d === 'east' ? 'EAST  →' : '←  WEST', () => { dir = d; db.forEach((x, j) => x.setAlpha(j === i ? 1 : 0.5)); }, { w: 140, fill: PAL.dusk0 }); db.push(b); items.push(b); }); db[1].setAlpha(0.5);
+    items.push(txt(this, 180, 352, 'East: the Atlantic first.\nWest: the Pacific first.', 8, PAL.gray1, { align: 'center' }).setOrigin(0.5) as any);
+    items.push(new Button(this, 180, 400, 'START PACKING', () => { const s = Sim.createRun(Date.now() % 1e9, start, dir); putRun(this, s); this.scene.start('Pack'); }, { w: 240, fill: PAL.sun0 }));
+    items.push(new Button(this, 180, 446, 'back', () => items.forEach(i => i.destroy()), { w: 120, h: 44, size: 10, fill: PAL.night2 }));
   }
 }
 export default TitleScene;

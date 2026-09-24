@@ -15,6 +15,7 @@ export class CoffeeScene extends Phaser.Scene {
   constructor() { super('Coffee'); }
   init(d: CoffeeData) { this.data2 = d; this.done = false; this.t = 0; }
   create() {
+    this.scene.bringToTop();
     buildPixelFont(this); buildCoffeeKit(this);
     const d = this.data2; const W = GAME_W, H = GAME_H;
     // outside world, seen through the window; starts at dawn, blue hour

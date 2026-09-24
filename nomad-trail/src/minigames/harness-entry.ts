@@ -24,8 +24,8 @@ if (q.get('auto') === '1') {
   const next = () => {
     if (driver) clearInterval(driver);
     if (i >= runs.length) { out.textContent = JSON.stringify({ results, errors }); document.title = 'HARNESS_DONE'; return; }
-    const r = runs[i++]; const t0 = performance.now(); let doneCalls = 0;
-    const launch: MinigameLaunch = { energy: r.energy, difficulty: 0.5, payload: r.payload, onDone: (res) => { doneCalls++; results.push({ key: r.key, payload: r.payload?.activity || r.payload?.hazard || r.payload?.name || '', energy: r.energy, ...res, ms: Math.round(performance.now() - t0), doneCalls }); setTimeout(next, 300); } };
+    const r = runs[i++]; const t0 = performance.now(); const v0 = game.getTime(); let doneCalls = 0;
+    const launch: MinigameLaunch = { energy: r.energy, difficulty: 0.5, payload: r.payload, onDone: (res) => { doneCalls++; results.push({ key: r.key, payload: r.payload?.activity || r.payload?.hazard || r.payload?.name || '', energy: r.energy, ...res, ms: Math.round(performance.now() - t0), vms: Math.round(game.getTime() - v0), doneCalls }); setTimeout(next, 300); } };
     prog(`run ${i}/${runs.length} ${r.key} ${r.payload?.activity || r.payload?.hazard || ''}`);
     game.scene.start(r.key, launch);
     const scene = game.scene.getScene(r.key);

@@ -1,24 +1,30 @@
 # SIM agent notes (for the integrator)
 
-## Type-change requests (worked around, none blocking)
-- `RunState.flags: string[]` would be cleaner than the current trick: transient flags live in `achievements` with a leading underscore (`_roomchecked`, `_ev_otter` for once-only events). UI must use `Sim.visibleAchievements(state)` (already filters them) and never render raw `achievements`.
-- `GameEvent.once?: boolean` and `GameEvent.months?: number[]` would replace the hard-coded `ONCE` set and the per-id `special()` switch in `events.ts`.
-- `Effects.health/energy/mood` are applied as floats internally (slow daily wear is 0.15 + 0.0023*day). HUD should `Math.round()`.
+Round 2 (2026-09-24, after Cody's first phone playtest). Data is generated: `python3 tools/gen_items.py && python3 tools/gen_cities.py && python3 tools/gen_events.py && python3 tools/gen_levels.py`, then `npm test && npm run sim`. The generators are the source of truth again (the earlier hand tuning is baked in).
 
-## Design decisions the UI must honour
-- **Actions are one day each.** A 200-day run at one tap per day is too many taps for a 15-25 minute session; the City scene should offer batching ("Work week" = 5 x `cityAction('work')`, stopping early when `events.length > 0` or a minigame is requested). The engine is cheap enough to loop.
-- `cityAction` returns `minigame` WITHOUT ticking the day; the day ticks inside `applyMinigameResult`. Always call `applyMinigameResult` after a minigame, even on failure (`{score:0, perfect:false, failed:true}`).
-- `pendingEvent` blocks travel and actions until `resolveChoice` is called. `Sim.pendingChoices(state)` returns only the choices the player's gear allows (e.g. "clean the cut after" needs a first-aid kit).
-- `availableLegs` filters by direction (no backtracks > 30 deg), by month, forbids revisits, hides the home city until `progress >= 330`, and adds fallback long-haul flights when a player has exhausted a region. `leg.home` marks the flight that ends the game.
-- Items in the checked bag are unusable while `bagLockedDays > 0` (`Sim.accessibleItems`).
-- The otter is a choice event that only fires in Tokyo during `explore`.
+## What changed for the UI
 
-## Tuning numbers (npm run sim, 2026-09-24)
-- Random first-timer pack (200 runs): **42% fail** (78 hospital, 5 out of days, 1 flew home), mean end day 197, 16.5 cities. Failure days: 50-99: 21, 100-149: 19, 150-199: 12, 200-249: 16, 250-299: 6, 300+: 9.
-- Heavy pack (near 50 lb, kettlebell/kite/wine/books): 69% fail, mostly hospital after the back goes.
-- Smart pack (light, essentials in the backpack, first aid + probiotics + cubes + coffee, laundry on time): 100% win at ~day 201. Learning matters.
-- Runs end around day 200 for players who follow suggested stays, so "most failures 200-300" was traded for "failures spread across the middle of the run with a late-game ramp" (health wear is 0.15 + 0.0023*day per day; the year itself gets heavier). Lengthen `suggestedStay`/`minStay` in `tools/gen_cities.py` to push both endings later.
-- Levers: `tools/gen_events.py` base chances and effects, `engine.ts` tickDay wear line, `applyMinigameResult` health gains, `HOME_PROGRESS_DEG`.
+- **Bundles.** `items.json` is now 35 generic bundles (no brands): the pack tray needs fewer, bigger cards. Three bundles share the name "1 Week Of Clothes" (`clothes1..3`, 7 clothes-days each). `real: true` marks bundles from Cody's actual bag. `Sim.bundles()` returns the list.
+- **Home is always Orange County.** `Sim.createRun(seed, _ignored, direction)`: the start-city argument is ignored (`Sim.HOME_CITY`). Drop the Miami / New York pick; keep east / west.
+- **Two goals.** The flight home appears only when `progress >= 330°` AND at least 4 of 5 continents are stamped. `Sim.homeRequirements(state)` → `{ progress, needProgress, continents, needContinents, unlocked }` for the route screen. `Sim.continentsVisited(state)` (in visit order) and `Sim.CONTINENTS_ALL` for a passport / HUD strip. Score: +150 per continent, +500 for all five; achievement `fivecontinents` on the fifth arrival.
+- **Legs are ranked.** `availableLegs` returns the home flight first (when unlocked), then legs by forward progress (most ahead at the top), at most one near-sideways option (< 8° ahead), nothing more than 20° backwards. Fallback flights at dead ends: 1 day, or 2 across more than six time zones.
+- **Events show one text.** `ResolvedEvent.text` is already the right one (base or mitigated). Never append `mitigatedText` to `text`; every `mitigatedText` is a standalone paragraph.
+- **The cancelled booking has no choices** (energy −20, mood −12). The otter is the only choice event left. On arrival the cancellation always comes first and suppresses `nowifi` / `hostgift` / `sleepless` that day (`LODGING_DEPENDENT` in events.ts).
+- **Dish consistency.** `cityAction(state, 'cook')` stores `state.pendingDish`; `applyMinigameResult` scores exactly that dish and clears it. Every city's dishes are local (same city or same region).
+- **Ending cause.** `ending.cause` is a one-liner for the share card: `Hospitalised in Lisbon after food poisoning, day 44` / `Flew home from Bangkok on day 120, mood zero` / `Ran out of days in Munich, 3 of 5 continents` / `Home to Orange County on day 231, 4 continents`. Also `Sim.endingCause(state, kind)`.
+- `coffeePacked` = the Coffee Kit bundle is reachable (not in a delayed suitcase).
 
-## Regenerating data
-`python3 tools/gen_items.py && python3 tools/gen_cities.py && python3 tools/gen_events.py && python3 tools/gen_levels.py` (levels self-verify reachability). Then `npm test && npm run sim`.
+## Sim API surface (`import { Sim } from 'src/core/sim'`)
+`GRID, TOTAL_DAYS, HOME_CITY, HOME_MIN_CONTINENTS, HOME_PROGRESS_DEG, CONTINENTS_ALL, CITIES, CITY, ITEM, DISH, LEVEL_BY_CITY, createRun, validatePack, setPack, bagWeight(items, bag), weightRatio(items), totalWeight(state), coffeePacked, bundles, hasTag, hasFlag, availableLegs, travelTo, cityAction, applyMinigameResult, resolveChoice, pendingChoices, checkEnding, score, progress, homeUnlocked, homeRequirements, continentsVisited, endingCause, monthOf, visibleAchievements, energyCap, accessibleItems, save, load, clear`.
+
+## Still true from round 1
+- Transient flags live in `achievements` with a leading underscore; render `Sim.visibleAchievements(state)` only.
+- Actions are one day each; `cityAction` returns `minigame` without ticking the day, `applyMinigameResult` ticks it. Always call it, even on failure.
+- `pendingEvent` blocks travel and actions until `resolveChoice`.
+- Health/energy/mood are floats internally; round in the HUD.
+
+## Balance (`npm run sim 400`, 2026-09-24)
+- Random first-timer pack (6 to 11 bundles, laptop or phone sometimes in the suitcase): **38% fail** (hospital mostly), mean end day ~203, 13.9 cities, 3.8 continents, 12% touch all five.
+- Heavy pack (kite + drone + books + boots + kettle, near 50 lb): 51% fail, back injury cascade.
+- Smart pack (light, essentials on the back, medicine + cubes + coffee, laundry on time, detours for continents): 100% win at ~day 178, 4.5 continents.
+- Levers: `tools/gen_events.py` base chances (food poisoning 0.135 is the main killer), `engine.ts` tickDay wear (`0.12 + 0.0021·day`), `HOME_MIN_CONTINENTS`, stay lengths in `tools/gen_cities.py` (×1.25 baked in).

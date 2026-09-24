@@ -12,6 +12,7 @@ export class AirportScene extends Phaser.Scene {
   create() {
     this.frame = new MinigameFrame(this, this.launch, 'Tight connection'); this.cameras.main.setBackgroundColor(PAL.night2);
     this.g = this.add.graphics().setDepth(3); this.meter = new Meter(this, 40, 600, W - 80, 8); this.frame.hud();
+    this.frame.scoreNow = () => this.scores.length ? (this.scores.reduce((a, b) => a + b, 0) / 3) * 100 : 30;
     this.frame.intro('Security, gate change, boarding. Three quick stages. Read fast, tap faster.', () => this.security());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.ticks.forEach(t => t.remove()));
   }

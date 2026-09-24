@@ -1,6 +1,6 @@
-// Shared headless player policies for `npm run sim` and tests.
+// Shared headless player policies for `npm run sim` and tests. Items are BUNDLES (see tools/gen_items.py).
 import type { RunState, PackedItem, Bag, CityAction, MinigameResult } from '../src/core/types';
-import { MINIGAME_KEYS } from '../src/core/types';
+import { CONTINENT_OF } from '../src/core/types';
 import { Sim, GRID } from '../src/core/sim/engine';
 import { makeRng, type Rng } from '../src/core/sim/rng';
 import { ITEMS, ITEM } from '../src/core/sim/data';
@@ -22,34 +22,32 @@ export function shelfPack(ids: string[], bag: Bag): PackedItem[] | null {
   }
   return out;
 }
-const ESSENTIALS_BACK = ['macbook', 'pixel10', 'anker', 'euadapter', 'airpods', 'yubikey'];
+/** What a sensible person keeps on their body: the job and the phone. */
+const ESSENTIALS_BACK = ['laptopkit', 'phonekit', 'watch'];
 export type PackStyle = 'random' | 'heavy' | 'smart';
-/** Builds a pack. random: realistic first-timer with variations. heavy: near the limit with traps. smart: light, essentials in backpack, health + organizer + coffee. */
+/** Builds a pack. random: realistic first-timer with variations. heavy: near the limit with traps. smart: light, essentials on the back, health + organizer + coffee. */
 export function buildPack(style: PackStyle, rng: Rng): PackedItem[] {
   const back: string[] = [...ESSENTIALS_BACK]; const chk: string[] = [];
   const add = (ids: string[], where: string[]) => { for (const id of ids) if (!back.includes(id) && !chk.includes(id)) where.push(id); };
   if (style === 'smart') {
-    add(['sleepmask', 'loops', 'firstaid', 'antibiotics', 'probiotics', 'multi', 'sonicare', 'garmincable', 'fenix7', 'sparephone', 'chargerbrick'], back);
-    add(['tees5', 'merino3', 'underwear7', 'socks7', 'jeans', 'shorts2', 'reishell', 'downjacket', 'altra', 'reef', 'packingcubes', 'laundrysheets', 'bands', 'pourigami', 'timemore', 'gooseneck', 'creatine', 'greens', 'electrolytes', 'ceraveam', 'repellent', 'diamox', 'sawyer', 'bladder', 'swimsuit', 'ombraz', 'melin', 'straps'], chk);
+    add(['toiletries', 'sleepkit', 'firstaid', 'medkit', 'supplements'], back);
+    add(['clothes1', 'clothes2', 'shell', 'protein', 'skincare', 'coffeekit', 'adventure', 'fitnesskit', 'packingcubes', 'mosquitokit', 'swimkit', 'sunkit'], chk);
   } else {
     // clothes: first-timers under-pack or over-pack
-    const clothesSets = [['tees5', 'underwear7', 'socks7', 'jeans'], ['merino3', 'underwear7', 'socks7', 'shorts2', 'jeans'], ['tees5', 'merino3', 'underwear7', 'socks7', 'jeans', 'jeans2', 'hoodie', 'hikepants'], ['tees5', 'underwear7']];
-    add(rng.pick(clothesSets), chk);
+    add(rng.pick([['clothes1'], ['clothes1', 'clothes2'], ['clothes1', 'clothes2', 'clothes3'], ['clothes1', 'jeans2']]), chk);
+    // sometimes the phone or the laptop goes in the suitcase (baggage-delay bait)
+    if (rng.chance(0.35)) { const moved = rng.pick(['laptopkit', 'phonekit']); back.splice(back.indexOf(moved), 1); chk.push(moved); }
     const pool = ITEMS.filter(i => !back.includes(i.id) && !chk.includes(i.id) && !i.tags.includes('clothing')).map(i => i.id);
-    const target = style === 'heavy' ? rng.int(44, 50) : rng.int(22, 44);
     const shuffled = [...pool].sort(() => rng.next() - 0.5);
-    if (style === 'heavy') add(['kitegear', 'kettlebell', 'hikingboots', 'wine', 'books', 'proteintub', 'jeans2', 'frenchpress', 'travelkettle'], chk);
-    for (const id of shuffled) {
-      const w = Sim.bagWeight(chk.map(id2 => ({ id: id2, bag: 'checked' as Bag, x: 0, y: 0 })), 'checked');
-      if (w + ITEM[id].weightLb > target || chk.includes(id) || back.includes(id)) continue;
-      chk.push(id);
+    if (style === 'heavy') {
+      add(['kitegear', 'dronekit', 'books', 'hikingboots', 'travelkettle', 'hostgifts', 'yogamat'], chk);
+      const target = rng.int(46, 50);
+      for (const id of shuffled) { const w = Sim.bagWeight(chk.map(id2 => ({ id: id2, bag: 'checked' as Bag, x: 0, y: 0 })), 'checked'); if (w + ITEM[id].weightLb > target || chk.includes(id) || back.includes(id)) continue; chk.push(id); }
+    } else {
+      // a first-timer grabs a handful of bundles, not the whole shop: 6 to 11 of them, whatever catches the eye
+      add(shuffled.slice(0, rng.int(6, 11)), chk);
     }
-    // sometimes a first-timer puts the meds/laptop charger in the checked bag
-    if (rng.chance(0.4)) { const moveable = ['chargerbrick', 'multi', 'sonicare']; add(moveable, chk); }
-    if (rng.chance(0.5)) add(['switch'], chk);
-    if (rng.chance(0.6)) add(['pourigami', 'timemore', 'gooseneck'], chk);
-    if (rng.chance(0.5)) add(['firstaid'], chk); if (rng.chance(0.4)) add(['probiotics'], chk); if (rng.chance(0.4)) add(['packingcubes'], chk);
-    if (rng.chance(0.3)) add(['sleepmask', 'loops'], back);
+    if (rng.chance(0.4)) add(['sleepkit'], back);
   }
   // fit: drop from the end until both grids and weights pass
   let cPack: PackedItem[] | null = null, bPack: PackedItem[] | null = null;
@@ -62,25 +60,25 @@ export function buildPack(style: PackStyle, rng: Rng): PackedItem[] {
   return [...(cPack ?? []), ...(bPack ?? [])];
 }
 
+const aheadOf = (s: RunState, to: string) => { const here = Sim.CITY[s.cityId]; const d = ((Sim.CITY[to].lon - here.lon + 540) % 360) - 180; return s.direction === 'east' ? d : -d; };
 /** First-timers wander but mostly forward: weight legs by how far ahead they go. */
 function weightedLeg<T extends { to: string; home: boolean }>(legs: T[], s: RunState, rng: Rng): T {
-  const here = Sim.CITY[s.cityId];
-  const w = legs.map(l => { const d = ((Sim.CITY[l.to].lon - here.lon + 540) % 360) - 180; const ahead = s.direction === 'east' ? d : -d; return Math.max(0.2, 1 + ahead / 40); });
+  const w = legs.map(l => Math.max(0.3, 1 + aheadOf(s, l.to) / 120));   // first-timers tap around; a slight lean forward
   let r = rng.next() * w.reduce((a, b) => a + b, 0);
   for (let i = 0; i < legs.length; i++) { r -= w[i]; if (r <= 0) return legs[i]; }
   return legs[legs.length - 1];
 }
-/** The learned player: keeps moving forward, takes a hero city when it is roughly on the way. */
-function smartLeg<T extends { to: string; city: { hero: boolean } }>(legs: T[], s: RunState): T | undefined {
-  const here = Sim.CITY[s.cityId];
-  const scored = legs.map(l => { const d = ((Sim.CITY[l.to].lon - here.lon + 540) % 360) - 180; const ahead = s.direction === 'east' ? d : -d; return { l, v: ahead + (l.city.hero ? 15 : 0) }; });
+/** The learned player: keeps moving forward, takes a hero city when it is roughly on the way, and detours for a new continent. */
+function smartLeg<T extends { to: string; city: { hero: boolean; region: string } }>(legs: T[], s: RunState): T | undefined {
+  const seen = new Set(Sim.continentsVisited(s));
+  const scored = legs.map(l => ({ l, v: aheadOf(s, l.to) + (l.city.hero ? 15 : 0) + (seen.has(CONTINENT_OF[Sim.CITY[l.to].region]) ? 0 : 25) }));
   return scored.sort((a, b) => b.v - a.v)[0]?.l;
 }
-export interface RunOutcome { ending: NonNullable<RunState['ending']>['kind']; day: number; score: number; cities: number; events: Record<string, number>; state: RunState; }
+export interface RunOutcome { ending: NonNullable<RunState['ending']>['kind']; day: number; score: number; cities: number; continents: number; events: Record<string, number>; state: RunState; }
 /** Plays one run headless. smart=true plays the "learned" policy. */
 export function playRun(seed: number, style: PackStyle, opts: { start?: string; direction?: 'east' | 'west'; skill?: number } = {}): RunOutcome {
   const rng = makeRng(seed ^ 0xabcdef);
-  let s = Sim.createRun(seed, opts.start ?? rng.pick(['miami', 'newyork']), opts.direction ?? rng.pick(['east', 'west']));
+  let s = Sim.createRun(seed, opts.start, opts.direction ?? rng.pick(['east', 'west']));
   const v = Sim.setPack(s, buildPack(style, rng)); if (!v.ok || !v.state) throw new Error('pack failed: ' + v.errors.join('; '));
   s = v.state;
   const smart = style === 'smart'; const skill = opts.skill ?? (smart ? 0.8 : 0.5);
@@ -88,7 +86,7 @@ export function playRun(seed: number, style: PackStyle, opts: { start?: string; 
   const mg = (): MinigameResult => { const sc = Math.max(0, Math.min(1, skill + (rng.next() - 0.5) * 0.5)); return { score: sc, perfect: sc > 0.92, failed: sc < 0.2 }; };
   let guard = 0;
   while (s.phase !== 'ended' && guard++ < 3000) {
-    if (s.pendingEvent) { const pc = Sim.pendingChoices(s)!; s = Sim.resolveChoice(s, pc.id, smart ? 0 : rng.int(0, pc.choices.length - 1)).state; continue; }
+    if (s.pendingEvent) { const pc = Sim.pendingChoices(s)!; s = Sim.resolveChoice(s, pc.id, smart ? Math.min(1, pc.choices.length - 1) : rng.int(0, pc.choices.length - 1)).state; continue; }
     if (s.phase === 'route') {
       const legs = Sim.availableLegs(s); if (!legs.length) { s.phase = 'ended'; s.ending = { kind: 'quit', text: 'dead end', score: 0 }; break; }
       const home = legs.find(l => l.home);
@@ -113,5 +111,5 @@ export function playRun(seed: number, style: PackStyle, opts: { start?: string; 
     break;
   }
   if (s.phase !== 'ended') { s.ending = { kind: 'quit', text: 'stuck', score: 0 }; }
-  return { ending: s.ending!.kind, day: s.day, score: s.ending!.score, cities: s.visited.length, events, state: s };
+  return { ending: s.ending!.kind, day: s.day, score: s.ending!.score, cities: s.visited.length, continents: Sim.continentsVisited(s).length, events, state: s };
 }

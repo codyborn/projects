@@ -16,6 +16,8 @@ export interface Lodging { id: string; name: string; cancelChance: number; quiet
 export type Transport = 'flight' | 'train' | 'bus' | 'ferry' | 'campervan' | 'trek' | 'car';
 export interface Leg { to: string; transport: Transport; days: number; energy: number; timezones: number; months?: number[]; }  // months: allowed 1..12
 export type Region = 'northamerica' | 'mexico' | 'southamerica' | 'europe' | 'alps' | 'africa' | 'asia' | 'himalaya';
+export type Continent = 'North America' | 'South America' | 'Europe' | 'Africa' | 'Asia';
+export const CONTINENT_OF: Record<Region, Continent> = { northamerica: 'North America', mexico: 'North America', southamerica: 'South America', europe: 'Europe', alps: 'Europe', africa: 'Africa', asia: 'Asia', himalaya: 'Asia' };
 export type Hazard = 'otter' | 'mosquito' | 'gust' | 'rock' | 'tuktuk' | 'wave' | 'ice' | 'pigeon' | 'tram' | 'snow' | 'crowd' | 'yak';
 export interface City {
   id: string; name: string; country: string; region: Region; lat: number; lon: number;
@@ -53,9 +55,10 @@ export interface RunState {
   achievements: string[]; log: LogLine[]; workStreak: number; coffeeMornings: number;
   phase: 'pack' | 'route' | 'city' | 'travel' | 'ended'; ending?: Ending;
   stayDays: number; pendingEvent?: string;
+  pendingDish?: string;                              // dish id chosen when Cook was tapped; the mini-game and the result must use the same one
 }
 export interface LogLine { day: number; city: string; text: string; }
-export type Ending = { kind: 'win' | 'hospital' | 'flewhome' | 'outofdays' | 'quit'; text: string; score: number; };
+export type Ending = { kind: 'win' | 'hospital' | 'flewhome' | 'outofdays' | 'quit'; text: string; score: number; cause?: string; };  // cause: the one-line reason shown on the share card
 export type CityAction = 'work' | 'explore' | 'train' | 'cook' | 'rest' | 'laundry' | 'checkroom' | 'moveon';
 
 // ---------- Mini-game contract ----------

@@ -1,1414 +1,373 @@
 [
  {
-  "id": "macbook",
-  "name": "Apple MacBook Pro 14\"",
-  "label": "MacBook 14\"",
-  "weightLb": 3.4,
-  "w": 4,
-  "h": 3,
+  "id": "laptopkit",
+  "name": "Laptop + Desk Kit",
+  "label": "Laptop kit",
+  "weightLb": 5.0,
+  "w": 3,
+  "h": 2,
   "tags": [
    "essential",
    "work"
   ],
-  "desc": "Daily driver. The whole job fits in here.",
+  "desc": "The whole job, plus the stand and keyboard that keep the neck honest.",
   "real": true,
   "color": 11844036
  },
  {
-  "id": "pixel10",
-  "name": "Google Pixel 10",
-  "label": "Pixel 10",
-  "weightLb": 0.5,
-  "w": 1,
-  "h": 2,
+  "id": "phonekit",
+  "name": "Phone + Chargers",
+  "label": "Phone kit",
+  "weightLb": 1.0,
+  "w": 2,
+  "h": 1,
   "tags": [
    "essential",
    "camera"
   ],
-  "desc": "Primary camera. Also, technically, a phone.",
-  "real": true,
-  "color": 657938,
-  "link": "https://www.amazon.com/dp/B0GYJ4DK31"
- },
- {
-  "id": "magickeyboard",
-  "name": "Apple Magic Keyboard",
-  "label": "Keyboard",
-  "weightLb": 0.5,
-  "w": 3,
-  "h": 1,
-  "tags": [
-   "work"
-  ],
-  "desc": "Because laptop keyboards are for emergencies.",
-  "real": true,
-  "color": 16052714,
-  "link": "https://www.amazon.com/dp/B016QO64FI"
- },
- {
-  "id": "laptopstand",
-  "name": "UGREEN laptop stand",
-  "label": "Laptop stand",
-  "weightLb": 1.2,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "work"
-  ],
-  "desc": "Eye level. Your neck will thank you in a decade.",
-  "real": true,
-  "color": 7238788,
-  "link": "https://www.amazon.com/dp/B07CG71KQ1"
- },
- {
-  "id": "osprey55",
-  "name": "Osprey Farpoint Trek 55",
-  "label": "Osprey 55",
-  "weightLb": 3.9,
-  "w": 4,
-  "h": 5,
-  "tags": [
-   "hike",
-   "luxury"
-  ],
-  "desc": "Technically over carry-on size but I've never had any issues.",
-  "real": true,
-  "color": 3030374,
-  "link": "https://www.amazon.com/dp/B0FGXYLC75"
- },
- {
-  "id": "fenix7",
-  "name": "Garmin Fenix 7",
-  "label": "Fenix 7",
-  "weightLb": 0.2,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "fitness",
-   "essential"
-  ],
-  "desc": "Counts every step, judges every rest day.",
+  "desc": "The camera, the map, the boarding pass, the plan. Never in the checked bag.",
   "real": true,
   "color": 657938
  },
  {
-  "id": "djirc",
-  "name": "DJI RC-N3 controller",
-  "label": "DJI controller",
-  "weightLb": 0.9,
+  "id": "tablet",
+  "name": "Tablet",
+  "label": "Tablet",
+  "weightLb": 1.2,
   "w": 2,
   "h": 2,
   "tags": [
-   "camera"
+   "work",
+   "luxury"
   ],
-  "desc": "Useless without the drone. Pack both or neither.",
+  "desc": "Second monitor, e-reader, journal, cinema.",
   "real": true,
-  "color": 11844036
+  "color": 3817291
  },
  {
-  "id": "djimini5",
-  "name": "DJI Mini 5 Pro",
-  "label": "DJI Mini 5",
-  "weightLb": 0.6,
+  "id": "watch",
+  "name": "GPS Watch",
+  "label": "GPS watch",
+  "weightLb": 0.3,
+  "w": 1,
+  "h": 1,
+  "tags": [
+   "essential"
+  ],
+  "desc": "Counts every step, judges every rest day.",
+  "real": true,
+  "color": 3030374
+ },
+ {
+  "id": "dronekit",
+  "name": "Drone Kit",
+  "label": "Drone kit",
+  "weightLb": 4.0,
   "w": 3,
   "h": 2,
   "tags": [
    "camera",
    "luxury"
   ],
-  "desc": "The camera the year is going to be remembered by.",
+  "desc": "The camera the year gets remembered by, its controller, and the spare batteries.",
   "real": true,
-  "color": 7238788,
-  "link": "https://www.amazon.com/dp/B0F6XJ7W9M"
+  "color": 7238788
  },
  {
-  "id": "galaxytab",
-  "name": "Samsung Galaxy Tab S11",
-  "label": "Galaxy Tab",
-  "weightLb": 1.1,
+  "id": "clothes1",
+  "name": "1 Week Of Clothes",
+  "label": "Clothes wk 1",
+  "weightLb": 6.0,
   "w": 3,
-  "h": 2,
-  "tags": [
-   "work",
-   "luxury"
-  ],
-  "desc": "Second monitor, e-books, journaling, Netflix.",
-  "real": true,
-  "color": 3817291,
-  "link": "https://www.amazon.com/dp/B0FGKQK3J2"
- },
- {
-  "id": "sonyxm4",
-  "name": "Sony WH-1000XM4",
-  "label": "Sony XM4",
-  "weightLb": 0.6,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "work",
-   "sleep"
-  ],
-  "desc": "Overnight bus insurance.",
-  "real": true,
-  "color": 657938,
-  "link": "https://www.amazon.com/dp/B0863TXGM3"
- },
- {
-  "id": "airpods",
-  "name": "AirPods Pro 2",
-  "label": "AirPods",
-  "weightLb": 0.1,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "work"
-  ],
-  "desc": "For when the big ones are too big.",
-  "real": true,
-  "color": 16052714,
-  "link": "https://www.amazon.com/dp/B0BDHWDR12"
- },
- {
-  "id": "thulesling",
-  "name": "Thule Aion sling",
-  "label": "Thule sling",
-  "weightLb": 1.0,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "organizer"
-  ],
-  "desc": "The day bag inside the bag.",
-  "real": true,
-  "color": 11041102,
-  "link": "https://www.amazon.com/dp/B09NLB55Z5"
- },
- {
-  "id": "anker",
-  "name": "Anker MagGo power bank",
-  "label": "Power bank",
-  "weightLb": 0.3,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "essential"
-  ],
-  "desc": "5,000 mAh of not-being-stranded.",
-  "real": true,
-  "color": 657938,
-  "link": "https://www.amazon.com/dp/B099284SRR"
- },
- {
-  "id": "tripod",
-  "name": "Magnetic phone tripod",
-  "label": "Mini tripod",
-  "weightLb": 0.3,
-  "w": 1,
-  "h": 2,
-  "tags": [
-   "camera"
-  ],
-  "desc": "Folds to nothing. Hooks onto anything.",
-  "real": true,
-  "color": 3817291,
-  "link": "https://www.amazon.com/dp/B0DZG8WH4N"
- },
- {
-  "id": "garmincable",
-  "name": "Garmin charging cable",
-  "label": "Garmin cable",
-  "weightLb": 0.1,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "essential"
-  ],
-  "desc": "Proprietary. Forget it once and the watch becomes jewelry.",
-  "real": true,
-  "color": 7238788,
-  "link": "https://www.amazon.com/dp/B0DDY7YZHJ"
- },
- {
-  "id": "euadapter",
-  "name": "US to EU plug adapters",
-  "label": "EU adapters",
-  "weightLb": 0.1,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "essential"
-  ],
-  "desc": "Slots directly into the MacBook adapter.",
-  "real": true,
-  "color": 16052714,
-  "link": "https://www.amazon.com/dp/B07QLVDJ1P"
- },
- {
-  "id": "trackpad",
-  "name": "Apple Magic Trackpad",
-  "label": "Trackpad",
-  "weightLb": 0.5,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "work"
-  ],
-  "desc": "Desk in a box, part three.",
-  "real": true,
-  "color": 3817291,
-  "link": "https://www.amazon.com/dp/B07BRF3ZQD"
- },
- {
-  "id": "carpio",
-  "name": "DELTAHUB Carpio 2.0 wrist rest",
-  "label": "Wrist rest",
-  "weightLb": 0.2,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "work"
-  ],
-  "desc": "Glides with the wrist. Tiny, and the wrist notices.",
-  "real": true,
-  "color": 657938,
-  "link": "https://www.amazon.com/dp/B098P8C3BT"
- },
- {
-  "id": "ombraz",
-  "name": "Ombraz Classic Polarized",
-  "label": "Ombraz",
-  "weightLb": 0.1,
-  "w": 1,
-  "h": 1,
+  "h": 3,
   "tags": [
    "clothing"
   ],
-  "desc": "Armless sunglasses. Great for action sports.",
+  "desc": "Seven days of looking like a person.",
   "real": true,
-  "color": 657938,
-  "link": "https://ombraz.com/products/classic-ombraz-armless-sunglasses"
+  "color": 4889558,
+  "clothesDays": 7
  },
  {
-  "id": "rayban",
-  "name": "Ray-Ban folding Wayfarer",
-  "label": "Ray-Bans",
-  "weightLb": 0.1,
-  "w": 1,
-  "h": 1,
+  "id": "clothes2",
+  "name": "1 Week Of Clothes",
+  "label": "Clothes wk 2",
+  "weightLb": 6.0,
+  "w": 3,
+  "h": 3,
   "tags": [
-   "clothing",
-   "luxury"
+   "clothing"
   ],
-  "desc": "Fits in your pocket.",
+  "desc": "A second week. Laundry becomes a choice instead of an emergency.",
   "real": true,
-  "color": 657938
+  "color": 2845872,
+  "clothesDays": 7
  },
  {
-  "id": "reishell",
-  "name": "REI rain shell",
+  "id": "clothes3",
+  "name": "1 Week Of Clothes",
+  "label": "Clothes wk 3",
+  "weightLb": 6.0,
+  "w": 3,
+  "h": 3,
+  "tags": [
+   "clothing"
+  ],
+  "desc": "A third week. The bag has noticed.",
+  "real": false,
+  "color": 3030374,
+  "clothesDays": 7
+ },
+ {
+  "id": "shell",
+  "name": "Rain Shell",
   "label": "Rain shell",
-  "weightLb": 0.8,
-  "w": 2,
-  "h": 3,
-  "tags": [
-   "clothing",
-   "rain"
-  ],
-  "desc": "Gore-Tex, lighter than an umbrella.",
-  "real": true,
-  "color": 15230525,
-  "clothesDays": 1
- },
- {
-  "id": "gaiter",
-  "name": "Decathlon neck gaiter",
-  "label": "Neck gaiter",
-  "weightLb": 0.1,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "clothing",
-   "cold"
-  ],
-  "desc": "Sun, sand, face mask, pillow in a pinch.",
-  "real": true,
-  "color": 5212747
- },
- {
-  "id": "boonie",
-  "name": "Surf Monkey boonie hat",
-  "label": "Boonie hat",
-  "weightLb": 0.2,
-  "w": 2,
-  "h": 1,
-  "tags": [
-   "clothing"
-  ],
-  "desc": "The hat that says you have given up on looking cool. Correctly.",
-  "real": true,
-  "color": 14727562
- },
- {
-  "id": "melin",
-  "name": "Melin A-Game Infinite Thermal",
-  "label": "Melin cap",
-  "weightLb": 0.2,
-  "w": 2,
-  "h": 1,
-  "tags": [
-   "clothing"
-  ],
-  "desc": "The cap for days with a mirror.",
-  "real": true,
-  "color": 3030374
- },
- {
-  "id": "altra",
-  "name": "Altra Lone Peak 9+",
-  "label": "Altra shoes",
-  "weightLb": 1.4,
-  "w": 3,
-  "h": 2,
-  "tags": [
-   "clothing",
-   "hike",
-   "fitness"
-  ],
-  "desc": "Wide toe box, zero drop. Trail and city.",
-  "real": true,
-  "color": 657938,
-  "link": "https://www.amazon.com/dp/B0DTR5X3MN"
- },
- {
-  "id": "reef",
-  "name": "Reef Leather Smoothy flip flops",
-  "label": "Flip flops",
-  "weightLb": 0.8,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "clothing",
-   "swim"
-  ],
-  "desc": "Lightweight sandals. Hostel-shower-grade.",
-  "real": true,
-  "color": 11041102,
-  "link": "https://www.amazon.com/dp/B000KS500W"
- },
- {
-  "id": "gloves",
-  "name": "Decathlon gloves",
-  "label": "Gloves",
-  "weightLb": 0.2,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "climb",
-   "kite",
-   "cold"
-  ],
-  "desc": "Grip + sun protection. Ferrata and kite.",
-  "real": true,
-  "color": 3817291
- },
- {
-  "id": "bladder",
-  "name": "Osprey Hydraulics 2.5L reservoir",
-  "label": "2.5L bladder",
-  "weightLb": 0.5,
-  "w": 2,
-  "h": 3,
-  "tags": [
-   "water",
-   "hike"
-  ],
-  "desc": "The tank.",
-  "real": true,
-  "color": 2845872
- },
- {
-  "id": "sawyer",
-  "name": "Sawyer Mini water filter",
-  "label": "Sawyer Mini",
-  "weightLb": 0.1,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "water",
-   "health"
-  ],
-  "desc": "Inlined into the bladder. Filtering is not a separate step.",
-  "real": true,
-  "color": 4889558,
-  "link": "https://www.amazon.com/dp/B00FA2RLX2"
- },
- {
-  "id": "yaktrax",
-  "name": "Yaktrax traction cleats",
-  "label": "Yaktrax",
-  "weightLb": 0.6,
-  "w": 2,
-  "h": 1,
-  "tags": [
-   "hike",
-   "cold"
-  ],
-  "desc": "For snow + ice.",
-  "real": true,
-  "color": 7238788,
-  "link": "https://www.amazon.com/dp/B0094GO9DA"
- },
- {
-  "id": "bands",
-  "name": "Resistance loop bands",
-  "label": "Bands",
-  "weightLb": 0.4,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "fitness"
-  ],
-  "desc": "Hotel room workouts.",
-  "real": true,
-  "color": 14040124,
-  "link": "https://www.amazon.com/dp/B0D25Y125B"
- },
- {
-  "id": "nebo",
-  "name": "Nebo Mycro 250 light",
-  "label": "Keychain light",
-  "weightLb": 0.1,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "light"
-  ],
-  "desc": "Attaches to backpack or hats.",
-  "real": true,
-  "color": 16240491,
-  "link": "https://www.amazon.com/dp/B0DDYHGL24"
- },
- {
-  "id": "knife",
-  "name": "Pocket knife",
-  "label": "Pocket knife",
-  "weightLb": 0.3,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "knife"
-  ],
-  "desc": "Picked up in Patagonia. Do not put in the backpack for a flight.",
-  "real": true,
-  "color": 14727562
- },
- {
-  "id": "foamroller",
-  "name": "Collapsible foam roller",
-  "label": "Foam roller",
-  "weightLb": 1.0,
-  "w": 1,
-  "h": 4,
-  "tags": [
-   "fitness",
-   "health"
-  ],
-  "desc": "Great after long travel days.",
-  "real": true,
-  "color": 657938,
-  "link": "https://www.amazon.com/dp/B07GXYFG88"
- },
- {
-  "id": "climbshoes",
-  "name": "La Sportiva Tarantula Boulder",
-  "label": "Climbing shoes",
-  "weightLb": 1.4,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "climb",
-   "fitness"
-  ],
-  "desc": "Added for the Innsbruck gym sessions.",
-  "real": true,
-  "color": 15900236
- },
- {
-  "id": "chalk",
-  "name": "Mammut liquid chalk",
-  "label": "Liquid chalk",
-  "weightLb": 0.5,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "climb"
-  ],
-  "desc": "No chalk dust in the bag, gym-friendly.",
-  "real": true,
-  "color": 16052714,
-  "link": "https://www.amazon.com/dp/B08P2TXY7V"
- },
- {
-  "id": "multi",
-  "name": "Two-Per-Day multivitamin",
-  "label": "Multivitamin",
-  "weightLb": 0.4,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "health",
-   "meds"
-  ],
-  "desc": "The boring one that works.",
-  "real": true,
-  "color": 16240491,
-  "link": "https://www.amazon.com/dp/B01IROPPR8"
- },
- {
-  "id": "creatine",
-  "name": "Creatine monohydrate",
-  "label": "Creatine",
-  "weightLb": 1.1,
-  "w": 1,
-  "h": 2,
-  "tags": [
-   "health",
-   "fitness"
-  ],
-  "desc": "Five grams, every day, forever.",
-  "real": true,
-  "color": 16052714,
-  "link": "https://www.amazon.com/dp/B00GL2HMES"
- },
- {
-  "id": "casein",
-  "name": "Micellar casein protein",
-  "label": "Casein",
-  "weightLb": 2.2,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "health",
-   "fitness"
-  ],
-  "desc": "Slow release protein.",
-  "real": true,
-  "color": 14727562,
-  "link": "https://www.amazon.com/dp/B0128VQT7Q"
- },
- {
-  "id": "greens",
-  "name": "Super greens powder",
-  "label": "Greens",
-  "weightLb": 0.8,
-  "w": 1,
-  "h": 2,
-  "tags": [
-   "health"
-  ],
-  "desc": "Vegetables, in the sense that a fax is a letter.",
-  "real": true,
-  "color": 9225323,
-  "link": "https://www.amazon.com/dp/B0038B3AAK"
- },
- {
-  "id": "collagen",
-  "name": "Collagen peptides",
-  "label": "Collagen",
-  "weightLb": 0.9,
-  "w": 1,
-  "h": 2,
-  "tags": [
-   "health"
-  ],
-  "desc": "For the joints that carry the bag.",
-  "real": true,
-  "color": 9425908,
-  "link": "https://www.amazon.com/dp/B09RQBHRCT"
- },
- {
-  "id": "electrolytes",
-  "name": "Electrolyte complex",
-  "label": "Electrolytes",
-  "weightLb": 0.7,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "health",
-   "water"
-  ],
-  "desc": "Altitude, heat, and the day after Oktoberfest.",
-  "real": true,
-  "color": 15900236,
-  "link": "https://www.amazon.com/dp/B0D6JFYVHW"
- },
- {
-  "id": "nze",
-  "name": "NZE caffeine pouches",
-  "label": "NZE pouches",
-  "weightLb": 0.1,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "coffee",
-   "luxury"
-  ],
-  "desc": "Coffee without the kettle.",
-  "real": true,
-  "color": 3519401,
-  "link": "https://www.amazon.com/dp/B0DHLSDS91"
- },
- {
-  "id": "calmag",
-  "name": "Calcium + magnesium",
-  "label": "Cal + mag",
-  "weightLb": 0.6,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "health",
-   "sleep"
-  ],
-  "desc": "Sleep, in tablet form.",
-  "real": true,
-  "color": 16052714,
-  "link": "https://www.amazon.com/dp/B0989HPNQF"
- },
- {
-  "id": "psyllium",
-  "name": "Psyllium husk",
-  "label": "Psyllium",
-  "weightLb": 1.0,
-  "w": 1,
-  "h": 2,
-  "tags": [
-   "health"
-  ],
-  "desc": "Fiber. Travel does things to a person.",
-  "real": true,
-  "color": 14727562,
-  "link": "https://www.amazon.com/dp/B07MKZD9LR"
- },
- {
-  "id": "d3k2",
-  "name": "Liquid D3 + K2",
-  "label": "D3 + K2",
-  "weightLb": 0.1,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "health",
-   "meds"
-  ],
-  "desc": "Sunlight, bottled.",
-  "real": true,
-  "color": 16240491,
-  "link": "https://www.amazon.com/dp/B07H1V2KM3"
- },
- {
-  "id": "fishoil",
-  "name": "Fish oil",
-  "label": "Fish oil",
-  "weightLb": 0.5,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "health",
-   "meds"
-  ],
-  "desc": "The pills that taste like a harbor.",
-  "real": true,
-  "color": 15900236,
-  "link": "https://www.amazon.com/dp/B0046XC528"
- },
- {
-  "id": "ceraveam",
-  "name": "CeraVe AM SPF 30",
-  "label": "CeraVe AM",
-  "weightLb": 0.2,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "health"
-  ],
-  "desc": "Sunscreen you will actually use.",
-  "real": true,
-  "color": 9425908,
-  "link": "https://www.amazon.com/dp/B00F97FHAW"
- },
- {
-  "id": "ceravepm",
-  "name": "CeraVe PM",
-  "label": "CeraVe PM",
-  "weightLb": 0.2,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "health"
-  ],
-  "desc": "The night shift.",
-  "real": true,
-  "color": 3030374,
-  "link": "https://www.amazon.com/dp/B00365DABC"
- },
- {
-  "id": "vitc",
-  "name": "Vitamin C serum",
-  "label": "Vit C serum",
-  "weightLb": 0.1,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "health"
-  ],
-  "desc": "Tiny bottle, big claims.",
-  "real": true,
-  "color": 16240491,
-  "link": "https://www.amazon.com/dp/B07PNCCLD2"
- },
- {
-  "id": "retinol",
-  "name": "Retinol serum",
-  "label": "Retinol",
-  "weightLb": 0.1,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "health"
-  ],
-  "desc": "Anti-aging, pro-sunburn. Read the label.",
-  "real": true,
-  "color": 12862842,
-  "link": "https://www.amazon.com/dp/B07XJ7XWLW"
- },
- {
-  "id": "copper",
-  "name": "Copper peptides",
-  "label": "Copper pept.",
-  "weightLb": 0.1,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "health",
-   "luxury"
-  ],
-  "desc": "Blue. Expensive. Possibly magic.",
-  "real": true,
-  "color": 2845872,
-  "link": "https://www.amazon.com/dp/B0C9DXGXZ3"
- },
- {
-  "id": "hairserum",
-  "name": "Hair density serum",
-  "label": "Hair serum",
-  "weightLb": 0.1,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "health",
-   "luxury"
-  ],
-  "desc": "Hope, in a dropper.",
-  "real": true,
-  "color": 1802124,
-  "link": "https://www.amazon.com/dp/B09WMT8HYB"
- },
- {
-  "id": "dermaroller",
-  "name": "Derma roller",
-  "label": "Derma roller",
-  "weightLb": 0.1,
-  "w": 1,
-  "h": 2,
-  "tags": [
-   "health",
-   "luxury"
-  ],
-  "desc": "540 tiny needles. Weirdly relaxing.",
-  "real": true,
-  "color": 11844036,
-  "link": "https://www.amazon.com/dp/B0B1DJ8LTR"
- },
- {
-  "id": "cocokind",
-  "name": "Cocokind SPF 32",
-  "label": "Cocokind SPF",
-  "weightLb": 0.2,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "health"
-  ],
-  "desc": "Mineral sunscreen for the face that faces the sun.",
-  "real": true,
-  "color": 16773808,
-  "link": "https://www.amazon.com/dp/B08P4SD7V5"
- },
- {
-  "id": "trimmer",
-  "name": "Rechargeable detail trimmer",
-  "label": "Trimmer",
-  "weightLb": 0.3,
-  "w": 1,
-  "h": 2,
-  "tags": [
-   "luxury"
-  ],
-  "desc": "Personal grooming.",
-  "real": true,
-  "color": 7238788,
-  "link": "https://www.amazon.com/dp/B0BK93C994"
- },
- {
-  "id": "pillow",
-  "name": "Memory foam travel pillow",
-  "label": "Travel pillow",
-  "weightLb": 1.2,
-  "w": 3,
-  "h": 3,
-  "tags": [
-   "sleep",
-   "luxury"
-  ],
-  "desc": "Ratchet straps keep it compact. Mostly.",
-  "real": true,
-  "color": 11844036,
-  "link": "https://www.amazon.com/dp/B0BV5WNWS8"
- },
- {
-  "id": "sunlamp",
-  "name": "KLEAH 10,000 lux sun lamp",
-  "label": "Sun lamp",
-  "weightLb": 1.4,
-  "w": 2,
-  "h": 3,
-  "tags": [
-   "sleep",
-   "health",
-   "luxury"
-  ],
-  "desc": "Circadian rhythm locked in.",
-  "real": true,
-  "color": 16773808,
-  "link": "https://www.amazon.com/dp/B0BFWSHV7G"
- },
- {
-  "id": "airthings",
-  "name": "Airthings Wave Plus",
-  "label": "Air monitor",
-  "weightLb": 0.5,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "health",
-   "luxury"
-  ],
-  "desc": "Monitors CO2, VOCs and radon. Every Airbnb is a mystery.",
-  "real": true,
-  "color": 16052714,
-  "link": "https://www.amazon.com/dp/B07JB8QWH6"
- },
- {
-  "id": "gooseneck",
-  "name": "Gooseneck pour-over kettle",
-  "label": "Gooseneck",
-  "weightLb": 1.2,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "coffee"
-  ],
-  "desc": "12 oz of precision. Does not explode.",
-  "real": true,
-  "color": 11844036,
-  "link": "https://www.amazon.com/dp/B0B1TJ4KSP"
- },
- {
-  "id": "pourigami",
-  "name": "MiiR Pourigami dripper",
-  "label": "Pourigami",
-  "weightLb": 0.3,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "coffee"
-  ],
-  "desc": "Great coffee no matter what.",
-  "real": true,
-  "color": 3817291,
-  "link": "https://www.amazon.com/dp/B0BGYJBJ4G"
- },
- {
-  "id": "timemore",
-  "name": "Timemore C2 grinder",
-  "label": "C2 grinder",
-  "weightLb": 1.0,
-  "w": 1,
-  "h": 3,
-  "tags": [
-   "coffee"
-  ],
-  "desc": "Hand-ground. Forty turns of arm day.",
-  "real": true,
-  "color": 657938,
-  "link": "https://www.amazon.com/dp/B0833SDN8M"
- },
- {
-  "id": "loops",
-  "name": "Loop Quiet 2 earplugs",
-  "label": "Earplugs",
-  "weightLb": 0.1,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "sleep"
-  ],
-  "desc": "24 dB between you and the hostel.",
-  "real": true,
-  "color": 3030374,
-  "link": "https://www.amazon.com/dp/B0D3V61JC8"
- },
- {
-  "id": "sleepmask",
-  "name": "Contoured sleep mask",
-  "label": "Sleep mask",
-  "weightLb": 0.1,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "sleep"
-  ],
-  "desc": "Darkness, portable.",
-  "real": true,
-  "color": 657938,
-  "link": "https://www.amazon.com/dp/B095C7H62X"
- },
- {
-  "id": "blender",
-  "name": "BlenderBottle shaker",
-  "label": "Shaker",
-  "weightLb": 0.4,
-  "w": 1,
-  "h": 3,
-  "tags": [
-   "fitness",
-   "health"
-  ],
-  "desc": "Protein logistics.",
-  "real": true,
-  "color": 11844036,
-  "link": "https://www.amazon.com/dp/B07TK681SZ"
- },
- {
-  "id": "laundrysheets",
-  "name": "Laundry detergent sheets",
-  "label": "Laundry sheets",
-  "weightLb": 0.2,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "organizer"
-  ],
-  "desc": "Detergent that goes through security.",
-  "real": true,
-  "color": 16052714,
-  "link": "https://www.amazon.com/dp/B0DYCJ2LXF"
- },
- {
-  "id": "sonicare",
-  "name": "Philips Sonicare 2100",
-  "label": "Sonicare",
-  "weightLb": 0.3,
-  "w": 1,
-  "h": 2,
-  "tags": [
-   "health",
-   "essential"
-  ],
-  "desc": "Two minutes, twice a day, in eleven countries.",
-  "real": true,
-  "color": 16052714,
-  "link": "https://www.amazon.com/dp/B09LD8PTNJ"
- },
- {
-  "id": "shaver",
-  "name": "MANSCAPED travel shaver",
-  "label": "Travel shaver",
-  "weightLb": 0.3,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "luxury"
-  ],
-  "desc": "Compact. Discreet. Enough said.",
-  "real": true,
-  "color": 3817291,
-  "link": "https://www.amazon.com/dp/B0C9LKH31T"
- },
- {
-  "id": "tees5",
-  "name": "Five t-shirts",
-  "label": "T-shirts x5",
-  "weightLb": 1.5,
-  "w": 3,
-  "h": 2,
-  "tags": [
-   "clothing"
-  ],
-  "desc": "Five days of looking like a person.",
-  "real": false,
-  "color": 4889558,
-  "clothesDays": 5
- },
- {
-  "id": "merino3",
-  "name": "Three merino tees",
-  "label": "Merino x3",
   "weightLb": 0.9,
   "w": 2,
   "h": 2,
   "tags": [
+   "rain",
    "clothing"
   ],
-  "desc": "Merino: wear twice, smell like nothing. Allegedly.",
-  "real": false,
-  "color": 5212747,
-  "clothesDays": 4
- },
- {
-  "id": "underwear7",
-  "name": "Seven pairs of underwear",
-  "label": "Underwear x7",
-  "weightLb": 0.7,
-  "w": 2,
-  "h": 1,
-  "tags": [
-   "clothing"
-  ],
-  "desc": "The true laundry clock.",
-  "real": false,
-  "color": 11844036,
-  "clothesDays": 7
- },
- {
-  "id": "socks7",
-  "name": "Seven pairs of socks",
-  "label": "Socks x7",
-  "weightLb": 0.9,
-  "w": 2,
-  "h": 1,
-  "tags": [
-   "clothing"
-  ],
-  "desc": "Merino quarter socks. The Altras demand it.",
-  "real": false,
-  "color": 7238788,
-  "clothesDays": 7
- },
- {
-  "id": "jeans",
-  "name": "A pair of jeans",
-  "label": "Jeans",
-  "weightLb": 1.6,
-  "w": 2,
-  "h": 3,
-  "tags": [
-   "clothing"
-  ],
-  "desc": "Heavy, slow to dry, worth it in a city.",
-  "real": false,
-  "color": 2845872,
-  "clothesDays": 3
- },
- {
-  "id": "jeans2",
-  "name": "A second pair of jeans",
-  "label": "Jeans #2",
-  "weightLb": 1.6,
-  "w": 2,
-  "h": 3,
-  "tags": [
-   "clothing",
-   "trap"
-  ],
-  "desc": "You will not wear these. You know you will not wear these.",
-  "real": false,
-  "color": 3030374,
-  "clothesDays": 2
- },
- {
-  "id": "hikepants",
-  "name": "Hiking pants",
-  "label": "Hike pants",
-  "weightLb": 0.9,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "clothing",
-   "hike"
-  ],
-  "desc": "Zip-off legs are a personal choice.",
-  "real": false,
-  "color": 11041102,
-  "clothesDays": 3
- },
- {
-  "id": "shorts2",
-  "name": "Two pairs of shorts",
-  "label": "Shorts x2",
-  "weightLb": 0.7,
-  "w": 2,
-  "h": 1,
-  "tags": [
-   "clothing"
-  ],
-  "desc": "Quick-dry. Run, swim, sit.",
-  "real": false,
-  "color": 3519401,
-  "clothesDays": 3
- },
- {
-  "id": "hoodie",
-  "name": "Hoodie",
-  "label": "Hoodie",
-  "weightLb": 1.3,
-  "w": 3,
-  "h": 2,
-  "tags": [
-   "clothing",
-   "cold"
-  ],
-  "desc": "The airplane blanket you own.",
-  "real": false,
-  "color": 3817291,
-  "clothesDays": 2
+  "desc": "Lighter than an umbrella and it never inverts.",
+  "real": true,
+  "color": 15230525
  },
  {
   "id": "downjacket",
-  "name": "Packable down jacket",
+  "name": "Down Jacket",
   "label": "Down jacket",
-  "weightLb": 0.9,
-  "w": 3,
-  "h": 2,
-  "tags": [
-   "clothing",
-   "cold"
-  ],
-  "desc": "Stuffs into its own pocket. Saves the Alps in October.",
-  "real": false,
-  "color": 15230525,
-  "clothesDays": 1
- },
- {
-  "id": "swimsuit",
-  "name": "Swimsuit",
-  "label": "Swimsuit",
-  "weightLb": 0.3,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "clothing",
-   "swim"
-  ],
-  "desc": "Roatan, Antibes, the hotel pool you did not know about.",
-  "real": false,
-  "color": 10479576,
-  "clothesDays": 1
- },
- {
-  "id": "sunhoodie",
-  "name": "Sun hoodie",
-  "label": "Sun hoodie",
-  "weightLb": 0.6,
+  "weightLb": 1.0,
   "w": 2,
   "h": 2,
   "tags": [
+   "cold",
    "clothing"
   ],
-  "desc": "UPF 50. Dakhla in August.",
+  "desc": "Stuffs into its own pocket. Saves October in the Alps.",
   "real": false,
-  "color": 16773808,
-  "clothesDays": 2
+  "color": 15900236
  },
  {
   "id": "hikingboots",
-  "name": "Hiking boots",
+  "name": "Hiking Boots",
   "label": "Hiking boots",
-  "weightLb": 3.2,
+  "weightLb": 3.0,
   "w": 3,
-  "h": 3,
+  "h": 2,
   "tags": [
    "hike",
    "cold"
   ],
-  "desc": "Manaslu wants ankles. Everywhere else, they are dead weight.",
+  "desc": "Ankles for the Himalaya. Dead weight everywhere else.",
   "real": false,
   "color": 7031346
  },
  {
-  "id": "dressshirt",
-  "name": "Linen button-down",
-  "label": "Linen shirt",
+  "id": "swimkit",
+  "name": "Swim Kit",
+  "label": "Swim kit",
+  "weightLb": 0.6,
+  "w": 2,
+  "h": 1,
+  "tags": [
+   "swim"
+  ],
+  "desc": "Trunks, towel, goggles. Every coast, and the hotel pool you did not know about.",
+  "real": true,
+  "color": 3519401
+ },
+ {
+  "id": "sunkit",
+  "name": "Hat + Sunglasses",
+  "label": "Sun kit",
   "weightLb": 0.5,
   "w": 2,
   "h": 1,
   "tags": [
-   "clothing",
-   "luxury"
+   "clothing"
   ],
-  "desc": "For the one dinner a month that deserves it.",
-  "real": false,
-  "color": 16052714,
-  "clothesDays": 1
+  "desc": "A brimmed hat and armless sunglasses. Dignity optional.",
+  "real": true,
+  "color": 14727562
  },
  {
-  "id": "beanie",
-  "name": "Knit beanie",
-  "label": "Beanie",
-  "weightLb": 0.2,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "clothing",
-   "cold"
-  ],
-  "desc": "Scotland, in July.",
-  "real": false,
-  "color": 657938
- },
- {
-  "id": "firstaid",
-  "name": "First aid kit",
-  "label": "First aid kit",
-  "weightLb": 0.8,
+  "id": "protein",
+  "name": "Protein Powder",
+  "label": "Protein",
+  "weightLb": 3.0,
   "w": 2,
   "h": 2,
   "tags": [
-   "firstaid",
    "health"
+  ],
+  "desc": "Casein, greens, collagen, electrolytes. All the powders, one tub of resolve.",
+  "real": true,
+  "color": 16052714
+ },
+ {
+  "id": "supplements",
+  "name": "Supplements",
+  "label": "Supplements",
+  "weightLb": 1.5,
+  "w": 2,
+  "h": 1,
+  "tags": [
+   "health"
+  ],
+  "desc": "The pills that keep the body the same across eleven diets.",
+  "real": true,
+  "color": 16240491
+ },
+ {
+  "id": "skincare",
+  "name": "Skincare",
+  "label": "Skincare",
+  "weightLb": 1.0,
+  "w": 2,
+  "h": 1,
+  "tags": [
+   "health"
+  ],
+  "desc": "The routine that survives a hostel sink.",
+  "real": true,
+  "color": 9425908
+ },
+ {
+  "id": "toiletries",
+  "name": "Toiletries",
+  "label": "Toiletries",
+  "weightLb": 1.5,
+  "w": 2,
+  "h": 2,
+  "tags": [
+   "essential"
+  ],
+  "desc": "Toothbrush, trimmer, the things hotels pretend to provide.",
+  "real": true,
+  "color": 11844036
+ },
+ {
+  "id": "sleepkit",
+  "name": "Sleep Kit",
+  "label": "Sleep kit",
+  "weightLb": 2.0,
+  "w": 2,
+  "h": 2,
+  "tags": [
+   "sleep",
+   "health"
+  ],
+  "desc": "Mask, earplugs, a compressed pillow, a sun lamp for the mornings the sun forgets.",
+  "real": true,
+  "color": 9124474
+ },
+ {
+  "id": "firstaid",
+  "name": "First Aid Kit",
+  "label": "First aid",
+  "weightLb": 0.8,
+  "w": 2,
+  "h": 1,
+  "tags": [
+   "firstaid"
   ],
   "desc": "Bandages, antiseptic, blister pads. Clean the cut. Every time.",
   "real": false,
   "color": 14040124
  },
  {
-  "id": "antibiotics",
-  "name": "Travel antibiotics",
-  "label": "Antibiotics",
-  "weightLb": 0.1,
-  "w": 1,
+  "id": "medkit",
+  "name": "Medicine Kit",
+  "label": "Medicine",
+  "weightLb": 0.6,
+  "w": 2,
   "h": 1,
   "tags": [
    "meds",
-   "firstaid"
+   "health"
   ],
-  "desc": "Prescribed before leaving. The otter does not care about your plans.",
+  "desc": "Antibiotics, probiotics, altitude pills. Prescribed before leaving; the road does not care about your plans.",
   "real": false,
   "color": 16052714
  },
  {
-  "id": "probiotics",
-  "name": "Probiotics",
-  "label": "Probiotics",
-  "weightLb": 0.2,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "health",
-   "meds"
-  ],
-  "desc": "A fighting chance against street food.",
-  "real": false,
-  "color": 9225323
- },
- {
-  "id": "repellent",
-  "name": "Repellent + travel mosquito net",
-  "label": "Repellent + net",
+  "id": "mosquitokit",
+  "name": "Mosquito Kit",
+  "label": "Mosquito kit",
   "weightLb": 0.6,
   "w": 2,
-  "h": 2,
+  "h": 1,
   "tags": [
    "repellent"
   ],
-  "desc": "Hyeres, June. You have been warned.",
+  "desc": "Repellent and a travel net. The south of France has questions.",
   "real": false,
   "color": 5212747
  },
  {
-  "id": "diamox",
-  "name": "Diamox",
-  "label": "Diamox",
-  "weightLb": 0.1,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "meds"
-  ],
-  "desc": "Altitude pills. Tingling fingers, functional brain.",
-  "real": false,
-  "color": 9425908
- },
- {
-  "id": "waterbottle",
-  "name": "Insulated water bottle",
-  "label": "Water bottle",
-  "weightLb": 0.8,
-  "w": 1,
+  "id": "coffeekit",
+  "name": "Coffee Kit",
+  "label": "Coffee kit",
+  "weightLb": 2.5,
+  "w": 2,
   "h": 3,
   "tags": [
-   "water"
+   "coffee"
   ],
-  "desc": "Heavy when full, which is the point.",
-  "real": false,
-  "color": 1802124
+  "desc": "Hand grinder, folding dripper, gooseneck kettle. Good coffee no matter what.",
+  "real": true,
+  "color": 11041102
  },
  {
-  "id": "sunhat",
-  "name": "Wide-brim sun hat",
-  "label": "Sun hat",
-  "weightLb": 0.3,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "clothing"
-  ],
-  "desc": "Alternative to the boonie for people with dignity.",
-  "real": false,
-  "color": 14727562
- },
- {
-  "id": "switch",
-  "name": "Nintendo Switch",
-  "label": "Switch",
-  "weightLb": 0.9,
+  "id": "adventure",
+  "name": "Adventure Gear",
+  "label": "Adventure",
+  "weightLb": 5.0,
   "w": 3,
-  "h": 2,
+  "h": 3,
   "tags": [
-   "switch",
-   "luxury"
+   "hike",
+   "water",
+   "light",
+   "knife"
   ],
-  "desc": "Game within the game. Rest days get a level per city.",
-  "real": false,
-  "color": 14040124
+  "desc": "Water bladder with the filter plumbed in, ice cleats, gloves, a headlamp, the knife from Patagonia.",
+  "real": true,
+  "color": 9225323
  },
  {
-  "id": "kindle",
-  "name": "Kindle",
-  "label": "Kindle",
-  "weightLb": 0.4,
+  "id": "climbkit",
+  "name": "Climbing Kit",
+  "label": "Climbing kit",
+  "weightLb": 2.5,
   "w": 2,
-  "h": 1,
+  "h": 2,
   "tags": [
-   "luxury"
+   "climb",
+   "fitness"
   ],
-  "desc": "A thousand books and one charging cable you will lose.",
-  "real": false,
-  "color": 3817291
+  "desc": "Shoes and chalk for the gym, a harness and lanyard for the ferrata.",
+  "real": true,
+  "color": 15230525
+ },
+ {
+  "id": "fitnesskit",
+  "name": "Fitness Kit",
+  "label": "Fitness kit",
+  "weightLb": 2.0,
+  "w": 2,
+  "h": 2,
+  "tags": [
+   "fitness"
+  ],
+  "desc": "Bands and a collapsible foam roller. Hotel rooms become gyms.",
+  "real": true,
+  "color": 4124872
  },
  {
   "id": "yogamat",
-  "name": "Travel yoga mat",
+  "name": "Yoga Mat",
   "label": "Yoga mat",
   "weightLb": 2.0,
   "w": 1,
@@ -1418,26 +377,83 @@
   ],
   "desc": "Thin as a tortilla. Better than a carpet.",
   "real": false,
-  "color": 9124474
+  "color": 12862842
  },
  {
   "id": "kitegear",
-  "name": "Kite + bar + harness",
+  "name": "Kite Gear",
   "label": "Kite gear",
   "weightLb": 12.0,
   "w": 4,
-  "h": 4,
+  "h": 3,
   "tags": [
    "kite",
    "luxury"
   ],
-  "desc": "Twelve pounds. Turns every wind day into the best day.",
+  "desc": "Twelve pounds. Turns every wind day into the best day of the month.",
   "real": false,
   "color": 4889558
  },
  {
+  "id": "switch",
+  "name": "Handheld Console",
+  "label": "Console",
+  "weightLb": 0.9,
+  "w": 2,
+  "h": 1,
+  "tags": [
+   "switch",
+   "luxury"
+  ],
+  "desc": "The game within the game. Rest days get a level per city.",
+  "real": false,
+  "color": 14040124
+ },
+ {
+  "id": "ereader",
+  "name": "E-Reader",
+  "label": "E-reader",
+  "weightLb": 0.4,
+  "w": 2,
+  "h": 1,
+  "tags": [
+   "luxury"
+  ],
+  "desc": "A thousand books and one cable you will lose.",
+  "real": false,
+  "color": 3817291
+ },
+ {
+  "id": "packingcubes",
+  "name": "Packing Cubes",
+  "label": "Cubes",
+  "weightLb": 0.8,
+  "w": 2,
+  "h": 2,
+  "tags": [
+   "organizer"
+  ],
+  "desc": "Nothing gets left behind when everything has a place.",
+  "real": false,
+  "color": 10479576
+ },
+ {
+  "id": "hostgifts",
+  "name": "Host Gifts",
+  "label": "Host gifts",
+  "weightLb": 2.0,
+  "w": 2,
+  "h": 2,
+  "tags": [
+   "luxury"
+  ],
+  "desc": "Small, local, edible. Reviews get warmer.",
+  "real": false,
+  "color": 16740264
+ },
+ {
   "id": "umbrella",
-  "name": "Compact umbrella",
+  "name": "Umbrella",
   "label": "Umbrella",
   "weightLb": 0.8,
   "w": 1,
@@ -1451,294 +467,48 @@
  },
  {
   "id": "travelkettle",
-  "name": "Collapsible travel kettle",
-  "label": "Travel kettle",
+  "name": "Travel Kettle",
+  "label": "Kettle",
   "weightLb": 1.1,
   "w": 2,
   "h": 2,
   "tags": [
    "kettle",
-   "coffee"
+   "trap"
   ],
   "desc": "Tea in every room. Also, one day, a second-degree burn.",
-  "real": false,
+  "real": true,
   "color": 14040124
  },
  {
-  "id": "lens",
-  "name": "Camera lens",
-  "label": "Camera lens",
-  "weightLb": 1.3,
+  "id": "jeans2",
+  "name": "Second Pair Of Jeans",
+  "label": "Jeans #2",
+  "weightLb": 2.0,
   "w": 2,
   "h": 2,
   "tags": [
-   "camera",
-   "luxury"
-  ],
-  "desc": "For the photos the phone cannot take. About twelve of them a year.",
-  "real": false,
-  "color": 657938
- },
- {
-  "id": "sparephone",
-  "name": "Spare phone",
-  "label": "Spare phone",
-  "weightLb": 0.4,
-  "w": 1,
-  "h": 2,
-  "tags": [
-   "essential"
-  ],
-  "desc": "The old phone. The plan for when the new one goes missing.",
-  "real": false,
-  "color": 7238788
- },
- {
-  "id": "yubikey",
-  "name": "YubiKey",
-  "label": "YubiKey",
-  "weightLb": 0.0,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "essential",
-   "work"
-  ],
-  "desc": "The key to everything. Do not put it in the checked bag.",
-  "real": false,
-  "color": 657938
- },
- {
-  "id": "packingcubes",
-  "name": "Packing cubes",
-  "label": "Packing cubes",
-  "weightLb": 0.6,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "organizer"
-  ],
-  "desc": "Nothing gets left behind when everything has a place.",
-  "real": false,
-  "color": 3519401
- },
- {
-  "id": "straps",
-  "name": "Compression straps",
-  "label": "Straps",
-  "weightLb": 0.2,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "organizer"
-  ],
-  "desc": "The pillow becomes a fist.",
-  "real": false,
-  "color": 15900236
- },
- {
-  "id": "gifts",
-  "name": "Gifts for hosts",
-  "label": "Host gifts",
-  "weightLb": 1.0,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "luxury"
-  ],
-  "desc": "Small, local, edible. Airbnb reviews get warmer.",
-  "real": false,
-  "color": 16740264
- },
- {
-  "id": "journal",
-  "name": "Paper journal + pen",
-  "label": "Journal",
-  "weightLb": 0.7,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "luxury"
-  ],
-  "desc": "The one thing that never needs charging.",
-  "real": false,
-  "color": 11041102
- },
- {
-  "id": "frenchpress",
-  "name": "French press",
-  "label": "French press",
-  "weightLb": 1.5,
-  "w": 2,
-  "h": 3,
-  "tags": [
-   "coffee",
-   "luxury"
-  ],
-  "desc": "Heavier than the pour-over kit, and glass. Brave.",
-  "real": false,
-  "color": 11844036
- },
- {
-  "id": "chargerbrick",
-  "name": "Second laptop charger",
-  "label": "Spare charger",
-  "weightLb": 0.6,
-  "w": 1,
-  "h": 2,
-  "tags": [
-   "essential",
-   "work"
-  ],
-  "desc": "For the day the first one stays in Lisbon.",
-  "real": false,
-  "color": 16052714
- },
- {
-  "id": "locks",
-  "name": "TSA lock",
-  "label": "Lock",
-  "weightLb": 0.2,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "organizer"
-  ],
-  "desc": "Keeps the honest people out.",
-  "real": false,
-  "color": 7238788
- },
- {
-  "id": "towel",
-  "name": "Microfiber towel",
-  "label": "Towel",
-  "weightLb": 0.4,
-  "w": 2,
-  "h": 1,
-  "tags": [
-   "swim",
-   "organizer"
-  ],
-  "desc": "Dries in an hour. Smells in a week.",
-  "real": false,
-  "color": 10479576
- },
- {
-  "id": "kettlebell",
-  "name": "Travel kettlebell (12 lb)",
-  "label": "Kettlebell",
-  "weightLb": 12.0,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "fitness",
+   "clothing",
    "trap"
   ],
-  "desc": "Twelve pounds of commitment. The airline will weigh it. Your spine will weigh it.",
+  "desc": "You will not wear these. You know you will not wear these.",
   "real": false,
-  "color": 657938
+  "color": 2845872,
+  "clothesDays": 1
  },
  {
   "id": "books",
-  "name": "Five paperbacks",
-  "label": "Books x5",
+  "name": "Books",
+  "label": "Books",
   "weightLb": 5.0,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "luxury"
-  ],
-  "desc": "The Kindle exists. You know the Kindle exists.",
-  "real": false,
-  "color": 11041102
- },
- {
-  "id": "wine",
-  "name": "Two bottles for hosts",
-  "label": "Wine x2",
-  "weightLb": 6.0,
-  "w": 2,
-  "h": 3,
-  "tags": [
-   "luxury"
-  ],
-  "desc": "Generous, breakable, six pounds.",
-  "real": false,
-  "color": 9124474
- },
- {
-  "id": "proteintub",
-  "name": "5 lb whey tub",
-  "label": "Whey tub",
-  "weightLb": 5.2,
-  "w": 2,
-  "h": 3,
-  "tags": [
-   "health",
-   "fitness"
-  ],
-  "desc": "Bought in bulk because it was cheaper. It was not cheaper.",
-  "real": false,
-  "color": 16052714
- },
- {
-  "id": "camerabody",
-  "name": "Mirrorless camera body",
-  "label": "Camera",
-  "weightLb": 1.6,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "camera",
-   "luxury"
-  ],
-  "desc": "For the photos the phone cannot take.",
-  "real": false,
-  "color": 657938
- },
- {
-  "id": "secondlaptop",
-  "name": "Second laptop",
-  "label": "Laptop #2",
-  "weightLb": 3.5,
-  "w": 4,
-  "h": 3,
-  "tags": [
-   "work",
-   "luxury"
-  ],
-  "desc": "Work laptop and personal laptop, because the two must never meet.",
-  "real": false,
-  "color": 7238788
- },
- {
-  "id": "hairdryer",
-  "name": "Travel hair dryer",
-  "label": "Hair dryer",
-  "weightLb": 1.8,
   "w": 2,
   "h": 2,
   "tags": [
    "luxury",
    "trap"
   ],
-  "desc": "Every hotel has one. Every single one.",
+  "desc": "Five paperbacks. The e-reader exists. You know it exists.",
   "real": false,
-  "color": 16740264
- },
- {
-  "id": "fulltripod",
-  "name": "Full-size tripod",
-  "label": "Tripod (big)",
-  "weightLb": 3.0,
-  "w": 1,
-  "h": 5,
-  "tags": [
-   "camera",
-   "luxury"
-  ],
-  "desc": "For the drone shots that need a ground shot too.",
-  "real": false,
-  "color": 3817291
+  "color": 11041102
  }
 ]

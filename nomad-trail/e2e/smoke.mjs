@@ -39,7 +39,7 @@ const step = async (js, name, wait = 800) => {
   const t = await page.evaluate(() => { const s = window.__nomad.state(); return s ? `d${s.day} h${Math.round(s.health)} e${Math.round(s.energy)} m${Math.round(s.mood)} ${s.cityId} [${window.__nomad.activeScenes().join(',')}] ${s.log.slice(-1)[0]?.text?.slice(0, 70) ?? ''}` : 'no state'; });
   trace.push(`${js.slice(0, 40).padEnd(40)} -> ${typeof r === 'string' ? r + ' ' : ''}${t}`);
 };
-await step(`window.__nomad.newRun('miami','east')`, '02-pack', 1200);
+await step(`window.__nomad.newRun('orangecounty','east')`, '02-pack', 1200);
 await step(`window.__nomad.autoPack('balanced')`, '03-packed', 800);
 await step(`window.__nomad.depart()`, '04-route', 1200);
 for (let i = 0; i < 6; i++) {
