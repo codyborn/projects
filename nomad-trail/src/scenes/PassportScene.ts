@@ -26,16 +26,22 @@ export class PassportScene extends Phaser.Scene {
     const render = () => {
       this.pageObjs.forEach(o => o.destroy()); this.pageObjs = [];
       const slice = entries.slice(this.page * perPage, (this.page + 1) * perPage);
-      slice.forEach((c, i) => { const col = i % 3, row = Math.floor(i / 3); const side = col < 2 ? 0 : 1; void side;
-        const x = GAME_W / 2 - 160 + 28 + (i % 2) * 150 + (Math.floor(i / 2) % 3) * 44 - 40, y = GAME_H / 2 - 220 + 40 + Math.floor(i / 2) * 64; void col; void row;
+      // Two facing pages (book spans x 20..340, spine at 180, white from 28 to 332). Each page: 2 columns x 3 rows of stamps, well inside the white.
+      slice.forEach((c, i) => {
+        const half = Math.floor(i / 6), j = i % 6, col = j % 2, row = Math.floor(j / 2);
+        const pageLeft = half === 0 ? 28 : 182, pageW = 150;                     // white area of that page
+        const cx = pageLeft + pageW * (0.25 + col * 0.5), cy = 160 + row * 108;  // stamp centres: rows at 160, 268, 376
         const gold = stamps[c.id] === 'gold'; const key = stampTexture(this, c, gold); const r = rng(seedOf(c.id + 'rot'));
-        const img = this.add.image(x + 40, y + 20, key).setAngle(r.int(-18, 18)).setScale(1.2).setAlpha(0); this.pageObjs.push(img);
-        this.tweens.add({ targets: img, alpha: 1, scale: 1.25, duration: 200, delay: i * 40 });
-        const day = run?.log?.find(l => l.city === c.id)?.day; const t = ptext(this, x + 40, y + 50, `${c.name.toUpperCase().slice(0, 12)}${day ? ' D' + day : ''}`, PAL.gray0, 1).setOrigin(0.5); this.pageObjs.push(t);
+        const img = this.add.image(cx, cy, key).setAngle(r.int(-14, 14)).setScale(1.1).setAlpha(0); this.pageObjs.push(img);
+        this.tweens.add({ targets: img, alpha: 1, scale: 1.15, duration: 200, delay: i * 40 });
+        const day = run?.log?.find(l => l.city === c.id)?.day;
+        const name = c.name.toUpperCase(); const line1 = name.length > 10 ? name.slice(0, 9) + '.' : name;   // 10 chars x 6 px sits inside the 75 px column
+        this.pageObjs.push(ptext(this, cx, cy + 32, line1, PAL.gray0, 1).setOrigin(0.5));
+        if (day) this.pageObjs.push(ptext(this, cx, cy + 42, `DAY ${day}`, PAL.gray1, 1).setOrigin(0.5));
       });
       if (!entries.length) this.pageObjs.push(ptext(this, GAME_W / 2, GAME_H / 2, 'NO STAMPS YET.\nGO SOMEWHERE.', PAL.gray1, 1).setOrigin(0.5).setCenterAlign());
-      this.pageObjs.push(ptext(this, GAME_W / 2, GAME_H / 2 + 200, `${this.page + 1} / ${pages}`, PAL.gray1, 1).setOrigin(0.5));
-      this.pageObjs.push(ptext(this, GAME_W / 2, GAME_H / 2 + 186, `${entries.length} CITIES  ${Object.values(stamps).filter(s => s === 'gold').length} GOLD`, PAL.gray0, 1).setOrigin(0.5));
+      this.pageObjs.push(ptext(this, GAME_W / 2, GAME_H / 2 + 196, `${this.page + 1} / ${pages}`, PAL.gray1, 1).setOrigin(0.5));
+      this.pageObjs.push(ptext(this, GAME_W / 2, GAME_H / 2 + 182, `${entries.length} CITIES  ${Object.values(stamps).filter(s => s === 'gold').length} GOLD`, PAL.gray0, 1).setOrigin(0.5));
     };
     render();
     let sx = 0; this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { sx = p.x; });

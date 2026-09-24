@@ -93,6 +93,8 @@ export class PackScene extends Phaser.Scene {
     const zone = this.add.zone(180, TRAY_Y + TRAY_H / 2, 360, TRAY_H).setInteractive({ draggable: true }); this.setupTrayInput(zone);
     // restore a saved pack
     const run = getRun(this); for (const p of run.items) { const it = Data.item(p.id); if (it && this.fits(p.x, p.y, it.w, it.h)) this.place(it, p.x, p.y, false, false); }
+    // a fresh run starts with the essentials already in the suitcase (laptop, toiletries, watch); the player decides the rest
+    if (!run.items.length && !this.placed.length) for (const it of Data.items.filter(i => i.tags.includes('essential'))) { const f = this.firstFit(it); if (f) this.place(it, f.x, f.y, f.rot, false); }
     this.renderTray(); this.refreshWeights();
   }
 
@@ -108,12 +110,12 @@ export class PackScene extends Phaser.Scene {
   /** Category change: the old page slides a little and fades inside the tray band, the new one slides in from the other side. No clipping needed. */
   private setCat(i: number, animate = true) {
     i = clamp(i, 0, CATS.length - 1); const from = this.cat; const out = this.pages[from];
-    if (i === from) { if (out) this.tweens.add({ targets: out, y: 0, alpha: 1, duration: 160, ease: 'Cubic.Out' }); return; }
+    if (i === from) { if (out) this.tweens.add({ targets: out, y: 0, alpha: 1, duration: 110, ease: 'Cubic.Out' }); return; }
     const dir = i > from ? 1 : -1; this.cat = i; this.catLabel.setText(CATS[i]); this.dots.forEach((d, k) => d.setFillStyle(k === i ? PAL.sun2 : PAL.night3));
     const inn = this.pages[i]; if (!inn) return;
     if (!animate) { if (out) { out.setVisible(false); out.y = 0; out.alpha = 1; } inn.setVisible(true); inn.y = 0; inn.alpha = 1; return; }
-    if (out) this.tweens.add({ targets: out, y: -dir * 34, alpha: 0, duration: 180, ease: 'Cubic.In', onComplete: () => { out.setVisible(false); out.y = 0; out.alpha = 1; } });
-    inn.setVisible(true); inn.y = dir * 34; inn.alpha = 0; this.tweens.add({ targets: inn, y: 0, alpha: 1, duration: 240, delay: 60, ease: 'Cubic.Out' });
+    if (out) this.tweens.add({ targets: out, y: -dir * 40, alpha: 0, duration: 100, ease: 'Cubic.In', onComplete: () => { out.setVisible(false); out.y = 0; out.alpha = 1; } });
+    inn.setVisible(true); inn.y = dir * 40; inn.alpha = 0; this.tweens.add({ targets: inn, y: 0, alpha: 1, duration: 150, ease: 'Cubic.Out' });
   }
 
   // ---- tray ----
@@ -151,13 +153,13 @@ export class PackScene extends Phaser.Scene {
     zone.on('pointerdown', (p: Phaser.Input.Pointer) => { start = { x: p.x, y: p.y, scroll: this.scroll[this.cat] ?? 0, mode: 'none', t: this.time.now }; });
     zone.on('drag', (p: Phaser.Input.Pointer) => {
       if (!start) return; const dx = p.x - start.x, dy = p.y - start.y;
-      if (start.mode === 'none') { if (Math.abs(dx) > 10 || Math.abs(dy) > 10) start.mode = Math.abs(dy) > Math.abs(dx) ? 'v' : 'h'; else return; }
+      if (start.mode === 'none') { if (Math.abs(dx) > 6 || Math.abs(dy) > 6) start.mode = Math.abs(dy) > Math.abs(dx) ? 'v' : 'h'; else return; }
       if (start.mode === 'h') { const page = this.pages[this.cat]; const max = Math.max(0, (this.pageW[this.cat] ?? 0) - 348); this.scroll[this.cat] = clamp(start.scroll - dx, -40, max + 40); page.x = -this.scroll[this.cat]; }
-      else { const pg = this.pages[this.cat]; if (pg) { pg.y = clamp(dy, -60, 60) * 0.45; pg.alpha = 1 - Math.min(0.5, Math.abs(dy) / 240); } }
+      else { const pg = this.pages[this.cat]; if (pg) { pg.y = clamp(dy, -90, 90) * 0.9; pg.alpha = 1 - Math.min(0.5, Math.abs(dy) / 160); } }
     });
     const release = (p: Phaser.Input.Pointer) => {
       if (!start) return; const dx = p.x - start.x, dy = p.y - start.y; const st = start; start = null;
-      if (st.mode === 'v') { const pg = this.pages[this.cat]; if (dy < -40 && this.cat < CATS.length - 1) this.setCat(this.cat + 1); else if (dy > 40 && this.cat > 0) this.setCat(this.cat - 1); else if (pg) this.tweens.add({ targets: pg, y: 0, alpha: 1, duration: 160, ease: 'Cubic.Out' }); return; }
+      if (st.mode === 'v') { const pg = this.pages[this.cat]; const fast = Math.abs(dy) / Math.max(1, this.time.now - st.t) > 0.35; if ((dy < -22 || (fast && dy < 0)) && this.cat < CATS.length - 1) this.setCat(this.cat + 1); else if ((dy > 22 || (fast && dy > 0)) && this.cat > 0) this.setCat(this.cat - 1); else if (pg) this.tweens.add({ targets: pg, y: 0, alpha: 1, duration: 160, ease: 'Cubic.Out' }); return; }
       if (st.mode === 'h') { const max = Math.max(0, (this.pageW[this.cat] ?? 0) - 348); this.scroll[this.cat] = clamp(this.scroll[this.cat], 0, max); this.tweens.add({ targets: this.pages[this.cat], x: -this.scroll[this.cat], duration: 180, ease: 'Cubic.Out' }); return; }
       if (Math.abs(dx) < 8 && Math.abs(dy) < 8 && this.time.now - st.t < 600) this.tapTray(p);
     };
