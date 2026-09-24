@@ -12,7 +12,6 @@ const CARD_W = 160, CARD_H = 250, CARD_GAP = 8, TRAY_Y = 336, COMBINED_LB = 75;
 /** Tray order: essentials, clothes, health, activity, comfort, traps. */
 function groupOf(it: Item): number {
   const t = new Set<string>(it.tags);
-  if (t.has('trap') || t.has('kettle')) return 5;
   if (t.has('essential') || t.has('work')) return 0;
   if (['clothing', 'rain', 'cold', 'swim'].some(x => t.has(x))) return 1;
   if (['health', 'firstaid', 'meds', 'repellent', 'sleep'].some(x => t.has(x))) return 2;
@@ -115,21 +114,25 @@ export class PackScene extends Phaser.Scene {
     this.refreshWeights();
   }
   // ---- tray ----
+  /** Unpacked items, one card per stack (items sharing a name, e.g. the four weeks of clothes). */
   private trayItems(): Item[] {
-    const packed = new Set(this.placed.map(p => p.id));
-    return Data.items.filter(it => !packed.has(it.id)).map((it, i) => ({ it, i })).sort((a, b) => (groupOf(a.it) - groupOf(b.it)) || (a.i - b.i)).map(x => x.it);
+    const packed = new Set(this.placed.map(p => p.id)); const seen = new Set<string>();
+    return Data.items.filter(it => !packed.has(it.id)).filter(it => { if (seen.has(it.name)) return false; seen.add(it.name); return true; })
+      .map((it, i) => ({ it, i })).sort((a, b) => (groupOf(a.it) - groupOf(b.it)) || (a.i - b.i)).map(x => x.it);
   }
+  private stackLeft(it: Item) { const packed = new Set(this.placed.map(p => p.id)); return Data.items.filter(x => x.name === it.name && !packed.has(x.id)).length; }
   private renderTray() {
     this.trayC.removeAll(true); const items = this.trayItems(); let x = 12; const y = TRAY_Y + 24;
     if (!items.length) this.trayC.add(txt(this, 180, 470, 'everything is packed', 10, PAL.gray1).setOrigin(0.5) as any);
     let lastGroup = -1;
     for (const it of items) {
       const g = groupOf(it); const c = this.add.container(x, y);
-      const bg = this.add.graphics(); bg.fillStyle(PAL.ink, 1); bg.fillRect(2, 3, CARD_W, CARD_H); bg.fillStyle(PAL.night2, 1); bg.fillRect(0, 0, CARD_W, CARD_H); bg.lineStyle(1, g === 5 ? PAL.pink : PAL.night3, 1); bg.strokeRect(0.5, 0.5, CARD_W - 1, CARD_H - 1); c.add(bg);
-      if (g !== lastGroup) { c.add(txt(this, 6, 4, ['ESSENTIALS', 'CLOTHES', 'HEALTH', 'ACTIVITY', 'COMFORT', 'BOLD CHOICES'][g], 8, g === 5 ? PAL.pink : PAL.sun2) as any); lastGroup = g; }
+      const bg = this.add.graphics(); bg.fillStyle(PAL.ink, 1); bg.fillRect(2, 3, CARD_W, CARD_H); bg.fillStyle(PAL.night2, 1); bg.fillRect(0, 0, CARD_W, CARD_H); bg.lineStyle(1, PAL.night3, 1); bg.strokeRect(0.5, 0.5, CARD_W - 1, CARD_H - 1); c.add(bg);
+      const left = this.stackLeft(it); if (left > 1) c.add(txt(this, CARD_W - 6, 4, `x${left}`, 8, PAL.sun2).setOrigin(1, 0) as any);
+      if (g !== lastGroup) { c.add(txt(this, 6, 4, ['ESSENTIALS', 'CLOTHES', 'HEALTH', 'ACTIVITY', 'COMFORT'][g], 8, PAL.sun2) as any); lastGroup = g; }
       const cell = Math.max(8, Math.min(14, Math.floor(120 / Math.max(it.w, it.h))));
       const mini = this.itemBox(it, it.w, it.h, cell); mini.setPosition((CARD_W - it.w * cell) / 2, 18 + Math.max(0, (70 - it.h * cell) / 2)); c.add(mini);
-      c.add(txt(this, CARD_W / 2, 96, it.label, 10, PAL.white, { align: 'center', wrap: CARD_W - 8 }).setOrigin(0.5, 0) as any);
+      c.add(txt(this, CARD_W / 2, 96, it.name === it.label ? it.label : it.name, 10, PAL.white, { align: 'center', wrap: CARD_W - 8 }).setOrigin(0.5, 0) as any);
       c.add(txt(this, CARD_W / 2, 126, `${it.weightLb.toFixed(1)} lb · ${it.w}×${it.h}`, 8, PAL.sun2, { align: 'center' }).setOrigin(0.5, 0) as any);
       const d = it.desc.length > 84 ? it.desc.slice(0, 82) + '…' : it.desc; c.add(txt(this, 6, 142, d, 8, PAL.gray2, { wrap: CARD_W - 12 }).setOrigin(0, 0) as any);
       (c as any).item = it; (c as any).boxW = CARD_W; this.trayC.add(c); x += CARD_W + CARD_GAP;
@@ -176,7 +179,7 @@ export class PackScene extends Phaser.Scene {
     const total = w.checked + w.backpack, cap = this.grids.checked.maxLb + this.grids.backpack.maxLb; const h: string[] = [];
     const pctAll = Math.round((total / COMBINED_LB) * 100); this.totalLbl.setText(`TOTAL ${total.toFixed(1)} / ${COMBINED_LB} lb · ${pctAll}%`); if (this.totalLbl.setTint) this.totalLbl.setTint(pctAll > 100 ? PAL.red : pctAll >= 90 ? PAL.sun1 : PAL.sun2);
     if (total >= cap * 0.9) h.push('! heavy: back risk'); if (laptopChecked) h.push('! laptop in checked'); if (clothes < 7) h.push(`! ${clothes}d of clothes`);
-    if (!tags.has('firstaid')) h.push('! no first aid'); if (!tags.has('health') && !tags.has('fitness')) h.push('! no health kit'); if (tags.has('coffee')) h.push('+ coffee mornings'); if (tags.has('kettle')) h.push('+ kettle. bold.'); if (tags.has('switch')) h.push('+ Carry-On');
+    if (!tags.has('firstaid')) h.push('! no first aid'); if (!tags.has('health') && !tags.has('fitness')) h.push('! no health kit'); if (tags.has('coffee')) h.push('+ coffee mornings'); if (tags.has('switch')) h.push('+ Carry-On');
     this.hints.setText(h.length ? h.slice(0, 2).join('\n') : 'Everything has a consequence.');
   }
   private depart() {

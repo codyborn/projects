@@ -21,7 +21,7 @@ describe('data integrity', () => {
     expect(ITEMS.length).toBeGreaterThanOrEqual(26); expect(ITEMS.length).toBeLessThanOrEqual(40);
     expect(ITEMS.filter(i => i.real).length).toBeGreaterThanOrEqual(15);
     for (const it of ITEMS) { expect(it.w).toBeGreaterThan(0); expect(it.h).toBeGreaterThan(0); expect(it.w <= GRID.checked.cols && it.h <= GRID.checked.rows).toBe(true); expect(it.weightLb).toBeGreaterThan(0); expect(it.name).not.toMatch(/apple|garmin|osprey|sony|dji|samsung|nintendo|kindle|cerave|nutricost|altra|ombraz|melin|timemore|miir/i); }
-    expect(ITEMS.filter(i => i.name === '1 Week Of Clothes').length).toBe(3);
+    expect(ITEMS.filter(i => i.name === 'Clothes' && i.label === '1 week worth').length).toBe(4);  // one tray card, four placeable weeks, distinct colors
   });
   it('every tag the engine or an event relies on exists on at least one bundle', () => {
     const have = new Set(ITEMS.flatMap(i => i.tags));

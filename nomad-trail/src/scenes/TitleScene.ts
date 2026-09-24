@@ -21,7 +21,7 @@ export class TitleScene extends Phaser.Scene {
     txt(this, 180, 96, 'THE', 14, PAL.sun3).setOrigin(0.5);
     const logo = txt(this, 180, 130, 'NOMAD TRAIL', 24, PAL.white).setOrigin(0.5);
     this.tweens.add({ targets: logo, y: 134, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
-    txt(this, 180, 172, 'Circumnavigate the planet\nin 365 days.\nPack light. Trust no kettle.', 9, PAL.sun3, { align: 'center', wrap: 340 }).setOrigin(0.5);
+    txt(this, 180, 172, 'Circumnavigate the planet\nin 365 days.\nPack light. Come home.', 9, PAL.sun3, { align: 'center', wrap: 340 }).setOrigin(0.5);
     const saved = Sim.load(); const settings = getSettings(this);
     let y = 400;
     if (saved && saved.phase !== 'ended') { new Button(this, 180, y, `CONTINUE  ·  day ${saved.day}`, () => this.resume(saved), { w: 240, fill: PAL.dusk1 }); y += 56; }

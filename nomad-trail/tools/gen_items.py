@@ -15,9 +15,10 @@ B = [
  ('watch',      'GPS Watch',          'GPS watch',    0.3, 1, 1, ['essential'],                 0, 'Counts every step, judges every rest day.', True, 'night3'),
  ('dronekit',   'Drone Kit',          'Drone kit',    4.0, 3, 2, ['camera','luxury'],           0, 'The camera the year gets remembered by, its controller, and the spare batteries.', True, 'gray1'),
  # ---- clothing
- ('clothes1',   '1 Week Of Clothes',  'Clothes wk 1', 6.0, 3, 3, ['clothing'],                  7, 'Seven days of looking like a person.', True, 'sky1'),
- ('clothes2',   '1 Week Of Clothes',  'Clothes wk 2', 6.0, 3, 3, ['clothing'],                  7, 'A second week. Laundry becomes a choice instead of an emergency.', True, 'sky0'),
- ('clothes3',   '1 Week Of Clothes',  'Clothes wk 3', 6.0, 3, 3, ['clothing'],                  7, 'A third week. The bag has noticed.', False, 'night3'),
+ ('clothes1',   'Clothes',            '1 week worth', 6.0, 3, 3, ['clothing'],                  7, 'Seven days of looking like a person. Add another week if laundry is not your thing.', True, 'sky1'),
+ ('clothes2',   'Clothes',            '1 week worth', 6.0, 3, 3, ['clothing'],                  7, 'Seven days of looking like a person. Add another week if laundry is not your thing.', True, 'sea2'),
+ ('clothes3',   'Clothes',            '1 week worth', 6.0, 3, 3, ['clothing'],                  7, 'Seven days of looking like a person. Add another week if laundry is not your thing.', False, 'sun1'),
+ ('clothes4',   'Clothes',            '1 week worth', 6.0, 3, 3, ['clothing'],                  7, 'Seven days of looking like a person. Add another week if laundry is not your thing.', False, 'dusk3'),
  ('shell',      'Rain Shell',         'Rain shell',   0.9, 2, 2, ['rain','clothing'],           0, 'Lighter than an umbrella and it never inverts.', True, 'sun0'),
  ('downjacket', 'Down Jacket',        'Down jacket',  1.0, 2, 2, ['cold','clothing'],           0, 'Stuffs into its own pocket. Saves October in the Alps.', False, 'sun1'),
  ('hikingboots','Hiking Boots',       'Hiking boots', 3.0, 3, 2, ['hike','cold'],               0, 'Ankles for the Himalaya. Dead weight everywhere else.', False, 'earth1'),
@@ -45,7 +46,7 @@ B = [
  ('packingcubes','Packing Cubes',     'Cubes',        0.8, 2, 2, ['organizer'],                 0, 'Nothing gets left behind when everything has a place.', False, 'sea3'),
  ('hostgifts',  'Host Gifts',         'Host gifts',   2.0, 2, 2, ['luxury'],                    0, 'Small, local, edible. Reviews get warmer.', False, 'pink'),
  ('umbrella',   'Umbrella',           'Umbrella',     0.8, 1, 3, ['rain'],                      0, 'Inverts in Patagonia. Fine in Lisbon.', False, 'night3'),
- ('travelkettle','Travel Kettle',     'Kettle',       1.1, 2, 2, ['kettle','trap'],             0, 'Tea in every room. Also, one day, a second-degree burn.', True, 'red'),
+ ('travelkettle','Travel Kettle',     'Kettle',       1.1, 2, 2, ['kettle','trap'],             0, 'Tea in every room, ninety seconds to a boil. Folds flat.', True, 'red'),
  ('jeans2',     'Second Pair Of Jeans','Jeans #2',    2.0, 2, 2, ['clothing','trap'],           1, 'You will not wear these. You know you will not wear these.', False, 'sky0'),
  ('books',      'Books',              'Books',        5.0, 2, 2, ['luxury','trap'],             0, 'Five paperbacks. The e-reader exists. You know it exists.', False, 'earth2'),
 ]

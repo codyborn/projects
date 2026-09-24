@@ -75,47 +75,62 @@
  },
  {
   "id": "clothes1",
-  "name": "1 Week Of Clothes",
-  "label": "Clothes wk 1",
+  "name": "Clothes",
+  "label": "1 week worth",
   "weightLb": 6.0,
   "w": 3,
   "h": 3,
   "tags": [
    "clothing"
   ],
-  "desc": "Seven days of looking like a person.",
+  "desc": "Seven days of looking like a person. Add another week if laundry is not your thing.",
   "real": true,
   "color": 4889558,
   "clothesDays": 7
  },
  {
   "id": "clothes2",
-  "name": "1 Week Of Clothes",
-  "label": "Clothes wk 2",
+  "name": "Clothes",
+  "label": "1 week worth",
   "weightLb": 6.0,
   "w": 3,
   "h": 3,
   "tags": [
    "clothing"
   ],
-  "desc": "A second week. Laundry becomes a choice instead of an emergency.",
+  "desc": "Seven days of looking like a person. Add another week if laundry is not your thing.",
   "real": true,
-  "color": 2845872,
+  "color": 3519401,
   "clothesDays": 7
  },
  {
   "id": "clothes3",
-  "name": "1 Week Of Clothes",
-  "label": "Clothes wk 3",
+  "name": "Clothes",
+  "label": "1 week worth",
   "weightLb": 6.0,
   "w": 3,
   "h": 3,
   "tags": [
    "clothing"
   ],
-  "desc": "A third week. The bag has noticed.",
+  "desc": "Seven days of looking like a person. Add another week if laundry is not your thing.",
   "real": false,
-  "color": 3030374,
+  "color": 15900236,
+  "clothesDays": 7
+ },
+ {
+  "id": "clothes4",
+  "name": "Clothes",
+  "label": "1 week worth",
+  "weightLb": 6.0,
+  "w": 3,
+  "h": 3,
+  "tags": [
+   "clothing"
+  ],
+  "desc": "Seven days of looking like a person. Add another week if laundry is not your thing.",
+  "real": false,
+  "color": 12862842,
   "clothesDays": 7
  },
  {
@@ -476,7 +491,7 @@
    "kettle",
    "trap"
   ],
-  "desc": "Tea in every room. Also, one day, a second-degree burn.",
+  "desc": "Tea in every room, ninety seconds to a boil. Folds flat.",
   "real": true,
   "color": 14040124
  },
