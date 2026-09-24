@@ -5,6 +5,7 @@ import { Button } from '../ui/Button';
 import { Panel, dimmer } from '../ui/Panel';
 import { typewrite } from '../ui/typewriter';
 import { Sim, Data, getRun, putRun, pendingChoices } from '../ui/simBridge';
+import { launchOnTop } from '../ui/overlay';
 /** Modal event card. Launched (not started) over Travel/City with { eventId, onDone }.
  *  Layout: header (day · city) at the top of the panel, title below it, body below the title's rendered height, then choices. */
 export class EventScene extends Phaser.Scene {
@@ -12,6 +13,12 @@ export class EventScene extends Phaser.Scene {
   constructor() { super(EventScene.KEY); }
   create(data: { eventId: string; onDone: () => void }) {
     this.scene.bringToTop();
+    // The otter is petted before it is described: run the tank scene first, then the aftermath card.
+    if (data.eventId === 'otter' && !(data as any).__petted && this.scene.get('Otter')) {
+      this.scene.setVisible(false);
+      launchOnTop(this, 'Otter', { onDone: () => { this.scene.setVisible(true); this.scene.restart({ ...data, __petted: true }); } });
+      return;
+    }
     const run = getRun(this); const ev: GameEvent = Data.event(data.eventId) ?? { id: data.eventId, title: 'Something happened', text: run.log[run.log.length - 1]?.text ?? '...', when: 'day', baseChance: 0, effects: {} } as GameEvent;
     const city = Data.city(run.cityId); const fill = (s: string) => s.replace(/\{city\}/g, city?.name ?? run.cityId).replace(/\{day\}/g, String(run.day)).replace(/\{item\}/g, Data.item(run.lostItems[run.lostItems.length - 1] ?? '')?.label ?? 'something');
     const tags = new Set(run.items.map(i => Data.item(i.id)?.tags ?? []).flat());

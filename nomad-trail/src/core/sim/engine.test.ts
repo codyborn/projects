@@ -156,21 +156,22 @@ describe('travel and route', () => {
 });
 
 describe('events', () => {
-  it('the otter only ever fires in Tokyo, once, as a choice with the first-aid option gated by gear', () => {
+  it('the otter only ever fires in Tokyo, once, with no choice; first aid changes the outcome', () => {
     const base = packed();
+    expect(EVENT.otter.choices).toBeUndefined(); expect(EVENT.otter.mitigatedBy).toContain('firstaid'); expect(EVENT.otter.mitigatedText!.length).toBeGreaterThan(30);
     for (const cid of ['lisbon', 'bangkok', 'seoul', 'miami']) expect(eventChance(EVENT.otter, { ...base, cityId: cid }, {}).chance).toBe(0);
     const tokyo = { ...base, cityId: 'tokyo', phase: 'city' as const, visited: [HOME_CITY, 'tokyo'], stamps: { [HOME_CITY]: 'plain' as const, tokyo: 'plain' as const } };
     expect(eventChance(EVENT.otter, tokyo, {}).chance).toBeGreaterThan(0);
     let fired = 0, s: RunState = JSON.parse(JSON.stringify(tokyo));
-    for (let i = 0; i < 60 && s.phase === 'city'; i++) { const r = Sim.cityAction(s, 'explore'); s = r.state; if (r.events.some(e => e.id === 'otter')) { fired++; const pc = Sim.pendingChoices(s)!; expect(pc.choices.map(c => c.label)).not.toContain('Pet it, clean the cut after'); s = Sim.resolveChoice(s, 'otter', 0).state; } if (s.pendingEvent) s = Sim.resolveChoice(s, s.pendingEvent, 0).state; }
-    expect(fired).toBe(1); expect(s.achievements).toContain('otter');
+    for (let i = 0; i < 60 && s.phase === 'city'; i++) { const r = Sim.cityAction(s, 'explore'); s = r.state; if (r.events.some(e => e.id === 'otter')) { fired++; expect(r.events.find(e => e.id === 'otter')!.pending).toBe(false); expect(s.pendingEvent).toBeUndefined(); } if (s.pendingEvent) s = Sim.resolveChoice(s, s.pendingEvent, 0).state; }
+    expect(fired).toBe(1); expect(s.achievements).toContain('otter'); expect(s.achievements).not.toContain('otter_lived');
     const withKit = { ...tokyo, items: [...tokyo.items, P('firstaid', 'checked', 6, 0)] } as RunState;
-    let s2: RunState = withKit, seenKit = false;
-    for (let i = 0; i < 60 && s2.phase === 'city'; i++) { const r = Sim.cityAction(s2, 'explore'); s2 = r.state; if (r.events.some(e => e.id === 'otter')) { seenKit = Sim.pendingChoices(s2)!.choices.some(c => c.requiresTag === 'firstaid'); s2 = Sim.resolveChoice(s2, 'otter', 1).state; expect(s2.achievements).toContain('otter_lived'); break; } if (s2.pendingEvent) s2 = Sim.resolveChoice(s2, s2.pendingEvent, 0).state; }
+    let s2: RunState = JSON.parse(JSON.stringify(withKit)), seenKit = false;
+    for (let i = 0; i < 60 && s2.phase === 'city'; i++) { const r = Sim.cityAction(s2, 'explore'); s2 = r.state; const ot = r.events.find(e => e.id === 'otter'); if (ot) { seenKit = true; expect(ot.mitigated).toBe(true); expect(s2.achievements).toContain('otter_lived'); expect(s2.sickDays).toBe(0); break; } if (s2.pendingEvent) s2 = Sim.resolveChoice(s2, s2.pendingEvent, 0).state; }
     expect(seenKit).toBe(true);
   });
-  it('the otter is the only choice event left; the cancelled booking is a plain drain', () => {
-    expect(EVENTS.filter(e => e.choices?.length).map(e => e.id)).toEqual(['otter']);
+  it('no event has choices any more; the cancelled booking is a plain drain', () => {
+    expect(EVENTS.filter(e => e.choices?.length).map(e => e.id)).toEqual([]);
     expect(EVENT.airbnbcancel.choices).toBeUndefined(); expect(EVENT.airbnbcancel.effects.energy).toBeLessThan(0); expect(EVENT.airbnbcancel.effects.mood).toBeLessThan(0);
   });
   it('mitigated text stands alone and the cafe gets its emphasis', () => {

@@ -1,0 +1,58 @@
+{
+ "_readme": "Game copy that is not in events/cities/items/dishes. Placeholders in {braces} are filled by the engine. Edit text, not keys.",
+ "ui": {
+  "tagline": "Circumnavigate the planet\nin 365 days.\nPack light. Come home.",
+  "basedOn": "Based on actual events.",
+  "production": "A Citizen Earth production"
+ },
+ "daily": {
+  "work": "A work day. Meetings at odd hours, the laptop on a kitchen table.",
+  "explore": "You go out and get lost on purpose.",
+  "rest": "A slow day. Nowhere to be.",
+  "laundry": "Laundry day. The glamorous part."
+ },
+ "log": {
+  "start": "Day 1, {city}. One suitcase, one year, the whole planet. Pack.",
+  "packed": "Packed: {weight} lb in the suitcase. {clothes} days of clean clothes.",
+  "bagLimit": "The bag is at the limit. Your back has noted this.",
+  "travel": "{transport} from {from} to {to}, ${fare}.",
+  "travelHeavy": " The suitcase fights you the whole way.",
+  "trek": "Fourteen days on foot",
+  "fiveContinents": "Five continents. The passport is running out of pages.",
+  "homeAgain": "Day {day}. {city} again. The same skyline, a different person under it.",
+  "suitcaseArrives": "The suitcase arrives, apologetic and slightly damp.",
+  "wrongShoes": "The trail was right there. You had the wrong shoes for it.",
+  "checkRoom": "You check under the bed, behind the door, in the shower. Twice.",
+  "leave": "You leave {city} after {stayDays} days.",
+  "carryonGold": "Carry-On: {city} cleared. Gold stamp.",
+  "pink": "Everything is slightly pink now.",
+  "travelFatigue": " Too many legs too fast; everything aches."
+ },
+ "endings": {
+  "hospital": "Day {day}. {city}. A hospital bed with a view of a parking lot. The trail ends here; the story does not.",
+  "flewhome": "Day {day}. You book the flight home from {city} without telling anyone. {home} is nice this time of year.",
+  "broke": "Day {day}. The card declines in {city}. {home} has a couch.",
+  "outofdays": "Day 366. The year ends in {city}, {degrees} degrees of longitude from home. Next year, maybe.",
+  "win": "Day {day}. {home}. {cities} cities, {daysLeft} days to spare, {lost} things left in {roomWord} around the world. You circled it."
+ },
+ "causes": {
+  "hospitalAfter": "Hospitalised in {city} after {what}, day {day}",
+  "hospitalWorn": "Hospitalised in {city}, worn down by the road, day {day}",
+  "flewhome": "Flew home from {city} on day {day}, mood zero",
+  "broke": "Broke in {city} on day {day}, ${owed} in the hole",
+  "outofdays": "Ran out of days in {city}, {continents} of 5 continents",
+  "win": "Home to {city} on day {day}, {continents} continent{s}"
+ },
+ "share": {
+  "win": "MADE IT HOME",
+  "hospital": "CAUSE OF DEATH: HOSPITAL",
+  "flewhome": "FLEW HOME EARLY",
+  "outofdays": "RAN OUT OF DAYS",
+  "broke": "CAUSE OF DEATH: THE CARD DECLINED",
+  "quit": "QUIT. ORANGE COUNTY IS NICE.",
+  "didNotMakeIt": "DID NOT MAKE IT",
+  "circumnavigated": "CIRCUMNAVIGATED",
+  "tagline1": "PACK LIGHT.",
+  "tagline2": "TRUST NO KETTLE."
+ }
+}

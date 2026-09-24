@@ -8,7 +8,9 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "sim": "tsx sim/run.ts"
+    "sim": "tsx sim/run.ts",
+    "copy:export": "python3 tools/copy_sync.py export",
+    "copy:import": "python3 tools/copy_sync.py import"
   },
   "keywords": [],
   "author": "",

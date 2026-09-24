@@ -64,6 +64,11 @@ await step(`window.__nomad.forceEnding('hospital')`, '09-end', 1200);
 await step(`window.__nomad.goto('Share')`, '10-share', 2500);
 await step(`window.__nomad.goto('Passport')`, '11-passport', 1200);
 await step(`window.__nomad.goto('Coffee', { cityId: 'tokyo', day: 41 })`, '12-coffee', 2500);
+if (await page.evaluate(() => !!window.__nomad.game.scene.getScene('Otter'))) {
+  await step(`window.__nomad.goto('Otter', { onDone: () => { window.__otterDone = true; } })`, '12b-otter', 1500);
+  for (let i = 0; i < 6; i++) { await page.touchscreen.tap(180, 330); await sleep(250); }
+  await sleep(4500); console.log('otter onDone:', await page.evaluate(() => !!window.__otterDone));
+}
 for (const k of ['Cooking', 'Workout', 'CarryOn', 'Kite', 'Airport', 'Laundry']) {
   await step(`window.__nomad.minigame('${k}')`, `13-${k}`, 2200);
   await step(`window.__nomad.finishMinigame(60)`, null, 300);

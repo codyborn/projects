@@ -2,6 +2,10 @@ import type { RunState, PackedItem, Bag, ItemTag, CityAction, Ending, Leg, City,
 import { MINIGAME_KEYS, CONTINENT_OF, type MinigameResult } from '../types';
 import { ITEM, ITEMS, CITY, CITIES, EVENT, DISH, LEVEL_BY_CITY } from './data';
 import { makeRng, hash32, type Rng } from './rng';
+import STRINGS from '../../data/strings.json';
+export const STR = STRINGS as typeof STRINGS;
+/** Fill {placeholders} in a copy string. */
+export function tpl(t: string, vars: Record<string, string | number>): string { return t.replace(/\{(\w+)\}/g, (_, k) => (k in vars ? String(vars[k]) : `{${k}}`)); }
 import { rollEvents, applyEffects, hasTag, hasFlag, setFlag, clamp, monthOf, energyCap, recomputeClothes, fmt, accessibleItems, visibleAchievements, availableChoices, forceEvent, LODGING_DEPENDENT, type ResolvedEvent } from './events';
 import { saveRun, loadRun, clearRun } from './save';
 import { GRID, TOTAL_DAYS, HOME_PROGRESS_DEG, HOME_CITY, HOME_MIN_CONTINENTS, START_MONEY, OVERDRAFT, WORK_PAY, DEFAULT_COST_PER_DAY, FARE, WORK_ENERGY, WORK_MOOD, weekdayOf, isWeekend, OUTDOOR_ACTIVITIES } from './consts';
@@ -23,7 +27,7 @@ export function createRun(seed: number, _startCity: string = HOME_CITY, directio
   const startCity = HOME_CITY;  // the start city argument is kept for API compatibility; the trail always starts and ends at home
   return { version: 2, seed, day: 1, startCity, cityId: startCity, direction, health: 100, energy: 85, mood: 80, cleanClothes: 3, maxClothes: 3, money: START_MONEY,
     items: [], lostItems: [], bagLockedDays: 0, wheelBroken: false, backInjuryDays: 0, sickDays: 0, fatigue: 0, legsLast30: [],
-    visited: [startCity], stamps: { [startCity]: 'plain' }, route: [startCity], achievements: [], log: [{ day: 1, city: startCity, text: `Day 1, ${CITY[startCity].name}. One suitcase, one year, the whole planet. Pack.` }],
+    visited: [startCity], stamps: { [startCity]: 'plain' }, route: [startCity], achievements: [], log: [{ day: 1, city: startCity, text: tpl(STR.log.start, { city: CITY[startCity].name }) }],
     workStreak: 0, coffeeMornings: 0, phase: 'pack', stayDays: 0 };
 }
 
@@ -54,8 +58,8 @@ export function validatePack(items: PackedItem[]): PackValidation {
 export function setPack(state: RunState, items: PackedItem[]): PackValidation {
   const v = validatePack(items); if (!v.ok) return v;
   const s = clone(state); s.items = clone(items); recomputeClothes(s); s.cleanClothes = s.maxClothes; s.phase = 'route';
-  s.log.push({ day: s.day, city: s.cityId, text: `Packed: ${v.weights.checked} lb in the suitcase. ${s.maxClothes} days of clean clothes.` });
-  if (v.ratio >= 0.95) s.log.push({ day: s.day, city: s.cityId, text: 'The bag is at the limit. Your back has noted this.' });
+  s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.packed, { weight: v.weights.checked, clothes: s.maxClothes }) });
+  if (v.ratio >= 0.95) s.log.push({ day: s.day, city: s.cityId, text: STR.log.bagLimit });
   return { ...v, state: s };
 }
 export const coffeePacked = (s: RunState) => accessibleItems(s).some(p => ITEM[p.id]?.tags.includes('coffee'));
@@ -147,7 +151,7 @@ export function travelTo(state: RunState, cityId: string): StepResult {
   s.cleanClothes = Math.max(0, s.cleanClothes - leg.days);
   const ratio = weightRatio(s.items);
   const ctx = { transport: leg.transport, timezones: leg.timezones, overweightRatio: ratio };
-  s.log.push({ day: s.day, city: cityId, text: `${leg.transport === 'trek' ? 'Fourteen days on foot' : leg.transport[0].toUpperCase() + leg.transport.slice(1)} from ${from.name} to ${leg.city.name}, $${fare}.${ratio0 >= 0.85 ? ' The suitcase fights you the whole way.' : ''}${s.fatigue >= 3 ? ' Too many legs too fast; everything aches.' : ''}` });
+  s.log.push({ day: s.day, city: cityId, text: tpl(STR.log.travel, { transport: leg.transport === 'trek' ? STR.log.trek : leg.transport[0].toUpperCase() + leg.transport.slice(1), from: from.name, to: leg.city.name, fare }) + (ratio0 >= 0.85 ? STR.log.travelHeavy : '') + (s.fatigue >= 3 ? STR.log.travelFatigue : '') });
   if (leg.transport === 'flight') events.push(...rollEvents(s, 'flight', ctx, rng, 1));
   events.push(...rollEvents(s, 'leg', ctx, rng, 2));
   // arrive
@@ -159,10 +163,10 @@ export function travelTo(state: RunState, cityId: string): StepResult {
   const cancelled = rollEvents(s, 'arrive', arriveCtx, rngFor(s, 2), 1, e => e.id === 'airbnbcancel');
   events.push(...cancelled, ...rollEvents(s, 'arrive', arriveCtx, rngFor(s, 7), cancelled.length ? 1 : 2, e => e.id !== 'airbnbcancel' && !(cancelled.length && LODGING_DEPENDENT.has(e.id))));
   const conts = continentsVisited(s);
-  if (conts.length === CONTINENTS_ALL.length && !s.achievements.includes('fivecontinents')) { s.achievements.push('fivecontinents'); s.log.push({ day: s.day, city: cityId, text: 'Five continents. The passport is running out of pages.' }); }
+  if (conts.length === CONTINENTS_ALL.length && !s.achievements.includes('fivecontinents')) { s.achievements.push('fivecontinents'); s.log.push({ day: s.day, city: cityId, text: STR.log.fiveContinents }); }
   if (leg.city.altitude && leg.city.altitude >= 3500 && !events.some(e => e.id === 'altitude')) { /* altitude event already weighted; nothing */ }
   if (hasItem(s, 'hostgifts') && (leg.city.lodgings[0]?.id === 'airbnb' || leg.city.lodgings[0]?.id === 'coliving')) s.mood = clamp(s.mood + 3, 0, 100);
-  if (leg.home) { s.log.push({ day: s.day, city: cityId, text: `Day ${s.day}. ${leg.city.name} again. The same skyline, a different person under it.` }); }
+  if (leg.home) { s.log.push({ day: s.day, city: cityId, text: tpl(STR.log.homeAgain, { day: s.day, city: leg.city.name }) }); }
   checkEnding(s);
   return { state: s, events };
 }
@@ -188,7 +192,7 @@ function tickDay(s: RunState, rng: Rng, opts: { rest?: boolean } = {}): Resolved
   if (coffeePacked(s)) { s.energy += 15; s.mood += 2; s.coffeeMornings += 1; }
   if (s.sickDays > 0) { s.sickDays -= 1; s.health -= 4; s.energy -= 5; }
   if (s.backInjuryDays > 0) s.backInjuryDays -= 1;
-  if (s.bagLockedDays > 0) { s.bagLockedDays -= 1; if (s.bagLockedDays === 0) s.log.push({ day: s.day, city: s.cityId, text: 'The suitcase arrives, apologetic and slightly damp.' }); }
+  if (s.bagLockedDays > 0) { s.bagLockedDays -= 1; if (s.bagLockedDays === 0) s.log.push({ day: s.day, city: s.cityId, text: STR.log.suitcaseArrives }); }
   if (s.energy < 25) { s.health -= 2; s.mood -= 3; }
   if (s.mood < 25) s.energy -= 3;
   if (hasTag(s, 'health') && s.energy > 50) s.health += 0.4;
@@ -199,12 +203,7 @@ function tickDay(s: RunState, rng: Rng, opts: { rest?: boolean } = {}): Resolved
   if (s.money < 0 && !hasFlag(s, 'broke')) { setFlag(s, 'broke', true); out.push(forceEvent(s, 'broke', rng)); }
   return out;
 }
-const DAILY: Record<string, string> = {
-  work: 'A work day. Meetings at odd hours, the laptop on a kitchen table.',
-  explore: 'You go out and get lost on purpose.',
-  rest: 'A slow day. Nowhere to be.',
-  laundry: 'Laundry day. The glamorous part.',
-};
+const DAILY: Record<string, string> = STR.daily;
 export function cityAction(state: RunState, action: CityAction): StepResult {
   if (state.phase !== 'city') return { state, events: [], error: 'not in a city' };
   if (state.pendingEvent) return { state, events: [], error: 'resolve the pending event first' };
@@ -223,7 +222,7 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       s.workStreak = 0; events = tickDay(s, rng);
       const bonus = outdoors && geared; s.energy = clamp(s.energy - (bonus ? 9 : 12), 0, energyCap(s)); s.mood = clamp(s.mood + 7 + (bonus ? 6 : 0), 0, 100);
       s.log.push({ day: s.day, city: s.cityId, text: bonus ? `You go out with the whole kit. ${city.name} is built for it.` : DAILY.explore });
-      if (outdoors && !geared && rng.chance(0.3)) { s.mood = clamp(s.mood - 3, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: 'The trail was right there. You had the wrong shoes for it.' }); }
+      if (outdoors && !geared && rng.chance(0.3)) { s.mood = clamp(s.mood - 3, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: STR.log.wrongShoes }); }
       events.push(...rollEvents(s, 'action', ctx, rngFor(s, 4), 1)); break; }
     case 'rest': {
       s.workStreak = 0; events = tickDay(s, rng, { rest: true }); s.energy = clamp(s.energy + 28, 0, energyCap(s)); s.mood = clamp(s.mood + 2, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: DAILY.rest });
@@ -246,11 +245,11 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       const dish = DISH[city.dishes[(s.stayDays + s.route.length) % city.dishes.length]] ?? DISH[city.dishes[0]];
       s.pendingDish = dish.id;
       return { state: s, events: [], minigame: { key: MINIGAME_KEYS.cooking, payload: { dish, city: city.id }, difficulty: diff } }; }
-    case 'checkroom': setFlag(s, 'roomchecked', true); s.energy = clamp(s.energy - 2, 0, energyCap(s)); s.log.push({ day: s.day, city: s.cityId, text: 'You check under the bed, behind the door, in the shower. Twice.' }); return { state: s, events: [] };
+    case 'checkroom': setFlag(s, 'roomchecked', true); s.energy = clamp(s.energy - 2, 0, energyCap(s)); s.log.push({ day: s.day, city: s.cityId, text: STR.log.checkRoom }); return { state: s, events: [] };
     case 'moveon': {
       if (s.stayDays < city.minStay) return { state, events: [], error: `Stay at least ${city.minStay} days in ${city.name}.` };
       events = rollEvents(s, 'leave', ctx, rng, 1); setFlag(s, 'roomchecked', false); s.phase = 'route';
-      s.log.push({ day: s.day, city: s.cityId, text: `You leave ${city.name} after ${s.stayDays} days.` });
+      s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.leave, { city: city.name, stayDays: s.stayDays }) });
       break; }
   }
   checkEnding(s);
@@ -270,9 +269,9 @@ export function applyMinigameResult(state: RunState, key: string, result: Miniga
       s.log.push({ day: s.day, city: s.cityId, text: result.failed ? `You attempt ${dish.name}. The kitchen survives.` : `You cook ${dish.name}. ${result.perfect ? 'Better than the restaurant.' : 'Nobody complains.'}` }); break; }
     case MINIGAME_KEYS.carryon: {
       s.mood = clamp(s.mood + 8 + Math.round(score * 12), 0, 100);
-      if (result.perfect || score >= 0.99) { s.stamps[s.cityId] = 'gold'; unlock(s, 'gold_' + s.cityId); s.log.push({ day: s.day, city: s.cityId, text: `Carry-On: ${city.name} cleared. Gold stamp.` }); }
+      if (result.perfect || score >= 0.99) { s.stamps[s.cityId] = 'gold'; unlock(s, 'gold_' + s.cityId); s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.carryonGold, { city: city.name }) }); }
       break; }
-    case MINIGAME_KEYS.laundry: { if (result.failed) { unlock(s, 'pinkshirts'); s.mood = clamp(s.mood - 2, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: 'Everything is slightly pink now.' }); } else if (result.perfect) s.mood = clamp(s.mood + 3, 0, 100); break; }
+    case MINIGAME_KEYS.laundry: { if (result.failed) { unlock(s, 'pinkshirts'); s.mood = clamp(s.mood - 2, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: STR.log.pink }); } else if (result.perfect) s.mood = clamp(s.mood + 3, 0, 100); break; }
     case MINIGAME_KEYS.kite: { s.mood = clamp(s.mood + 5 + Math.round(score * 15), 0, 100); s.energy = clamp(s.energy - 12, 0, energyCap(s)); if (result.perfect) unlock(s, 'kitemaster'); break; }
     case MINIGAME_KEYS.airport: { if (result.failed) { s.energy = clamp(s.energy - 12, 0, energyCap(s)); s.mood = clamp(s.mood - 6, 0, 100); } break; }
   }
@@ -305,11 +304,11 @@ export function checkEnding(s: RunState): Ending | undefined {
   if (s.phase === 'ended') return s.ending;
   let e: Ending | undefined;
   const home = CITY[s.startCity].name;
-  if (s.health <= 0) e = { kind: 'hospital', text: `Day ${s.day}. ${CITY[s.cityId].name}. A hospital bed with a view of a parking lot. The trail ends here; the story does not.`, score: 0 };
-  else if (s.mood <= 0) e = { kind: 'flewhome', text: `Day ${s.day}. You book the flight home from ${CITY[s.cityId].name} without telling anyone. ${home} is nice this time of year.`, score: 0 };
-  else if (s.money < -OVERDRAFT) e = { kind: 'broke', text: `Day ${s.day}. The card declines in ${CITY[s.cityId].name}. ${home} has a couch.`, score: 0 };
-  else if (s.day > TOTAL_DAYS) e = { kind: 'outofdays', text: `Day 366. The year ends in ${CITY[s.cityId].name}, ${Math.round(Math.max(0, HOME_PROGRESS_DEG + 60 - progress(s)))} degrees of longitude from home. Next year, maybe.`, score: 0 };
-  else if (s.cityId === s.startCity && s.route.length > 1 && homeUnlocked(s)) e = { kind: 'win', text: `Day ${s.day}. ${home}. ${s.visited.length} cities, ${365 - s.day} days to spare, ${s.lostItems.length} things left in ${s.lostItems.length === 1 ? 'a room' : 'rooms'} around the world. You circled it.`, score: 0 };
+  if (s.health <= 0) e = { kind: 'hospital', text: tpl(STR.endings.hospital, { day: s.day, city: CITY[s.cityId].name, home }), score: 0 };
+  else if (s.mood <= 0) e = { kind: 'flewhome', text: tpl(STR.endings.flewhome, { day: s.day, city: CITY[s.cityId].name, home }), score: 0 };
+  else if (s.money < -OVERDRAFT) e = { kind: 'broke', text: tpl(STR.endings.broke, { day: s.day, city: CITY[s.cityId].name, home }), score: 0 };
+  else if (s.day > TOTAL_DAYS) e = { kind: 'outofdays', text: tpl(STR.endings.outofdays, { day: s.day, city: CITY[s.cityId].name, home, degrees: Math.round(Math.max(0, HOME_PROGRESS_DEG + 60 - progress(s))) }), score: 0 };
+  else if (s.cityId === s.startCity && s.route.length > 1 && homeUnlocked(s)) e = { kind: 'win', text: tpl(STR.endings.win, { day: s.day, city: CITY[s.cityId].name, home, cities: s.visited.length, daysLeft: 365 - s.day, lost: s.lostItems.length, roomWord: s.lostItems.length === 1 ? 'a room' : 'rooms' }), score: 0 };
   if (e) { e.cause = endingCause(s, e.kind); s.ending = e; s.phase = 'ended'; s.pendingEvent = undefined; e.score = score(s); s.log.push({ day: s.day, city: s.cityId, text: e.text }); }
   return e;
 }
@@ -320,11 +319,11 @@ export function endingCause(s: RunState, kind: Ending['kind']): string {
   for (let i = s.log.length - 1; i >= 0 && !last; i--) { const t = s.log[i].text; for (const [id, phrase] of Object.entries(CAUSE_PHRASE)) if (EVENT[id] && t.startsWith(EVENT[id].title)) { last = phrase; break; } }
   const conts = continentsVisited(s).length;
   switch (kind) {
-    case 'hospital': return last ? `Hospitalised in ${city} after ${last}, day ${s.day}` : `Hospitalised in ${city}, worn down by the road, day ${s.day}`;
-    case 'flewhome': return `Flew home from ${city} on day ${s.day}, mood zero`;
-    case 'broke': return `Broke in ${city} on day ${s.day}, $${Math.max(0, Math.round(-s.money))} in the hole`;
-    case 'outofdays': return `Ran out of days in ${city}, ${conts} of 5 continents`;
-    case 'win': return `Home to ${city} on day ${s.day}, ${conts} continent${conts === 1 ? '' : 's'}`;
+    case 'hospital': return last ? tpl(STR.causes.hospitalAfter, { city, what: last, day: s.day }) : tpl(STR.causes.hospitalWorn, { city, day: s.day });
+    case 'flewhome': return tpl(STR.causes.flewhome, { city, day: s.day });
+    case 'broke': return tpl(STR.causes.broke, { city, day: s.day, owed: Math.max(0, Math.round(-s.money)) });
+    case 'outofdays': return tpl(STR.causes.outofdays, { city, continents: conts });
+    case 'win': return tpl(STR.causes.win, { city, day: s.day, continents: conts, s: conts === 1 ? '' : 's' });
     default: return `Left the trail in ${city} on day ${s.day}`;
   }
 }

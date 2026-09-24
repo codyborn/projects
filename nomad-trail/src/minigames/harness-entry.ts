@@ -4,6 +4,8 @@ import { GAME_W, GAME_H, MINIGAME_KEYS, type MinigameLaunch } from '../core/type
 import { PAL } from '../core/palette';
 import { launchHarness, MINIGAME_SCENES } from './devHarness';
 import { DEFAULT_LEVEL } from './CarryOnScene';
+import dishesJson from '../data/dishes.json';
+import { drawDish, DISH_ART_IDS, renderDishCanvas, DISH_TEX_W, DISH_TEX_H } from './dishArt';
 
 const game = new Phaser.Game({ type: Phaser.CANVAS, parent: 'game', width: GAME_W, height: GAME_H, pixelArt: true, backgroundColor: PAL.night0,
   physics: { default: 'arcade', arcade: { gravity: { x: 0, y: 900 } } }, scene: [] });
@@ -15,6 +17,8 @@ if (q.get('auto') === '1') {
   MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
   const runs: { key: string; payload?: any; energy: number; extraLives?: number }[] = [
     { key: MINIGAME_KEYS.cooking, energy: 100 }, { key: MINIGAME_KEYS.cooking, energy: 20, payload: { id: 'x', name: 'Tacos', city: 'lapaz', ingredients: ['a'], health: 1, mood: 1, steps: [{ kind: 'season', count: 3 }, { kind: 'pour', count: 1 }, { kind: 'stir', count: 1 }] } },
+    ...(['grill', 'dice', 'roll', 'simmer', 'shake', 'fold', 'plate', 'skewer'] as const).map(k => ({ key: MINIGAME_KEYS.cooking, energy: 100, payload: { id: 'ramen', name: 'Step ' + k, city: 'tokyo', ingredients: ['x'], health: 1, mood: 1, steps: [{ kind: k, count: 3 }] } })),
+    ...(['ramen', 'tacos', 'kaiserschmarrn', 'sushi'] as const).map(id => ({ key: MINIGAME_KEYS.cooking, energy: 100, payload: { dish: (dishesJson as any[]).find(d => d.id === id), cityName: id } })),
     ...(['bands', 'boulder', 'ferrata', 'trailrun', 'hike', 'swim', 'bogus'] as const).map(a => ({ key: MINIGAME_KEYS.workout, energy: a === 'hike' ? 30 : 100, payload: { activity: a, city: 'Test' } })),
     ...(['boulder', 'ferrata', 'trailrun', 'hike'] as const).map(a => ({ key: MINIGAME_KEYS.workout, energy: 100, extraLives: 1, payload: { activity: a, city: 'Boots' } })),
     { key: MINIGAME_KEYS.carryon, energy: 100 }, { key: MINIGAME_KEYS.carryon, energy: 40, payload: { ...DEFAULT_LEVEL, hazard: 'gust' } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { ...DEFAULT_LEVEL, hazard: 'rock' } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { ...DEFAULT_LEVEL, hazard: 'wave' } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { ...DEFAULT_LEVEL, hazard: 'otter' } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { ...DEFAULT_LEVEL, hazard: 'ice' } },
@@ -46,12 +50,20 @@ if (q.get('auto') === '1') {
     setTimeout(() => { if (results.length < i) { results.push({ key: r.key, payload: r.payload?.activity || r.payload?.hazard || '', energy: r.energy, TIMEOUT: true }); scene.scene.stop(); next(); } }, 150000);
   };
   game.events.once('ready', () => {
+    // render every dish art (all layer counts) once; any exception lands in `errors`
+    try { let count = 0; for (const id of DISH_ART_IDS) { renderDishCanvas(id); renderDishCanvas(id, 0); count++; } for (const d of dishesJson as any[]) renderDishCanvas(d.id, undefined, d.art); (window as any).__dishArtRendered = count; } catch (e) { errors.push('dishart:' + String(e)); }
     if (q.get('fast') === '1') { // virtual clock: drive Phaser's TimeStep manually, ~30x real time
       game.loop.stop(); let t = performance.now(); const fps = Number(q.get('fps') || 8);
       setInterval(() => { for (let k = 0; k < fps; k++) { t += 16.67; game.loop.step(t); } }, 0);
     }
     setTimeout(next, 200);
   });
+} else if (q.get('sheet') === '1') {
+  // contact sheet: draw finished dishes into #results as a single canvas
+  const ids = (q.get('ids') || 'ramen,tacos,kaiserschmarrn,sushi,paella,bibimbap').split(',');
+  const cols = 3, scale = 3; const sheet = document.createElement('canvas'); sheet.width = cols * (DISH_TEX_W * scale + 12); sheet.height = Math.ceil(ids.length / cols) * (DISH_TEX_H * scale + 28); const ctx = sheet.getContext('2d')!; ctx.imageSmoothingEnabled = false; ctx.fillStyle = '#141a2e'; ctx.fillRect(0, 0, sheet.width, sheet.height);
+  ids.forEach((id, i) => { const c = renderDishCanvas(id); const x = (i % cols) * (DISH_TEX_W * scale + 12) + 6, y = Math.floor(i / cols) * (DISH_TEX_H * scale + 28) + 4; ctx.drawImage(c, x, y, DISH_TEX_W * scale, DISH_TEX_H * scale); ctx.fillStyle = '#f7cf6b'; ctx.font = '12px monospace'; ctx.fillText((dishesJson as any[]).find(d => d.id === id)?.name ?? id, x, y + DISH_TEX_H * scale + 16); });
+  sheet.id = 'sheet'; document.body.appendChild(sheet); document.title = 'SHEET_DONE'; void drawDish;
 } else {
   game.events.once('ready', () => launchHarness(game));
 }

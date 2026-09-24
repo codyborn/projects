@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import STRINGS from '../data/strings.json';
 import { PAL, txt, rect, GAME_W, GAME_H } from '../ui/theme';
 import { Button } from '../ui/Button';
 import { Panel, dimmer } from '../ui/Panel';
@@ -21,7 +22,7 @@ export class TitleScene extends Phaser.Scene {
     txt(this, 180, 96, 'THE', 14, PAL.sun3).setOrigin(0.5);
     const logo = txt(this, 180, 130, 'NOMAD TRAIL', 24, PAL.white).setOrigin(0.5);
     this.tweens.add({ targets: logo, y: 134, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
-    txt(this, 180, 172, 'Circumnavigate the planet\nin 365 days.\nPack light. Come home.', 9, PAL.sun3, { align: 'center', wrap: 340 }).setOrigin(0.5);
+    txt(this, 180, 172, STRINGS.ui.tagline, 9, PAL.sun3, { align: 'center', wrap: 340 }).setOrigin(0.5);
     const saved = Sim.load(); const settings = getSettings(this);
     let y = 400;
     if (saved && saved.phase !== 'ended') { new Button(this, 180, y, `CONTINUE  ·  day ${saved.day}`, () => this.resume(saved), { w: 240, fill: PAL.dusk1 }); y += 56; }
@@ -29,8 +30,8 @@ export class TitleScene extends Phaser.Scene {
     if (saved) { if (this.scene.get('Passport')) { new Button(this, 180, y, 'PASSPORT', () => { this.registry.set('run', saved); this.scene.start('Passport', { back: 'Title' }); }, { w: 240 }); y += 56; } }
     const mute = new Button(this, 40, 600, settings.muted ? '🔇' : '🔊', () => { settings.muted = !settings.muted; putSettings(this, settings); mute.setLabel(settings.muted ? '🔇' : '🔊'); this.sound.mute = settings.muted; }, { w: 48, h: 44, fill: PAL.night2 });
     this.sound.mute = settings.muted;
-    txt(this, 180, 604, 'Based on actual events.', 8, PAL.gray1, { align: 'center' }).setOrigin(0.5);
-    txt(this, 180, 620, settings.runs ? `Runs ${settings.runs} · Best ${settings.bestScore}` : 'A Citizen Earth production', 8, PAL.gray0).setOrigin(0.5);
+    txt(this, 180, 604, STRINGS.ui.basedOn, 8, PAL.gray1, { align: 'center' }).setOrigin(0.5);
+    txt(this, 180, 620, settings.runs ? `Runs ${settings.runs} · Best ${settings.bestScore}` : STRINGS.ui.production, 8, PAL.gray0).setOrigin(0.5);
   }
   update(_t: number, dt: number) { for (const c of this.clouds) { c.x += (c as any).spd * dt / 1000; if (c.x > GAME_W) c.x = -c.width; } }
   private resume(saved: RunState) {

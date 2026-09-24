@@ -15,7 +15,8 @@ function text(ctx: Ctx, s: string, x: number, y: number, c: number, scale = 1, f
   for (const ch of s.toUpperCase()) { const pat = f[ch] || f['?'] || ['11111', '10001', '10001', '10001', '11111', '00000', '00000']; glyph(ctx, pat, cx, y, c, scale); cx += 6 * scale; }
 }
 export function setShareFont(f: Record<string, string[]>) { Object.assign(GLYPHS, f); }
-const ENDING_TEXT: Record<string, string> = { win: 'MADE IT HOME', hospital: 'CAUSE OF DEATH: HOSPITAL', flewhome: 'FLEW HOME EARLY', outofdays: 'RAN OUT OF DAYS', broke: 'CAUSE OF DEATH: THE CARD DECLINED', quit: 'QUIT. ORANGE COUNTY IS NICE.' };
+import STRINGS from '../data/strings.json';
+const ENDING_TEXT: Record<string, string> = STRINGS.share;
 /** Word-wrap to `cols` characters, at most `max` lines (last line gets an ellipsis). */
 function wrapLines(s: string, cols: number, max: number): string[] {
   const out: string[] = []; let line = '';
@@ -39,7 +40,7 @@ export async function renderShareCard(state: RunState, cities: City[], settings?
     ditherGradient(ctx, 0, 0, W, H, [PAL.night0, PAL.night1, PAL.dusk0, PAL.night1]);
     const r = rng(state.seed || 1); for (let i = 0; i < 120; i++) P(ctx, r.int(0, W - 1), r.int(0, H - 1), r.chance(0.3) ? PAL.white : PAL.gray1);
     text(ctx, 'THE NOMAD TRAIL', 24, 18, PAL.sun3, 2);
-    text(ctx, state.ending?.kind === 'win' ? 'CIRCUMNAVIGATED' : 'DID NOT MAKE IT', 24, 36, state.ending?.kind === 'win' ? PAL.neon : PAL.pink, 1);
+    text(ctx, state.ending?.kind === 'win' ? STRINGS.share.circumnavigated : STRINGS.share.didNotMakeIt, 24, 36, state.ending?.kind === 'win' ? PAL.neon : PAL.pink, 1);
     // globe
     const cur = cities.find(c => c.id === state.cityId); const rot = cur ? -cur.lon : 0;
     renderGlobe(ctx, W / 2, 128, 74, cities, state.visited, state.cityId, state.route.length ? state.route : state.visited, { rotation: rot });
@@ -62,7 +63,7 @@ export async function renderShareCard(state: RunState, cities: City[], settings?
       let x = 24; all.forEach(([name, short]) => { const lit = visited.has(name); R(ctx, x, 367, 4, 4, lit ? PAL.neon : PAL.gray0); text(ctx, short, x + 6, 366, lit ? PAL.neon : PAL.gray0, 1); x += 6 + short.length * 6 + 6; }); }
     // QR + url
     { const qr = QRCode.create('https://cit.earth/trail', { errorCorrectionLevel: 'L' }); const n = qr.modules.size, m = 2, pad = 3, box = n * m + pad * 2; const qx = W - 16 - box, qy = 392; R(ctx, qx, qy, box, box, PAL.white); for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (qr.modules.get(y, x)) R(ctx, qx + pad + x * m, qy + pad + y * m, m, m, PAL.ink); }
-    text(ctx, 'PLAY AT', 24, 398, PAL.gray1, 1); text(ctx, 'CIT.EARTH/TRAIL', 24, 408, PAL.neon, 1); text(ctx, 'PACK LIGHT.', 24, 424, PAL.gray1, 1); text(ctx, 'TRUST NO KETTLE.', 24, 434, PAL.gray1, 1);
+    text(ctx, 'PLAY AT', 24, 398, PAL.gray1, 1); text(ctx, 'CIT.EARTH/TRAIL', 24, 408, PAL.neon, 1); text(ctx, STRINGS.share.tagline1, 24, 424, PAL.gray1, 1); text(ctx, STRINGS.share.tagline2, 24, 434, PAL.gray1, 1);
   });
   const big = document.createElement('canvas'); big.width = W * 4; big.height = H * 4; const bc = big.getContext('2d')!; bc.imageSmoothingEnabled = false; bc.drawImage(small, 0, 0, big.width, big.height);
   return big;

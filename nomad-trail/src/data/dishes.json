@@ -11,15 +11,19 @@
   ],
   "steps": [
    {
-    "kind": "chop",
-    "count": 4
-   },
-   {
-    "kind": "stir",
-    "count": 3
+    "kind": "shake",
+    "count": 6
    },
    {
     "kind": "pour",
+    "count": 1
+   },
+   {
+    "kind": "chop",
+    "count": 5
+   },
+   {
+    "kind": "plate",
     "count": 2
    }
   ],
@@ -43,12 +47,16 @@
     "count": 4
    },
    {
-    "kind": "flip",
-    "count": 3
+    "kind": "fold",
+    "count": 2
    },
    {
-    "kind": "season",
-    "count": 2
+    "kind": "grill",
+    "count": 1
+   },
+   {
+    "kind": "dice",
+    "count": 3
    }
   ],
   "health": 6,
@@ -66,15 +74,19 @@
   "steps": [
    {
     "kind": "knead",
-    "count": 5
+    "count": 10
    },
    {
     "kind": "pour",
-    "count": 2
+    "count": 1
    },
    {
     "kind": "season",
-    "count": 3
+    "count": 4
+   },
+   {
+    "kind": "grill",
+    "count": 1
    }
   ],
   "health": 4,
@@ -93,11 +105,15 @@
   "steps": [
    {
     "kind": "chop",
-    "count": 3
+    "count": 5
    },
    {
-    "kind": "stir",
+    "kind": "fold",
     "count": 2
+   },
+   {
+    "kind": "plate",
+    "count": 3
    },
    {
     "kind": "season",
@@ -119,16 +135,20 @@
   ],
   "steps": [
    {
-    "kind": "chop",
-    "count": 6
+    "kind": "dice",
+    "count": 4
    },
    {
-    "kind": "stir",
+    "kind": "grill",
+    "count": 1
+   },
+   {
+    "kind": "simmer",
     "count": 4
    },
    {
     "kind": "season",
-    "count": 2
+    "count": 3
    }
   ],
   "health": 10,
@@ -147,15 +167,19 @@
   "steps": [
    {
     "kind": "knead",
-    "count": 3
+    "count": 8
+   },
+   {
+    "kind": "grill",
+    "count": 1
    },
    {
     "kind": "flip",
-    "count": 4
+    "count": 3
    },
    {
-    "kind": "season",
-    "count": 2
+    "kind": "plate",
+    "count": 3
    }
   ],
   "health": 9,
@@ -173,16 +197,20 @@
   ],
   "steps": [
    {
-    "kind": "stir",
+    "kind": "shake",
     "count": 5
    },
    {
     "kind": "pour",
-    "count": 3
+    "count": 1
    },
    {
     "kind": "flip",
-    "count": 4
+    "count": 3
+   },
+   {
+    "kind": "plate",
+    "count": 2
    }
   ],
   "health": 5,
@@ -198,7 +226,15 @@
   "steps": [
    {
     "kind": "pour",
-    "count": 6
+    "count": 1
+   },
+   {
+    "kind": "plate",
+    "count": 3
+   },
+   {
+    "kind": "skewer",
+    "count": 4
    },
    {
     "kind": "stir",
@@ -220,16 +256,20 @@
   ],
   "steps": [
    {
-    "kind": "chop",
+    "kind": "dice",
     "count": 4
    },
    {
-    "kind": "stir",
-    "count": 6
+    "kind": "grill",
+    "count": 1
+   },
+   {
+    "kind": "simmer",
+    "count": 5
    },
    {
     "kind": "season",
-    "count": 3
+    "count": 4
    }
   ],
   "health": 8,
@@ -248,20 +288,20 @@
   ],
   "steps": [
    {
-    "kind": "chop",
-    "count": 4
+    "kind": "grill",
+    "count": 1
    },
    {
-    "kind": "flip",
-    "count": 3
+    "kind": "chop",
+    "count": 5
+   },
+   {
+    "kind": "fold",
+    "count": 2
    },
    {
     "kind": "season",
-    "count": 2
-   },
-   {
-    "kind": "pour",
-    "count": 2
+    "count": 3
    }
   ],
   "health": 9,
@@ -279,15 +319,19 @@
   "steps": [
    {
     "kind": "chop",
-    "count": 4
+    "count": 6
    },
    {
-    "kind": "pour",
+    "kind": "skewer",
     "count": 3
    },
    {
-    "kind": "stir",
-    "count": 2
+    "kind": "pour",
+    "count": 1
+   },
+   {
+    "kind": "simmer",
+    "count": 3
    }
   ],
   "health": 3,
@@ -306,12 +350,16 @@
   ],
   "steps": [
    {
-    "kind": "chop",
-    "count": 5
+    "kind": "grill",
+    "count": 1
    },
    {
-    "kind": "flip",
+    "kind": "dice",
     "count": 4
+   },
+   {
+    "kind": "fold",
+    "count": 2
    },
    {
     "kind": "season",
@@ -334,19 +382,23 @@
   ],
   "steps": [
    {
-    "kind": "chop",
-    "count": 4
+    "kind": "pour",
+    "count": 1
    },
    {
     "kind": "flip",
     "count": 3
    },
    {
-    "kind": "season",
+    "kind": "chop",
+    "count": 4
+   },
+   {
+    "kind": "fold",
     "count": 2
    },
    {
-    "kind": "pour",
+    "kind": "plate",
     "count": 2
    }
   ],
@@ -365,15 +417,19 @@
   ],
   "steps": [
    {
-    "kind": "chop",
-    "count": 5
+    "kind": "dice",
+    "count": 4
    },
    {
-    "kind": "stir",
+    "kind": "simmer",
     "count": 5
    },
    {
     "kind": "pour",
+    "count": 1
+   },
+   {
+    "kind": "plate",
     "count": 2
    }
   ],
@@ -393,15 +449,19 @@
   "steps": [
    {
     "kind": "knead",
-    "count": 4
+    "count": 8
    },
    {
     "kind": "flip",
-    "count": 3
+    "count": 2
+   },
+   {
+    "kind": "fold",
+    "count": 2
    },
    {
     "kind": "pour",
-    "count": 2
+    "count": 1
    }
   ],
   "health": 7,
@@ -420,20 +480,20 @@
   ],
   "steps": [
    {
-    "kind": "chop",
-    "count": 6
+    "kind": "dice",
+    "count": 5
    },
    {
     "kind": "pour",
-    "count": 2
+    "count": 1
    },
    {
-    "kind": "stir",
-    "count": 3
+    "kind": "shake",
+    "count": 4
    },
    {
     "kind": "season",
-    "count": 2
+    "count": 3
    }
   ],
   "health": 10,
@@ -451,12 +511,20 @@
   ],
   "steps": [
    {
+    "kind": "grill",
+    "count": 1
+   },
+   {
     "kind": "chop",
+    "count": 4
+   },
+   {
+    "kind": "plate",
     "count": 3
    },
    {
     "kind": "pour",
-    "count": 3
+    "count": 1
    }
   ],
   "health": 3,
@@ -475,15 +543,19 @@
   "steps": [
    {
     "kind": "season",
-    "count": 4
-   },
-   {
-    "kind": "flip",
     "count": 5
    },
    {
+    "kind": "grill",
+    "count": 1
+   },
+   {
+    "kind": "flip",
+    "count": 2
+   },
+   {
     "kind": "chop",
-    "count": 3
+    "count": 4
    }
   ],
   "health": 10,
@@ -503,15 +575,19 @@
   "steps": [
    {
     "kind": "knead",
-    "count": 4
+    "count": 8
    },
    {
-    "kind": "chop",
-    "count": 4
+    "kind": "dice",
+    "count": 3
+   },
+   {
+    "kind": "fold",
+    "count": 3
    },
    {
     "kind": "flip",
-    "count": 3
+    "count": 2
    }
   ],
   "health": 7,
@@ -529,16 +605,20 @@
   ],
   "steps": [
    {
-    "kind": "knead",
-    "count": 4
-   },
-   {
-    "kind": "pour",
+    "kind": "roll",
     "count": 3
    },
    {
+    "kind": "pour",
+    "count": 1
+   },
+   {
     "kind": "stir",
-    "count": 4
+    "count": 2
+   },
+   {
+    "kind": "grill",
+    "count": 1
    }
   ],
   "health": 4,
@@ -558,14 +638,18 @@
   "steps": [
    {
     "kind": "chop",
-    "count": 5
+    "count": 6
+   },
+   {
+    "kind": "shake",
+    "count": 4
    },
    {
     "kind": "stir",
-    "count": 5
+    "count": 3
    },
    {
-    "kind": "season",
+    "kind": "plate",
     "count": 2
    }
   ],
@@ -585,16 +669,24 @@
   ],
   "steps": [
    {
-    "kind": "chop",
+    "kind": "dice",
+    "count": 4
+   },
+   {
+    "kind": "pour",
+    "count": 1
+   },
+   {
+    "kind": "simmer",
     "count": 5
    },
    {
-    "kind": "stir",
-    "count": 6
+    "kind": "skewer",
+    "count": 3
    },
    {
-    "kind": "season",
-    "count": 3
+    "kind": "plate",
+    "count": 2
    }
   ],
   "health": 9,
@@ -613,15 +705,19 @@
   "steps": [
    {
     "kind": "chop",
+    "count": 6
+   },
+   {
+    "kind": "shake",
     "count": 5
    },
    {
-    "kind": "stir",
-    "count": 3
+    "kind": "flip",
+    "count": 2
    },
    {
-    "kind": "flip",
-    "count": 3
+    "kind": "plate",
+    "count": 2
    }
   ],
   "health": 8,
@@ -639,20 +735,20 @@
   ],
   "steps": [
    {
-    "kind": "chop",
-    "count": 4
-   },
-   {
     "kind": "pour",
-    "count": 2
+    "count": 1
    },
    {
-    "kind": "flip",
+    "kind": "dice",
+    "count": 3
+   },
+   {
+    "kind": "grill",
+    "count": 1
+   },
+   {
+    "kind": "shake",
     "count": 4
-   },
-   {
-    "kind": "season",
-    "count": 2
    }
   ],
   "health": 6,
@@ -672,14 +768,22 @@
   "steps": [
    {
     "kind": "season",
-    "count": 3
+    "count": 4
+   },
+   {
+    "kind": "grill",
+    "count": 1
    },
    {
     "kind": "chop",
     "count": 5
    },
    {
-    "kind": "pour",
+    "kind": "simmer",
+    "count": 3
+   },
+   {
+    "kind": "plate",
     "count": 3
    }
   ],
@@ -703,11 +807,15 @@
    },
    {
     "kind": "pour",
-    "count": 2
+    "count": 1
    },
    {
-    "kind": "stir",
+    "kind": "simmer",
     "count": 4
+   },
+   {
+    "kind": "shake",
+    "count": 3
    }
   ],
   "health": 8,
@@ -725,15 +833,19 @@
   "steps": [
    {
     "kind": "chop",
-    "count": 5
+    "count": 6
    },
    {
     "kind": "flip",
-    "count": 3
+    "count": 2
+   },
+   {
+    "kind": "shake",
+    "count": 4
    },
    {
     "kind": "pour",
-    "count": 2
+    "count": 1
    }
   ],
   "health": 3,
@@ -751,15 +863,19 @@
   "steps": [
    {
     "kind": "knead",
-    "count": 4
+    "count": 8
+   },
+   {
+    "kind": "roll",
+    "count": 2
    },
    {
     "kind": "flip",
-    "count": 4
+    "count": 2
    },
    {
     "kind": "pour",
-    "count": 3
+    "count": 1
    }
   ],
   "health": 3,
@@ -779,19 +895,19 @@
   "steps": [
    {
     "kind": "chop",
-    "count": 6
+    "count": 5
    },
    {
-    "kind": "stir",
+    "kind": "simmer",
     "count": 5
    },
    {
     "kind": "season",
-    "count": 3
+    "count": 4
    },
    {
-    "kind": "pour",
-    "count": 2
+    "kind": "plate",
+    "count": 3
    }
   ],
   "health": 10,
@@ -810,11 +926,15 @@
   ],
   "steps": [
    {
-    "kind": "chop",
-    "count": 8
+    "kind": "dice",
+    "count": 5
    },
    {
-    "kind": "stir",
+    "kind": "plate",
+    "count": 3
+   },
+   {
+    "kind": "simmer",
     "count": 4
    },
    {
@@ -841,12 +961,16 @@
     "count": 5
    },
    {
-    "kind": "stir",
-    "count": 3
+    "kind": "simmer",
+    "count": 4
    },
    {
-    "kind": "pour",
-    "count": 2
+    "kind": "knead",
+    "count": 6
+   },
+   {
+    "kind": "plate",
+    "count": 3
    }
   ],
   "health": 7,
@@ -868,11 +992,15 @@
     "count": 4
    },
    {
-    "kind": "stir",
-    "count": 5
+    "kind": "simmer",
+    "count": 4
    },
    {
-    "kind": "season",
+    "kind": "stir",
+    "count": 3
+   },
+   {
+    "kind": "plate",
     "count": 2
    }
   ],
@@ -890,12 +1018,20 @@
   ],
   "steps": [
    {
-    "kind": "chop",
+    "kind": "dice",
+    "count": 4
+   },
+   {
+    "kind": "pour",
+    "count": 1
+   },
+   {
+    "kind": "simmer",
     "count": 5
    },
    {
-    "kind": "stir",
-    "count": 6
+    "kind": "season",
+    "count": 3
    }
   ],
   "health": 9,
@@ -912,16 +1048,20 @@
   ],
   "steps": [
    {
-    "kind": "pour",
+    "kind": "simmer",
     "count": 3
    },
    {
-    "kind": "chop",
+    "kind": "roll",
     "count": 2
    },
    {
-    "kind": "season",
-    "count": 2
+    "kind": "pour",
+    "count": 1
+   },
+   {
+    "kind": "plate",
+    "count": 3
    }
   ],
   "health": 5,
@@ -940,20 +1080,24 @@
   ],
   "steps": [
    {
-    "kind": "stir",
+    "kind": "shake",
     "count": 5
    },
    {
     "kind": "pour",
-    "count": 2
+    "count": 1
    },
    {
     "kind": "flip",
-    "count": 4
+    "count": 3
+   },
+   {
+    "kind": "dice",
+    "count": 3
    },
    {
     "kind": "season",
-    "count": 2
+    "count": 3
    }
   ],
   "health": 5,
@@ -972,20 +1116,20 @@
   ],
   "steps": [
    {
-    "kind": "chop",
+    "kind": "dice",
     "count": 4
    },
    {
     "kind": "knead",
-    "count": 5
+    "count": 8
    },
    {
-    "kind": "flip",
-    "count": 3
+    "kind": "grill",
+    "count": 1
    },
    {
     "kind": "pour",
-    "count": 2
+    "count": 1
    }
   ],
   "health": 9,
@@ -1004,16 +1148,20 @@
   ],
   "steps": [
    {
-    "kind": "chop",
-    "count": 5
+    "kind": "dice",
+    "count": 4
    },
    {
     "kind": "season",
     "count": 4
    },
    {
-    "kind": "stir",
+    "kind": "simmer",
     "count": 5
+   },
+   {
+    "kind": "plate",
+    "count": 2
    }
   ],
   "health": 10,
@@ -1032,15 +1180,19 @@
   "steps": [
    {
     "kind": "stir",
-    "count": 5
+    "count": 3
    },
    {
     "kind": "chop",
     "count": 5
    },
    {
-    "kind": "season",
-    "count": 2
+    "kind": "pour",
+    "count": 1
+   },
+   {
+    "kind": "plate",
+    "count": 3
    }
   ],
   "health": 9,
@@ -1059,8 +1211,16 @@
   ],
   "steps": [
    {
-    "kind": "chop",
-    "count": 6
+    "kind": "dice",
+    "count": 4
+   },
+   {
+    "kind": "grill",
+    "count": 1
+   },
+   {
+    "kind": "plate",
+    "count": 3
    },
    {
     "kind": "flip",
@@ -1068,10 +1228,6 @@
    },
    {
     "kind": "stir",
-    "count": 4
-   },
-   {
-    "kind": "season",
     "count": 2
    }
   ],
@@ -1090,16 +1246,20 @@
   ],
   "steps": [
    {
-    "kind": "flip",
-    "count": 6
+    "kind": "grill",
+    "count": 1
    },
    {
-    "kind": "chop",
-    "count": 3
+    "kind": "flip",
+    "count": 4
+   },
+   {
+    "kind": "fold",
+    "count": 2
    },
    {
     "kind": "season",
-    "count": 2
+    "count": 3
    }
   ],
   "health": 8,
@@ -1118,20 +1278,20 @@
   ],
   "steps": [
    {
-    "kind": "stir",
-    "count": 5
+    "kind": "simmer",
+    "count": 4
    },
    {
     "kind": "pour",
-    "count": 3
+    "count": 1
    },
    {
     "kind": "chop",
     "count": 4
    },
    {
-    "kind": "season",
-    "count": 2
+    "kind": "plate",
+    "count": 3
    }
   ],
   "health": 9,
@@ -1155,11 +1315,15 @@
    },
    {
     "kind": "stir",
-    "count": 6
+    "count": 3
    },
    {
     "kind": "flip",
-    "count": 2
+    "count": 3
+   },
+   {
+    "kind": "skewer",
+    "count": 3
    },
    {
     "kind": "season",
@@ -1182,15 +1346,19 @@
   "steps": [
    {
     "kind": "knead",
-    "count": 5
+    "count": 8
    },
    {
-    "kind": "chop",
-    "count": 4
+    "kind": "dice",
+    "count": 3
    },
    {
-    "kind": "pour",
-    "count": 2
+    "kind": "fold",
+    "count": 3
+   },
+   {
+    "kind": "simmer",
+    "count": 3
    }
   ],
   "health": 8,
@@ -1208,15 +1376,19 @@
   ],
   "steps": [
    {
-    "kind": "knead",
-    "count": 4
-   },
-   {
-    "kind": "pour",
+    "kind": "roll",
     "count": 3
    },
    {
-    "kind": "stir",
+    "kind": "fold",
+    "count": 2
+   },
+   {
+    "kind": "pour",
+    "count": 1
+   },
+   {
+    "kind": "simmer",
     "count": 3
    }
   ],
@@ -1236,20 +1408,20 @@
   ],
   "steps": [
    {
-    "kind": "stir",
-    "count": 6
+    "kind": "knead",
+    "count": 8
    },
    {
-    "kind": "chop",
-    "count": 3
+    "kind": "simmer",
+    "count": 5
    },
    {
     "kind": "pour",
-    "count": 3
+    "count": 1
    },
    {
-    "kind": "season",
-    "count": 2
+    "kind": "plate",
+    "count": 3
    }
   ],
   "health": 9,
@@ -1268,16 +1440,20 @@
   ],
   "steps": [
    {
-    "kind": "stir",
+    "kind": "shake",
     "count": 4
    },
    {
-    "kind": "chop",
-    "count": 6
+    "kind": "roll",
+    "count": 3
    },
    {
-    "kind": "knead",
-    "count": 3
+    "kind": "dice",
+    "count": 4
+   },
+   {
+    "kind": "plate",
+    "count": 2
    }
   ],
   "health": 9,
@@ -1296,15 +1472,19 @@
   "steps": [
    {
     "kind": "knead",
-    "count": 5
+    "count": 8
    },
    {
-    "kind": "pour",
+    "kind": "roll",
     "count": 3
    },
    {
     "kind": "chop",
-    "count": 2
+    "count": 4
+   },
+   {
+    "kind": "pour",
+    "count": 1
    }
   ],
   "health": 8,
@@ -1323,20 +1503,20 @@
   ],
   "steps": [
    {
-    "kind": "stir",
-    "count": 6
-   },
-   {
-    "kind": "chop",
-    "count": 4
+    "kind": "simmer",
+    "count": 5
    },
    {
     "kind": "season",
-    "count": 3
+    "count": 4
    },
    {
     "kind": "pour",
-    "count": 2
+    "count": 1
+   },
+   {
+    "kind": "plate",
+    "count": 3
    }
   ],
   "health": 10,
@@ -1356,19 +1536,19 @@
   "steps": [
    {
     "kind": "knead",
-    "count": 5
+    "count": 8
    },
    {
-    "kind": "chop",
+    "kind": "dice",
+    "count": 3
+   },
+   {
+    "kind": "fold",
     "count": 4
    },
    {
-    "kind": "flip",
-    "count": 2
-   },
-   {
-    "kind": "pour",
-    "count": 2
+    "kind": "simmer",
+    "count": 3
    }
   ],
   "health": 8,
