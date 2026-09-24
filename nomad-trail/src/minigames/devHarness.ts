@@ -19,6 +19,7 @@ const SAMPLES: { key: string; label: string; payload?: any }[] = [
   { key: MINIGAME_KEYS.workout, label: 'Workout: trail run', payload: { activity: 'trailrun', city: 'Boulder' } },
   { key: MINIGAME_KEYS.workout, label: 'Workout: hike', payload: { activity: 'hike', city: 'Manaslu' } },
   { key: MINIGAME_KEYS.workout, label: 'Workout: swim', payload: { activity: 'swim', city: 'Antibes' } },
+  { key: MINIGAME_KEYS.workout, label: 'Workout: yoga', payload: { activity: 'yoga', city: 'Dakhla' } },
   { key: MINIGAME_KEYS.carryon, label: 'Carry-On: default level', payload: DEFAULT_LEVEL },
   { key: MINIGAME_KEYS.carryon, label: 'Carry-On: Tokyo otters', payload: { ...DEFAULT_LEVEL, city: 'Tokyo', hazard: 'otter', palette: [PAL.dusk0, PAL.dusk1, PAL.pink], tiles: DEFAULT_LEVEL.tiles.map((r, i) => i === 17 ? '#.........H...........#' : r) } },
   { key: MINIGAME_KEYS.carryon, label: 'Carry-On: Dakhla gusts', payload: { ...DEFAULT_LEVEL, city: 'Dakhla', hazard: 'gust', palette: [PAL.sun1, PAL.sun0, PAL.earth3] } },

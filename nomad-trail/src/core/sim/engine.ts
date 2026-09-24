@@ -257,7 +257,7 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       const activity = acts.length ? acts[(s.stayDays + s.day) % acts.length] : 'trailrun';
       const extraLives = hasItem(s, 'hikingboots') && OUTDOOR_ACTIVITIES.has(activity) && activity !== 'kite' ? 1 : 0;
       s.workStreak = 0;
-      return { state: s, events: [], minigame: { key: MINIGAME_KEYS.workout, payload: { activity, city: city.id, extraLives }, difficulty: diff, ...(extraLives ? { extraLives } : {}) } }; }
+      return { state: s, events: [], minigame: { key: MINIGAME_KEYS.workout, payload: { activity, city: city.id, day: s.day, extraLives }, difficulty: diff, ...(extraLives ? { extraLives } : {}) } }; }
     case 'cook': {
       if (locked) return { state, events: [], error: 'No kitchen kit, no clean anything. The suitcase is somewhere else.' };
       s.workStreak = 0;

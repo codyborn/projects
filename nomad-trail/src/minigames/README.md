@@ -32,3 +32,31 @@ Every dish in `src/data/dishes.json` uses 4 to 5 steps that make culinary sense 
 - No audio hooks yet; add SFX calls where `frame.flash`/`frame.shake` are called.
 - Carry-On hazard AI is simple (no pathing); the validator ignores mid-air ceilings.
 - Cooking `stir` on desktop needs a mouse drag or holding RIGHT.
+
+## Workout (round 5): WarioWare-style fitness sessions
+
+`Workout` (payload `{ activity, city, day?, seed?, plan? }`) runs a SESSION of 3 distinct micro-games from the activity's pool: a one-word command card (0.7 s) → a 4 to 9 s micro-game with a countdown bar → NICE!/MISS → the next one faster (x1.0 → x1.3 → x1.6 after each success). Lives: 1 + `extraLives` (hiking boots); a micro-game scored under 50% costs a life; out of lives → FAILED with the partial mean. Session score = mean micro-game score. Total under 32 s (cap 30 s of play). Energy under 50 narrows every window via the frame. Selection is seeded from `city|day` when `day` is passed (else random); `plan: ['pushup', ...]` forces ids (tests, harness). **Ferrata is unchanged** (the Zeke's Peak bouncing climb).
+
+| id | word | skill test | controls |
+|---|---|---|---|
+| pushup | TAP! | tap when the shrinking ring meets the target ring; 4–6 reps, faster each rep | tap / SPACE |
+| plank | HOLD! | hold, and micro-drag left/right to keep a wobbling marker in the band; leaving it drains the plank meter | hold + drag / SPACE + ←→ |
+| jumprope | JUMP! | tap as the rope passes under the feet; speeds up; a mistimed tap trips (3 trips ends it) | tap |
+| curls | SWIPE! | swipe UP on the side the arrow shows before it fades; faster each time | swipe / ←→ |
+| burpee | CHAIN! | quick-time chain of 6 icons (tap, swipe up, swipe down, hold) with a shrinking timer | tap, swipes, hold |
+| squat | HOLD! | hold to lower, release inside the green depth band; 4 reps, band narrows | hold / SPACE |
+| kettlebell | SWIPE! | swipe UP exactly at the top of the pendulum's front arc; 5 swings, accelerating | swipe up / SPACE |
+| sprint | GO! | mash-tap to run; when the whistle flashes STOP within ~250 ms; 3 rounds | tap |
+| stretch | EASY! | drag the slider end to end without exceeding the speed limit (speedometer goes red); 2 passes | drag / ←→ |
+| boulderbeta | MEMORISE! | holds light in sequence (3 then 4), reproduce from memory while grip drains; ends with a dyno catch at the apex | tap holds |
+| dyno | CATCH! | tap at the apex of the swing to catch the next hold; 3 catches, 2 slips ends it | tap |
+| riverstones | HOP! | tap when the next bobbing stone is at its highest; 5 stones, 3 splashes ends it | tap |
+| swimbreath | STROKE! | alternate LEFT/RIGHT taps to the beat; when the bubble shows, do NOT tap (breathe) | tap sides / ←→ |
+| balance | STEADY! | hold left/right against visible gusts to keep the ball centred; falling off ends it | hold sides / ←→ |
+| pose | MATCH! | drag up/down to rotate the arm onto the shadow within tolerance, hold 0.5 s; 3 poses | drag / ↑↓ |
+| runner | RUN! | the old trail run cut to 8 s: tap to jump rocks, swipe DOWN to duck branches | tap / swipe down |
+| pace | PACE! | the old hike pace meter cut to 8 s: hold to walk, stay in the green, too fast = dizzy | hold |
+
+Pools: bands (hotel room, also the fallback for unknown activities) = pushup, plank, jumprope, curls, burpee, squat, kettlebell, sprint, stretch · boulder = boulderbeta, dyno, kettlebell, plank, stretch · trailrun = runner, riverstones, sprint · hike = riverstones, pace, balance, stretch · swim = swimbreath, plank, stretch · yoga / surf / ski = balance, pose, plank, stretch · ferrata = the climb.
+
+Code: `src/minigames/workout/` — `micro.ts` (base class with input/loop/object bookkeeping, `Athlete` pixel sprite with 4 poses), `timing.ts`, `hold.ts`, `gesture.ts`, `boulder.ts`, `legacy.ts`, `index.ts` (registry, pools, `pickSession`, seeded rng). `WorkoutScene` orchestrates cards, countdown, speed and lives.
