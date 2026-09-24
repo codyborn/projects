@@ -79,7 +79,7 @@ export class PackScene extends Phaser.Scene {
   private place(it: Item, b: Bag, x: number, y: number, rot: boolean, animate = true) {
     const g = this.grids[b]; const d = this.dims(it, rot); const obj = this.itemBox(it, d.w, d.h, CELL); obj.setPosition(g.x + x * CELL, g.y + y * CELL);
     const p: Placed = { id: it.id, bag: b, x, y, rot, obj }; this.placed.push(p); this.mark(p, true);
-    obj.setSize(d.w * CELL, d.h * CELL); obj.setInteractive(new Phaser.Geom.Rectangle(0, 0, d.w * CELL, d.h * CELL), Phaser.Geom.Rectangle.Contains); this.input.setDraggable(obj);
+    obj.setSize(d.w * CELL, d.h * CELL); obj.setInteractive(new Phaser.Geom.Rectangle(d.w * CELL / 2, d.h * CELL / 2, d.w * CELL, d.h * CELL), Phaser.Geom.Rectangle.Contains);  // container hit rect is offset by displayOrigin this.input.setDraggable(obj);
     obj.on('dragstart', () => { this.mark(p, false); obj.setDepth(100); this.tweens.add({ targets: obj, scaleX: 1.06, scaleY: 1.06, duration: 80 }); });
     obj.on('drag', (_ptr: any, dx: number, dy: number) => obj.setPosition(dx, dy));
     obj.on('dragend', (ptr: Phaser.Input.Pointer) => { obj.setScale(1); this.dropPlaced(p, ptr); });

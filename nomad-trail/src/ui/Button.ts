@@ -10,7 +10,9 @@ export class Button extends Phaser.GameObjects.Container {
     this.g = scene.add.graphics(); this.add(this.g);
     this.label = txt(scene, 0, 0, (o.icon ? o.icon + ' ' : '') + text, this.opts.size, this.opts.textColor, { align: 'center' }).setOrigin(0.5); this.add(this.label as any);
     this.draw(false); this.setSize(this.opts.w, this.opts.h);
-    this.setInteractive(new Phaser.Geom.Rectangle(-this.opts.w / 2, -this.opts.h / 2, this.opts.w, this.opts.h), Phaser.Geom.Rectangle.Contains);
+    // Phaser adds displayOrigin (w/2, h/2) to the local point before testing a Container's hit area, so the
+    // rectangle must start at (0, 0) to cover the whole button. A centered rect only covers the top-left quarter.
+    this.setInteractive(new Phaser.Geom.Rectangle(0, 0, this.opts.w, this.opts.h), Phaser.Geom.Rectangle.Contains);
     this.on('pointerdown', () => { if (this._disabled) return; this.draw(true); scene.tweens.add({ targets: this, scaleX: 0.96, scaleY: 0.92, duration: 60, yoyo: true }); });
     this.on('pointerup', () => { if (this._disabled) return; this.draw(false); onTap(); });
     this.on('pointerout', () => this.draw(false));
