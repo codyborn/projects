@@ -77,8 +77,13 @@ export class MinigameFrame {
   scoreNow: () => number = () => 50;
   private capTimer?: Phaser.Time.TimerEvent;
   private playStart = 0;
-  /** seconds of play so far (0 during the intro) */
-  get elapsed() { return this.playStart ? Math.max(0, (this.scene.time.now - this.playStart) / 1000) : 0; }
+  private pausedAt = 0; private pausedTotal = 0;
+  /** seconds of play so far (0 during the intro; paused stretches do not count) */
+  get elapsed() { if (!this.playStart) return 0; const now = this.pausedAt ? this.pausedAt : this.scene.time.now; return Math.max(0, (now - this.playStart - this.pausedTotal) / 1000); }
+  /** Stop the play clock (e.g. while an instruction card is up): the cap will not fire until resumeCap(). */
+  pauseCap() { if (!this.playStart || this.pausedAt) return; this.pausedAt = this.scene.time.now; this.capTimer?.remove(); this.capTimer = undefined; }
+  /** Restart the play clock; the remaining cap time is re-armed. */
+  resumeCap() { if (!this.pausedAt) return; this.pausedTotal += this.scene.time.now - this.pausedAt; this.pausedAt = 0; if (this.finished) return; this.capTimer = this.scene.time.delayedCall(Math.max(50, this.remaining * 1000), () => { if (!this.finished) this.finish(this.scoreNow()); }); }
   /** seconds left before the cap */
   get remaining() { return Math.max(0, this.capSec - this.elapsed); }
 

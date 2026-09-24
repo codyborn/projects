@@ -4,27 +4,27 @@ import { MINIGAME_KEYS, type ActivityId, type MinigameLaunch } from '../core/typ
 import { MinigameFrame, Meter, W, H, clamp, normalizeLaunch, panel, txt } from './_shared';
 import { genLedges, FERRATA, type Ledge } from './ferrataLevel';
 import { Athlete, type Micro, type MicroCtx } from './workout/micro';
-import { MICRO_REGISTRY, pickSession, seededRng, hashStr } from './workout';
+import { MICRO_REGISTRY, pickOne, seededRng, hashStr, ROUNDS, ROUND_SPEEDS } from './workout';
 
 export interface WorkoutPayload { activity: ActivityId; city: string; day?: number; seed?: number; /** dev/test: force these micro-game ids */ plan?: string[]; }
 const TITLES: Partial<Record<ActivityId, string>> = { bands: 'Hotel room workout', boulder: 'Bouldering', ferrata: 'Via ferrata', trailrun: 'Trail run', hike: 'Acclimatization hike', swim: 'Open water swim', yoga: 'Yoga', surf: 'Surf', ski: 'Ski day' };
-const SPEEDS = [1.0, 1.3, 1.6];
 
 /**
- * Workout: a WarioWare-style session of 3 fitness micro-games (command card → 4 to 8 s micro-game → next, faster).
- * Lives: 1 + extraLives (hiking boots); a failed micro-game costs a life. Ferrata is the Zeke's Peak climb, unchanged.
+ * Workout: ONE WarioWare-style fitness micro-game that matches the activity (hotel room, bouldering, trail run...),
+ * picked per city+day, played for 3 escalating rounds (x1.0 → x1.3 → x1.6). Lives: 1 + extraLives (hiking boots);
+ * a failed round costs a life and the session continues to the next round. Ferrata is the Zeke's Peak climb, unchanged.
  */
 export class WorkoutScene extends Phaser.Scene {
   private frame!: MinigameFrame; private launch!: MinigameLaunch; private activity: ActivityId = 'bands'; private city = '';
   private g!: Phaser.GameObjects.Graphics; private meter!: Meter; private ticks: Phaser.Time.TimerEvent[] = [];
   private lives = 0; private heartsG?: Phaser.GameObjects.Graphics;
   // session
-  private athlete!: Athlete; private current?: Micro; private scores: number[] = []; private plan: string[] = []; private step = 0; private speedIdx = 0; private rng: () => number = Math.random; private countdown?: Phaser.GameObjects.Graphics; private cdTimer?: Phaser.Time.TimerEvent;
+  private athlete!: Athlete; private current?: Micro; private scores: number[] = []; private microId = ''; private round = 0; private rng: () => number = Math.random; private countdown?: Phaser.GameObjects.Graphics; private cdTimer?: Phaser.Time.TimerEvent;
 
   constructor() { super(MINIGAME_KEYS.workout); }
   init(data: any) {
     this.launch = normalizeLaunch(data); const p = (this.launch.payload || {}) as Partial<WorkoutPayload>;
-    this.activity = (p.activity && TITLES[p.activity]) ? p.activity : 'bands'; this.city = p.city || ''; this.ticks = []; this.scores = []; this.step = 0; this.speedIdx = 0; this.current = undefined;
+    this.activity = (p.activity && TITLES[p.activity]) ? p.activity : 'bands'; this.city = p.city || ''; this.ticks = []; this.scores = []; this.round = 0; this.current = undefined;
     const seed = typeof p.seed === 'number' ? p.seed : typeof p.day === 'number' ? hashStr(`${p.city}|${p.day}`) : undefined;
     this.rng = seed !== undefined ? seededRng(seed) : Math.random;
   }
@@ -44,29 +44,32 @@ export class WorkoutScene extends Phaser.Scene {
       this.frame.intro('The marble bounces on its own. Hold LEFT or RIGHT to steer it up the ledges. Green ledges save your progress. Reach the flag.', () => this.ferrata());
       return;
     }
-    // ---- session
-    this.frame.capSec = 30; const forced = ((this.launch.payload || {}) as Partial<WorkoutPayload>).plan?.filter(id => MICRO_REGISTRY[id]); this.plan = forced?.length ? forced : pickSession(this.activity, this.rng); this.athlete = new Athlete(this, W / 2, 330); this.athlete.show(false);
+    // ---- one micro-game, three escalating rounds
+    this.frame.capSec = 30; const forced = ((this.launch.payload || {}) as Partial<WorkoutPayload>).plan?.filter(id => MICRO_REGISTRY[id]);
+    this.microId = forced?.length ? forced[0] : pickOne(this.activity, this.rng); this.athlete = new Athlete(this, W / 2, 330); this.athlete.show(false);
     this.frame.scoreNow = () => this.sessionScore();
-    this.frame.intro(`${this.plan.length} moves. Read the word, then go. It gets faster.`, () => this.nextMicro());
+    const meta = MICRO_REGISTRY[this.microId]();
+    this.frame.intro(`${meta.instr} ${ROUNDS} rounds. Each one faster.`, () => this.nextRound());
   }
   update(_t: number, dt: number) { this.frame.update(dt); }
 
-  private sessionScore() { const done = this.scores.length; if (!done) return 0; return (this.scores.reduce((a, b) => a + b, 0) / Math.max(done, this.plan.length)) * 100; }
+  private sessionScore() { const done = this.scores.length; if (!done) return 0; return (this.scores.reduce((a, b) => a + b, 0) / Math.max(done, ROUNDS)) * 100; }
 
-  /** Command card (0.6 s) → micro-game with a countdown bar → result → next. */
-  private nextMicro() {
+  /** Card (the command word on round 1, ROUND 2 / FINAL after) → the micro-game at this round's speed with a countdown bar → result → next round. */
+  private nextRound() {
     if (!this.frame.active) return;
-    if (this.step >= this.plan.length || this.lives <= 0) { this.finishSession(); return; }
-    const micro = MICRO_REGISTRY[this.plan[this.step]](); const speed = SPEEDS[Math.min(this.speedIdx, SPEEDS.length - 1)];
-    this.meter.set(this.step / this.plan.length, PAL.sun2); this.frame.setProgress(`${this.step + 1}/${this.plan.length}  x${speed.toFixed(1)}`); this.frame.setTimer('');
-    // command card
-    const card = this.add.container(0, 0).setDepth(700); const bg = this.add.rectangle(W / 2, H / 2, W, H, PAL.night0, 0.9); const p = panel(this, 20, H / 2 - 70, W - 40, 140, [PAL.sun0, PAL.sea1, PAL.dusk2][this.step % 3]);
-    const word = txt(this, W / 2, H / 2 - 18, micro.word, 40, PAL.white); const sub = txt(this, W / 2, H / 2 + 34, micro.instr, 10, PAL.night0); sub.setWordWrapWidth(W - 80).setAlign('center');
+    if (this.round >= ROUNDS || this.lives <= 0) { this.finishSession(); return; }
+    const micro = MICRO_REGISTRY[this.microId](); const speed = ROUND_SPEEDS[Math.min(this.round, ROUND_SPEEDS.length - 1)]; const first = this.round === 0;
+    this.meter.set(this.round / ROUNDS, PAL.sun2); this.frame.setProgress(`ROUND ${this.round + 1}/${ROUNDS}  x${speed.toFixed(1)}`); this.frame.setTimer('');
+    // card
+    const card = this.add.container(0, 0).setDepth(700); const bg = this.add.rectangle(W / 2, H / 2, W, H, PAL.night0, 0.9); const p = panel(this, 20, H / 2 - 70, W - 40, 140, [PAL.sun0, PAL.sea1, PAL.dusk2][this.round % 3]);
+    const big = first ? micro.word : this.round === ROUNDS - 1 ? 'FINAL' : `ROUND ${this.round + 1}`;
+    const word = txt(this, W / 2, H / 2 - 18, big, first ? 40 : 30, PAL.white); const sub = txt(this, W / 2, H / 2 + 34, first ? micro.instr : `${micro.word}  x${speed.toFixed(1)} speed`, 10, PAL.night0); sub.setWordWrapWidth(W - 80).setAlign('center');
     card.add([bg, p, word, sub]); word.setScale(0.4); this.tweens.add({ targets: word, scale: 1, duration: 220, ease: 'Back.Out' });
-    this.time.delayedCall(700, () => {
+    this.time.delayedCall(first ? 700 : 500, () => {
       card.destroy(); if (!this.frame.active) return; this.current = micro; this.athlete.show(true).pose(0);
       const ctx: MicroCtx = { scene: this, frame: this.frame, speed, window: this.frame.window, hard: this.frame.hard, rng: this.rng, athlete: this.athlete };
-      const dur = micro.durationSec / speed * 1000; const t0 = this.time.now;
+      const dur = micro.durationSec / speed * 1000; const t0 = this.time.now;   // later rounds are faster and shorter
       this.countdown = this.add.graphics().setDepth(802);
       const tick = this.time.addEvent({ delay: 50, loop: true, callback: () => { const f = clamp(1 - (this.time.now - t0) / dur, 0, 1); this.countdown!.clear(); this.countdown!.fillStyle(PAL.ink).fillRect(0, 26, W, 6); this.countdown!.fillStyle(f > 0.3 ? PAL.neon : PAL.red).fillRect(0, 26, W * f, 6); } });
       this.ticks.push(tick);
@@ -74,9 +77,9 @@ export class WorkoutScene extends Phaser.Scene {
       micro.start(ctx, (score01) => {
         tick.remove(); this.cdTimer?.remove(); this.countdown?.destroy(); this.current = undefined; this.athlete.show(false); this.athlete.sprite.setAngle(0).setScale(1);
         this.scores.push(score01); const ok = score01 >= 0.5;
-        if (ok) { this.speedIdx = Math.min(this.speedIdx + 1, SPEEDS.length - 1); this.banner(score01 >= 0.9 ? 'PERFECT!' : 'NICE!', PAL.neon); }
+        if (ok) this.banner(score01 >= 0.9 ? 'PERFECT!' : 'NICE!', PAL.neon);
         else { this.banner('MISS', PAL.red); if (this.loseLife()) { this.time.delayedCall(700, () => this.finishSession(true)); return; } }
-        this.step++; this.time.delayedCall(650, () => this.nextMicro());
+        this.round++; this.time.delayedCall(650, () => this.nextRound());
       });
     });
   }

@@ -26,7 +26,7 @@
  {
   "id": "backinjury",
   "title": "Something gives",
-  "text": "Lifting the bag onto the train rack, something in your lower back makes a sound you did not know it could make. For the next ten days, standing up is a project.",
+  "text": "Lifting the bag onto the train rack, something in your lower back makes a sound you did not know it could make. For the next ten days, existence is suffering.",
   "when": "leg",
   "baseChance": 0.45,
   "effects": {
@@ -40,7 +40,7 @@
  {
   "id": "wheel",
   "title": "Baggage carousel, one wheel short",
-  "text": "Your suitcase comes around the carousel on three wheels and a stump. The airline offers a form. The form offers nothing.",
+  "text": "Your suitcase comes around the carousel on three wheels and a stump. The airline offers a form. The form does nothing.",
   "when": "flight",
   "baseChance": 0.05,
   "effects": {
@@ -52,7 +52,7 @@
  {
   "id": "delayed",
   "title": "Delayed baggage",
-  "text": "Everyone else's bag comes out. Yours is, according to the app, still in {city}'s departure city, having a nice time. The laptop is on your shoulder; everything else is somewhere else for a while. No clean clothes, no kitchen, no gym until it shows up.",
+  "text": "Everyone else's bag comes out. Yours is, according to the app, still in the departure city, having a nice time. The laptop is on your shoulder; everything else is somewhere else for a while. No clean clothes, no kitchen, no gym until it shows up.",
   "when": "flight",
   "baseChance": 0.1,
   "effects": {
@@ -63,7 +63,7 @@
  {
   "id": "kettle",
   "title": "The kettle",
-  "text": "The collapsible travel kettle boils, then does not stop, then does something between boiling and detonation. Second-degree burns across the wrist. The hotel has a kettle. It always had a kettle.",
+  "text": "The collapsible travel kettle boils, then does not stop, then detonates. Second-degree burns across the wrist. The hotel has a kettle. It always had a kettle.",
   "when": "day",
   "baseChance": 0.02,
   "effects": {
@@ -79,7 +79,7 @@
  {
   "id": "foodpoisoning",
   "title": "Food poisoning",
-  "text": "Day {day}, {city}. Something you ate has opinions. You spend two days learning the bathroom tile pattern by heart.",
+  "text": "Day {day}, {city}. What rhymes with hiarrhea and is coming out of you right now? You spend two days learning the bathroom tile pattern by heart.",
   "when": "action",
   "baseChance": 0.135,
   "effects": {
@@ -92,7 +92,7 @@
   "mitigatedBy": [
    "meds"
   ],
-  "mitigatedText": "Day {day}, {city}. Something you ate has opinions. The probiotics have counter-arguments. One rough night, not two days.",
+  "mitigatedText": "Day {day}, {city}. That lukewarm salmon mayo bowl was a mistake. The probiotics fight back. One rough night, not two days.",
   "mitigatedEffects": {
    "health": -7,
    "energy": -10,
@@ -113,7 +113,7 @@
  {
   "id": "forgot",
   "title": "Left behind",
-  "text": "Two hours out of {city} you realize your {item} is still in the room. The host 'will look'. The host does not look.",
+  "text": "Two hours out of {city} you realize your {item} is still in the room. The host 'will take a look'. The host does not take a look.",
   "when": "leave",
   "baseChance": 0.18,
   "effects": {
@@ -131,7 +131,7 @@
  {
   "id": "mosquito",
   "title": "The swarm",
-  "text": "Sunset in {city}. The mosquitoes arrive like a shift change. You wake up with a constellation on each ankle and the sleep of a hunted animal.",
+  "text": "Sunset in {city}. The mosquitoes arrive like a scene from Jumanji. You wake up with a constellation on each ankle and the sleep of a hunted animal.",
   "when": "day",
   "baseChance": 0.07,
   "effects": {
@@ -145,7 +145,7 @@
   "mitigatedBy": [
    "repellent"
   ],
-  "mitigatedText": "Sunset in {city}. The mosquitoes arrive. The net goes up and the repellent goes on. You sleep like a person with a plan.",
+  "mitigatedText": "Sunset in {city}. The mosquitoes arrive. The net goes up and the repellent goes on. You sleep like a baby.",
   "mitigatedEffects": {
    "mood": 1
   }
@@ -211,12 +211,16 @@
    "mood": 15,
    "energy": -12,
    "unlockAchievement": "kite"
-  }
+  },
+  "requiresActivity": [
+   "kite",
+   "surf"
+  ]
  },
  {
   "id": "lostphone",
   "title": "Lost phone",
-  "text": "Somewhere between the metro and the bar in {city}, your phone stops being yours. The plan you wrote for this exact moment is, of course, on the phone.",
+  "text": "Somewhere between the bar and the walk back in {city}, your phone stops being yours. The plan you wrote for this exact moment is, of course, on the phone.",
   "when": "action",
   "baseChance": 0.02,
   "effects": {
@@ -362,12 +366,13 @@
    "cold",
    "alpine",
    "temperate"
-  ]
+  ],
+  "requiresOutdoorsy": true
  },
  {
   "id": "goodday",
   "title": "A good day",
-  "text": "Day {day}, {city}. Nothing goes wrong. The coffee is right, the light is right, the work gets done by two and the mountain is still there at three. This is why.",
+  "text": "Day {day}, {city}. Nothing goes wrong. The coffee is right, the light is right, the work gets done by two and the city is still out there at three. This is why.",
   "when": "day",
   "baseChance": 0.04,
   "effects": {
@@ -448,7 +453,10 @@
   "baseChance": 0.1,
   "effects": {
    "mood": 8
-  }
+  },
+  "requiresTransport": [
+   "train"
+  ]
  },
  {
   "id": "lostcharger",
@@ -513,7 +521,7 @@
  {
   "id": "radonheadache",
   "title": "The headache",
-  "text": "You have had a headache since {city}. You do not know why. Old buildings on old mountains keep their reasons to themselves.",
+  "text": "You have had a headache since you arrived in {city}. Old building, shut windows, and you do not know why.",
   "when": "day",
   "baseChance": 0.0,
   "effects": {
@@ -529,5 +537,33 @@
   "effects": {
    "mood": -5
   }
+ },
+ {
+  "id": "gooddaymountain",
+  "title": "A good day",
+  "text": "Day {day}, {city}. Nothing goes wrong. The coffee is right, the light is right, the work gets done by two and the mountain is still there at three. This is why.",
+  "when": "day",
+  "baseChance": 0.03,
+  "effects": {
+   "mood": 10,
+   "energy": 5
+  },
+  "requiresOutdoorsy": true
+ },
+ {
+  "id": "gooddaycoast",
+  "title": "A good day",
+  "text": "Day {day}, {city}. Nothing goes wrong. The coffee is right, the light is right, the work gets done by two and the water is warm at three. This is why.",
+  "when": "day",
+  "baseChance": 0.03,
+  "effects": {
+   "mood": 10,
+   "energy": 5
+  },
+  "requiresActivity": [
+   "swim",
+   "surf",
+   "kite"
+  ]
  }
 ]

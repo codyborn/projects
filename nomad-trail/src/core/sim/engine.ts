@@ -205,7 +205,7 @@ function tickDay(s: RunState, rng: Rng, opts: { rest?: boolean } = {}): Resolved
   s.energy += 5 + (lodging?.energyPerDay ?? 0) + (opts.rest ? 0 : 0);
   s.mood += (lodging?.moodPerDay ?? 0) - 1;
   // slow wear: the year itself is the opponent. Routine (training, cooking, supplements) pushes back.
-  s.health -= 0.11 + s.day * 0.0019 + (s.energy < 40 ? 0.35 : 0) + (hasTag(s, 'fitness') ? 0 : 0.2);
+  s.health -= 0.09 + s.day * 0.0017 + (s.energy < 40 ? 0.35 : 0) + (hasTag(s, 'fitness') ? 0 : 0.2);
   if (coffeePacked(s)) { s.energy += 15; s.mood += 2; s.coffeeMornings += 1; }
   if (s.sickDays > 0) { s.sickDays -= 1; s.health -= 4; s.energy -= 5; }
   if (s.backInjuryDays > 0) s.backInjuryDays -= 1;
@@ -285,7 +285,10 @@ export function applyMinigameResult(state: RunState, key: string, result: Miniga
       events = tickDay(s, rng); const dish = (s.pendingDish && DISH[s.pendingDish]) || DISH[city.dishes[0]]; s.pendingDish = undefined;
       s.health = clamp(s.health + Math.round(dish.health * score), 0, 100); s.mood = clamp(s.mood + Math.round(dish.mood * score), 0, 100); s.energy = clamp(s.energy - 5, 0, energyCap(s));
       if (result.perfect) unlock(s, 'chef'); if (result.failed) s.mood = clamp(s.mood - 4, 0, 100);
-      s.log.push({ day: s.day, city: s.cityId, text: result.failed ? `You attempt ${dish.name}. The kitchen survives.` : `You cook ${dish.name}. ${result.perfect ? 'Better than the restaurant.' : 'Nobody complains.'}` }); break; }
+      s.log.push({ day: s.day, city: s.cityId, text: result.failed ? `You attempt ${dish.name}. The kitchen survives.` : `You cook ${dish.name}. ${result.perfect ? 'Better than the restaurant.' : 'Nobody complains.'}` });
+      // cooked very badly: the dish fights back (25% food poisoning on a failed dish; the medicine kit still softens it)
+      if (result.failed && rng.chance(0.25)) { const fp = EVENT['foodpoisoning']; const mit = !!fp?.mitigatedBy?.some(t => hasTag(s, t)); events.push(forceEvent(s, 'foodpoisoning', rng, mit)); }
+      break; }
     case MINIGAME_KEYS.carryon: {
       s.mood = clamp(s.mood + 8 + Math.round(score * 12), 0, 100);
       if (result.perfect || score >= 0.99) { s.stamps[s.cityId] = 'gold'; unlock(s, 'gold_' + s.cityId); s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.carryonGold, { city: city.name }) }); }

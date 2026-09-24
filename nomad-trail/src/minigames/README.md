@@ -33,9 +33,19 @@ Every dish in `src/data/dishes.json` uses 4 to 5 steps that make culinary sense 
 - Carry-On hazard AI is simple (no pathing); the validator ignores mid-air ceilings.
 - Cooking `stir` on desktop needs a mouse drag or holding RIGHT.
 
-## Workout (round 5): WarioWare-style fitness sessions
+## Workout (round 6): one WarioWare-style micro-game per workout, three escalating rounds
 
-`Workout` (payload `{ activity, city, day?, seed?, plan? }`) runs a SESSION of 3 distinct micro-games from the activity's pool: a one-word command card (0.7 s) → a 4 to 9 s micro-game with a countdown bar → NICE!/MISS → the next one faster (x1.0 → x1.3 → x1.6 after each success). Lives: 1 + `extraLives` (hiking boots); a micro-game scored under 50% costs a life; out of lives → FAILED with the partial mean. Session score = mean micro-game score. Total under 32 s (cap 30 s of play). Energy under 50 narrows every window via the frame. Selection is seeded from `city|day` when `day` is passed (else random); `plan: ['pushup', ...]` forces ids (tests, harness). **Ferrata is unchanged** (the Zeke's Peak bouncing climb).
+`Workout` (payload `{ activity, city, day?, seed?, plan? }`) plays ONE fitness micro-game that matches the activity, picked from the activity's pool and seeded by `city|day` (so different days give different games; `plan: [id]` forces one for tests). The game runs for 3 ROUNDS: a command-word card (0.7 s) opens round 1; `ROUND 2` / `FINAL` cards (0.5 s) open the others; game speed steps x1.0 → x1.3 → x1.6 and each round is shorter (`durationSec / speed`). A countdown bar under the HUD shows the round's time. Lives = 1 + `extraLives` (hiking boots), drawn as hearts: a round scored under 50% costs a life and the session continues to the next round; out of lives → FAILED with the partial score. Session score = mean of round scores. Frame cap 30 s; a full session is 22 to 28 s. Ferrata is the Zeke's Peak climb, unchanged.
+
+| activity | pool (one is chosen) |
+|---|---|
+| bands (hotel room), unknown | pushup, plank, jumprope, curls, burpee, squat, kettlebell, sprint, stretch |
+| boulder | boulderbeta, dyno |
+| trailrun | runner, riverstones |
+| hike | pace, riverstones |
+| swim | swimbreath |
+| yoga, surf, ski | balance, pose |
+| ferrata | the marble climb (no micro-game) |
 
 | id | word | skill test | controls |
 |---|---|---|---|
@@ -54,9 +64,7 @@ Every dish in `src/data/dishes.json` uses 4 to 5 steps that make culinary sense 
 | swimbreath | STROKE! | alternate LEFT/RIGHT taps to the beat; when the bubble shows, do NOT tap (breathe) | tap sides / ←→ |
 | balance | STEADY! | hold left/right against visible gusts to keep the ball centred; falling off ends it | hold sides / ←→ |
 | pose | MATCH! | drag up/down to rotate the arm onto the shadow within tolerance, hold 0.5 s; 3 poses | drag / ↑↓ |
-| runner | RUN! | the old trail run cut to 8 s: tap to jump rocks, swipe DOWN to duck branches | tap / swipe down |
-| pace | PACE! | the old hike pace meter cut to 8 s: hold to walk, stay in the green, too fast = dizzy | hold |
+| runner | RUN! | trail run: tap to jump rocks, swipe DOWN to duck branches | tap / swipe down |
+| pace | PACE! | hike pace meter: hold to walk, stay in the green, too fast = dizzy | hold |
 
-Pools: bands (hotel room, also the fallback for unknown activities) = pushup, plank, jumprope, curls, burpee, squat, kettlebell, sprint, stretch · boulder = boulderbeta, dyno, kettlebell, plank, stretch · trailrun = runner, riverstones, sprint · hike = riverstones, pace, balance, stretch · swim = swimbreath, plank, stretch · yoga / surf / ski = balance, pose, plank, stretch · ferrata = the climb.
-
-Code: `src/minigames/workout/` — `micro.ts` (base class with input/loop/object bookkeeping, `Athlete` pixel sprite with 4 poses), `timing.ts`, `hold.ts`, `gesture.ts`, `boulder.ts`, `legacy.ts`, `index.ts` (registry, pools, `pickSession`, seeded rng). `WorkoutScene` orchestrates cards, countdown, speed and lives.
+Code: `src/minigames/workout/` — `pools.ts` (META, POOLS, ROUNDS, ROUND_SPEEDS, pickOne/pickSession, seeded rng), `micro.ts` (base class, Athlete), `timing.ts`, `hold.ts`, `gesture.ts`, `boulder.ts`, `legacy.ts`, `index.ts` (registry). Harness: `harness.html?auto=1&fast=1` drives every activity, every micro-game solo and extra-lives variants under a virtual clock; `?rt=1&activity=bands` runs one real-time session with no input.

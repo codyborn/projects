@@ -44,6 +44,9 @@ export function eventChance(ev: GameEvent, s: RunState, ctx: RollCtx): { chance:
   if (ONCE.has(ev.id) && hasFlag(s, 'ev_' + ev.id)) return { chance: 0, mitigated: false };
   if (ev.requiresCity && ev.requiresCity !== s.cityId) return { chance: 0, mitigated: false };
   if (ev.requiresClimate && !ev.requiresClimate.includes(city.climate)) return { chance: 0, mitigated: false };
+  if (ev.requiresOutdoorsy && !city.outdoorsy) return { chance: 0, mitigated: false };                      // no mountain talk in Tokyo
+  if (ev.requiresActivity && !ev.requiresActivity.some(a => city.activities.includes(a))) return { chance: 0, mitigated: false };
+  if (ev.requiresTransport && (!ctx.transport || !ev.requiresTransport.includes(ctx.transport))) return { chance: 0, mitigated: false };
   if (ev.requiresTag && !hasTag(s, ev.requiresTag)) return { chance: 0, mitigated: false };
   if (ev.requiresOverweight && (ctx.overweightRatio ?? 0) < 0.85) return { chance: 0, mitigated: false };
   const mitigated = !!ev.mitigatedBy?.some(t => hasTag(s, t)) || (ev.id === 'forgot' && hasFlag(s, 'roomchecked'));
@@ -106,8 +109,8 @@ export function rollEvents(s: RunState, when: GameEvent['when'], ctx: RollCtx, r
   return out;
 }
 /** Fires a specific event unconditionally (engine-scheduled events like radon, money). */
-export function forceEvent(s: RunState, id: string, rng: Rng): ResolvedEvent {
-  const ev = EVENTS.find(e => e.id === id)!; return resolve(s, ev, false, rng);
+export function forceEvent(s: RunState, id: string, rng: Rng, mitigated = false): ResolvedEvent {
+  const ev = EVENTS.find(e => e.id === id)!; return resolve(s, ev, mitigated, rng);
 }
 function resolve(s: RunState, ev: GameEvent, mitigated: boolean, rng: Rng): ResolvedEvent {
   const useMit = mitigated && !!ev.mitigatedEffects;

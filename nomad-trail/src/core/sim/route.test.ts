@@ -29,3 +29,15 @@ describe('fares grow faster than distance', () => {
     expect(ny && tokyo).toBeTruthy();
   });
 });
+describe('cooking badly can poison you', () => {
+  it('a failed dish sometimes fires food poisoning, a good one never does', () => {
+    let poisoned = 0, clean = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      let s = packed(seed); const first = Sim.availableLegs(s)[0]; s = Sim.travelTo(s, first.to).state;
+      const cook = Sim.cityAction(s, 'cook'); if (!cook.minigame) continue;
+      const bad = Sim.applyMinigameResult(cook.state, 'Cooking', { score: 10, perfect: false, failed: true }); if (bad.events.some(e => e.id === 'foodpoisoning')) poisoned++;
+      const good = Sim.applyMinigameResult(cook.state, 'Cooking', { score: 90, perfect: false, failed: false }); if (good.events.some(e => e.id === 'foodpoisoning')) clean++;
+    }
+    expect(poisoned).toBeGreaterThan(4); expect(poisoned).toBeLessThan(30); expect(clean).toBe(0);
+  });
+});

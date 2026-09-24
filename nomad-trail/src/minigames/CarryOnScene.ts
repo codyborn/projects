@@ -27,7 +27,7 @@ export class CarryOnScene extends Phaser.Scene {
 
   constructor() { super(MINIGAME_KEYS.carryon); }
   init(data: any) {
-    this.launch = normalizeLaunch(data); const p = this.launch.payload;
+    this.launch = normalizeLaunch(data); const raw = this.launch.payload; const p = raw && raw.level && Array.isArray(raw.level.tiles) ? raw.level : raw;   // engine sends { level, city }
     this.level = trimStamps((p && Array.isArray(p.tiles) && p.tiles.length) ? p as ArcadeLevel : DEFAULT_LEVEL);
     this.rows = this.level.tiles.length; this.cols = Math.max(...this.level.tiles.map(r => r.length)); this.ox = Math.round((W - this.cols * TILE) / 2);
     this.hearts = 3; this.collected = 0; this.total = 0; this.stamps = []; this.spikes = []; this.movers = []; this.spawners = []; this.ended = false; this.iframes = 0; this.windForce = 0; this.waterY = 0; this.touchDirs.clear(); this.swipeStart.clear(); this.skyline = []; this.rockT = 0; this.windT = 0;

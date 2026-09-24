@@ -36,6 +36,7 @@ export interface GameEvent {
   id: string; title: string; text: string;            // text may use {city}, {day}, {item}
   when: 'leg' | 'arrive' | 'day' | 'leave' | 'flight' | 'action';
   baseChance: number; requiresTag?: ItemTag; requiresCity?: string; requiresClimate?: City['climate'][]; requiresOverweight?: boolean;
+  requiresOutdoorsy?: boolean; requiresActivity?: ActivityId[]; requiresTransport?: Transport[];   // setting gates: mountains, water sports, train legs
   mitigatedBy?: ItemTag[]; mitigatedText?: string;
   choices?: EventChoice[];                            // if absent, effects apply directly
   effects: Effects; mitigatedEffects?: Effects;

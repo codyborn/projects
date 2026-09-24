@@ -22,20 +22,24 @@ export const META: Record<string, MicroMeta> = {
 };
 export const MICRO_IDS = Object.keys(META);
 export const POOLS: Partial<Record<ActivityId, string[]>> = {
-  bands: ['pushup', 'plank', 'jumprope', 'curls', 'burpee', 'squat', 'kettlebell', 'sprint', 'stretch'],
-  boulder: ['boulderbeta', 'dyno', 'kettlebell', 'plank', 'stretch'],
-  trailrun: ['runner', 'riverstones', 'sprint'],
-  hike: ['riverstones', 'pace', 'balance', 'stretch'],
-  swim: ['swimbreath', 'plank', 'stretch'],
-  yoga: ['balance', 'pose', 'plank', 'stretch'], surf: ['balance', 'pose', 'plank', 'stretch'], ski: ['balance', 'pose', 'plank', 'stretch'],
+  bands: ['pushup', 'plank', 'jumprope', 'curls', 'burpee', 'squat', 'kettlebell', 'sprint', 'stretch'],   // hotel room
+  boulder: ['boulderbeta', 'dyno'],
+  trailrun: ['runner', 'riverstones'],
+  hike: ['pace', 'riverstones'],
+  swim: ['swimbreath'],
+  yoga: ['balance', 'pose'], surf: ['balance', 'pose'], ski: ['balance', 'pose'],
 };
-export const SESSION_LEN = 3;
-/** Pick SESSION_LEN distinct micro-game ids for an activity (unknown → bands), shuffled with rng(). */
+/** One micro-game per workout; it escalates over ROUNDS rounds instead of chaining different games. */
+export const SESSION_LEN = 1;
+export const ROUNDS = 3;
+export const ROUND_SPEEDS = [1.0, 1.3, 1.6];
+/** Pick the workout's micro-game(s) for an activity (unknown → hotel room), shuffled with rng(); seeded by city+day upstream so days differ. */
 export function pickSession(activity: string, rng: () => number): string[] {
   const pool = [...(POOLS[activity as ActivityId] ?? POOLS.bands!)];
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
   return pool.slice(0, Math.min(SESSION_LEN, pool.length));
 }
+export function pickOne(activity: string, rng: () => number): string { return pickSession(activity, rng)[0]; }
 /** mulberry32 */
 export function seededRng(seed: number) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 export function hashStr(s: string) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }

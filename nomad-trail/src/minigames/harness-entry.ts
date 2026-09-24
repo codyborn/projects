@@ -59,6 +59,12 @@ if (q.get('auto') === '1') {
     }
     setTimeout(next, 200);
   });
+} else if (q.get('rt') === '1') {
+  // real-time (wall clock) check: one Workout session with NO input must end on its own; report seconds + onDone count
+  MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
+  game.events.once('ready', () => { const t0 = performance.now(); let calls = 0;
+    const launch: MinigameLaunch = { energy: 100, difficulty: 0.5, extraLives: Number(q.get('lives') || 0), payload: { activity: q.get('activity') || 'bands', city: 'Realtime', day: Number(q.get('day') || 3), plan: q.get('plan') ? [q.get('plan')!] : undefined }, onDone: () => { calls++; out.textContent = JSON.stringify({ seconds: (performance.now() - t0) / 1000, calls, errors }); document.title = 'RT_DONE'; } };
+    game.scene.start(MINIGAME_KEYS.workout, launch); });
 } else if (q.get('sheet') === '1') {
   // contact sheet: draw finished dishes into #results as a single canvas
   const ids = (q.get('ids') || 'ramen,tacos,kaiserschmarrn,sushi,paella,bibimbap').split(',');
