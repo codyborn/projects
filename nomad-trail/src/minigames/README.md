@@ -25,6 +25,8 @@ Energy < 50 makes every game harder through `MinigameFrame` (`_shared.ts`): tigh
 Every dish in `src/data/dishes.json` uses 4 to 5 steps that make culinary sense (ramen: knead, simmer, pour, plate; tacos al pastor: grill, dice, fold, season; sushi: shake, roll, dice, plate), and no two dishes in the same city share a step sequence. `dishArt.test.ts` enforces: a spec per dish, 4 to 5 known steps, per-city uniqueness, and that all 14 kinds are used somewhere.
 
 ## Dev harness
+
+Console extras: `?auto=1&fast=1&only=CarryOn&limit=3` filters the auto run; `?console=carryon|tetris|heli&city=&cityName=&hazard=&seed=` boots one cartridge in real time for screenshots (the page lives under the `/trail/` base: `http://localhost:5174/trail/harness.html`).
 `devHarness.ts` exports `MINIGAME_SCENES` and `launchHarness(game)` (adds a `MinigameHarness` picker with sample payloads and an energy toggle; integrator wires it under `?harness=1`). `harness-entry.ts` is a standalone entry used with a `harness.html` page: `?auto=1&fast=1` drives all six games with synthetic input under a virtual clock and writes results (incl. `vms` = virtual game ms per run) to `#results` (round 4: 35 runs incl. one per new cooking step kind and four full dishes, one `onDone` each, zero page errors; it also renders all 49 dish arts first and records the count in `window.__dishArtRendered`). `?sheet=1&ids=a,b,c` draws a contact sheet of finished dishes into `#sheet`.
 
 ## Known limitations
@@ -68,3 +70,22 @@ Every dish in `src/data/dishes.json` uses 4 to 5 steps that make culinary sense 
 | pace | PACE! | hike pace meter: hold to walk, stay in the green, too fast = dizzy | hold |
 
 Code: `src/minigames/workout/` — `pools.ts` (META, POOLS, ROUNDS, ROUND_SPEEDS, pickOne/pickSession, seeded rng), `micro.ts` (base class, Athlete), `timing.ts`, `hold.ts`, `gesture.ts`, `boulder.ts`, `legacy.ts`, `index.ts` (registry). Harness: `harness.html?auto=1&fast=1` drives every activity, every micro-game solo and extra-lives variants under a virtual clock; `?rt=1&activity=bands` runs one real-time session with no input.
+
+## The handheld console (scene key `CarryOn`)
+
+The Switch is now a proper handheld: a 23x20-tile screen (368x320) on top, a D-pad on the left, A/B on the right, START/SELECT pills. Every cartridge reads only the per-frame `Pad` snapshot from `console/input.ts` (`held`, `justPressed`, `justReleased`, `axisX/axisY`): multi-touch on the drawn zones (hold RIGHT and tap A with two fingers), keyboard (arrows, Z/SPACE = A, X = B, ENTER = START, SHIFT = SELECT) and a swipe-up over the screen = an A pulse. START pauses (the play cap pauses too).
+
+Payload: `{ game?: 'carryon' | 'tetris' | 'heli', level?: ArcadeLevel, city, cityName?, hazard?, seed?, climate? }` (a raw `ArcadeLevel` still works; `{ level, city }` from the engine still works and boots Carry-On). Boot: chime, 0.8 s title card (`PACK-TRIS — LISBON`), the READY card with the cartridge's instructions, then play. Same result card / `onDone` contract as every mini-game.
+
+Cartridges live in `console/games/` behind `ConsoleGame` (`init(ctx, done)`, `update(dt, pad)`, `scoreNow()`, `destroy()`; `ctx` gives the screen rect, level, city, hazard, palette, seeded rng, difficulty, and `setHearts/setStatus/flash/shake/sfx`). `CONSOLE_GAMES` in `console/games/index.ts` is the slot.
+
+| game | name | controls | win / lose | cap |
+|---|---|---|---|---|
+| carryon | CARRY-ON | D-pad left/right, A jump (variable height, coyote time, buffer) | collect every stamp piece (6–8); 3 hearts; hazards ramp to 1.8x by 40 s; par 30 s | 60 s (partial credit) |
+| tetris | PACK-TRIS | left/right (with DAS), DOWN soft drop, UP hard drop, A / B rotate | clear 8 lines → 60–100 by time; top-out → failed with lines/8 × 45 | 45 s → lines/8 × 100 |
+| heli | DRONE RUN | D-pad moves, A shoots photos (auto-fire held), B battery bomb (2) | survive 40 s: 60 + 2/hit − 10/heart lost; 0 hearts → failed | 44 s |
+
+**Carry-On physics** (`carryonLevel.ts` `PHYS`): jump 330 / gravity 900 → apex 3.8 tiles (a 3-row rise clears with head room), flat air time × run 118 ≈ 5.4 tiles (a 4-tile gap is comfortable). Snow: jump 300 → 2-row steps. `validateLevel` mirrors these numbers.
+
+**Procedural levels** (`generateLevel(seed, { city, hazard, climate })`): a layout family per seed — `towers`, `staircase`, `zigzag`, `islands`, `bridges` (one-way `-` and crumble `C` spans over spike pits) — built with the physics' step height, then stamps are placed only on cells the validator's BFS can reach (farthest-point spread, at most one on the ground), hazard spawners `H` for fallers/flyers at the top or on ledges for walkers, a few spikes. Completable by construction; 20 attempts then the built-in level. The engine's `payload.seed` (or a hash of city|game) picks the level; hand-built levels are used as templates only when no seed is given and they still validate. Tiles: `#` solid, `.` empty, `S` start, `*` stamp, `H` spawner, `^` spikes, `-` one-way, `C` crumble (gives way 0.35 s after you stand on it).
+

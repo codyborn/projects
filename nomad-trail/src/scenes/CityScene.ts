@@ -75,7 +75,7 @@ export class CityScene extends Phaser.Scene {
     // order: the morning (coffee) first, then whatever the day brought, then the mini-game the action asked for
     if (res.state.day !== this.lastDay && res.state.stayDays === 1 && Sim.coffeePacked(res.state) && this.scene.get('Coffee') && a !== 'moveon') { const c = Data.city(res.state.cityId); queue.push(() => this.overlay('Coffee', { cityId: res.state.cityId, day: res.state.day, climate: c?.climate, region: c?.region })); }
     for (const id of res.events) queue.push(() => this.overlay('Event', { eventId: id }));
-    if (res.minigame) { if (res.minigame.key === 'CarryOn') queue.push(() => new Promise<void>(r => { toast(this, `Rest day. The console comes out: Carry-On, ${Data.city(res.state.cityId)?.name ?? ''}. Grab the stamp pieces.`, PAL.neon, 1600); this.time.delayedCall(1500, () => r()); })); queue.push(() => this.minigame(res.minigame!)); }
+    if (res.minigame) { if (res.minigame.key === 'CarryOn') queue.push(() => new Promise<void>(r => { toast(this, `Rest day. The console comes out. Clear the game for a gold ${Data.city(res.state.cityId)?.name ?? ''} stamp.`, PAL.neon, 1600); this.time.delayedCall(1500, () => r()); })); queue.push(() => this.minigame(res.minigame!)); }
     this.lastDay = res.state.day;
     (async () => { for (const q of queue) await q(); this.after(a); })();
   }

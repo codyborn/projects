@@ -24,7 +24,7 @@
   "wrongShoes": "The trail was right there. You had the wrong shoes for it.",
   "checkRoom": "You check under the bed, behind the door, in the shower. Twice.",
   "leave": "You leave {city} after {stayDays} days.",
-  "carryonGold": "Carry-On: {city} cleared. Gold stamp.",
+  "carryonGold": "Console: {city} cleared. Gold stamp.",
   "pink": "Everything is slightly pink now.",
   "travelFatigue": " Too many legs too fast; everything aches."
  },

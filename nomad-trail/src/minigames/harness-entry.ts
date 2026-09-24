@@ -11,7 +11,7 @@ const game = new Phaser.Game({ type: Phaser.CANVAS, parent: 'game', width: GAME_
   physics: { default: 'arcade', arcade: { gravity: { x: 0, y: 900 } } }, scene: [] });
 (window as any).__game = game; const q = new URLSearchParams(location.search);
 const out = document.getElementById('results')!; const prog = (m: string) => { (window as any).__progress = m; document.getElementById('progress')!.textContent = m; };
-const errors: string[] = []; window.addEventListener('error', e => errors.push(String(e.message))); window.addEventListener('unhandledrejection', e => errors.push('rej:' + String((e as any).reason)));
+const errors: string[] = []; window.addEventListener('error', e => errors.push(String(e.message) + ' @ ' + String((e as any).error?.stack || '').split('\n').slice(1, 4).join(' | '))); window.addEventListener('unhandledrejection', e => errors.push('rej:' + String((e as any).reason)));
 
 if (q.get('auto') === '1') {
   MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
@@ -22,16 +22,19 @@ if (q.get('auto') === '1') {
     ...(['bands', 'boulder', 'ferrata', 'trailrun', 'hike', 'swim', 'yoga', 'surf', 'ski', 'bogus'] as const).map(a => ({ key: MINIGAME_KEYS.workout, energy: a === 'hike' ? 30 : 100, payload: { activity: a, city: 'Test', day: 7 } })),
     ...['pushup', 'plank', 'jumprope', 'curls', 'burpee', 'squat', 'kettlebell', 'sprint', 'stretch', 'boulderbeta', 'dyno', 'riverstones', 'swimbreath', 'balance', 'pose', 'runner', 'pace'].map(id => ({ key: MINIGAME_KEYS.workout, energy: 100, payload: { activity: 'bands', city: 'Solo', plan: [id] } })),
     ...(['bands', 'boulder', 'ferrata', 'trailrun', 'hike', 'swim', 'yoga'] as const).map(a => ({ key: MINIGAME_KEYS.workout, energy: 100, extraLives: 1, payload: { activity: a, city: 'Boots', day: 3 } })),
+    { key: MINIGAME_KEYS.carryon, energy: 100, payload: { game: 'tetris', city: 'lisbon', cityName: 'Lisbon', seed: 11 } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { game: 'heli', city: 'bangkok', cityName: 'Bangkok', hazard: 'tuktuk', seed: 12 } }, { key: MINIGAME_KEYS.carryon, energy: 60, payload: { game: 'heli', city: 'dakhla', cityName: 'Dakhla', hazard: 'gust', seed: 13 } },
+    ...[1, 2, 3].map(seed => ({ key: MINIGAME_KEYS.carryon, energy: 100, payload: { game: 'carryon', city: 'innsbruck', cityName: 'Innsbruck', hazard: (['rock', 'otter', 'snow'] as const)[seed - 1], seed, climate: 'alpine' } })),
     { key: MINIGAME_KEYS.carryon, energy: 100 }, { key: MINIGAME_KEYS.carryon, energy: 40, payload: { ...DEFAULT_LEVEL, hazard: 'gust' } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { ...DEFAULT_LEVEL, hazard: 'rock' } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { ...DEFAULT_LEVEL, hazard: 'wave' } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { ...DEFAULT_LEVEL, hazard: 'otter' } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { ...DEFAULT_LEVEL, hazard: 'ice' } },
     { key: MINIGAME_KEYS.kite, energy: 100 }, { key: MINIGAME_KEYS.airport, energy: 100 }, { key: MINIGAME_KEYS.airport, energy: 30 }, { key: MINIGAME_KEYS.laundry, energy: 100 },
   ];
+  const only = q.get('only'); const limit = Number(q.get('limit') || 0); let runsSel = only ? runs.filter(r => r.key === only) : runs; if (limit) runsSel = runsSel.slice(0, limit); runs.length = 0; runs.push(...runsSel);
   const results: any[] = []; let i = 0; let driver: number | undefined;
   const mkPointer = (x: number, y: number, down: boolean) => { const p = game.input.activePointer; p.x = x; p.y = y; (p as any).worldX = x; (p as any).worldY = y; (p as any).isDown = down; return p; };
   const next = () => {
     if (driver) clearInterval(driver);
     if (i >= runs.length) { out.textContent = JSON.stringify({ results, errors }); document.title = 'HARNESS_DONE'; return; }
     const r = runs[i++]; const t0 = performance.now(); const v0 = game.getTime(); let doneCalls = 0;
-    const launch: MinigameLaunch = { energy: r.energy, difficulty: 0.5, payload: r.payload, extraLives: r.extraLives, onDone: (res) => { doneCalls++; results.push({ key: r.key, payload: r.payload?.activity || r.payload?.hazard || r.payload?.name || '', energy: r.energy, lives: r.extraLives ?? 0, ...res, ms: Math.round(performance.now() - t0), vms: Math.round(game.getTime() - v0), doneCalls }); setTimeout(next, 300); } };
+    const launch: MinigameLaunch = { energy: r.energy, difficulty: 0.5, payload: r.payload, extraLives: r.extraLives, onDone: (res) => { doneCalls++; results.push({ key: r.key, payload: r.payload?.game || r.payload?.activity || r.payload?.hazard || r.payload?.name || '', energy: r.energy, lives: r.extraLives ?? 0, ...res, ms: Math.round(performance.now() - t0), vms: Math.round(game.getTime() - v0), doneCalls }); setTimeout(next, 300); } };
     prog(`run ${i}/${runs.length} ${r.key} ${r.payload?.activity || r.payload?.hazard || ''}`);
     game.scene.start(r.key, launch);
     const scene = game.scene.getScene(r.key);
@@ -65,6 +68,9 @@ if (q.get('auto') === '1') {
   game.events.once('ready', () => { const t0 = performance.now(); let calls = 0;
     const launch: MinigameLaunch = { energy: 100, difficulty: 0.5, extraLives: Number(q.get('lives') || 0), payload: { activity: q.get('activity') || 'bands', city: 'Realtime', day: Number(q.get('day') || 3), plan: q.get('plan') ? [q.get('plan')!] : undefined }, onDone: () => { calls++; out.textContent = JSON.stringify({ seconds: (performance.now() - t0) / 1000, calls, errors }); document.title = 'RT_DONE'; } };
     game.scene.start(MINIGAME_KEYS.workout, launch); });
+} else if (q.get('console')) {
+  MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
+  game.events.once('ready', () => { game.scene.start(MINIGAME_KEYS.carryon, { energy: 100, difficulty: 0.5, payload: { game: q.get('console'), city: q.get('city') || 'tokyo', cityName: q.get('cityName') || 'Tokyo', hazard: q.get('hazard') || 'otter', seed: Number(q.get('seed') || 7) }, onDone: () => { document.title = 'CONSOLE_DONE'; } } as MinigameLaunch); document.title = 'CONSOLE_UP'; });
 } else if (q.get('sheet') === '1') {
   // contact sheet: draw finished dishes into #results as a single canvas
   const ids = (q.get('ids') || 'ramen,tacos,kaiserschmarrn,sushi,paella,bibimbap').split(',');

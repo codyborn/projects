@@ -66,8 +66,18 @@ export class WorkoutScene extends Phaser.Scene {
     const big = first ? micro.word : this.round === ROUNDS - 1 ? 'FINAL' : `ROUND ${this.round + 1}`;
     const word = txt(this, W / 2, H / 2 - 18, big, first ? 40 : 30, PAL.white); const sub = txt(this, W / 2, H / 2 + 34, first ? micro.instr : `${micro.word}  x${speed.toFixed(1)} speed`, 10, PAL.night0); sub.setWordWrapWidth(W - 80).setAlign('center');
     card.add([bg, p, word, sub]); word.setScale(0.4); this.tweens.add({ targets: word, scale: 1, duration: 220, ease: 'Back.Out' });
-    this.time.delayedCall(first ? 700 : 500, () => {
-      card.destroy(); if (!this.frame.active) return; this.current = micro; this.athlete.show(true).pose(0);
+    // the athlete demonstrates on the card; tap anywhere to start early. Card time does not count against the cap.
+    this.athlete.show(true).pose(0); this.athlete.sprite.setDepth(701).setPosition(W / 2, H / 2 - 120); const hint = txt(this, W / 2, H / 2 + 62, 'tap to start', 8, PAL.night0).setAlpha(0.8); card.add(hint);   // the athlete demonstrates above the card
+    this.frame.pauseCap();
+    let began = false; const begin = () => {
+      if (began) return; began = true; cardTimer.remove(); this.input.off('pointerdown', begin); this.input.keyboard?.off('keydown-SPACE', begin);
+      card.destroy(); this.frame.resumeCap(); if (!this.frame.active) return; this.current = micro; this.athlete.show(true).pose(0); this.athlete.sprite.setDepth(4).setPosition(W / 2, 330);
+      const flash = txt(this, W / 2, H / 2, 'GO', 30, PAL.neon).setDepth(750); this.tweens.add({ targets: flash, alpha: 0, scale: 1.8, duration: 260, onComplete: () => flash.destroy() });
+      startMicro();
+    };
+    const cardTimer = this.time.delayedCall(first ? 1800 : 1000, begin);
+    this.time.delayedCall(120, () => { this.input.once('pointerdown', begin); this.input.keyboard?.once('keydown-SPACE', begin); });   // ignore the tap that opened the card
+    const startMicro = () => {
       const ctx: MicroCtx = { scene: this, frame: this.frame, speed, window: this.frame.window, hard: this.frame.hard, rng: this.rng, athlete: this.athlete };
       const dur = micro.durationSec / speed * 1000; const t0 = this.time.now;   // later rounds are faster and shorter
       this.countdown = this.add.graphics().setDepth(802);
@@ -81,7 +91,7 @@ export class WorkoutScene extends Phaser.Scene {
         else { this.banner('MISS', PAL.red); if (this.loseLife()) { this.time.delayedCall(700, () => this.finishSession(true)); return; } }
         this.round++; this.time.delayedCall(650, () => this.nextRound());
       });
-    });
+    };
   }
   private banner(s: string, color: number) { const t = txt(this, W / 2, H / 2, s, 26, color).setDepth(750); this.tweens.add({ targets: t, scale: { from: 1.5, to: 1 }, duration: 200, ease: 'Back.Out' }); this.tweens.add({ targets: t, alpha: 0, duration: 250, delay: 380, onComplete: () => t.destroy() }); }
   private finishSession(outOfLives = false) { if (!this.frame.active) return; const s = this.sessionScore(); this.frame.finish(outOfLives ? Math.min(s, 45) : s, outOfLives); }

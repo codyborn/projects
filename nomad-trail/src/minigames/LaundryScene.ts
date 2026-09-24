@@ -28,19 +28,24 @@ export class LaundryScene extends Phaser.Scene {
   private spawn() { const white = this.nextWhite(); const colors = [PAL.red, PAL.sky0, PAL.grass1, PAL.sun0, PAL.dusk2, PAL.sea1]; this.items.push({ x: W / 2, y: 60, vx: 0, white, color: white ? PAL.white : Phaser.Utils.Array.GetRandom(colors), shape: Phaser.Math.Between(0, 2), done: false }); this.total++; }
   /** 1.0 at the start, up to 1.9 once you are sorting well and on a streak. */
   private speedMul() { const rate = this.total > 1 ? this.right / (this.total - 1) : 0; return 1 + 0.9 * rate * Math.min(1, this.streak / 8); }
-  private fling(dir: number) { if (!this.frame.active || this.ended) return; const it = this.items.find(i => !i.done && i.vx === 0); if (!it) return; it.vx = dir * 260; const ok = (dir < 0) === it.white; it.result = ok; it.done = true; if (ok) { this.right++; this.streak++; this.frame.flash(PAL.neon, 30); } else { this.wrong++; this.streak = 0; this.pinkTint = true; this.frame.shake(120, 0.005); this.basketFlash(dir); } this.time.delayedCall(Math.round(280 / this.speedMul()), () => { if (this.frame.active && !this.ended) this.spawn(); }); }
+  private fling(dir: number) { if (!this.frame.active || this.ended) return; const it = this.items.find(i => !i.done && i.vx === 0); if (!it) return; it.vx = dir * 340; const ok = (dir < 0) === it.white; it.result = ok; it.done = true; if (ok) { this.right++; this.streak++; this.frame.flash(PAL.neon, 30); } else { this.wrong++; this.streak = 0; this.pinkTint = true; this.frame.shake(120, 0.005); this.basketFlash(dir); } this.time.delayedCall(Math.round(190 / this.speedMul()), () => { if (this.frame.active && !this.ended) this.spawn(); }); }
   /** Wrong sort: the basket it landed in flashes red for a beat. Nothing else changes colour. */
   private basketFlash(dir: number) {
     const x = dir < 0 ? 20 : W - 150; const r = this.add.rectangle(x + 65, 500, 130, 120, PAL.red, 0.55).setDepth(3);
     this.tweens.add({ targets: r, alpha: 0, duration: 260, onComplete: () => r.destroy() });
   }
   private step(dt: number) {
-    if (!this.frame.active || this.ended) return; this.elapsed += dt; const fall = 55 * this.frame.speed * (1 + 0.3 * this.frame.hard) * this.speedMul();
+    if (!this.frame.active || this.ended) return; this.elapsed += dt; const fall = 95 * this.frame.speed * (1 + 0.3 * this.frame.hard) * this.speedMul();
     for (const it of this.items) { if (it.vx) { it.x += it.vx * dt; it.y += 160 * dt; } else if (!it.done) { it.y += fall * dt; if (it.y > 420) { it.done = true; it.result = false; it.vx = 1; it.y = 470; this.wrong++; this.streak = 0; this.pinkTint = true; this.frame.shake(100, 0.004); this.time.delayedCall(200, () => { if (this.frame.active && !this.ended) this.spawn(); }); } } }
     this.items = this.items.filter(i => i.y < 620 && Math.abs(i.x - W / 2) < W);
     const g = this.g; g.clear(); g.fillStyle(PAL.gray0).fillRect(0, 40, W, 6); for (const it of this.items) { const tint = it.color; g.fillStyle(it.white ? PAL.gray1 : PAL.ink); this.shape(g, it.shape, it.x, it.y, 1.15); g.fillStyle(tint); this.shape(g, it.shape, it.x, it.y, 1); }
     this.meter.set(this.elapsed / 20, PAL.sun2); this.frame.setTimer(`${Math.max(0, Math.ceil(20 - this.elapsed))}s  x${this.speedMul().toFixed(1)}`); this.frame.setProgress(`${this.right} sorted${this.wrong ? ` · ${this.wrong} wrong` : ''}`);
     if (this.elapsed >= 20) { this.ended = true; const base = this.total > 1 ? (this.right / (this.total - 1)) * 100 : 0; this.frame.finish(this.pinkTint ? Math.min(base, 60) : base); }
   }
-  private shape(g: Phaser.GameObjects.Graphics, s: number, x: number, y: number, k: number) { if (s === 0) { g.fillRect(x - 14 * k, y - 10 * k, 28 * k, 20 * k); g.fillRect(x - 20 * k, y - 10 * k, 8 * k, 10 * k); g.fillRect(x + 12 * k, y - 10 * k, 8 * k, 10 * k); } else if (s === 1) { g.fillRect(x - 10 * k, y - 14 * k, 8 * k, 28 * k); g.fillRect(x + 2 * k, y - 14 * k, 8 * k, 28 * k); g.fillRect(x - 10 * k, y - 14 * k, 20 * k, 8 * k); } else { g.fillRect(x - 6 * k, y - 14 * k, 12 * k, 20 * k); g.fillRect(x - 6 * k, y + 2 * k, 20 * k, 8 * k); } }
+  /** Proportional laundry: a t-shirt (~48 wide), a pair of pants (~30 x 44), a sock (~16 x 22). k > 1 draws the outline pass. */
+  private shape(g: Phaser.GameObjects.Graphics, s: number, x: number, y: number, k: number) {
+    if (s === 0) { g.fillRect(x - 16 * k, y - 16 * k, 32 * k, 34 * k); g.fillRect(x - 24 * k, y - 16 * k, 10 * k, 12 * k); g.fillRect(x + 14 * k, y - 16 * k, 10 * k, 12 * k); g.fillRect(x - 6 * k, y - 20 * k, 12 * k, 5 * k); }   // t-shirt: body, sleeves, collar
+    else if (s === 1) { g.fillRect(x - 15 * k, y - 22 * k, 30 * k, 10 * k); g.fillRect(x - 15 * k, y - 14 * k, 13 * k, 36 * k); g.fillRect(x + 2 * k, y - 14 * k, 13 * k, 36 * k); }   // pants: waistband, two legs
+    else { g.fillRect(x - 5 * k, y - 11 * k, 10 * k, 16 * k); g.fillRect(x - 5 * k, y + 3 * k, 16 * k, 7 * k); }   // sock: leg, foot
+  }
 }
