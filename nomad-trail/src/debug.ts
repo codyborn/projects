@@ -2,7 +2,7 @@
 import type Phaser from 'phaser';
 import type { RunState, MinigameResult } from './core/types';
 import { MINIGAME_KEYS } from './core/types';
-import { buildPack } from '../sim/policy';
+import { buildPack } from './core/sim/pack';
 import { makeRng } from './core/sim/rng';
 
 export function installDebug(game: Phaser.Game) {

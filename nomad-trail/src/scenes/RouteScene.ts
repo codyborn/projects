@@ -54,11 +54,12 @@ export class RouteScene extends Phaser.Scene {
     if (cur) { const p = this.project(cur.lat, cur.lon, lon0, cx, cy, R)!; this.pulse = this.add.circle(p.x, p.y, 4, PAL.white).setStrokeStyle(1, PAL.ink); this.tweens.add({ targets: this.pulse, scaleX: 1.8, scaleY: 1.8, alpha: 0.3, duration: 700, yoyo: true, repeat: -1 }); }
   }
   private card(leg: Leg, x: number, y: number) {
-    const c = Data.city(leg.to); const p = new Panel(this, x, y, 336, 56, { fill: PAL.night1, border: PAL.night3 });
+    const c = Data.city(leg.to); const p = new Panel(this, x, y, 336, 56, { fill: PAL.night1, border: PAL.night3 }); const fare = Sim.legCost(getRun(this), leg);
     const glyph = TRANSPORT_GLYPH[leg.transport] ?? '·';
     p.add(txt(this, 10, 8, `${glyph}  ${c?.name ?? leg.to}${c?.hero ? ' ★' : ''}`, 12, PAL.white) as any);
-    p.add(txt(this, 10, 30, `${c?.country ?? ''} · ${leg.days}d · energy −${leg.energy}${leg.timezones ? ` · ${Math.abs(leg.timezones)}h jet lag` : ''}${leg.months ? ' · in season' : ''}`, 8, PAL.gray2) as any);
-    p.add(txt(this, 326, 28, 'GO →', 12, PAL.neon).setOrigin(1, 0.5) as any);
+    p.add(txt(this, 10, 30, `${c?.country ?? ''} · ${leg.days}d · energy −${leg.energy}${leg.timezones ? ` · ${Math.abs(leg.timezones)}h lag` : ''}${leg.months ? ' · in season' : ''}`, 8, PAL.gray2) as any);
+    if (typeof fare === 'number') p.add(txt(this, 326, 12, `$${Math.round(fare)}`, 8, PAL.sun2).setOrigin(1, 0.5) as any);
+    p.add(txt(this, 326, 36, 'GO →', 12, PAL.neon).setOrigin(1, 0.5) as any);
     p.setSize(336, 56); p.setInteractive(new Phaser.Geom.Rectangle(168, 28, 336, 56), Phaser.Geom.Rectangle.Contains);
     p.on('pointerdown', () => this.tweens.add({ targets: p, scaleX: 0.98, scaleY: 0.96, duration: 60, yoyo: true }));
     p.on('pointerup', (ptr: Phaser.Input.Pointer) => { if (Math.abs(ptr.downY - ptr.upY) > 12) return; this.go(leg); });

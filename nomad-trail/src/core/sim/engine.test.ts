@@ -4,15 +4,18 @@ import { ITEMS, ITEM, CITIES, CITY, EVENTS, EVENT, DISHES, DISH, LEVELS } from '
 import { saveRun, loadRun, clearRun, _resetMemoryStore, recordRun, loadSettings } from './save';
 import { makeRng } from './rng';
 import { rollEvents, eventChance, monthOf, LODGING_DEPENDENT } from './events';
-import { shelfPack, buildPack, playRun } from '../../../sim/policy';
+import { shelfPack, buildPack, randomPack, playRun } from '../../../sim/policy';
+import { START_MONEY, OVERDRAFT, WORK_PAY, WORK_ENERGY, isWeekend, weekdayOf } from './consts';
 import { CONTINENT_OF } from '../types';
 import type { PackedItem, RunState, ItemTag } from '../types';
 
-const P = (id: string, bag: 'checked' | 'backpack', x = 0, y = 0): PackedItem => ({ id, bag, x, y });
-/** Laptop + phone on the back, a week of clothes in the suitcase. */
-const basic = (): PackedItem[] => [P('laptopkit', 'backpack', 0, 0), P('phonekit', 'backpack', 3, 0), P('clothes1', 'checked', 0, 0)];
+const P = (id: string, bag: 'checked' | 'backpack' = 'checked', x = 0, y = 0): PackedItem => ({ id, bag, x, y });
+/** The laptop and a week of clothes. One suitcase. */
+const basic = (): PackedItem[] => [P('laptopkit', 'checked', 0, 0), P('clothes1', 'checked', 3, 0)];
+/** basic() plus more bundles, shelf-packed so they never overlap. */
+const withExtras = (...ids: string[]): PackedItem[] => shelfPack(['laptopkit', 'clothes1', ...ids])!;
 function packed(items = basic()): RunState { const s = Sim.createRun(42, undefined, 'east'); const v = Sim.setPack(s, items); expect(v.ok, v.errors.join(';')).toBe(true); return v.state!; }
-const HEAVY = ['kitegear', 'dronekit', 'books', 'hikingboots', 'adventure', 'protein', 'clothes1', 'clothes2', 'hostgifts'];
+const HEAVY = ['kitegear', 'dronekit', 'books', 'hikingboots', 'adventure', 'protein', 'clothes1', 'clothes2', 'hostgifts', 'laptopkit', 'coffeekit'];
 /** Travel along the first offered leg, resolving any pending choice. */
 function hop(s: RunState, pick = 0): RunState { const legs = Sim.availableLegs({ ...s, phase: 'route' }); let r = Sim.travelTo({ ...s, phase: 'route' }, legs[Math.min(pick, legs.length - 1)].to).state; if (r.pendingEvent) r = Sim.resolveChoice(r, r.pendingEvent, 0).state; return r; }
 
@@ -22,6 +25,8 @@ describe('data integrity', () => {
     expect(ITEMS.filter(i => i.real).length).toBeGreaterThanOrEqual(15);
     for (const it of ITEMS) { expect(it.w).toBeGreaterThan(0); expect(it.h).toBeGreaterThan(0); expect(it.w <= GRID.checked.cols && it.h <= GRID.checked.rows).toBe(true); expect(it.weightLb).toBeGreaterThan(0); expect(it.name).not.toMatch(/apple|garmin|osprey|sony|dji|samsung|nintendo|kindle|cerave|nutricost|altra|ombraz|melin|timemore|miir/i); }
     expect(ITEMS.filter(i => i.name === 'Clothes' && i.label === '1 week worth').length).toBe(4);  // one tray card, four placeable weeks, distinct colors
+    expect(ITEM.phonekit).toBeUndefined(); expect(ITEM.airmonitor?.real).toBe(true);
+    for (const it of ITEMS) { expect(it.benefits?.length ?? 0, it.id).toBeGreaterThanOrEqual(1); for (const b of it.benefits!) expect(b.length).toBeLessThanOrEqual(44); }
   });
   it('every tag the engine or an event relies on exists on at least one bundle', () => {
     const have = new Set(ITEMS.flatMap(i => i.tags));
@@ -80,26 +85,32 @@ describe('data integrity', () => {
 
 describe('packing', () => {
   it('rejects out-of-bounds, overlaps, duplicates, overweight, and a bag with no essentials', () => {
-    expect(Sim.validatePack([P('laptopkit', 'backpack', 3, 0)]).errors[0]).toMatch(/does not fit/);
-    expect(Sim.validatePack([P('laptopkit', 'backpack', 0, 0), P('tablet', 'backpack', 1, 1)]).errors.join()).toMatch(/overlaps/);
-    expect(Sim.validatePack([P('phonekit', 'backpack', 0, 0), P('phonekit', 'backpack', 2, 0)]).errors.join()).toMatch(/twice/);
+    expect(Sim.validatePack([P('laptopkit', 'checked', 6, 0)]).errors[0]).toMatch(/does not fit/);
+    expect(Sim.validatePack([P('laptopkit', 'checked', 0, 0), P('tablet', 'checked', 1, 1)]).errors.join()).toMatch(/overlaps/);
+    expect(Sim.validatePack([P('watch', 'checked', 0, 0), P('watch', 'checked', 2, 0)]).errors.join()).toMatch(/twice/);
     expect(Sim.validatePack([P('clothes1', 'checked')]).errors.join()).toMatch(/essential/);
-    const heavy = shelfPack([...HEAVY, 'coffeekit', 'travelkettle', 'supplements'], 'checked')!;
-    const v = Sim.validatePack([...heavy, P('phonekit', 'backpack')]);
-    expect(v.weights.checked).toBeGreaterThan(GRID.checked.maxLb); expect(v.ok).toBe(false); expect(v.errors.join()).toMatch(/Checked bag/);
+    expect(Sim.validatePack([P('laptopkit', 'backpack', 0, 0)]).errors.join()).toMatch(/suitcase/);   // the backpack is gone
+    expect(Object.keys(GRID)).toEqual(['checked']);
+    // hand-placed so it fits the grid exactly but weighs 50.3 lb: the weight check, not the fit check, must fail it
+    const heavy: PackedItem[] = [P('kitegear', 'checked', 0, 0), P('clothes1', 'checked', 4, 0), P('books', 'checked', 0, 3), P('dronekit', 'checked', 2, 3), P('laptopkit', 'checked', 5, 3), P('adventure', 'checked', 0, 5), P('hikingboots', 'checked', 3, 5), P('protein', 'checked', 6, 5), P('clothes2', 'checked', 0, 7), P('climbkit', 'checked', 3, 7), P('fitnesskit', 'checked', 5, 7), P('watch', 'checked', 7, 7), P('supplements', 'checked', 3, 9), P('skincare', 'checked', 5, 9)];
+    const v = Sim.validatePack(heavy);
+    expect(v.weights.checked).toBeGreaterThan(GRID.checked.maxLb); expect(v.ok).toBe(false); expect(v.errors).toEqual([expect.stringMatching(/Suitcase is/)]);
   });
-  it('a sensible full kit fits with room to spare; the heavy kit plus a third week of clothes does not', () => {
-    const sensible = shelfPack(['clothes1', 'clothes2', 'shell', 'protein', 'supplements', 'skincare', 'sleepkit', 'coffeekit', 'adventure', 'fitnesskit', 'firstaid', 'medkit', 'packingcubes'], 'checked');
-    expect(sensible).not.toBeNull(); const w = Sim.bagWeight(sensible!, 'checked'); expect(w).toBeGreaterThan(25); expect(w).toBeLessThan(40);
-    expect(shelfPack([...HEAVY, 'clothes3', 'yogamat', 'coffeekit'], 'checked')).toBeNull();
+  it('a sensible full kit (laptop included) fits in one suitcase at ~30 lb; a greedy kit exceeds 50 lb or the grid', () => {
+    const sensible = shelfPack(['laptopkit', 'toiletries', 'watch', 'airmonitor', 'clothes1', 'clothes2', 'shell', 'protein', 'supplements', 'skincare', 'sleepkit', 'coffeekit', 'adventure', 'fitnesskit', 'firstaid', 'medkit', 'packingcubes']);
+    expect(sensible).not.toBeNull(); const w = Sim.bagWeight(sensible!); expect(w).toBeGreaterThan(27); expect(w).toBeLessThan(35); expect(Sim.validatePack(sensible!).ok).toBe(true);
+    const greedy = ['kitegear', 'dronekit', 'books', 'hikingboots', 'adventure', 'protein', 'clothes1', 'clothes2', 'hostgifts', 'laptopkit', 'coffeekit', 'travelkettle', 'yogamat'];
+    expect(shelfPack(greedy) === null || Sim.idsWeight(greedy) > GRID.checked.maxLb).toBe(true);
   });
-  it('accepts a valid pack, computes weights and clothes days, moves to the route phase, always at home', () => {
-    const s = packed(); expect(s.phase).toBe('route'); expect(s.maxClothes).toBe(3 + 7); expect(s.cleanClothes).toBe(10);
-    expect(Sim.bagWeight(s.items, 'backpack')).toBeCloseTo(6.0, 1);
+  it('accepts a valid pack, computes weight and clothes days, starts with money, moves to the route phase, always at home', () => {
+    const s = packed(); expect(s.phase).toBe('route'); expect(s.maxClothes).toBe(3 + 7); expect(s.cleanClothes).toBe(10); expect(s.money).toBe(START_MONEY); expect(s.version).toBe(2);
+    expect(Sim.bagWeight(s.items)).toBeCloseTo(8.5, 1); expect(Sim.totalWeight(s)).toBeCloseTo(8.5, 1);
     expect(s.startCity).toBe(HOME_CITY); expect(Sim.createRun(1, 'miami', 'west').startCity).toBe(HOME_CITY);
   });
-  it('shelf packer output always validates and every generated policy pack is legal', () => {
+  it('shelf packer output always validates; every policy pack and every Surprise-Me pack is legal with a laptop and clothes', () => {
     for (let i = 0; i < 60; i++) { const rng = makeRng(i); for (const style of ['random', 'heavy', 'smart'] as const) { const v = Sim.validatePack(buildPack(style, rng)); expect(v.ok, `${style} ${i}: ${v.errors.join(';')}`).toBe(true); } }
+    for (let seed = 0; seed < 80; seed++) { const p = randomPack(seed); const v = Sim.validatePack(p); expect(v.ok, `${seed}: ${v.errors.join(';')}`).toBe(true); expect(p.some(i => i.id === 'laptopkit')).toBe(true); expect(p.some(i => ITEM[i.id].clothesDays)).toBe(true); expect(p.every(i => i.bag === 'checked')).toBe(true); }
+    expect(randomPack(3)).toEqual(randomPack(3));
   });
 });
 
@@ -153,7 +164,7 @@ describe('events', () => {
     let fired = 0, s: RunState = JSON.parse(JSON.stringify(tokyo));
     for (let i = 0; i < 60 && s.phase === 'city'; i++) { const r = Sim.cityAction(s, 'explore'); s = r.state; if (r.events.some(e => e.id === 'otter')) { fired++; const pc = Sim.pendingChoices(s)!; expect(pc.choices.map(c => c.label)).not.toContain('Pet it, clean the cut after'); s = Sim.resolveChoice(s, 'otter', 0).state; } if (s.pendingEvent) s = Sim.resolveChoice(s, s.pendingEvent, 0).state; }
     expect(fired).toBe(1); expect(s.achievements).toContain('otter');
-    const withKit = { ...tokyo, items: [...tokyo.items, P('firstaid', 'backpack', 0, 3)] } as RunState;
+    const withKit = { ...tokyo, items: [...tokyo.items, P('firstaid', 'checked', 6, 0)] } as RunState;
     let s2: RunState = withKit, seenKit = false;
     for (let i = 0; i < 60 && s2.phase === 'city'; i++) { const r = Sim.cityAction(s2, 'explore'); s2 = r.state; if (r.events.some(e => e.id === 'otter')) { seenKit = Sim.pendingChoices(s2)!.choices.some(c => c.requiresTag === 'firstaid'); s2 = Sim.resolveChoice(s2, 'otter', 1).state; expect(s2.achievements).toContain('otter_lived'); break; } if (s2.pendingEvent) s2 = Sim.resolveChoice(s2, s2.pendingEvent, 0).state; }
     expect(seenKit).toBe(true);
@@ -182,7 +193,8 @@ describe('events', () => {
     for (let seed = 0; seed < 80 && seen < 3; seed++) { const st = Sim.setPack(Sim.createRun(seed, undefined, 'east'), basic()).state!; const r = Sim.travelTo(st, Sim.availableLegs(st)[0].to); const idx = r.events.findIndex(e => e.id === 'airbnbcancel'); if (idx >= 0) { seen++; expect(r.events.slice(0, idx).every(e => EVENT[e.id].when !== 'arrive')).toBe(true); expect(r.events.some(e => LODGING_DEPENDENT.has(e.id))).toBe(false); } }
   });
   it('an overweight bag throws out your back within a few legs; a light one never does', () => {
-    const heavyPack = [...shelfPack([...HEAVY, 'travelkettle', 'supplements'], 'checked')!, P('laptopkit', 'backpack'), P('phonekit', 'backpack', 3, 0)];
+    const heavyIds = ['kitegear', 'dronekit', 'books', 'hikingboots', 'adventure', 'protein', 'clothes1', 'clothes2', 'laptopkit', 'hostgifts', 'travelkettle', 'supplements'];
+    const heavyPack = shelfPack(heavyIds)!; expect(heavyPack).not.toBeNull();
     const v = Sim.validatePack(heavyPack); expect(v.ok, v.errors.join()).toBe(true); expect(v.ratio).toBeGreaterThan(0.95);
     let injured = 0, light = 0;
     for (let seed = 0; seed < 40; seed++) {
@@ -195,16 +207,18 @@ describe('events', () => {
     }
     expect(injured).toBeGreaterThan(28); expect(light).toBe(0);
   });
-  it('a delayed bag locks checked items: coffee in the suitcase is not coffee', () => {
-    const s = packed([...basic(), P('coffeekit', 'checked', 4, 0)]);
+  it('a delayed suitcase: only essentials reachable, clothes frozen, no cooking / training / laundry, work still pays, energy drains', () => {
+    const s = packed(withExtras('coffeekit', 'fitnesskit'));
     expect(Sim.coffeePacked(s)).toBe(true); expect(Sim.coffeePacked({ ...s, bagLockedDays: 2 })).toBe(false);
     expect(Sim.hasTag({ ...s, bagLockedDays: 2 }, 'clothing')).toBe(false); expect(Sim.hasTag({ ...s, bagLockedDays: 2 }, 'essential')).toBe(true);
-    const locked = { ...s, bagLockedDays: 1, phase: 'city' as const, cityId: 'lisbon' };
-    const after = Sim.cityAction(locked, 'rest').state; expect(after.bagLockedDays).toBe(0); expect(after.log.some(l => /suitcase arrives/.test(l.text))).toBe(true);
+    const locked = { ...s, bagLockedDays: 2, phase: 'city' as const, cityId: 'lisbon', day: 5, energy: 80, cleanClothes: 7 };
+    expect(Sim.cityAction(locked, 'cook').error).toMatch(/suitcase/); expect(Sim.cityAction(locked, 'train').error).toMatch(/suitcase/); expect(Sim.cityAction(locked, 'laundry').error).toMatch(/suitcase/);
+    const w = Sim.cityAction(locked, 'work'); expect(w.error).toBeUndefined(); expect(w.state.money).toBe(locked.money - CITY.lisbon.costPerDay! + WORK_PAY); expect(w.state.cleanClothes).toBe(7); expect(w.state.energy).toBeLessThan(locked.energy - 8);
+    const after = Sim.cityAction({ ...locked, bagLockedDays: 1 }, 'rest').state; expect(after.bagLockedDays).toBe(0); expect(after.log.some(l => /suitcase arrives/.test(l.text))).toBe(true);
   });
   it('the kettle can only explode if you packed it, then it is gone', () => {
     const noKettle = packed(); expect(eventChance(EVENT.kettle, { ...noKettle, cityId: 'lisbon' }, {}).chance).toBe(0);
-    const withKettle = packed([...basic(), P('travelkettle', 'checked', 4, 0)]); expect(eventChance(EVENT.kettle, { ...withKettle, cityId: 'lisbon' }, {}).chance).toBeGreaterThan(0);
+    const withKettle = packed(withExtras('travelkettle')); expect(eventChance(EVENT.kettle, { ...withKettle, cityId: 'lisbon' }, {}).chance).toBeGreaterThan(0);
     let s: RunState = { ...withKettle, phase: 'city', cityId: 'lisbon' }, boom = false;
     for (let i = 0; i < 400 && !boom && s.phase === 'city'; i++) { const r = Sim.cityAction(s, i % 2 ? 'rest' : 'work'); s = r.state; if (s.pendingEvent) s = Sim.resolveChoice(s, s.pendingEvent, 0).state; boom = r.events.some(e => e.id === 'kettle'); s.health = 100; s.energy = 80; s.mood = 80; s.day = Math.min(s.day, 200); }
     expect(boom).toBe(true); expect(s.items.some(p => p.id === 'travelkettle')).toBe(false); expect(s.lostItems).toContain('travelkettle');
@@ -212,9 +226,9 @@ describe('events', () => {
   it('mitigations: packing cubes stop forgotten items; the mosquito kit tames the swarm', () => {
     const base = { ...packed(), phase: 'city' as const, cityId: 'hyeres', stayDays: 99 };
     expect(eventChance(EVENT.forgot, base, {}).mitigated).toBe(false);
-    expect(eventChance(EVENT.forgot, { ...base, items: [...base.items, P('packingcubes', 'checked', 4, 0)] }, {}).mitigated).toBe(true);
+    expect(eventChance(EVENT.forgot, { ...base, items: [...base.items, P('packingcubes', 'checked', 6, 0)] }, {}).mitigated).toBe(true);
     expect(eventChance(EVENT.mosquito, base, {}).chance).toBeGreaterThan(0);
-    expect(eventChance(EVENT.mosquito, { ...base, items: [...base.items, P('mosquitokit', 'checked', 4, 0)] }, {}).mitigated).toBe(true);
+    expect(eventChance(EVENT.mosquito, { ...base, items: [...base.items, P('mosquitokit', 'checked', 6, 0)] }, {}).mitigated).toBe(true);
     const checked = Sim.cityAction(base, 'checkroom').state; expect(Sim.hasFlag(checked, 'roomchecked')).toBe(true); expect(eventChance(EVENT.forgot, checked, {}).mitigated).toBe(true);
     const gone = Sim.cityAction(checked, 'moveon').state; expect(Sim.hasFlag(gone, 'roomchecked')).toBe(false); expect(gone.phase).toBe('route');
   });
@@ -228,13 +242,13 @@ describe('events', () => {
 
 describe('city loop, minigames, endings', () => {
   it('actions cost days, laundry resets clothes, min stay gates moving on', () => {
-    let s = hop(packed());
+    let s = hop(packed()); s = { ...s, day: 5 };   // day 5 is a Monday
     expect(Sim.cityAction(s, 'moveon').error).toMatch(/at least/);
     const d0 = s.day; s = Sim.cityAction(s, 'work').state; expect(s.day).toBe(d0 + 1); expect(s.workStreak).toBe(1);
     s = { ...s, cleanClothes: 0 }; const r = Sim.cityAction(s, 'laundry'); expect(r.minigame?.key).toBe('Laundry'); expect(r.state.cleanClothes).toBe(r.state.maxClothes);
   });
   it('cook picks a dish from the current city, remembers it, and scores exactly that dish', () => {
-    let s = hop(packed([...basic(), P('fitnesskit', 'checked', 4, 0)]));
+    let s = hop(packed(withExtras('fitnesskit')));
     const c = Sim.cityAction(s, 'cook'); expect(c.minigame?.key).toBe('Cooking');
     const dish = c.minigame!.payload.dish; expect(CITY[s.cityId].dishes).toContain(dish.id); expect(c.state.pendingDish).toBe(dish.id);
     const after = Sim.applyMinigameResult(c.state, 'Cooking', { score: 0.9, perfect: false, failed: false }).state;
@@ -243,12 +257,12 @@ describe('city loop, minigames, endings', () => {
     for (let i = 0; i < 12; i++) { const r = Sim.cityAction(s, 'cook'); expect(CITY[s.cityId].dishes).toContain(r.minigame!.payload.dish.id); s = Sim.applyMinigameResult(r.state, 'Cooking', { score: 0.5, perfect: false, failed: false }).state; if (s.pendingEvent) s = Sim.resolveChoice(s, s.pendingEvent, 0).state; if (s.phase !== 'city') break; }
   });
   it('train hands off to a workout; rest offers Carry-On only with the console', () => {
-    let s = hop(packed([...basic(), P('fitnesskit', 'checked', 4, 0)]));
+    let s = hop(packed(withExtras('fitnesskit')));
     s = { ...s, cityId: 'miami', energy: 80 };
     const t = Sim.cityAction(s, 'train'); expect(t.minigame?.key).toBe('Workout'); expect(t.state.day).toBe(s.day);
     const after = Sim.applyMinigameResult(t.state, 'Workout', { score: 1, perfect: true, failed: false }).state; expect(after.day).toBe(s.day + 1); expect(after.achievements).toContain('ironbody');
     expect(Sim.cityAction(s, 'rest').minigame).toBeUndefined();
-    const withSwitch = { ...s, items: [...s.items, P('switch', 'backpack', 0, 3)] };
+    const withSwitch = { ...s, items: [...s.items, P('switch', 'checked', 0, 8)] };
     const rr = Sim.cityAction(withSwitch, 'rest'); expect(rr.minigame?.key).toBe('CarryOn'); expect(rr.minigame?.payload.level.city).toBe('miami');
     const gold = Sim.applyMinigameResult(rr.state, 'CarryOn', { score: 1, perfect: true, failed: false }).state; expect(gold.stamps.miami).toBe('gold');
     expect(Sim.cityAction({ ...s, energy: 10 }, 'train').error).toMatch(/tired/); expect(Sim.cityAction({ ...s, backInjuryDays: 3 }, 'train').error).toMatch(/back/);
@@ -258,6 +272,8 @@ describe('city loop, minigames, endings', () => {
     const h = Sim.checkEnding({ ...s, health: 0 }); expect(h?.kind).toBe('hospital'); expect(h?.cause).toMatch(/^Hospitalised in Lisbon after food poisoning, day \d+$/);
     expect(Sim.checkEnding({ ...s, mood: 0 })?.cause).toMatch(/^Flew home from Lisbon on day \d+, mood zero$/);
     expect(Sim.checkEnding({ ...s, day: 366 })?.cause).toMatch(/^Ran out of days in Lisbon, \d of 5 continents$/);
+    const b = Sim.checkEnding({ ...s, money: -OVERDRAFT - 1 }); expect(b?.kind).toBe('broke'); expect(b?.cause).toMatch(/^Broke in Lisbon on day \d+, \$\d+ in the hole$/);
+    expect(Sim.checkEnding({ ...s, money: -OVERDRAFT + 1 })).toBeUndefined();
     const route = [HOME_CITY, 'lasvegas', 'miami', 'lisbon', 'casablanca', 'munich', 'bangkok', 'tokyo', HOME_CITY];
     const win = { ...s, cityId: HOME_CITY, route, visited: route.slice(0, -1) } as RunState;
     const e = Sim.checkEnding(win); expect(e?.kind).toBe('win'); expect(e!.score).toBeGreaterThan(500); expect(e!.cause).toMatch(/^Home to Orange County on day \d+, 4 continents$/); expect(win.phase).toBe('ended');
@@ -273,6 +289,70 @@ describe('save', () => {
   beforeEach(() => { _resetMemoryStore(); clearRun(); });
   it('round-trips a run and settings, rejects garbage', () => {
     const s = hop(packed()); saveRun(s); expect(loadRun()).toEqual(s); clearRun(); expect(loadRun()).toBeNull();
+    saveRun({ ...s, version: 1 } as any); expect(loadRun(), 'v1 saves are discarded').toBeNull();
     const st = recordRun({ kind: 'win', text: 'x', score: 900 }, 300); expect(st.runs).toBe(1); expect(loadSettings().bestScore).toBe(900); expect(loadSettings().history[0].ending).toBe('win');
+  });
+});
+
+describe('round 3: money, weekends, streaks, weight, outdoors, radon', () => {
+  const inCity = (extra: string[] = [], cityId = 'lisbon', day = 5) => ({ ...packed(withExtras(...extra)), phase: 'city' as const, cityId, day, stayDays: 1, energy: 90, mood: 80 }) as RunState;
+  it('the calendar starts on a Thursday and weekends cannot be worked', () => {
+    expect(weekdayOf(1)).toBe(4); expect(isWeekend(3)).toBe(true); expect(isWeekend(4)).toBe(true); expect(isWeekend(5)).toBe(false);
+    expect(Sim.cityAction(inCity([], 'lisbon', 3), 'work').error).toMatch(/weekend/);
+    expect(Sim.nextWorkdays({ ...inCity(), day: 2 } as RunState, 5)).toEqual([2, 5, 6, 7, 8]);
+  });
+  it('work pays on weekdays, drains exponentially with the streak, and any other day resets it', () => {
+    let s = inCity(); const m0 = s.money;
+    s = Sim.cityAction(s, 'work').state; expect(s.money).toBe(m0 - CITY.lisbon.costPerDay! + WORK_PAY); expect(s.workStreak).toBe(1);
+    const e1 = s.energy; s = Sim.cityAction(s, 'work').state; const drop2 = e1 - s.energy; s = Sim.cityAction(s, 'work').state; const e3 = s.energy;
+    expect(s.workStreak).toBe(3); expect(WORK_ENERGY(3)).toBeGreaterThan(WORK_ENERGY(1)); expect(WORK_ENERGY(20)).toBe(40);
+    void drop2; void e3;
+    s = Sim.cityAction(s, 'explore').state; expect(s.workStreak).toBe(0);
+    // five straight days cost more than five days with a break in the middle
+    const straight = [5, 6, 7, 8, 9].reduce((st, d) => Sim.cityAction({ ...st, day: d }, 'work').state, { ...inCity(), energy: 100 } as RunState);
+    const broken = [5, 6, 7].reduce((st, d) => Sim.cityAction({ ...st, day: d }, 'work').state, { ...inCity(), energy: 100 } as RunState);
+    const brokenRested = Sim.cityAction({ ...broken, day: 8 }, 'rest').state; const brokenAgain = Sim.cityAction({ ...brokenRested, day: 9 }, 'work').state;
+    expect(straight.workStreak).toBe(5); expect(brokenAgain.workStreak).toBe(1);
+  });
+  it('every day and every leg cost money; the card declines below zero and the run ends past the overdraft', () => {
+    const s = inCity(); const r = Sim.cityAction(s, 'rest'); expect(r.state.money).toBe(s.money - CITY.lisbon.costPerDay!);
+    const route = packed(); const leg = Sim.availableLegs(route)[0]; const t = Sim.travelTo(route, leg.to); expect(t.state.money).toBe(START_MONEY - Sim.fareFor(CITY[HOME_CITY], leg)); expect(Sim.fareFor(CITY[HOME_CITY], leg)).toBeGreaterThan(100);
+    expect(Sim.fareFor(CITY.kathmandu, CITY.kathmandu.legs.find(l => l.to === 'manaslu')!)).toBe(900);
+    const poor = Sim.cityAction({ ...s, money: 20 }, 'rest'); expect(poor.state.money).toBeLessThan(0); expect(poor.events.some(e => e.id === 'broke')).toBe(true); expect(poor.state.phase).toBe('city');
+    const gone = Sim.cityAction({ ...s, money: -OVERDRAFT + 10 }, 'rest'); expect(gone.state.ending?.kind).toBe('broke');
+  });
+  it('a full suitcase roughly doubles the travel energy drain of a light one', () => {
+    const light = packed(); const heavy = packed(shelfPack(['kitegear', 'dronekit', 'books', 'hikingboots', 'adventure', 'protein', 'clothes1', 'laptopkit', 'hostgifts', 'yogamat', 'coffeekit'])!);
+    expect(Sim.weightRatio(heavy.items)).toBeGreaterThan(0.85);
+    const leg = Sim.availableLegs(light)[0];
+    // same seed, same leg events for both; only the weight term differs: 0.8 * leg.energy * (ratioHeavy - ratioLight)
+    const dl = light.energy - Sim.travelTo(light, leg.to).state.energy, dh = light.energy - Sim.travelTo({ ...heavy, energy: light.energy }, leg.to).state.energy;
+    const expected = 0.8 * leg.energy * (Sim.weightRatio(heavy.items) - Sim.weightRatio(light.items));
+    expect(Math.abs((dh - dl) - expected)).toBeLessThanOrEqual(2);
+    expect(dh - dl).toBeGreaterThan(8);
+  });
+  it('adventure gear pays off in outdoorsy cities and hiking boots add a life to outdoor workouts', () => {
+    expect(CITY.innsbruck.outdoorsy).toBe(true); expect(CITY.newyork.outdoorsy).toBeFalsy();
+    const bare = inCity([], 'innsbruck', 5), geared = inCity(['adventure'], 'innsbruck', 5);
+    let moodBare = 0, moodGeared = 0; for (let i = 0; i < 20; i++) { moodBare += Sim.cityAction({ ...bare, seed: i }, 'explore').state.mood; moodGeared += Sim.cityAction({ ...geared, seed: i }, 'explore').state.mood; }
+    expect(moodGeared).toBeGreaterThan(moodBare + 60);
+    const boots = inCity(['hikingboots', 'climbkit'], 'innsbruck', 5); const t = Sim.cityAction(boots, 'train'); expect(t.minigame?.extraLives).toBe(1); expect(t.minigame?.payload.extraLives).toBe(1);
+    const noBoots = Sim.cityAction(inCity(['climbkit'], 'innsbruck', 5), 'train'); expect(noBoots.minigame?.extraLives).toBeUndefined();
+    const gym = Sim.cityAction(inCity(['hikingboots', 'fitnesskit'], 'newyork', 5), 'train'); expect(gym.minigame?.payload.activity).toBe('bands'); expect(gym.minigame?.extraLives).toBeUndefined();
+  });
+  it('radon drains health in granite towns unless the air monitor is packed, which turns it into an open window', () => {
+    expect(CITY.innsbruck.radon).toBe(3); expect(CITY.lisbon.radon).toBeUndefined(); expect(CITY.reykjavik.radon).toBeUndefined();
+    const bare = { ...inCity([], 'innsbruck', 5), stayDays: 0 }, safe = { ...inCity(['airmonitor'], 'innsbruck', 5), stayDays: 0 };
+    const hb = Sim.cityAction(bare, 'rest'), hs = Sim.cityAction(safe, 'rest');
+    expect(bare.health - hb.state.health).toBeGreaterThan(safe.health - hs.state.health + 0.3);
+    expect(hs.events.some(e => e.id === 'radonmonitor')).toBe(true); expect(hb.events.some(e => e.id === 'radonmonitor')).toBe(false);
+    let s = bare; for (let i = 0; i < 4; i++) s = Sim.cityAction(s, 'rest').state; const fifth = Sim.cityAction(s, 'rest'); expect(fifth.events.some(e => e.id === 'radonheadache')).toBe(true);
+    const lisbon = Sim.cityAction({ ...inCity([], 'lisbon', 5), stayDays: 0 }, 'rest'); expect(lisbon.events.some(e => e.id.startsWith('radon'))).toBe(false);
+  });
+  it('the headless first-timer fails 35 to 45% with broke under a tenth of failures; the learned player wins', () => {
+    const outs = Array.from({ length: 120 }, (_, i) => playRun(1000 + i * 7919, 'random'));
+    const fails = outs.filter(o => o.ending !== 'win'); const broke = fails.filter(o => o.ending === 'broke').length;
+    expect(fails.length / outs.length).toBeGreaterThan(0.25); expect(fails.length / outs.length).toBeLessThan(0.55); expect(broke / Math.max(1, fails.length)).toBeLessThan(0.15);
+    const smart = Array.from({ length: 30 }, (_, i) => playRun(1000 + i * 7919, 'smart')); expect(smart.filter(o => o.ending === 'win').length / 30).toBeGreaterThan(0.7);
   });
 });

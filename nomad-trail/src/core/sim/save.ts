@@ -9,7 +9,7 @@ const store = {
 export function saveRun(state: RunState): void { store.set(SAVE_KEY, JSON.stringify(state)); }
 export function loadRun(): RunState | null {
   const raw = store.get(SAVE_KEY); if (!raw) return null;
-  try { const s = JSON.parse(raw) as RunState; if (s.version !== 1 || typeof s.day !== 'number' || !s.cityId) return null; return s; } catch { return null; }
+  try { const s = JSON.parse(raw) as RunState; if (s.version !== 2 || typeof s.day !== 'number' || !s.cityId || typeof s.money !== 'number') return null; /* v1 saves (two bags, no money) are discarded */ return s; } catch { return null; }
 }
 export function hasSave(): boolean { return loadRun() !== null; }
 export function clearRun(): void { store.del(SAVE_KEY); }

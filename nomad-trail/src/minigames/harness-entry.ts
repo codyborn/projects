@@ -13,9 +13,10 @@ const errors: string[] = []; window.addEventListener('error', e => errors.push(S
 
 if (q.get('auto') === '1') {
   MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
-  const runs: { key: string; payload?: any; energy: number }[] = [
+  const runs: { key: string; payload?: any; energy: number; extraLives?: number }[] = [
     { key: MINIGAME_KEYS.cooking, energy: 100 }, { key: MINIGAME_KEYS.cooking, energy: 20, payload: { id: 'x', name: 'Tacos', city: 'lapaz', ingredients: ['a'], health: 1, mood: 1, steps: [{ kind: 'season', count: 3 }, { kind: 'pour', count: 1 }, { kind: 'stir', count: 1 }] } },
     ...(['bands', 'boulder', 'ferrata', 'trailrun', 'hike', 'swim', 'bogus'] as const).map(a => ({ key: MINIGAME_KEYS.workout, energy: a === 'hike' ? 30 : 100, payload: { activity: a, city: 'Test' } })),
+    ...(['boulder', 'ferrata', 'trailrun', 'hike'] as const).map(a => ({ key: MINIGAME_KEYS.workout, energy: 100, extraLives: 1, payload: { activity: a, city: 'Boots' } })),
     { key: MINIGAME_KEYS.carryon, energy: 100 }, { key: MINIGAME_KEYS.carryon, energy: 40, payload: { ...DEFAULT_LEVEL, hazard: 'gust' } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { ...DEFAULT_LEVEL, hazard: 'rock' } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { ...DEFAULT_LEVEL, hazard: 'wave' } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { ...DEFAULT_LEVEL, hazard: 'otter' } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { ...DEFAULT_LEVEL, hazard: 'ice' } },
     { key: MINIGAME_KEYS.kite, energy: 100 }, { key: MINIGAME_KEYS.airport, energy: 100 }, { key: MINIGAME_KEYS.airport, energy: 30 }, { key: MINIGAME_KEYS.laundry, energy: 100 },
   ];
@@ -25,7 +26,7 @@ if (q.get('auto') === '1') {
     if (driver) clearInterval(driver);
     if (i >= runs.length) { out.textContent = JSON.stringify({ results, errors }); document.title = 'HARNESS_DONE'; return; }
     const r = runs[i++]; const t0 = performance.now(); const v0 = game.getTime(); let doneCalls = 0;
-    const launch: MinigameLaunch = { energy: r.energy, difficulty: 0.5, payload: r.payload, onDone: (res) => { doneCalls++; results.push({ key: r.key, payload: r.payload?.activity || r.payload?.hazard || r.payload?.name || '', energy: r.energy, ...res, ms: Math.round(performance.now() - t0), vms: Math.round(game.getTime() - v0), doneCalls }); setTimeout(next, 300); } };
+    const launch: MinigameLaunch = { energy: r.energy, difficulty: 0.5, payload: r.payload, extraLives: r.extraLives, onDone: (res) => { doneCalls++; results.push({ key: r.key, payload: r.payload?.activity || r.payload?.hazard || r.payload?.name || '', energy: r.energy, lives: r.extraLives ?? 0, ...res, ms: Math.round(performance.now() - t0), vms: Math.round(game.getTime() - v0), doneCalls }); setTimeout(next, 300); } };
     prog(`run ${i}/${runs.length} ${r.key} ${r.payload?.activity || r.payload?.hazard || ''}`);
     game.scene.start(r.key, launch);
     const scene = game.scene.getScene(r.key);

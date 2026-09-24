@@ -12,6 +12,7 @@ export function normalizeLaunch(data: any): MinigameLaunch {
     energy: typeof d.energy === 'number' ? clamp(d.energy, 0, 100) : 100,
     difficulty: typeof d.difficulty === 'number' ? clamp(d.difficulty, 0, 1) : 0.5,
     payload: d.payload,
+    extraLives: typeof d.extraLives === 'number' ? Math.max(0, Math.floor(d.extraLives)) : 0,
     onDone: typeof d.onDone === 'function' ? d.onDone : () => {},
   };
 }

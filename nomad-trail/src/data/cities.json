@@ -102,7 +102,8 @@
    }
   ],
   "blurb": "Home base, allegedly. Ninety-six days here last year and the tan never took.",
-  "stampIcon": "palm"
+  "stampIcon": "palm",
+  "costPerDay": 150
  },
  {
   "id": "newyork",
@@ -212,7 +213,8 @@
    }
   ],
   "blurb": "The team onsite city. Twenty days at a time, four times a year, always a hotel with a view of a wall.",
-  "stampIcon": "skyline"
+  "stampIcon": "skyline",
+  "costPerDay": 180
  },
  {
   "id": "boulder",
@@ -299,7 +301,10 @@
   ],
   "blurb": "Trail runs at altitude, coffee at sea-level prices. The only American city that feels like a base.",
   "stampIcon": "flatirons",
-  "altitude": 1655
+  "altitude": 1655,
+  "costPerDay": 140,
+  "radon": 3,
+  "outdoorsy": true
  },
  {
   "id": "bozeman",
@@ -384,7 +389,10 @@
   ],
   "blurb": "A Jeep Compass, a month, and more sky than a person needs.",
   "stampIcon": "mountain",
-  "altitude": 1461
+  "altitude": 1461,
+  "costPerDay": 120,
+  "radon": 3,
+  "outdoorsy": true
  },
  {
   "id": "lasvegas",
@@ -471,7 +479,8 @@
    }
   ],
   "blurb": "A layover that became five days. Nobody remembers why.",
-  "stampIcon": "dice"
+  "stampIcon": "dice",
+  "costPerDay": 130
  },
  {
   "id": "joshuatree",
@@ -540,7 +549,10 @@
    }
   ],
   "blurb": "Bouldering by day, stars by night, a hot tub in the desert.",
-  "stampIcon": "cactus"
+  "stampIcon": "cactus",
+  "costPerDay": 110,
+  "radon": 2,
+  "outdoorsy": true
  },
  {
   "id": "orangecounty",
@@ -672,7 +684,8 @@
    }
   ],
   "blurb": "Home. Family, laundry that someone else folds, and the Pacific as the front door.",
-  "stampIcon": "sun"
+  "stampIcon": "sun",
+  "costPerDay": 60
  },
  {
   "id": "montreal",
@@ -739,7 +752,9 @@
    }
   ],
   "blurb": "Two weeks of bagels and the discovery that French is spoken faster here.",
-  "stampIcon": "maple"
+  "stampIcon": "maple",
+  "costPerDay": 110,
+  "radon": 2
  },
  {
   "id": "lapaz",
@@ -822,7 +837,8 @@
    }
   ],
   "blurb": "Whale sharks, a rental car, the good kind of quiet.",
-  "stampIcon": "whale"
+  "stampIcon": "whale",
+  "costPerDay": 65
  },
  {
   "id": "laventana",
@@ -900,7 +916,9 @@
    }
   ],
   "blurb": "Kiteboarding town. Wind every afternoon, NYE on the beach, nothing to do until 2 pm.",
-  "stampIcon": "kite"
+  "stampIcon": "kite",
+  "costPerDay": 70,
+  "outdoorsy": true
  },
  {
   "id": "roatan",
@@ -971,7 +989,8 @@
    }
   ],
   "blurb": "Five weeks on an island of biohackers, reef, and one road.",
-  "stampIcon": "reef"
+  "stampIcon": "reef",
+  "costPerDay": 90
  },
  {
   "id": "santiago",
@@ -1061,7 +1080,9 @@
   ],
   "blurb": "A week in the Andes' shadow before the wind country.",
   "stampIcon": "andes",
-  "altitude": 520
+  "altitude": 520,
+  "costPerDay": 90,
+  "radon": 1
  },
  {
   "id": "patagonia",
@@ -1124,7 +1145,9 @@
    }
   ],
   "blurb": "Edge City. A month at the end of the world with a hundred other people who also work on the internet.",
-  "stampIcon": "peaks"
+  "stampIcon": "peaks",
+  "costPerDay": 110,
+  "outdoorsy": true
  },
  {
   "id": "buenosaires",
@@ -1222,7 +1245,8 @@
    }
   ],
   "blurb": "DevConnect. Steak at midnight, meetings at ten, a city that never asked what time zone you were on.",
-  "stampIcon": "tango"
+  "stampIcon": "tango",
+  "costPerDay": 80
  },
  {
   "id": "iguazu",
@@ -1281,7 +1305,9 @@
    }
   ],
   "blurb": "Waterfalls that make Niagara look like a tap.",
-  "stampIcon": "falls"
+  "stampIcon": "falls",
+  "costPerDay": 90,
+  "outdoorsy": true
  },
  {
   "id": "lisbon",
@@ -1386,7 +1412,8 @@
    }
   ],
   "blurb": "The European base. Hills, tiles, a tram that arrives when it feels like it.",
-  "stampIcon": "tram"
+  "stampIcon": "tram",
+  "costPerDay": 110
  },
  {
   "id": "carvoeiro",
@@ -1456,7 +1483,9 @@
    }
   ],
   "blurb": "Cliffs, caves, a rental car with the turning radius of a boat.",
-  "stampIcon": "cliff"
+  "stampIcon": "cliff",
+  "costPerDay": 100,
+  "outdoorsy": true
  },
  {
   "id": "madrid",
@@ -1554,7 +1583,9 @@
   ],
   "blurb": "A week of late dinners and early meetings. The math does not work.",
   "stampIcon": "bull",
-  "altitude": 650
+  "altitude": 650,
+  "costPerDay": 110,
+  "radon": 2
  },
  {
   "id": "granada",
@@ -1632,7 +1663,10 @@
   ],
   "blurb": "Free tapas with every drink. The Alhambra. The Sierra Nevada right there.",
   "stampIcon": "alhambra",
-  "altitude": 740
+  "altitude": 740,
+  "costPerDay": 90,
+  "radon": 2,
+  "outdoorsy": true
  },
  {
   "id": "london",
@@ -1729,7 +1763,8 @@
    }
   ],
   "blurb": "Six weeks of a city that charges rent on the air.",
-  "stampIcon": "bigben"
+  "stampIcon": "bigben",
+  "costPerDay": 170
  },
  {
   "id": "brussels",
@@ -1797,7 +1832,8 @@
    }
   ],
   "blurb": "A week. Fries as a food group.",
-  "stampIcon": "waffle"
+  "stampIcon": "waffle",
+  "costPerDay": 120
  },
  {
   "id": "amsterdam",
@@ -1873,7 +1909,8 @@
    }
   ],
   "blurb": "Bikes have right of way over everything, including you.",
-  "stampIcon": "bike"
+  "stampIcon": "bike",
+  "costPerDay": 140
  },
  {
   "id": "marseille",
@@ -1945,7 +1982,8 @@
    }
   ],
   "blurb": "One night. The bouillabaisse was worth the night.",
-  "stampIcon": "port"
+  "stampIcon": "port",
+  "costPerDay": 110
  },
  {
   "id": "hyeres",
@@ -2017,7 +2055,8 @@
    }
   ],
   "blurb": "Twenty-six days on the Riviera. Bread is the answer to most things.",
-  "stampIcon": "palm"
+  "stampIcon": "palm",
+  "costPerDay": 120
  },
  {
   "id": "antibes",
@@ -2102,7 +2141,8 @@
    }
   ],
   "blurb": "Nice, Monaco, the sea every morning. If you can't beat 'em.",
-  "stampIcon": "yacht"
+  "stampIcon": "yacht",
+  "costPerDay": 140
  },
  {
   "id": "edinburgh",
@@ -2170,7 +2210,9 @@
    }
   ],
   "blurb": "A night between the Highlands and Morocco. Rain both ways.",
-  "stampIcon": "castle"
+  "stampIcon": "castle",
+  "costPerDay": 130,
+  "radon": 1
  },
  {
   "id": "highlands",
@@ -2248,7 +2290,10 @@
    }
   ],
   "blurb": "Aviemore, Skye, Glencoe. Six weeks, twelve dry hours, the best of them all.",
-  "stampIcon": "stag"
+  "stampIcon": "stag",
+  "costPerDay": 120,
+  "radon": 2,
+  "outdoorsy": true
  },
  {
   "id": "reykjavik",
@@ -2318,7 +2363,9 @@
    }
   ],
   "blurb": "A campervan, the ring road, sleep that never gets dark.",
-  "stampIcon": "geyser"
+  "stampIcon": "geyser",
+  "costPerDay": 170,
+  "outdoorsy": true
  },
  {
   "id": "munich",
@@ -2439,7 +2486,9 @@
   ],
   "blurb": "Oktoberfest in September. Nothing about this city makes sense and all of it is on time.",
   "stampIcon": "pretzel",
-  "altitude": 520
+  "altitude": 520,
+  "costPerDay": 130,
+  "radon": 2
  },
  {
   "id": "innsbruck",
@@ -2521,7 +2570,10 @@
   ],
   "blurb": "The Nordkette out the window. Via ferrata on Saturdays, the climbing gym on Tuesdays. The best month of the year.",
   "stampIcon": "edelweiss",
-  "altitude": 574
+  "altitude": 574,
+  "costPerDay": 130,
+  "radon": 3,
+  "outdoorsy": true
  },
  {
   "id": "hallstatt",
@@ -2593,7 +2645,10 @@
   ],
   "blurb": "Bad Goisern, Gosau, lakes you can drink from. Cut from a month to a week and still worth it.",
   "stampIcon": "lake",
-  "altitude": 511
+  "altitude": 511,
+  "costPerDay": 120,
+  "radon": 3,
+  "outdoorsy": true
  },
  {
   "id": "casablanca",
@@ -2690,7 +2745,8 @@
    }
   ],
   "blurb": "A week of tagine and the realization that the movie was not filmed here.",
-  "stampIcon": "lantern"
+  "stampIcon": "lantern",
+  "costPerDay": 70
  },
  {
   "id": "dakhla",
@@ -2770,7 +2826,9 @@
    }
   ],
   "blurb": "Three weeks on a lagoon in the Sahara. The French have watches.",
-  "stampIcon": "dune"
+  "stampIcon": "dune",
+  "costPerDay": 70,
+  "outdoorsy": true
  },
  {
   "id": "seoul",
@@ -2861,7 +2919,9 @@
    }
   ],
   "blurb": "A week of food that is both spicy and a personality.",
-  "stampIcon": "lantern"
+  "stampIcon": "lantern",
+  "costPerDay": 110,
+  "radon": 1
  },
  {
   "id": "chiangmai",
@@ -2933,7 +2993,8 @@
   ],
   "blurb": "Nomad capital, cafés per capita off the charts, khao soi for breakfast.",
   "stampIcon": "temple",
-  "altitude": 310
+  "altitude": 310,
+  "costPerDay": 60
  },
  {
   "id": "bangkok",
@@ -3024,7 +3085,8 @@
    }
   ],
   "blurb": "Street food at 1 am, a tuk-tuk at 1:05, regret at 4.",
-  "stampIcon": "tuktuk"
+  "stampIcon": "tuktuk",
+  "costPerDay": 70
  },
  {
   "id": "hongkong",
@@ -3122,7 +3184,8 @@
    }
   ],
   "blurb": "Skyscrapers with hiking trails behind them. A week of dim sum and stairs.",
-  "stampIcon": "junk"
+  "stampIcon": "junk",
+  "costPerDay": 150
  },
  {
   "id": "tokyo",
@@ -3228,7 +3291,8 @@
    }
   ],
   "blurb": "Three weeks of convenience stores, alleys, animal cafes and trains that apologize for being early.",
-  "stampIcon": "torii"
+  "stampIcon": "torii",
+  "costPerDay": 160
  },
  {
   "id": "minakami",
@@ -3292,7 +3356,10 @@
   ],
   "blurb": "Nikko and Minakami: onsens, snow, a train that apologizes for being early.",
   "stampIcon": "onsen",
-  "altitude": 500
+  "altitude": 500,
+  "costPerDay": 120,
+  "radon": 1,
+  "outdoorsy": true
  },
  {
   "id": "kathmandu",
@@ -3380,7 +3447,10 @@
   ],
   "blurb": "Permits, a duffel, the last real shower for two weeks.",
   "stampIcon": "stupa",
-  "altitude": 1400
+  "altitude": 1400,
+  "costPerDay": 45,
+  "radon": 2,
+  "outdoorsy": true
  },
  {
   "id": "manaslu",
@@ -3428,6 +3498,8 @@
   ],
   "blurb": "Fourteen days on foot around the eighth-highest mountain in the world. Dal bhat power, twenty-four hour.",
   "stampIcon": "yak",
-  "altitude": 5106
+  "altitude": 5106,
+  "costPerDay": 40,
+  "outdoorsy": true
  }
 ]

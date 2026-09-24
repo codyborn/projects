@@ -1,5 +1,33 @@
 # SIM agent notes (for the integrator)
 
+## Round 3 (2026-09-24): one suitcase, money, weekends, streaks, radon
+
+**Save format is v2** (`SAVE_KEY nomadtrail.save.v2`, `RunState.version: 2`, `money`); `load()` discards anything else.
+
+**One suitcase.** `Sim.GRID = { checked: {cols 8, rows 10, maxLb 50} }` (from `consts.ts`). `validatePack` rejects any item with `bag !== 'checked'` ("everything goes in the suitcase now"). `weights.backpack` is always 0. A sensible full kit (laptop, toiletries, watch, monitor, 2 weeks clothes, shell, protein, supplements, skincare, sleep kit, coffee, adventure, fitness, first aid, meds, cubes) is 32.6 lb / 69 cells. Delayed bag (`bagLockedDays > 0`): only `essential`-tagged bundles are reachable (`accessibleItems`), clean clothes are frozen, Cook / Train / Laundry return errors mentioning "suitcase", energy −8/day, Work still works and pays.
+
+**Money.** `START_MONEY 4000`, `WORK_PAY 450` per weekday, `OVERDRAFT 1500`. Every day costs `city.costPerDay` (45 to 180 USD); every leg costs `Sim.fareFor(fromCity, leg)` (flight 120 + 0.08/km, train 40 + 0.05/km, bus/car/ferry 30 + 0.03/km, trek 900). At `money < 0` the engine fires the `broke` event once (card declines, mood −5); at `money < -OVERDRAFT` the run ends with kind `'broke'` ("The card declines in {city}. Orange County has a couch."). Cause line: "Broke in Lisbon on day 88, $1,512 in the hole". Score adds `money/20` on a win.
+
+**Weekends.** Day 1 is Thursday Jan 1 2026. `Sim.weekdayOf(day)` (0 = Sunday), `Sim.isWeekend(day)`, `Sim.nextWorkdays(state, n)`. `cityAction('work')` on a weekend returns `error: 'It is the weekend. Nobody is paying.'` with the state unchanged. **UI: disable/label the Work button on weekends (show the weekday in the HUD) and make Work Week call work only on the days `nextWorkdays` returns.**
+
+**Work streak.** `workStreak` counts consecutive work days; energy cost `WORK_ENERGY(n) = min(40, 8·1.3^(n−1))`, mood cost `WORK_MOOD(n) = min(15, 1·1.35^(n−1))`. Any other day action (explore, rest, cook, train, laundry) and any travel reset it to 0. Work Week batching should stop when energy gets low; five straight days cost 72 energy.
+
+**Weight → travel.** Leg energy × (0.8 + 0.8 × weightRatio). A ≥ 85% suitcase adds "The suitcase fights you the whole way." to the travel log line.
+
+**Outdoorsy cities** (`city.outdoorsy`, 16 of them: Boulder, Montana, Joshua Tree, La Ventana, Patagonia, Highlands, Iceland, Innsbruck, Salzkammergut, Dakhla, Minakami, Kathmandu, Manaslu, Granada, Carvoeiro, Iguazú). With the `adventure` bundle (tag `hike`): Explore +6 mood, −3 less energy, Train difficulty −0.1. Without it: 30% chance of "The trail was right there" (mood −3). `Sim.isOutdoorsy(state)`.
+
+**Hiking boots → extra life.** `cityAction('train')` returns `minigame.extraLives = 1` (also `payload.extraLives`) when `hikingboots` is packed and the activity is outdoor (trailrun, hike, ferrata, boulder, ski, surf). **UI: forward `minigame.extraLives` into `MinigameLaunch.extraLives`.**
+
+**Radon** (`city.radon` 0..3; 15 cities, Tyrol/Salzkammergut/Colorado/Montana at 3). Daily health −0.15 × radon unless `airmonitor` is packed. With the monitor: event `radonmonitor` on stay day 1 (mood +2). Without, radon ≥ 2: event `radonheadache` on stay day 5 (mood −4). Both live in events.json with baseChance 0 and are fired by the engine (`forceEvent`).
+
+**Bundles.** 36 (phone removed, Air Quality Monitor added, real: true). Every bundle has `benefits: string[]` (2 to 4 lines, ≤ 44 chars) for the pack card. `Sim.randomPack(seed)` returns a legal random pack that always includes the laptop and a week of clothes (Surprise Me). `Sim.shelfPack(ids)`, `Sim.buildPack(style, rng)`, `Sim.idsWeight(ids)` are exported from `src/core/sim/pack.ts` (no policy dependency; `sim/policy.ts` re-exports them).
+
+**Other UI notes.** `hasItem(state, id)`, `isOutdoorsy(state)`, `fareFor(city, leg)` are on `Sim`. Show `money` in the HUD and the fare on route cards (`Sim.fareFor(Sim.CITY[run.cityId], leg)`). The e-reader gives +2 mood per travel day; host gifts +3 mood on arrival at an Airbnb/co-living; the tablet +2 mood on rest days; the kettle +1 mood per day (and the event).
+
+**Numbers** (`npm run sim 400`): random pack 43% fail (hospital 149, broke 13, out-of-days 7, flew home 1), mean end day 197, mean end money $4.8k; heavy 80% fail; smart 100% win, ~$9.4k left. Broke is 8% of first-timer failures. Headless players work ~60% (random) / ~70% (smart) of weekdays, never weekends.
+
+
+
 Round 2 (2026-09-24, after Cody's first phone playtest). Data is generated: `python3 tools/gen_items.py && python3 tools/gen_cities.py && python3 tools/gen_events.py && python3 tools/gen_levels.py`, then `npm test && npm run sim`. The generators are the source of truth again (the earlier hand tuning is baked in).
 
 ## What changed for the UI

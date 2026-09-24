@@ -44,7 +44,7 @@ export class TravelScene extends Phaser.Scene {
     this.moving = false; const run = getRun(this); const before = { locked: run.bagLockedDays, wheel: run.wheelBroken };
     const res = Sim.travelTo(run, leg.to); putRun(this, res.state);
     const after = res.state; const beats: string[] = [];
-    if (leg.transport === 'flight') { if (after.wheelBroken && !before.wheel) beats.push('🧳 Your suitcase arrives on three wheels.'); else if (after.bagLockedDays > before.locked) beats.push(`🧳 Bag: delayed ${after.bagLockedDays} day${after.bagLockedDays > 1 ? 's' : ''}. Hope the important stuff is in the backpack.`); else beats.push('🧳 Bag: on the belt. Small miracle.'); }
+    if (leg.transport === 'flight') { if (after.wheelBroken && !before.wheel) beats.push('Your suitcase arrives on three wheels.'); else if (after.bagLockedDays > before.locked) beats.push(`Bag: delayed ${after.bagLockedDays} day${after.bagLockedDays > 1 ? 's' : ''}. Clothes, kitchen and gym are on hold.`); else beats.push('Bag: on the belt. Small miracle.'); }
     const showBeats = (i: number, then: () => void) => { if (i >= beats.length) return then(); const t = txt(this, 180, 470, beats[i], 11, PAL.sun2, { align: 'center', wrap: 300 }).setOrigin(0.5).setAlpha(0); this.tweens.add({ targets: t, alpha: 1, y: 462, duration: 250 }); this.time.delayedCall(1500, () => showBeats(i + 1, then)); };
     const events = [...res.events];
     const runEvents = () => { const id = events.shift(); if (!id) { const end = Sim.checkEnding(getRun(this)); if (end) { const r = getRun(this); r.ending = end; r.phase = 'ended'; putRun(this, r); return this.scene.start('End'); } return this.scene.start('City', { arrived: true }); }

@@ -93,6 +93,14 @@ def lodgings(cid):
     if cid in ('roatan','patagonia'): return [LODGE['coliving'], LODGE['airbnb']]
     if cid in ('newyork','lasvegas','marseille','edinburgh','iguazu'): return [LODGE['hotel'], LODGE['hostel']]
     return [LODGE['airbnb'], LODGE['hotel'], LODGE['hostel']]
+# ---- money: lodging + food per day (USD), realistic 2026 nomad budgets
+COST = {'tokyo':160,'newyork':180,'london':170,'miami':150,'hongkong':150,'reykjavik':170,'antibes':140,'hyeres':120,'marseille':110,'amsterdam':140,'brussels':120,'munich':130,'innsbruck':130,'hallstatt':120,
+        'edinburgh':130,'highlands':120,'boulder':140,'bozeman':120,'lasvegas':130,'joshuatree':110,'orangecounty':60,'montreal':110,'seoul':110,'madrid':110,'granada':90,'lisbon':110,'carvoeiro':100,
+        'casablanca':70,'dakhla':70,'santiago':90,'patagonia':110,'buenosaires':80,'iguazu':90,'lapaz':65,'laventana':70,'roatan':90,'bangkok':70,'chiangmai':60,'kathmandu':45,'manaslu':40,'minakami':120}
+# ---- radon (0..3), realistic: granite and alpine bedrock; coastal / sedimentary / basalt (Iceland) low
+RADON = {'innsbruck':3,'hallstatt':3,'boulder':3,'bozeman':3,'highlands':2,'joshuatree':2,'granada':2,'madrid':2,'montreal':2,'kathmandu':2,'munich':2,'edinburgh':1,'santiago':1,'seoul':1,'minakami':1}
+# outdoorsy = the place is about being outside; adventure gear pays off here (explicit: gyms and city trail runs do not count)
+OUTDOORSY = {'boulder','bozeman','joshuatree','laventana','patagonia','highlands','reykjavik','innsbruck','hallstatt','dakhla','minakami','kathmandu','manaslu','granada','carvoeiro','iguazu'}
 cities=[]
 for cid,(name,country,region,lat,lon,hero,mins,sug,climate,tz,alt,dishes,acts,hazard,blurb,icon,ew) in C.items():
     sug=max(sug,8) if cid not in ('manaslu','marseille','edinburgh','iguazu','lasvegas','joshuatree','orangecounty') else sug
@@ -100,9 +108,13 @@ for cid,(name,country,region,lat,lon,hero,mins,sug,climate,tz,alt,dishes,acts,ha
     o=dict(id=cid,name=name,country=country,region=region,lat=lat,lon=lon,hero=hero,minStay=mins,suggestedStay=sug,climate=climate,timezone=tz,
            dishes=dishes,activities=acts,hazard=hazard,lodgings=lodgings(cid),eventWeights=ew,legs=legs[cid],blurb=blurb,stampIcon=icon)
     if alt: o['altitude']=alt
+    o['costPerDay']=COST[cid]
+    if RADON.get(cid): o['radon']=RADON[cid]
+    if cid in OUTDOORSY: o['outdoorsy']=True
     cities.append(o)
 json.dump(cities, open('src/data/cities.json','w'), indent=1, ensure_ascii=False)
-print('cities', len(cities), 'hero', sum(1 for c in cities if c['hero']), 'legs', sum(len(c['legs']) for c in cities))
+assert set(COST)==set(C), set(C)^set(COST)
+print('cities', len(cities), 'hero', sum(1 for c in cities if c['hero']), 'legs', sum(len(c['legs']) for c in cities), 'outdoorsy', sum(1 for c in cities if c.get('outdoorsy')), 'radon', sum(1 for c in cities if c.get('radon')))
 # ---- dishes
 S=lambda *steps: [dict(kind=k,count=n) for k,n in steps]
 D = [

@@ -1,15 +1,20 @@
 import Phaser from 'phaser';
 import { itemIcon } from '../art/sprites';
-import type { Item, PackedItem, Bag } from '../core/types';
-import { PAL, txt, rect, type Label, hex, clamp } from '../ui/theme';
+import type { Item, PackedItem } from '../core/types';
+import { PAL, txt, rect, type Label, clamp } from '../ui/theme';
 import { Button } from '../ui/Button';
-import { Panel } from '../ui/Panel';
 import { toast } from '../ui/Toast';
 import { Sim, Data, getRun, putRun } from '../ui/simBridge';
 
-const CELL = 22;
-const CARD_W = 160, CARD_H = 250, CARD_GAP = 8, TRAY_Y = 336, COMBINED_LB = 75;
-/** Tray order: essentials, clothes, health, activity, comfort, traps. */
+// ---- layout ----
+const CELL = 24;                                   // 8x10 grid -> 192x240
+const GRID_X = 84, GRID_Y = 56;
+const TRAY_Y = 344, TRAY_H = 640 - TRAY_Y;         // category strip + cards
+const CAT_ROW_H = 26, CARD_Y = TRAY_Y + CAT_ROW_H + 4;
+const CARD_W = 160, CARD_H = 250, CARD_GAP = 8, CARD_X0 = 12;
+const CATS = ['ESSENTIALS', 'CLOTHES', 'HEALTH', 'ACTIVITY', 'COMFORT'];
+
+/** Category of a bundle: essentials, clothes, health, activity, comfort. */
 function groupOf(it: Item): number {
   const t = new Set<string>(it.tags);
   if (t.has('essential') || t.has('work')) return 0;
@@ -18,175 +23,237 @@ function groupOf(it: Item): number {
   if (['fitness', 'kite', 'climb', 'hike', 'water', 'light', 'knife', 'camera'].some(x => t.has(x))) return 3;
   return 4;
 }
-interface Placed { id: string; bag: Bag; x: number; y: number; rot: boolean; obj: Phaser.GameObjects.Container; }
-interface GridSpec { bag: Bag; x: number; y: number; cols: number; rows: number; maxLb: number; }
+/** Benefits shown on the card. Data-driven when the bundle has them; derived from tags otherwise. */
+function benefitsOf(it: Item): string[] {
+  if (it.benefits && it.benefits.length) return it.benefits.slice(0, 4);
+  const t = new Set<string>(it.tags); const b: string[] = [];
+  if (it.clothesDays) b.push(`+${it.clothesDays} days of clean clothes`);
+  if (t.has('work')) b.push('lets you work and earn');
+  if (t.has('coffee')) b.push('+15 energy every morning');
+  if (t.has('health')) b.push('lower sickness risk');
+  if (t.has('firstaid')) b.push('small cuts stay small');
+  if (t.has('meds')) b.push('shorter illnesses, altitude help');
+  if (t.has('sleep')) b.push('shorter jet lag');
+  if (t.has('rain')) b.push('no soaked-through days');
+  if (t.has('cold')) b.push('cold cities stop hurting');
+  if (t.has('repellent')) b.push('mosquito nights defused');
+  if (t.has('fitness')) b.push('workouts anywhere');
+  if (t.has('climb')) b.push('climbing gyms and ferrata');
+  if (t.has('kite')) b.push('wind days become the best days');
+  if (t.has('hike')) b.push('+1 life in outdoor games');
+  if (t.has('water')) b.push('safe water, no filter days');
+  if (t.has('switch')) b.push('Carry-On on rest days');
+  if (t.has('organizer')) b.push('nothing left behind');
+  if (t.has('camera')) b.push('mood from the views');
+  if (t.has('luxury') && !b.length) b.push('a little mood, some weight');
+  if (t.has('kettle')) b.push('tea in every room');
+  if (!b.length) b.push('comfort, at a cost in pounds');
+  return b.slice(0, 4);
+}
 
-/** Tetris packing: two bags, horizontal item tray by category, drag to place, double-tap to rotate, drop outside to unpack. */
+interface Placed { id: string; x: number; y: number; rot: boolean; obj: Phaser.GameObjects.Container; }
+
+/** Packing: one suitcase, tap a card to pack it (auto-placed), tap a tile to take it out. Tray: swipe up/down = category, left/right = scroll. */
 export class PackScene extends Phaser.Scene {
   static KEY = 'Pack';
-  private grids!: Record<Bag, GridSpec>; private placed: Placed[] = []; private totalLbl!: Label;
-  private trayC!: Phaser.GameObjects.Container; private trayMask!: Phaser.GameObjects.Graphics; private trayScroll = 0; private trayW = 0;
-  private wLabel!: Record<Bag, Label>; private wBar!: Record<Bag, Phaser.GameObjects.Graphics>; private hints!: Label; private pendingRemove?: Phaser.Time.TimerEvent;
-  private lastTap: { id: string; t: number } | null = null; private warnedNoLaptop = false; private ghost?: Phaser.GameObjects.Container; private occupancy!: Record<Bag, boolean[][]>;
+  private cols = 8; private rows = 10; private maxLb = 50;
+  private placed: Placed[] = []; private occ: boolean[][] = [];
+  private wBar!: Phaser.GameObjects.Graphics; private wLabel!: Label; private hints!: Label;
+  private trayAll!: Phaser.GameObjects.Container; private pages: Phaser.GameObjects.Container[] = []; private pageW: number[] = []; private scroll: number[] = [];
+  private cat = 0; private catLabel!: Label; private dots: Phaser.GameObjects.Rectangle[] = [];
+  private warnedNoLaptop = false; private animating = false;
   constructor() { super(PackScene.KEY); }
+
   create() {
-    this.placed = []; this.trayScroll = 0; this.warnedNoLaptop = false; this.pendingRemove = undefined;
-    const gs = Sim.gridSpecs;
-    this.grids = { checked: { bag: 'checked', x: 12, y: 58, cols: gs.checked.cols, rows: gs.checked.rows, maxLb: gs.checked.maxLb },
-                   backpack: { bag: 'backpack', x: 222, y: 58, cols: gs.backpack.cols, rows: gs.backpack.rows, maxLb: gs.backpack.maxLb } };
+    this.placed = []; this.pages = []; this.pageW = []; this.scroll = []; this.cat = 0; this.warnedNoLaptop = false; this.animating = false;
+    const gs = Sim.gridSpecs.checked; this.cols = gs.cols; this.rows = gs.rows; this.maxLb = gs.maxLb;
+    this.occ = Array.from({ length: this.rows }, () => Array(this.cols).fill(false));
     rect(this, 0, 0, 360, 640, PAL.night0);
-    txt(this, 12, 8, 'PACK YOUR LIFE', 16, PAL.white);
-    this.totalLbl = txt(this, 12, 30, '', 9, PAL.sun2);
-    new Button(this, 300, 26, 'DEPART', () => this.depart(), { w: 100, h: 44, fill: PAL.sun0, size: 12 });
-    this.wLabel = {} as any; this.wBar = {} as any;
-    for (const g of Object.values(this.grids)) {
-      const w = g.cols * CELL, h = g.rows * CELL;
-      const gg = this.add.graphics(); gg.fillStyle(PAL.ink, 1); gg.fillRect(g.x + 2, g.y + 3, w, h); gg.fillStyle(PAL.night1, 1); gg.fillRect(g.x, g.y, w, h);
-      gg.lineStyle(1, PAL.night3, 1); for (let c = 0; c <= g.cols; c++) gg.lineBetween(g.x + c * CELL + 0.5, g.y, g.x + c * CELL + 0.5, g.y + h); for (let r = 0; r <= g.rows; r++) gg.lineBetween(g.x, g.y + r * CELL + 0.5, g.x + w, g.y + r * CELL + 0.5);
-      gg.lineStyle(1, PAL.gray1, 1); gg.strokeRect(g.x + 0.5, g.y + 0.5, w - 1, h - 1);
-      txt(this, g.x, g.y - 12, g.bag === 'checked' ? 'CHECKED · delayable' : 'BACKPACK · on you', 8, PAL.gray2);
-      this.wBar[g.bag] = this.add.graphics(); this.wLabel[g.bag] = txt(this, g.x, g.y + h + 12, '', 8, PAL.gray2);
-    }
-    // backpack is shorter: put a "tips" box under it
-    const bp = this.grids.backpack; new Panel(this, bp.x, bp.y + bp.rows * CELL + 30, bp.cols * CELL, 80, { fill: PAL.night1 });
-    this.hints = txt(this, bp.x + 4, bp.y + bp.rows * CELL + 34, '', 8, PAL.sun1, { wrap: bp.cols * CELL - 8 });
-    // tray: one horizontal strip of bundles, sorted essentials → traps
-    rect(this, 0, TRAY_Y, 360, 640 - TRAY_Y, PAL.night1); txt(this, 12, TRAY_Y + 6, 'drag UP to pack · tap to remove', 8, PAL.gray1);
-    this.trayC = this.add.container(0, 0); this.trayMask = this.make.graphics({}); this.trayMask.fillRect(0, TRAY_Y + 18, 360, 640 - TRAY_Y - 18); this.trayC.setMask(this.trayMask.createGeometryMask());
-    const zone = this.add.zone(180, (TRAY_Y + 18 + 640) / 2, 360, 640 - TRAY_Y - 18).setInteractive({ draggable: true }); this.setupTrayInput(zone);
-    this.occupancy = { checked: this.emptyOcc('checked'), backpack: this.emptyOcc('backpack') };
-    const run = getRun(this); for (const p of run.items) { const it = Data.item(p.id); if (it) this.place(it, p.bag, p.x, p.y, !!(p as any).rot, false); }
+    txt(this, 12, 10, 'PACK YOUR LIFE', 10, PAL.white);
+    txt(this, 12, 26, 'one suitcase. choose well.', 8, PAL.gray1);
+    new Button(this, 214, 26, 'SURPRISE', () => this.surprise(), { w: 76, h: 40, fill: PAL.dusk1, size: 8 });
+    new Button(this, 306, 26, 'DEPART', () => this.depart(), { w: 96, h: 40, fill: PAL.sun0, size: 11 });
+    // suitcase
+    const w = this.cols * CELL, h = this.rows * CELL; const gg = this.add.graphics();
+    gg.fillStyle(PAL.ink, 1); gg.fillRect(GRID_X + 3, GRID_Y + 4, w, h); gg.fillStyle(PAL.night1, 1); gg.fillRect(GRID_X, GRID_Y, w, h);
+    gg.lineStyle(1, PAL.night3, 1); for (let c = 0; c <= this.cols; c++) gg.lineBetween(GRID_X + c * CELL + 0.5, GRID_Y, GRID_X + c * CELL + 0.5, GRID_Y + h); for (let r = 0; r <= this.rows; r++) gg.lineBetween(GRID_X, GRID_Y + r * CELL + 0.5, GRID_X + w, GRID_Y + r * CELL + 0.5);
+    gg.lineStyle(2, PAL.gray1, 1); gg.strokeRect(GRID_X + 1, GRID_Y + 1, w - 2, h - 2);
+    // handle
+    gg.fillStyle(PAL.gray1, 1); gg.fillRect(GRID_X + w / 2 - 22, GRID_Y - 8, 44, 6); gg.fillRect(GRID_X + w / 2 - 22, GRID_Y - 8, 5, 10); gg.fillRect(GRID_X + w / 2 + 17, GRID_Y - 8, 5, 10);
+    // side notes
+    txt(this, GRID_X - 6, GRID_Y + 4, 'tap tile\nto take\nit out', 8, PAL.gray0, { align: 'right' }).setOrigin(1, 0);
+    txt(this, GRID_X + w + 6, GRID_Y + 4, 'tap card\nbelow to\npack it', 8, PAL.gray0).setOrigin(0, 0);
+    this.wBar = this.add.graphics(); this.wLabel = txt(this, 180, GRID_Y + h + 12, '', 8, PAL.gray2, { align: 'center' }).setOrigin(0.5, 0);
+    this.hints = txt(this, 180, GRID_Y + h + 24, '', 8, PAL.sun1, { align: 'center' }).setOrigin(0.5, 0);
+    // tray
+    rect(this, 0, TRAY_Y, 360, TRAY_H, PAL.night1);
+    this.buildCatRow();
+    this.trayAll = this.add.container(0, 0);   // pages live inside; only the current one is visible (Containers cannot be masked here)
+    this.renderTray();
+    const zone = this.add.zone(180, TRAY_Y + TRAY_H / 2, 360, TRAY_H).setInteractive({ draggable: true }); this.setupTrayInput(zone);
+    // restore a saved pack
+    const run = getRun(this); for (const p of run.items) { const it = Data.item(p.id); if (it && this.fits(p.x, p.y, it.w, it.h)) this.place(it, p.x, p.y, false, false); }
     this.renderTray(); this.refreshWeights();
   }
-  private emptyOcc(b: Bag) { const g = this.grids[b]; return Array.from({ length: g.rows }, () => Array(g.cols).fill(false)); }
-  private dims(it: Item, rot: boolean) { return rot ? { w: it.h, h: it.w } : { w: it.w, h: it.h }; }
-  private fits(b: Bag, x: number, y: number, w: number, h: number, ignore?: Placed) {
-    const g = this.grids[b]; if (x < 0 || y < 0 || x + w > g.cols || y + h > g.rows) return false;
-    for (let r = y; r < y + h; r++) for (let c = x; c < x + w; c++) if (this.occupancy[b][r][c]) return false; return true;
+
+  // ---- category row ----
+  private buildCatRow() {
+    const y = TRAY_Y + 4;
+    const left = txt(this, 14, y + 4, '▲', 10, PAL.gray1); const right = txt(this, 346, y + 4, '▼', 10, PAL.gray1).setOrigin(1, 0);
+    (left as any).setText?.('^'); (right as any).setText?.('v');
+    this.catLabel = txt(this, 180, y + 4, CATS[0], 10, PAL.sun2, { align: 'center' }).setOrigin(0.5, 0);
+    this.dots = CATS.map((_, i) => this.add.rectangle(180 - (CATS.length - 1) * 5 + i * 10, y + 20, 5, 3, i === 0 ? PAL.sun2 : PAL.night3).setOrigin(0.5, 0));
+    txt(this, 180, TRAY_Y + TRAY_H - 10, 'swipe up / down: category · left / right: browse', 8, PAL.gray0, { align: 'center' }).setOrigin(0.5, 1).setDepth(5);
   }
-  private mark(p: Placed, v: boolean) { const it = Data.item(p.id)!; const d = this.dims(it, p.rot); for (let r = p.y; r < p.y + d.h; r++) for (let c = p.x; c < p.x + d.w; c++) this.occupancy[p.bag][r][c] = v; }
-  private itemBox(it: Item, w: number, h: number, cell: number, alpha = 1) {
+  /** Category change: the old page slides a little and fades inside the tray band, the new one slides in from the other side. No clipping needed. */
+  private setCat(i: number, animate = true) {
+    i = clamp(i, 0, CATS.length - 1); const from = this.cat; const out = this.pages[from];
+    if (i === from) { if (out) this.tweens.add({ targets: out, y: 0, alpha: 1, duration: 160, ease: 'Cubic.Out' }); return; }
+    const dir = i > from ? 1 : -1; this.cat = i; this.catLabel.setText(CATS[i]); this.dots.forEach((d, k) => d.setFillStyle(k === i ? PAL.sun2 : PAL.night3));
+    const inn = this.pages[i]; if (!inn) return;
+    if (!animate) { if (out) { out.setVisible(false); out.y = 0; out.alpha = 1; } inn.setVisible(true); inn.y = 0; inn.alpha = 1; return; }
+    if (out) this.tweens.add({ targets: out, y: -dir * 34, alpha: 0, duration: 180, ease: 'Cubic.In', onComplete: () => { out.setVisible(false); out.y = 0; out.alpha = 1; } });
+    inn.setVisible(true); inn.y = dir * 34; inn.alpha = 0; this.tweens.add({ targets: inn, y: 0, alpha: 1, duration: 240, delay: 60, ease: 'Cubic.Out' });
+  }
+
+  // ---- tray ----
+  /** Unpacked bundles for a category, one card per stack (items sharing a name, e.g. the weeks of clothes). */
+  private trayItems(cat: number): Item[] {
+    const packed = new Set(this.placed.map(p => p.id)); const seen = new Set<string>();
+    return Data.items.filter(it => groupOf(it) === cat && !packed.has(it.id)).filter(it => { if (seen.has(it.name)) return false; seen.add(it.name); return true; });
+  }
+  private stackLeft(it: Item) { const packed = new Set(this.placed.map(p => p.id)); return Data.items.filter(x => x.name === it.name && !packed.has(x.id)).length; }
+  private renderTray() {
+    this.trayAll.removeAll(true); this.pages = []; this.pageW = [];
+    CATS.forEach((_, ci) => {
+      const page = this.add.container(0, 0).setVisible(ci === this.cat); const items = this.trayItems(ci); let x = CARD_X0;
+      if (!items.length) page.add(txt(this, 180, CARD_Y + 100, 'all packed', 10, PAL.gray1, { align: 'center' }).setOrigin(0.5) as any);
+      for (const it of items) { page.add(this.card(it, x, CARD_Y)); x += CARD_W + CARD_GAP; }
+      this.pages.push(page); this.pageW.push(x); this.scroll[ci] = clamp(this.scroll[ci] ?? 0, 0, Math.max(0, x - 348)); page.x = -this.scroll[ci];
+      this.trayAll.add(page);
+    });
+  }
+  private card(it: Item, x: number, y: number) {
+    const c = this.add.container(x, y); const bg = this.add.graphics();
+    bg.fillStyle(PAL.ink, 1); bg.fillRect(2, 3, CARD_W, CARD_H); bg.fillStyle(PAL.night2, 1); bg.fillRect(0, 0, CARD_W, CARD_H); bg.lineStyle(1, PAL.night3, 1); bg.strokeRect(0.5, 0.5, CARD_W - 1, CARD_H - 1); c.add(bg);
+    const left = this.stackLeft(it); if (left > 1) c.add(txt(this, CARD_W - 6, 4, `x${left}`, 8, PAL.sun2).setOrigin(1, 0) as any);
+    const cell = Math.max(8, Math.min(14, Math.floor(110 / Math.max(it.w, it.h))));
+    const mini = this.itemBox(it, it.w, it.h, cell); mini.setPosition((CARD_W - it.w * cell) / 2, 14 + Math.max(0, (64 - it.h * cell) / 2)); c.add(mini);
+    c.add(txt(this, CARD_W / 2, 86, it.name, 10, PAL.white, { align: 'center', wrap: CARD_W - 8 }).setOrigin(0.5, 0) as any);
+    c.add(txt(this, CARD_W / 2, 114, `${it.weightLb.toFixed(1)} lb · ${it.w}x${it.h}`, 8, PAL.sun2, { align: 'center' }).setOrigin(0.5, 0) as any);
+    const lines = benefitsOf(it); let by = 132;
+    for (const l of lines) { if (by > CARD_H - 40) break; c.add(this.add.rectangle(8, by + 3, 3, 3, PAL.neon).setOrigin(0, 0)); const t = txt(this, 14, by, l, 8, PAL.gray2, { wrap: CARD_W - 22 }).setOrigin(0, 0); c.add(t as any); by += Math.max(11, Math.round(((t as any).height ?? 8) + 3)); }
+    c.add(txt(this, CARD_W / 2, CARD_H - 14, 'TAP TO PACK', 8, PAL.sea2, { align: 'center' }).setOrigin(0.5, 0) as any);
+    (c as any).item = it; return c;
+  }
+  private setupTrayInput(zone: Phaser.GameObjects.Zone) {
+    let start: { x: number; y: number; scroll: number; mode: 'none' | 'h' | 'v'; t: number } | null = null;
+    zone.on('pointerdown', (p: Phaser.Input.Pointer) => { start = { x: p.x, y: p.y, scroll: this.scroll[this.cat] ?? 0, mode: 'none', t: this.time.now }; });
+    zone.on('drag', (p: Phaser.Input.Pointer) => {
+      if (!start) return; const dx = p.x - start.x, dy = p.y - start.y;
+      if (start.mode === 'none') { if (Math.abs(dx) > 10 || Math.abs(dy) > 10) start.mode = Math.abs(dy) > Math.abs(dx) ? 'v' : 'h'; else return; }
+      if (start.mode === 'h') { const page = this.pages[this.cat]; const max = Math.max(0, (this.pageW[this.cat] ?? 0) - 348); this.scroll[this.cat] = clamp(start.scroll - dx, -40, max + 40); page.x = -this.scroll[this.cat]; }
+      else { const pg = this.pages[this.cat]; if (pg) { pg.y = clamp(dy, -60, 60) * 0.45; pg.alpha = 1 - Math.min(0.5, Math.abs(dy) / 240); } }
+    });
+    const release = (p: Phaser.Input.Pointer) => {
+      if (!start) return; const dx = p.x - start.x, dy = p.y - start.y; const st = start; start = null;
+      if (st.mode === 'v') { const pg = this.pages[this.cat]; if (dy < -40 && this.cat < CATS.length - 1) this.setCat(this.cat + 1); else if (dy > 40 && this.cat > 0) this.setCat(this.cat - 1); else if (pg) this.tweens.add({ targets: pg, y: 0, alpha: 1, duration: 160, ease: 'Cubic.Out' }); return; }
+      if (st.mode === 'h') { const max = Math.max(0, (this.pageW[this.cat] ?? 0) - 348); this.scroll[this.cat] = clamp(this.scroll[this.cat], 0, max); this.tweens.add({ targets: this.pages[this.cat], x: -this.scroll[this.cat], duration: 180, ease: 'Cubic.Out' }); return; }
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8 && this.time.now - st.t < 600) this.tapTray(p);
+    };
+    zone.on('dragend', release); zone.on('pointerup', release);
+  }
+  private tapTray(p: Phaser.Input.Pointer) {
+    if (this.animating) return; const page = this.pages[this.cat]; if (!page) return;
+    for (const c of page.list as Phaser.GameObjects.Container[]) {
+      const it = (c as any).item as Item | undefined; if (!it) continue;
+      const sx = c.x + page.x, sy = c.y + page.y;
+      if (p.x >= sx && p.x <= sx + CARD_W && p.y >= sy && p.y <= sy + CARD_H) { this.packFromCard(it, sx + CARD_W / 2, sy + 50); return; }
+    }
+  }
+  /** Tap-to-pack: first-fit (unrotated, then rotated), tile flies from the card into its slot. */
+  private packFromCard(it: Item, fromX: number, fromY: number) {
+    const slot = this.firstFit(it);
+    if (!slot) { this.cameras.main.shake(90, 0.005); toast(this, 'No room. Take something out.', PAL.red, 1100); return; }
+    const p = this.place(it, slot.x, slot.y, slot.rot, false); const tx = p.obj.x, ty = p.obj.y;
+    p.obj.setPosition(fromX - (p.obj.width || CELL) / 2, fromY); p.obj.setScale(0.5); p.obj.setDepth(150); this.animating = true;
+    this.tweens.add({ targets: p.obj, x: tx, y: ty, scaleX: 1, scaleY: 1, duration: 260, ease: 'Cubic.Out', onComplete: () => { p.obj.setDepth(0); this.animating = false; this.cameras.main.shake(40, 0.003); } });
+    this.renderTray(); this.refreshWeights();
+  }
+  private firstFit(it: Item): { x: number; y: number; rot: boolean } | null {
+    // the engine validates footprints as authored (no rotation), so only unrotated placements are legal
+    const [w, h] = this.dimsArr(it, false); for (let y = 0; y <= this.rows - h; y++) for (let x = 0; x <= this.cols - w; x++) if (this.fits(x, y, w, h)) return { x, y, rot: false };
+    return null;
+  }
+
+  // ---- grid ----
+  private dimsArr(it: Item, rot: boolean): [number, number] { return rot ? [it.h, it.w] : [it.w, it.h]; }
+  private fits(x: number, y: number, w: number, h: number) {
+    if (x < 0 || y < 0 || x + w > this.cols || y + h > this.rows) return false;
+    for (let r = y; r < y + h; r++) for (let c = x; c < x + w; c++) if (this.occ[r][c]) return false; return true;
+  }
+  private mark(p: Placed, v: boolean) { const it = Data.item(p.id)!; const [w, h] = this.dimsArr(it, p.rot); for (let r = p.y; r < p.y + h; r++) for (let c = p.x; c < p.x + w; c++) this.occ[r][c] = v; }
+  private itemBox(it: Item, w: number, h: number, cell: number) {
     const c = this.add.container(0, 0); const g = this.add.graphics();
-    g.fillStyle(PAL.ink, alpha); g.fillRect(2, 3, w * cell - 2, h * cell - 2); g.fillStyle(it.color, alpha); g.fillRect(1, 1, w * cell - 3, h * cell - 3);
-    g.fillStyle(PAL.white, 0.22 * alpha); g.fillRect(2, 2, w * cell - 5, 2); g.lineStyle(1, PAL.ink, alpha); g.strokeRect(1.5, 1.5, w * cell - 4, h * cell - 4);
+    g.fillStyle(PAL.ink, 1); g.fillRect(2, 3, w * cell - 2, h * cell - 2); g.fillStyle(it.color, 1); g.fillRect(1, 1, w * cell - 3, h * cell - 3);
+    g.fillStyle(PAL.white, 0.22); g.fillRect(2, 2, w * cell - 5, 2); g.lineStyle(1, PAL.ink, 1); g.strokeRect(1.5, 1.5, w * cell - 4, h * cell - 4);
     c.add(g);
-    const big = w * cell >= 66 && h * cell >= 62;   // label only when there is room under the icon
-    try { const key = itemIcon(this, it); const ic = this.add.image((w * cell) / 2, big ? (h * cell) / 2 - 8 : (h * cell) / 2, key).setOrigin(0.5); if (!big && (w * cell < 20 || h * cell < 20)) ic.setScale(0.75); c.add(ic); } catch {}
-    if (big) { const l = txt(this, (w * cell) / 2, (h * cell) / 2 + 8, it.label, 8, PAL.white, { align: 'center', wrap: w * cell - 4 }).setOrigin(0.5, 0); c.add(l as any); }
-    return c;
+    const big = w * cell >= 66 && h * cell >= 62;
+    try { const key = itemIcon(this, it); const ic = this.add.image((w * cell) / 2, big ? (h * cell) / 2 - 8 : (h * cell) / 2, key).setOrigin(0.5); if (!big && (w * cell < 20 || h * cell < 20)) ic.setScale(0.75); c.add(ic); } catch { /* icon optional */ }
+    if (big) c.add(txt(this, (w * cell) / 2, (h * cell) / 2 + 8, it.label, 8, PAL.white, { align: 'center', wrap: w * cell - 4 }).setOrigin(0.5, 0) as any);
+    c.setSize(w * cell, h * cell); return c;
   }
-  private place(it: Item, b: Bag, x: number, y: number, rot: boolean, animate = true) {
-    const g = this.grids[b]; const d = this.dims(it, rot); const obj = this.itemBox(it, d.w, d.h, CELL); obj.setPosition(g.x + x * CELL, g.y + y * CELL);
-    const p: Placed = { id: it.id, bag: b, x, y, rot, obj }; this.placed.push(p); this.mark(p, true);
-    obj.setSize(d.w * CELL, d.h * CELL); obj.setInteractive(new Phaser.Geom.Rectangle(d.w * CELL / 2, d.h * CELL / 2, d.w * CELL, d.h * CELL), Phaser.Geom.Rectangle.Contains);  // container hit rect is offset by displayOrigin this.input.setDraggable(obj);
-    obj.on('dragstart', () => { this.mark(p, false); obj.setDepth(100); this.tweens.add({ targets: obj, scaleX: 1.06, scaleY: 1.06, duration: 80 }); });
-    obj.on('drag', (_ptr: any, dx: number, dy: number) => obj.setPosition(dx, dy));
-    obj.on('dragend', (ptr: Phaser.Input.Pointer) => { obj.setScale(1); this.dropPlaced(p, ptr); });
+  private place(it: Item, x: number, y: number, rot: boolean, animate = true): Placed {
+    const [w, h] = this.dimsArr(it, rot); const obj = this.itemBox(it, w, h, CELL); obj.setPosition(GRID_X + x * CELL, GRID_Y + y * CELL);
+    const p: Placed = { id: it.id, x, y, rot, obj }; this.placed.push(p); this.mark(p, true);
+    // Container hit areas are offset by displayOrigin (w/2, h/2); this tile is drawn from its top-left, so the rect starts at (w/2, h/2).
+    obj.setInteractive(new Phaser.Geom.Rectangle(w * CELL / 2, h * CELL / 2, w * CELL, h * CELL), Phaser.Geom.Rectangle.Contains);
     obj.on('pointerup', (ptr: Phaser.Input.Pointer) => {
-      if (Math.abs(ptr.downX - ptr.upX) > 8 || Math.abs(ptr.downY - ptr.upY) > 8) return;          // that was a drag
+      if (Math.abs(ptr.downX - ptr.upX) > 10 || Math.abs(ptr.downY - ptr.upY) > 10) return;
       const now = this.time.now;
-      if (this.lastTap && this.lastTap.id === it.id && now - this.lastTap.t < 320) { this.pendingRemove?.remove(false); this.pendingRemove = undefined; this.lastTap = null; this.rotate(p); return; }
-      this.lastTap = { id: it.id, t: now };
-      // single tap removes, unless a second tap (rotate) arrives within the double-tap window
-      this.pendingRemove?.remove(false);
-      this.pendingRemove = this.time.delayedCall(330, () => { if (this.placed.includes(p)) { this.remove(p); this.refreshWeights(); toast(this, `${it.label} back on the floor`, PAL.gray2, 700); } });
+      void now; if (!this.placed.includes(p)) return; this.unpack(p);   // single tap takes it out (no rotation: the engine validates footprints as authored)
     });
     if (animate) { obj.setScale(1.15); this.tweens.add({ targets: obj, scaleX: 1, scaleY: 1, duration: 140, ease: 'Back.Out' }); }
     return p;
   }
-  private rotate(p: Placed) {
-    const it = Data.item(p.id)!; this.mark(p, false); const d = this.dims(it, !p.rot);
-    if (this.fits(p.bag, p.x, p.y, d.w, d.h)) { this.remove(p, false); this.place(it, p.bag, p.x, p.y, !p.rot); this.refreshWeights(); } else { this.mark(p, true); this.tweens.add({ targets: p.obj, x: p.obj.x + 3, duration: 40, yoyo: true, repeat: 2 }); }
+  private unpack(p: Placed) {
+    const it = Data.item(p.id)!; this.mark(p, false); this.placed = this.placed.filter(x => x !== p);
+    this.tweens.add({ targets: p.obj, y: TRAY_Y + 40, alpha: 0, scaleX: 0.6, scaleY: 0.6, duration: 220, ease: 'Quad.In', onComplete: () => p.obj.destroy() });
+    this.setCat(groupOf(it)); this.renderTray(); this.refreshWeights(); toast(this, `${it.name} back on the floor`, PAL.gray2, 700);
   }
-  private remove(p: Placed, toTray = true) { this.mark(p, false); this.placed = this.placed.filter(x => x !== p); p.obj.destroy(); if (toTray) { this.renderTray(); } }
-  private cellAt(px: number, py: number, w: number, h: number): { bag: Bag; x: number; y: number } | null {
-    for (const g of Object.values(this.grids)) {
-      const cx = Math.round((px - g.x) / CELL), cy = Math.round((py - g.y) / CELL);
-      if (px + w * CELL / 2 > g.x - CELL && px < g.x + g.cols * CELL + CELL && py + h * CELL / 2 > g.y - CELL && py < g.y + g.rows * CELL + CELL) return { bag: g.bag, x: clamp(cx, 0, g.cols - w), y: clamp(cy, 0, g.rows - h) };
-    }
-    return null;
+  private clearGrid() { for (const p of this.placed) p.obj.destroy(); this.placed = []; this.occ = Array.from({ length: this.rows }, () => Array(this.cols).fill(false)); }
+
+  // ---- surprise me ----
+  private surprise() {
+    if (this.animating) return;
+    const run = getRun(this); const pick = Sim.randomPack((run.seed ?? 1) + (Date.now() % 1000));
+    this.clearGrid(); let i = 0; this.animating = true;
+    for (const pi of pick) { const it = Data.item(pi.id); if (!it) continue; if (!this.fits(pi.x, pi.y, it.w, it.h)) continue;
+      const p = this.place(it, pi.x, pi.y, false, false); const tx = p.obj.x, ty = p.obj.y; p.obj.setPosition(tx, -60).setAlpha(0);
+      this.tweens.add({ targets: p.obj, y: ty, alpha: 1, duration: 260, delay: i * 45, ease: 'Bounce.Out' }); i++; }
+    this.time.delayedCall(i * 45 + 300, () => { this.animating = false; this.cameras.main.shake(60, 0.004); });
+    this.renderTray(); this.refreshWeights(); toast(this, 'Packed by someone who does not care.', PAL.sun2, 1200);
   }
-  private dropPlaced(p: Placed, ptr: Phaser.Input.Pointer) {
-    const it = Data.item(p.id)!; const d = this.dims(it, p.rot); const tgt = this.cellAt(p.obj.x, p.obj.y, d.w, d.h); p.obj.setDepth(0);
-    if (tgt && this.fits(tgt.bag, tgt.x, tgt.y, d.w, d.h)) { p.bag = tgt.bag; p.x = tgt.x; p.y = tgt.y; const g = this.grids[p.bag]; this.tweens.add({ targets: p.obj, x: g.x + p.x * CELL, y: g.y + p.y * CELL, duration: 90 }); this.mark(p, true); }
-    else if (ptr.y > TRAY_Y || !tgt) { this.remove(p); toast(this, `${it.label} back on the floor`, PAL.gray2, 900); }
-    else { const g = this.grids[p.bag]; this.tweens.add({ targets: p.obj, x: g.x + p.x * CELL, y: g.y + p.y * CELL, duration: 160, ease: 'Back.Out' }); this.mark(p, true); }
-    this.refreshWeights();
-  }
-  // ---- tray ----
-  /** Unpacked items, one card per stack (items sharing a name, e.g. the four weeks of clothes). */
-  private trayItems(): Item[] {
-    const packed = new Set(this.placed.map(p => p.id)); const seen = new Set<string>();
-    return Data.items.filter(it => !packed.has(it.id)).filter(it => { if (seen.has(it.name)) return false; seen.add(it.name); return true; })
-      .map((it, i) => ({ it, i })).sort((a, b) => (groupOf(a.it) - groupOf(b.it)) || (a.i - b.i)).map(x => x.it);
-  }
-  private stackLeft(it: Item) { const packed = new Set(this.placed.map(p => p.id)); return Data.items.filter(x => x.name === it.name && !packed.has(x.id)).length; }
-  private renderTray() {
-    this.trayC.removeAll(true); const items = this.trayItems(); let x = 12; const y = TRAY_Y + 24;
-    if (!items.length) this.trayC.add(txt(this, 180, 470, 'everything is packed', 10, PAL.gray1).setOrigin(0.5) as any);
-    let lastGroup = -1;
-    for (const it of items) {
-      const g = groupOf(it); const c = this.add.container(x, y);
-      const bg = this.add.graphics(); bg.fillStyle(PAL.ink, 1); bg.fillRect(2, 3, CARD_W, CARD_H); bg.fillStyle(PAL.night2, 1); bg.fillRect(0, 0, CARD_W, CARD_H); bg.lineStyle(1, PAL.night3, 1); bg.strokeRect(0.5, 0.5, CARD_W - 1, CARD_H - 1); c.add(bg);
-      const left = this.stackLeft(it); if (left > 1) c.add(txt(this, CARD_W - 6, 4, `x${left}`, 8, PAL.sun2).setOrigin(1, 0) as any);
-      if (g !== lastGroup) { c.add(txt(this, 6, 4, ['ESSENTIALS', 'CLOTHES', 'HEALTH', 'ACTIVITY', 'COMFORT'][g], 8, PAL.sun2) as any); lastGroup = g; }
-      const cell = Math.max(8, Math.min(14, Math.floor(120 / Math.max(it.w, it.h))));
-      const mini = this.itemBox(it, it.w, it.h, cell); mini.setPosition((CARD_W - it.w * cell) / 2, 18 + Math.max(0, (70 - it.h * cell) / 2)); c.add(mini);
-      c.add(txt(this, CARD_W / 2, 96, it.name === it.label ? it.label : it.name, 10, PAL.white, { align: 'center', wrap: CARD_W - 8 }).setOrigin(0.5, 0) as any);
-      c.add(txt(this, CARD_W / 2, 126, `${it.weightLb.toFixed(1)} lb · ${it.w}×${it.h}`, 8, PAL.sun2, { align: 'center' }).setOrigin(0.5, 0) as any);
-      const d = it.desc.length > 84 ? it.desc.slice(0, 82) + '…' : it.desc; c.add(txt(this, 6, 142, d, 8, PAL.gray2, { wrap: CARD_W - 12 }).setOrigin(0, 0) as any);
-      (c as any).item = it; (c as any).boxW = CARD_W; this.trayC.add(c); x += CARD_W + CARD_GAP;
-    }
-    this.trayW = x; this.trayScroll = clamp(this.trayScroll, 0, Math.max(0, this.trayW - 348)); this.trayC.x = -this.trayScroll;
-  }
-  private setupTrayInput(zone: Phaser.GameObjects.Zone) {
-    let start: { x: number; y: number; scroll: number; item?: Item; lifted: boolean } | null = null;
-    zone.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      let hit: Item | undefined; for (const c of this.trayC.list as Phaser.GameObjects.Container[]) { const it = (c as any).item as Item | undefined; if (!it) continue; const lx = c.x - this.trayScroll; if (p.x >= lx && p.x <= lx + (c as any).boxW && p.y >= c.y && p.y <= c.y + CARD_H) hit = it; }
-      start = { x: p.x, y: p.y, scroll: this.trayScroll, item: hit, lifted: false };
-    });
-    zone.on('drag', (p: Phaser.Input.Pointer) => {
-      if (!start) return; const dx = p.x - start.x, dy = p.y - start.y;
-      if (!start.lifted && start.item && dy < -14 && Math.abs(dy) > Math.abs(dx)) { start.lifted = true; this.liftGhost(start.item, p); }
-      if (start.lifted) { this.ghost?.setPosition(p.x - this.ghost.width / 2, p.y - this.ghost.height / 2); return; }
-      this.trayScroll = clamp(start.scroll - dx, 0, Math.max(0, this.trayW - 348)); this.trayC.x = -this.trayScroll;
-    });
-    zone.on('dragend', (p: Phaser.Input.Pointer) => { if (start?.lifted) this.dropGhost(p); start = null; });
-    zone.on('pointerup', () => { start = null; });
-  }
-  private liftGhost(it: Item, p: Phaser.Input.Pointer) {
-    this.ghost = this.itemBox(it, it.w, it.h, CELL); this.ghost.setSize(it.w * CELL, it.h * CELL); this.ghost.setDepth(200); (this.ghost as any).item = it; this.ghost.setPosition(p.x - this.ghost.width / 2, p.y - this.ghost.height / 2);
-    this.ghost.setScale(0.6); this.tweens.add({ targets: this.ghost, scaleX: 1.05, scaleY: 1.05, duration: 120 });
-  }
-  private dropGhost(_p: Phaser.Input.Pointer) {
-    const gh = this.ghost; if (!gh) return; const it = (gh as any).item as Item; this.ghost = undefined;
-    const tgt = this.cellAt(gh.x, gh.y, it.w, it.h);
-    if (tgt && this.fits(tgt.bag, tgt.x, tgt.y, it.w, it.h)) { gh.destroy(); this.place(it, tgt.bag, tgt.x, tgt.y, false); this.renderTray(); this.refreshWeights(); this.thud(); }
-    else { const f = tgt ? 'no room there' : ''; if (f) toast(this, f, PAL.red, 700); this.tweens.add({ targets: gh, y: 420, alpha: 0, scaleX: 0.5, scaleY: 0.5, duration: 220, ease: 'Quad.In', onComplete: () => gh.destroy() }); }
-  }
-  private thud() { this.cameras.main.shake(40, 0.003); }
+
   // ---- weights & hints ----
-  private weights() { const w = { checked: 0, backpack: 0 }; for (const p of this.placed) w[p.bag] += Data.item(p.id)?.weightLb ?? 0; return w; }
   private refreshWeights() {
-    const w = this.weights();
-    for (const g of Object.values(this.grids)) {
-      const v = w[g.bag], pct = v / g.maxLb; const gw = g.cols * CELL; const bar = this.wBar[g.bag]; bar.clear();
-      bar.fillStyle(PAL.ink, 1); bar.fillRect(g.x, g.y + g.rows * CELL + 4, gw, 6); bar.fillStyle(pct > 1 ? PAL.red : pct >= 0.9 ? PAL.sun1 : PAL.sea2, 1); bar.fillRect(g.x, g.y + g.rows * CELL + 4, Math.min(1, pct) * gw, 6);
-      this.wLabel[g.bag].setText(`${v.toFixed(1)} / ${g.maxLb} lb${pct > 1 ? '  OVER' : pct >= 0.9 ? '  heavy' : ''}`); if (this.wLabel[g.bag].setTint) this.wLabel[g.bag].setTint!(pct > 1 ? PAL.red : PAL.gray2); else this.wLabel[g.bag].setColor?.(hex(pct > 1 ? PAL.red : PAL.gray2));
-    }
-    const tags = new Set<string>(); let clothes = 0; let laptopChecked = false;
-    for (const p of this.placed) { const it = Data.item(p.id); if (!it) continue; it.tags.forEach(t => tags.add(t)); clothes += it.clothesDays ?? 0; if (it.tags.includes('work') && p.bag === 'checked') laptopChecked = true; }
-    const total = w.checked + w.backpack, cap = this.grids.checked.maxLb + this.grids.backpack.maxLb; const h: string[] = [];
-    const pctAll = Math.round((total / COMBINED_LB) * 100); this.totalLbl.setText(`TOTAL ${total.toFixed(1)} / ${COMBINED_LB} lb · ${pctAll}%`); if (this.totalLbl.setTint) this.totalLbl.setTint(pctAll > 100 ? PAL.red : pctAll >= 90 ? PAL.sun1 : PAL.sun2);
-    if (total >= cap * 0.9) h.push('! heavy: back risk'); if (laptopChecked) h.push('! laptop in checked'); if (clothes < 7) h.push(`! ${clothes}d of clothes`);
-    if (!tags.has('firstaid')) h.push('! no first aid'); if (!tags.has('health') && !tags.has('fitness')) h.push('! no health kit'); if (tags.has('coffee')) h.push('+ coffee mornings'); if (tags.has('switch')) h.push('+ Carry-On');
-    this.hints.setText(h.length ? h.slice(0, 2).join('\n') : 'Everything has a consequence.');
+    let lb = 0; const tags = new Set<string>(); let clothes = 0;
+    for (const p of this.placed) { const it = Data.item(p.id); if (!it) continue; lb += it.weightLb; it.tags.forEach(t => tags.add(t)); clothes += it.clothesDays ?? 0; }
+    const pct = lb / this.maxLb; const gw = this.cols * CELL, by = GRID_Y + this.rows * CELL + 6;
+    this.wBar.clear(); this.wBar.fillStyle(PAL.ink, 1); this.wBar.fillRect(GRID_X, by, gw, 6); this.wBar.fillStyle(pct > 1 ? PAL.red : pct >= 0.9 ? PAL.sun1 : PAL.sea2, 1); this.wBar.fillRect(GRID_X, by, Math.min(1, pct) * gw, 6);
+    this.wLabel.setText(`${lb.toFixed(1)} / ${this.maxLb} lb${pct > 1 ? ' · OVER THE LIMIT' : pct >= 0.9 ? ' · heavy' : ''}`); this.wLabel.setTint?.(pct > 1 ? PAL.red : pct >= 0.9 ? PAL.sun1 : PAL.gray2);
+    const h: string[] = [];
+    // one line each, max 40 chars (8 px per char at size 8 on a 340 px screen)
+    if (pct >= 0.9) h.push('! heavy bag: back risk, slow travel'); if (!tags.has('work')) h.push('! no laptop: no work, no pay'); if (clothes < 7) h.push(`! ${clothes} days of clothes: laundry often`);
+    if (!tags.has('firstaid') && !tags.has('meds')) h.push('! nothing for cuts or fevers'); if (!tags.has('health') && !tags.has('fitness')) h.push('! no health kit: sickness risk');
+    if (tags.has('coffee')) h.push('+ coffee mornings'); if (tags.has('switch')) h.push('+ Carry-On on rest days');
+    this.hints.setText(h.slice(0, 2).join('\n'));
   }
   private depart() {
-    const run = getRun(this); const packed: PackedItem[] = this.placed.map(p => ({ id: p.id, bag: p.bag, x: p.x, y: p.y, rot: p.rot } as any));
+    const run = getRun(this); const packed: PackedItem[] = this.placed.map(p => ({ id: p.id, bag: 'checked', x: p.x, y: p.y, rot: p.rot }));
     if (!packed.length) { toast(this, 'You need at least a toothbrush.', PAL.red); return; }
     const hasWork = this.placed.some(p => (Data.item(p.id)?.tags ?? []).some(t => t === 'work' || t === 'essential'));
-    if (!hasWork && !this.warnedNoLaptop) { this.warnedNoLaptop = true; toast(this, 'No laptop. The job may notice. Tap DEPART again to go anyway.', PAL.sun1, 2200); return; }
+    if (!hasWork && !this.warnedNoLaptop) { this.warnedNoLaptop = true; toast(this, 'No laptop. No income. Tap DEPART again to go anyway.', PAL.sun1, 2200); return; }
     const res = Sim.setPack(run, packed);
     if (!res.ok) { res.errors.forEach(e => toast(this, e, PAL.red)); this.cameras.main.shake(120, 0.006); return; }
     putRun(this, run); this.cameras.main.fadeOut(250, 0, 0, 0); this.time.delayedCall(260, () => this.scene.start('Route'));

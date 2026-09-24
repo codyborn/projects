@@ -3,7 +3,7 @@
   "id": "laptopkit",
   "name": "Laptop + Desk Kit",
   "label": "Laptop kit",
-  "weightLb": 5.0,
+  "weightLb": 4.0,
   "w": 3,
   "h": 2,
   "tags": [
@@ -12,28 +12,17 @@
   ],
   "desc": "The whole job, plus the stand and keyboard that keep the neck honest.",
   "real": true,
-  "color": 11844036
- },
- {
-  "id": "phonekit",
-  "name": "Phone + Chargers",
-  "label": "Phone kit",
-  "weightLb": 1.0,
-  "w": 2,
-  "h": 1,
-  "tags": [
-   "essential",
-   "camera"
-  ],
-  "desc": "The camera, the map, the boarding pass, the plan. Never in the checked bag.",
-  "real": true,
-  "color": 657938
+  "color": 11844036,
+  "benefits": [
+   "The job travels with you",
+   "Work days pay"
+  ]
  },
  {
   "id": "tablet",
   "name": "Tablet",
   "label": "Tablet",
-  "weightLb": 1.2,
+  "weightLb": 1.0,
   "w": 2,
   "h": 2,
   "tags": [
@@ -42,7 +31,11 @@
   ],
   "desc": "Second monitor, e-reader, journal, cinema.",
   "real": true,
-  "color": 3817291
+  "color": 3817291,
+  "benefits": [
+   "+2 mood on rest days",
+   "A second screen for work"
+  ]
  },
  {
   "id": "watch",
@@ -56,7 +49,11 @@
   ],
   "desc": "Counts every step, judges every rest day.",
   "real": true,
-  "color": 3030374
+  "color": 3030374,
+  "benefits": [
+   "Counts every step",
+   "+1 health from training"
+  ]
  },
  {
   "id": "dronekit",
@@ -71,13 +68,17 @@
   ],
   "desc": "The camera the year gets remembered by, its controller, and the spare batteries.",
   "real": true,
-  "color": 7238788
+  "color": 7238788,
+  "benefits": [
+   "+4 mood in hero cities",
+   "4 lb, 6 cells"
+  ]
  },
  {
   "id": "clothes1",
   "name": "Clothes",
   "label": "1 week worth",
-  "weightLb": 6.0,
+  "weightLb": 4.5,
   "w": 3,
   "h": 3,
   "tags": [
@@ -86,13 +87,16 @@
   "desc": "Seven days of looking like a person. Add another week if laundry is not your thing.",
   "real": true,
   "color": 4889558,
+  "benefits": [
+   "7 days of clean clothes"
+  ],
   "clothesDays": 7
  },
  {
   "id": "clothes2",
   "name": "Clothes",
   "label": "1 week worth",
-  "weightLb": 6.0,
+  "weightLb": 4.5,
   "w": 3,
   "h": 3,
   "tags": [
@@ -101,13 +105,16 @@
   "desc": "Seven days of looking like a person. Add another week if laundry is not your thing.",
   "real": true,
   "color": 3519401,
+  "benefits": [
+   "7 days of clean clothes"
+  ],
   "clothesDays": 7
  },
  {
   "id": "clothes3",
   "name": "Clothes",
   "label": "1 week worth",
-  "weightLb": 6.0,
+  "weightLb": 4.5,
   "w": 3,
   "h": 3,
   "tags": [
@@ -116,13 +123,16 @@
   "desc": "Seven days of looking like a person. Add another week if laundry is not your thing.",
   "real": false,
   "color": 15900236,
+  "benefits": [
+   "7 days of clean clothes"
+  ],
   "clothesDays": 7
  },
  {
   "id": "clothes4",
   "name": "Clothes",
   "label": "1 week worth",
-  "weightLb": 6.0,
+  "weightLb": 4.5,
   "w": 3,
   "h": 3,
   "tags": [
@@ -131,6 +141,9 @@
   "desc": "Seven days of looking like a person. Add another week if laundry is not your thing.",
   "real": false,
   "color": 12862842,
+  "benefits": [
+   "7 days of clean clothes"
+  ],
   "clothesDays": 7
  },
  {
@@ -146,7 +159,11 @@
   ],
   "desc": "Lighter than an umbrella and it never inverts.",
   "real": true,
-  "color": 15230525
+  "color": 15230525,
+  "benefits": [
+   "Rain days cost no energy",
+   "Counts as clothing"
+  ]
  },
  {
   "id": "downjacket",
@@ -161,7 +178,11 @@
   ],
   "desc": "Stuffs into its own pocket. Saves October in the Alps.",
   "real": false,
-  "color": 15900236
+  "color": 15900236,
+  "benefits": [
+   "Warm in cold cities",
+   "Skiing unlocked"
+  ]
  },
  {
   "id": "hikingboots",
@@ -176,7 +197,12 @@
   ],
   "desc": "Ankles for the Himalaya. Dead weight everywhere else.",
   "real": false,
-  "color": 7031346
+  "color": 7031346,
+  "benefits": [
+   "+1 life in outdoor workouts",
+   "Warm in cold cities",
+   "3 lb"
+  ]
  },
  {
   "id": "swimkit",
@@ -190,7 +216,11 @@
   ],
   "desc": "Trunks, towel, goggles. Every coast, and the hotel pool you did not know about.",
   "real": true,
-  "color": 3519401
+  "color": 3519401,
+  "benefits": [
+   "Swim workouts unlocked",
+   "Every coast, every pool"
+  ]
  },
  {
   "id": "sunkit",
@@ -204,13 +234,17 @@
   ],
   "desc": "A brimmed hat and armless sunglasses. Dignity optional.",
   "real": true,
-  "color": 14727562
+  "color": 14727562,
+  "benefits": [
+   "No sunburn events",
+   "Counts as clothing"
+  ]
  },
  {
   "id": "protein",
   "name": "Protein Powder",
   "label": "Protein",
-  "weightLb": 3.0,
+  "weightLb": 2.5,
   "w": 2,
   "h": 2,
   "tags": [
@@ -218,7 +252,11 @@
   ],
   "desc": "Casein, greens, collagen, electrolytes. All the powders, one tub of resolve.",
   "real": true,
-  "color": 16052714
+  "color": 16052714,
+  "benefits": [
+   "Slow health regen every day",
+   "Counts as health gear"
+  ]
  },
  {
   "id": "supplements",
@@ -232,7 +270,11 @@
   ],
   "desc": "The pills that keep the body the same across eleven diets.",
   "real": true,
-  "color": 16240491
+  "color": 16240491,
+  "benefits": [
+   "Slow health regen every day",
+   "Fewer sick days"
+  ]
  },
  {
   "id": "skincare",
@@ -246,13 +288,17 @@
   ],
   "desc": "The routine that survives a hostel sink.",
   "real": true,
-  "color": 9425908
+  "color": 9425908,
+  "benefits": [
+   "Slow health regen every day",
+   "Sun does less damage"
+  ]
  },
  {
   "id": "toiletries",
   "name": "Toiletries",
   "label": "Toiletries",
-  "weightLb": 1.5,
+  "weightLb": 1.2,
   "w": 2,
   "h": 2,
   "tags": [
@@ -260,13 +306,17 @@
   ],
   "desc": "Toothbrush, trimmer, the things hotels pretend to provide.",
   "real": true,
-  "color": 11844036
+  "color": 11844036,
+  "benefits": [
+   "Essential",
+   "Hotels pretend to provide these"
+  ]
  },
  {
   "id": "sleepkit",
   "name": "Sleep Kit",
   "label": "Sleep kit",
-  "weightLb": 2.0,
+  "weightLb": 1.5,
   "w": 2,
   "h": 2,
   "tags": [
@@ -275,7 +325,12 @@
   ],
   "desc": "Mask, earplugs, a compressed pillow, a sun lamp for the mornings the sun forgets.",
   "real": true,
-  "color": 9124474
+  "color": 9124474,
+  "benefits": [
+   "Jet lag passes faster",
+   "Loud neighbours do less damage",
+   "Counts as health gear"
+  ]
  },
  {
   "id": "firstaid",
@@ -289,7 +344,12 @@
   ],
   "desc": "Bandages, antiseptic, blister pads. Clean the cut. Every time.",
   "real": false,
-  "color": 14040124
+  "color": 14040124,
+  "benefits": [
+   "Cuts don't get infected",
+   "Otter-safe",
+   "Urchin-safe"
+  ]
  },
  {
   "id": "medkit",
@@ -304,7 +364,12 @@
   ],
   "desc": "Antibiotics, probiotics, altitude pills. Prescribed before leaving; the road does not care about your plans.",
   "real": false,
-  "color": 16052714
+  "color": 16052714,
+  "benefits": [
+   "Food poisoning is milder",
+   "Altitude is survivable",
+   "Counts as health gear"
+  ]
  },
  {
   "id": "mosquitokit",
@@ -318,29 +383,56 @@
   ],
   "desc": "Repellent and a travel net. The south of France has questions.",
   "real": false,
-  "color": 5212747
+  "color": 5212747,
+  "benefits": [
+   "Mosquito swarms do nothing",
+   "Sleep on the Riviera"
+  ]
+ },
+ {
+  "id": "airmonitor",
+  "name": "Air Quality Monitor",
+  "label": "Air monitor",
+  "weightLb": 1.0,
+  "w": 2,
+  "h": 1,
+  "tags": [
+   "health"
+  ],
+  "desc": "Reads CO2, particulates and radon. Old buildings in old mountains have secrets.",
+  "real": true,
+  "color": 4124872,
+  "benefits": [
+   "Radon can't hurt you",
+   "Sleep better in old buildings",
+   "Counts as health gear"
+  ]
  },
  {
   "id": "coffeekit",
   "name": "Coffee Kit",
   "label": "Coffee kit",
-  "weightLb": 2.5,
+  "weightLb": 2.0,
   "w": 2,
-  "h": 3,
+  "h": 2,
   "tags": [
    "coffee"
   ],
   "desc": "Hand grinder, folding dripper, gooseneck kettle. Good coffee no matter what.",
   "real": true,
-  "color": 11041102
+  "color": 11041102,
+  "benefits": [
+   "+15 energy every morning",
+   "The coffee cinematic"
+  ]
  },
  {
   "id": "adventure",
   "name": "Adventure Gear",
   "label": "Adventure",
-  "weightLb": 5.0,
+  "weightLb": 4.0,
   "w": 3,
-  "h": 3,
+  "h": 2,
   "tags": [
    "hike",
    "water",
@@ -349,7 +441,12 @@
   ],
   "desc": "Water bladder with the filter plumbed in, ice cleats, gloves, a headlamp, the knife from Patagonia.",
   "real": true,
-  "color": 9225323
+  "color": 9225323,
+  "benefits": [
+   "+6 mood exploring outdoorsy cities",
+   "Easier outdoor workouts",
+   "Filtered water, a headlamp, a knife"
+  ]
  },
  {
   "id": "climbkit",
@@ -364,13 +461,17 @@
   ],
   "desc": "Shoes and chalk for the gym, a harness and lanyard for the ferrata.",
   "real": true,
-  "color": 15230525
+  "color": 15230525,
+  "benefits": [
+   "Bouldering and ferrata unlocked",
+   "Counts as fitness gear"
+  ]
  },
  {
   "id": "fitnesskit",
   "name": "Fitness Kit",
   "label": "Fitness kit",
-  "weightLb": 2.0,
+  "weightLb": 1.5,
   "w": 2,
   "h": 2,
   "tags": [
@@ -378,7 +479,11 @@
   ],
   "desc": "Bands and a collapsible foam roller. Hotel rooms become gyms.",
   "real": true,
-  "color": 4124872
+  "color": 4124872,
+  "benefits": [
+   "Hotel-room workouts unlocked",
+   "Slower daily wear"
+  ]
  },
  {
   "id": "yogamat",
@@ -392,7 +497,12 @@
   ],
   "desc": "Thin as a tortilla. Better than a carpet.",
   "real": false,
-  "color": 12862842
+  "color": 12862842,
+  "benefits": [
+   "Yoga unlocked",
+   "Slower daily wear",
+   "5 cells tall"
+  ]
  },
  {
   "id": "kitegear",
@@ -407,7 +517,12 @@
   ],
   "desc": "Twelve pounds. Turns every wind day into the best day of the month.",
   "real": false,
-  "color": 4889558
+  "color": 4889558,
+  "benefits": [
+   "Wind days become the best days",
+   "Kite workouts unlocked",
+   "+12 lb"
+  ]
  },
  {
   "id": "switch",
@@ -422,7 +537,11 @@
   ],
   "desc": "The game within the game. Rest days get a level per city.",
   "real": false,
-  "color": 14040124
+  "color": 14040124,
+  "benefits": [
+   "Carry-On: a level per city on rest days",
+   "Gold stamps"
+  ]
  },
  {
   "id": "ereader",
@@ -436,7 +555,11 @@
   ],
   "desc": "A thousand books and one cable you will lose.",
   "real": false,
-  "color": 3817291
+  "color": 3817291,
+  "benefits": [
+   "+2 mood on travel days",
+   "A thousand books, 0.4 lb"
+  ]
  },
  {
   "id": "packingcubes",
@@ -450,7 +573,11 @@
   ],
   "desc": "Nothing gets left behind when everything has a place.",
   "real": false,
-  "color": 10479576
+  "color": 10479576,
+  "benefits": [
+   "Nothing gets left behind",
+   "Forgot-something events stop"
+  ]
  },
  {
   "id": "hostgifts",
@@ -464,7 +591,11 @@
   ],
   "desc": "Small, local, edible. Reviews get warmer.",
   "real": false,
-  "color": 16740264
+  "color": 16740264,
+  "benefits": [
+   "Hosts like you more",
+   "+3 mood on arrival"
+  ]
  },
  {
   "id": "umbrella",
@@ -478,7 +609,11 @@
   ],
   "desc": "Inverts in Patagonia. Fine in Lisbon.",
   "real": false,
-  "color": 3030374
+  "color": 3030374,
+  "benefits": [
+   "Rain days cost no energy",
+   "Inverts in Patagonia"
+  ]
  },
  {
   "id": "travelkettle",
@@ -493,7 +628,11 @@
   ],
   "desc": "Tea in every room, ninety seconds to a boil. Folds flat.",
   "real": true,
-  "color": 14040124
+  "color": 14040124,
+  "benefits": [
+   "Tea in every room",
+   "+1 mood at night"
+  ]
  },
  {
   "id": "jeans2",
@@ -509,6 +648,10 @@
   "desc": "You will not wear these. You know you will not wear these.",
   "real": false,
   "color": 2845872,
+  "benefits": [
+   "1 more day of clothes",
+   "2 lb"
+  ],
   "clothesDays": 1
  },
  {
@@ -524,6 +667,10 @@
   ],
   "desc": "Five paperbacks. The e-reader exists. You know it exists.",
   "real": false,
-  "color": 11041102
+  "color": 11041102,
+  "benefits": [
+   "Something to read",
+   "5 lb"
+  ]
  }
 ]

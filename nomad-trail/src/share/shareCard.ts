@@ -15,7 +15,7 @@ function text(ctx: Ctx, s: string, x: number, y: number, c: number, scale = 1, f
   for (const ch of s.toUpperCase()) { const pat = f[ch] || f['?'] || ['11111', '10001', '10001', '10001', '11111', '00000', '00000']; glyph(ctx, pat, cx, y, c, scale); cx += 6 * scale; }
 }
 export function setShareFont(f: Record<string, string[]>) { Object.assign(GLYPHS, f); }
-const ENDING_TEXT: Record<string, string> = { win: 'MADE IT HOME', hospital: 'CAUSE OF DEATH: HOSPITAL', flewhome: 'FLEW HOME EARLY', outofdays: 'RAN OUT OF DAYS', quit: 'QUIT. ORANGE COUNTY IS NICE.' };
+const ENDING_TEXT: Record<string, string> = { win: 'MADE IT HOME', hospital: 'CAUSE OF DEATH: HOSPITAL', flewhome: 'FLEW HOME EARLY', outofdays: 'RAN OUT OF DAYS', broke: 'CAUSE OF DEATH: THE CARD DECLINED', quit: 'QUIT. ORANGE COUNTY IS NICE.' };
 /** Word-wrap to `cols` characters, at most `max` lines (last line gets an ellipsis). */
 function wrapLines(s: string, cols: number, max: number): string[] {
   const out: string[] = []; let line = '';
@@ -28,6 +28,7 @@ function wrapLines(s: string, cols: number, max: number): string[] {
 function causeOf(state: RunState): string {
   if (state.ending?.cause) return state.ending.cause;
   if (state.ending?.kind === 'win') return `${state.visited.length} cities, ${state.day} days, home in one piece.`;
+  if (state.ending?.kind === 'broke') return `The card declined in ${state.cityId.replace(/^./, c => c.toUpperCase())}, day ${state.day}. Emergency flight home.`;
   const last = [...state.log].reverse().find(l => /hospital|fever|burn|back|poison|otter|cancel|mosquito|delayed|wheel|mood|energy/i.test(l.text)) ?? state.log[state.log.length - 1];
   return last ? last.text : state.ending?.text ?? '';
 }
@@ -48,7 +49,7 @@ export async function renderShareCard(state: RunState, cities: City[], settings?
     vis.forEach((c, i) => { const x = 24 + i * 33, y = 220; const gold = state.stamps[c.id] === 'gold'; const col = gold ? PAL.sun1 : [PAL.red, PAL.sky0, PAL.grass1, PAL.dusk2][i % 4];
       for (let a = 0; a < 24; a++) { const ang = a / 24 * Math.PI * 2; P(ctx, x + 14 + Math.cos(ang) * 13, y + 14 + Math.sin(ang) * 13, col); } drawStampGlyph(ctx, c.stampIcon, x + 14, y + 14, col); });
     // stats
-    const lines = [`DAY ${state.day} / 365`, `HEALTH ${Math.max(0, Math.round(state.health))}   MOOD ${Math.max(0, Math.round(state.mood))}`, `${state.visited.length} CITIES   ${Object.values(state.stamps).filter(s => s === 'gold').length} GOLD STAMPS`, `${state.lostItems.length} ITEMS LOST   ${state.coffeeMornings} COFFEES`];
+    const lines = [`DAY ${state.day} / 365`, `HEALTH ${Math.max(0, Math.round(state.health))}   MOOD ${Math.max(0, Math.round(state.mood))}`, typeof (state as any).money === 'number' ? `${state.visited.length} CITIES   $${Math.max(0, Math.round((state as any).money)).toLocaleString('en-US')} LEFT` : `${state.visited.length} CITIES   ${Object.values(state.stamps).filter(s => s === 'gold').length} GOLD STAMPS`, `${state.lostItems.length} ITEMS LOST   ${state.coffeeMornings} COFFEES`];
     lines.forEach((l, i) => text(ctx, l, 24, 266 + i * 11, PAL.gray2, 1));
     text(ctx, ENDING_TEXT[state.ending?.kind || 'quit'] || '', 24, 314, state.ending?.kind === 'win' ? PAL.sun2 : PAL.red, 1);
     // the reason, two lines max, then score

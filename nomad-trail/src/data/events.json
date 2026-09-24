@@ -68,7 +68,7 @@
  {
   "id": "delayed",
   "title": "Delayed baggage",
-  "text": "Everyone else's bag comes out. Yours is, according to the app, still in {city}'s departure city, having a nice time. Whatever was in it is somewhere else for a while.",
+  "text": "Everyone else's bag comes out. Yours is, according to the app, still in {city}'s departure city, having a nice time. The laptop is on your shoulder; everything else is somewhere else for a while. No clean clothes, no kitchen, no gym until it shows up.",
   "when": "flight",
   "baseChance": 0.1,
   "effects": {
@@ -514,6 +514,36 @@
   "baseChance": 0.0,
   "effects": {
    "mood": -4
+  }
+ },
+ {
+  "id": "radonmonitor",
+  "title": "The monitor",
+  "text": "The air monitor blinks red in {city}. Radon: the granite under the town has been quietly exhaling for ten thousand years. You open a window. Problem solved.",
+  "when": "day",
+  "baseChance": 0.0,
+  "effects": {
+   "mood": 2
+  }
+ },
+ {
+  "id": "radonheadache",
+  "title": "The headache",
+  "text": "You have had a headache since {city}. You do not know why. Old buildings on old mountains keep their reasons to themselves.",
+  "when": "day",
+  "baseChance": 0.0,
+  "effects": {
+   "mood": -4
+  }
+ },
+ {
+  "id": "broke",
+  "title": "The card declines",
+  "text": "The card declines in {city}. You try it again. It declines again, but slower, as if to make a point.",
+  "when": "day",
+  "baseChance": 0.0,
+  "effects": {
+   "mood": -5
   }
  }
 ]

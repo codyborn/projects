@@ -10,6 +10,7 @@ export interface Item {
   weightLb: number; w: number; h: number;             // grid footprint in cells (checked grid 8x10, backpack 5x6)
   tags: ItemTag[]; clothesDays?: number;              // clothing items add days of clean clothes
   desc: string; real: boolean; link?: string;         // real = from Cody's actual list
+  benefits?: string[];                                // shown on the pack card instead of desc: what packing this does for you
   color: number;                                      // palette color for the procedural icon
 }
 export interface Lodging { id: string; name: string; cancelChance: number; quiet: number; moodPerDay: number; energyPerDay: number; }
@@ -23,6 +24,9 @@ export interface City {
   id: string; name: string; country: string; region: Region; lat: number; lon: number;
   hero: boolean; minStay: number; suggestedStay: number;
   climate: 'hot' | 'temperate' | 'cold' | 'alpine' | 'rainy'; timezone: number; altitude?: number;
+  radon?: 0 | 1 | 2 | 3;                              // realistic radon exposure (granite/alpine regions); daily health drain unless an air monitor is packed
+  outdoorsy?: boolean;                                // adventure gear pays off here
+  costPerDay?: number;                                // lodging + food, USD
   dishes: string[]; activities: ActivityId[]; hazard: Hazard; lodgings: Lodging[];
   eventWeights: Record<string, number>;               // eventId -> multiplier
   legs: Leg[]; blurb: string; stampIcon: string;      // stampIcon: key for a tiny procedural glyph
@@ -46,8 +50,9 @@ export interface ArcadeLevel { city: string; hazard: Hazard; palette: [number, n
 // ---------- Run state (saved to localStorage) ----------
 export interface PackedItem { id: string; bag: Bag; x: number; y: number; rot?: boolean; }  // rot: footprint rotated 90°, swap w/h
 export interface RunState {
-  version: 1; seed: number; day: number; startCity: string; cityId: string; direction: 'east' | 'west';
+  version: 2; seed: number; day: number; startCity: string; cityId: string; direction: 'east' | 'west';
   health: number; energy: number; mood: number; cleanClothes: number; maxClothes: number;
+  money: number;                                      // USD; work days earn, everything else spends; < 0 ends the run ('broke')
   items: PackedItem[]; lostItems: string[];
   bagLockedDays: number; wheelBroken: boolean; backInjuryDays: number; sickDays: number;
   fatigue: number; legsLast30: number[];              // day numbers of recent legs
@@ -58,16 +63,16 @@ export interface RunState {
   pendingDish?: string;                              // dish id chosen when Cook was tapped; the mini-game and the result must use the same one
 }
 export interface LogLine { day: number; city: string; text: string; }
-export type Ending = { kind: 'win' | 'hospital' | 'flewhome' | 'outofdays' | 'quit'; text: string; score: number; cause?: string; };  // cause: the one-line reason shown on the share card
+export type Ending = { kind: 'win' | 'hospital' | 'flewhome' | 'outofdays' | 'broke' | 'quit'; text: string; score: number; cause?: string; };  // cause: the one-line reason shown on the share card
 export type CityAction = 'work' | 'explore' | 'train' | 'cook' | 'rest' | 'laundry' | 'checkroom' | 'moveon';
 
 // ---------- Mini-game contract ----------
 // Every mini-game is a Phaser scene started with MinigameLaunch and MUST call launch.onDone(result) exactly once, then stop itself.
-export interface MinigameLaunch { energy: number; difficulty: number; payload?: any; onDone: (r: MinigameResult) => void; }
+export interface MinigameLaunch { energy: number; difficulty: number; payload?: any; extraLives?: number; onDone: (r: MinigameResult) => void; }  // extraLives: hiking boots etc.
 export interface MinigameResult { score: number; perfect: boolean; failed: boolean; }
 export const MINIGAME_KEYS = { cooking: 'Cooking', workout: 'Workout', carryon: 'CarryOn', kite: 'Kite', airport: 'Airport', laundry: 'Laundry' } as const;
 
 // ---------- Save ----------
-export const SAVE_KEY = 'nomadtrail.save.v1';
+export const SAVE_KEY = 'nomadtrail.save.v2';  // v2: money, single bag
 export const SETTINGS_KEY = 'nomadtrail.settings.v1';
 export interface Settings { muted: boolean; runs: number; bestScore: number; history: { ending: Ending['kind']; day: number; score: number }[]; }

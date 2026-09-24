@@ -7,9 +7,9 @@ import citiesJson from '../data/cities.json';
 import eventsJson from '../data/events.json';
 import dishesJson from '../data/dishes.json';
 export interface SimApi {
-  gridSpecs: { checked: { cols: number; rows: number; maxLb: number }; backpack: { cols: number; rows: number; maxLb: number } };
+  gridSpecs: { checked: { cols: number; rows: number; maxLb: number }; backpack?: { cols: number; rows: number; maxLb: number } };
   createRun(seed: number, startCity: string, direction: 'east' | 'west'): RunState;
-  setPack(state: RunState, packed: PackedItem[]): { ok: boolean; errors: string[]; weights: { checked: number; backpack: number } };
+  setPack(state: RunState, packed: PackedItem[]): { ok: boolean; errors: string[]; weights: { checked: number; backpack?: number } };
   availableLegs(state: RunState): Leg[];
   travelTo(state: RunState, cityId: string): { state: RunState; events: string[] };
   cityAction(state: RunState, action: CityAction): { state: RunState; events: string[]; minigame?: { key: string; payload?: any; difficulty: number } };
@@ -24,6 +24,13 @@ export interface SimApi {
   visibleAchievements(state: RunState): string[];
   continentsVisited(state: RunState): string[];
   CONTINENTS_ALL: string[];
+  /** 0 = Sunday. Day 1 of the run is Thu 1 Jan 2026. */
+  weekdayOf(day: number): number;
+  isWeekend(day: number): boolean;
+  /** A legal random pack (Surprise Me). */
+  randomPack(seed: number): PackedItem[];
+  /** Fare for a leg, if the engine prices legs. */
+  legCost(state: RunState, leg: Leg): number | undefined;
 }
 import { loadSettings as _loadSettings, saveSettings as _saveSettings, recordRun } from '../core/sim';
 export { recordRun };
@@ -48,7 +55,25 @@ export const Sim: SimApi = {
   // engine may lag behind the scenes: derive from city regions when the engine has no continent helpers yet
   continentsVisited: (state) => E.continentsVisited ? E.continentsVisited(state) : Array.from(new Set(state.visited.map(id => { const c = cities.find(x => x.id === id); return c ? (CONTINENT_OF[c.region] as string) : ''; }).filter(x => !!x))),
   CONTINENTS_ALL: E.CONTINENTS_ALL ?? ['North America', 'South America', 'Europe', 'Africa', 'Asia'],
+  weekdayOf: (day) => E.weekdayOf ? E.weekdayOf(day) : ((day - 1) + 4) % 7,
+  isWeekend: (day) => { if (E.isWeekend) return E.isWeekend(day); const w = ((day - 1) + 4) % 7; return w === 0 || w === 6; },
+  randomPack: (seed) => E.randomPack ? E.randomPack(seed) : fallbackRandomPack(seed),
+  legCost: (state, leg) => (leg as any).cost ?? (E.fareFor && E.CITY?.[state.cityId] ? E.fareFor(E.CITY[state.cityId], leg) : undefined),
 };
+/** Local stand-in until the engine ships randomPack: shuffle bundles, first-fit them into the suitcase up to ~35 lb. */
+function fallbackRandomPack(seed: number): PackedItem[] {
+  const g = (Engine as any).GRID?.checked ?? { cols: 8, rows: 10, maxLb: 50 }; let r = (seed >>> 0) || 1; const rnd = () => { r = (r * 1664525 + 1013904223) >>> 0; return r / 4294967296; };
+  const pool = [...items].sort(() => rnd() - 0.5); const occ = Array.from({ length: g.rows }, () => Array(g.cols).fill(false)); const out: PackedItem[] = []; let lb = 0;
+  const fits = (x: number, y: number, w: number, h: number) => { if (x + w > g.cols || y + h > g.rows) return false; for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) if (occ[yy][xx]) return false; return true; };
+  const mark = (x: number, y: number, w: number, h: number) => { for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) occ[yy][xx] = true; };
+  const must = pool.filter(i => i.tags.includes('work')).slice(0, 1); const rest = pool.filter(i => !must.includes(i));
+  for (const it of [...must, ...rest]) {
+    if (lb + it.weightLb > Math.min(g.maxLb, 36)) continue; if (!must.includes(it) && rnd() < 0.35) continue;
+    let done = false;
+    for (let y = 0; y < g.rows && !done; y++) for (let x = 0; x < g.cols && !done; x++) if (fits(x, y, it.w, it.h)) { mark(x, y, it.w, it.h); out.push({ id: it.id, bag: 'checked', x, y }); lb += it.weightLb; done = true; }
+  }
+  return out;
+}
 /** Choices the engine will accept right now (filtered by accessible gear); EventScene must use these, not the raw definition. */
 export const pendingChoices = (state: RunState): { id: string; title: string; text: string; choices: any[] } | null => E.pendingChoices(state);
 export const engineEvents = (state: RunState) => E; // escape hatch

@@ -2,21 +2,16 @@ import type { RunState, PackedItem, Bag, ItemTag, CityAction, Ending, Leg, City,
 import { MINIGAME_KEYS, CONTINENT_OF, type MinigameResult } from '../types';
 import { ITEM, ITEMS, CITY, CITIES, EVENT, DISH, LEVEL_BY_CITY } from './data';
 import { makeRng, hash32, type Rng } from './rng';
-import { rollEvents, applyEffects, hasTag, hasFlag, setFlag, clamp, monthOf, energyCap, recomputeClothes, fmt, accessibleItems, visibleAchievements, availableChoices, LODGING_DEPENDENT, type ResolvedEvent } from './events';
+import { rollEvents, applyEffects, hasTag, hasFlag, setFlag, clamp, monthOf, energyCap, recomputeClothes, fmt, accessibleItems, visibleAchievements, availableChoices, forceEvent, LODGING_DEPENDENT, type ResolvedEvent } from './events';
 import { saveRun, loadRun, clearRun } from './save';
-
-export const GRID = {
-  checked: { cols: 8, rows: 10, maxLb: 50, label: 'Checked suitcase' },
-  backpack: { cols: 5, rows: 6, maxLb: 25, label: 'Backpack' },
-} as const;
-export const TOTAL_DAYS = 365;
-export const HOME_PROGRESS_DEG = 330;   // longitude to cover before the flight home unlocks
-export const HOME_CITY = 'orangecounty'; // every run starts and ends here
-export const HOME_MIN_CONTINENTS = 4;    // the flight home also needs four of the five continents in the passport
+import { GRID, TOTAL_DAYS, HOME_PROGRESS_DEG, HOME_CITY, HOME_MIN_CONTINENTS, START_MONEY, OVERDRAFT, WORK_PAY, DEFAULT_COST_PER_DAY, FARE, WORK_ENERGY, WORK_MOOD, weekdayOf, isWeekend, OUTDOOR_ACTIVITIES } from './consts';
+import { shelfPack, buildPack, randomPack, idsWeight } from './pack';
+export { GRID, TOTAL_DAYS, HOME_PROGRESS_DEG, HOME_CITY, HOME_MIN_CONTINENTS, START_MONEY, OVERDRAFT, WORK_PAY, weekdayOf, isWeekend } from './consts';
+export { shelfPack, buildPack, randomPack, type PackStyle } from './pack';
 export const CONTINENTS_ALL: Continent[] = ['North America', 'South America', 'Europe', 'Africa', 'Asia'];
 
 export interface PackValidation { ok: boolean; errors: string[]; weights: Record<Bag, number>; ratio: number; state?: RunState; }
-export interface MinigameRequest { key: string; payload: any; difficulty: number; }
+export interface MinigameRequest { key: string; payload: any; difficulty: number; extraLives?: number; }
 export interface StepResult { state: RunState; events: ResolvedEvent[]; minigame?: MinigameRequest; error?: string; }
 export interface AvailableLeg extends Leg { city: City; home: boolean; }
 
@@ -26,46 +21,54 @@ const wrap = (d: number) => ((d + 540) % 360) - 180;
 
 export function createRun(seed: number, _startCity: string = HOME_CITY, direction: 'east' | 'west' = 'east'): RunState {
   const startCity = HOME_CITY;  // the start city argument is kept for API compatibility; the trail always starts and ends at home
-  return { version: 1, seed, day: 1, startCity, cityId: startCity, direction, health: 100, energy: 85, mood: 80, cleanClothes: 3, maxClothes: 3,
+  return { version: 2, seed, day: 1, startCity, cityId: startCity, direction, health: 100, energy: 85, mood: 80, cleanClothes: 3, maxClothes: 3, money: START_MONEY,
     items: [], lostItems: [], bagLockedDays: 0, wheelBroken: false, backInjuryDays: 0, sickDays: 0, fatigue: 0, legsLast30: [],
-    visited: [startCity], stamps: { [startCity]: 'plain' }, route: [startCity], achievements: [], log: [{ day: 1, city: startCity, text: `Day 1, ${CITY[startCity].name}. Two bags, one year, the whole planet. Pack.` }],
+    visited: [startCity], stamps: { [startCity]: 'plain' }, route: [startCity], achievements: [], log: [{ day: 1, city: startCity, text: `Day 1, ${CITY[startCity].name}. One suitcase, one year, the whole planet. Pack.` }],
     workStreak: 0, coffeeMornings: 0, phase: 'pack', stayDays: 0 };
 }
 
 // ---------- Packing ----------
-export function bagWeight(items: PackedItem[], bag: Bag) { return round1(items.filter(p => p.bag === bag).reduce((a, p) => a + (ITEM[p.id]?.weightLb ?? 0), 0)); }
+/** Weight of a bag. Only the suitcase exists now; the backpack argument is kept so old call sites compile and return 0. */
+export function bagWeight(items: PackedItem[], bag: Bag = 'checked') { return round1(items.filter(p => p.bag === bag).reduce((a, p) => a + (ITEM[p.id]?.weightLb ?? 0), 0)); }
 const round1 = (n: number) => Math.round(n * 10) / 10;
-export function weightRatio(items: PackedItem[]) { return Math.max(bagWeight(items, 'checked') / GRID.checked.maxLb, bagWeight(items, 'backpack') / GRID.backpack.maxLb); }
+export function weightRatio(items: PackedItem[]) { return bagWeight(items, 'checked') / GRID.checked.maxLb; }
 export function validatePack(items: PackedItem[]): PackValidation {
   const errors: string[] = [];
-  const seen = new Set<string>();
-  const occ: Record<Bag, Set<string>> = { checked: new Set(), backpack: new Set() };
+  const seen = new Set<string>(); const occ = new Set<string>();
   for (const p of items) {
     const it = ITEM[p.id];
     if (!it) { errors.push(`unknown item ${p.id}`); continue; }
     if (seen.has(p.id)) errors.push(`${it.name} packed twice`); seen.add(p.id);
-    const g = GRID[p.bag]; if (!g) { errors.push(`bad bag for ${it.name}`); continue; }
+    if (p.bag !== 'checked') { errors.push(`${it.name}: everything goes in the suitcase now`); continue; }
+    const g = GRID.checked;
     if (p.x < 0 || p.y < 0 || p.x + it.w > g.cols || p.y + it.h > g.rows) { errors.push(`${it.name} does not fit in the ${g.label}`); continue; }
     for (let dx = 0; dx < it.w; dx++) for (let dy = 0; dy < it.h; dy++) {
-      const k = `${p.x + dx},${p.y + dy}`; if (occ[p.bag].has(k)) errors.push(`${it.name} overlaps another item`); occ[p.bag].add(k);
+      const k = `${p.x + dx},${p.y + dy}`; if (occ.has(k)) errors.push(`${it.name} overlaps another item`); occ.add(k);
     }
   }
-  const weights = { checked: bagWeight(items, 'checked'), backpack: bagWeight(items, 'backpack') };
-  if (weights.checked > GRID.checked.maxLb) errors.push(`Checked bag is ${weights.checked} lb (max ${GRID.checked.maxLb})`);
-  if (weights.backpack > GRID.backpack.maxLb) errors.push(`Backpack is ${weights.backpack} lb (max ${GRID.backpack.maxLb})`);
-  if (!items.some(p => ITEM[p.id]?.tags.includes('essential'))) errors.push('Pack at least one essential (laptop, phone, charger)');
+  const weights: Record<Bag, number> = { checked: bagWeight(items, 'checked'), backpack: 0 };
+  if (weights.checked > GRID.checked.maxLb) errors.push(`Suitcase is ${weights.checked} lb (max ${GRID.checked.maxLb})`);
+  if (!items.some(p => ITEM[p.id]?.tags.includes('essential'))) errors.push('Pack at least one essential (the laptop kit, at minimum)');
   return { ok: errors.length === 0, errors: [...new Set(errors)], weights, ratio: weightRatio(items) };
 }
 export function setPack(state: RunState, items: PackedItem[]): PackValidation {
   const v = validatePack(items); if (!v.ok) return v;
   const s = clone(state); s.items = clone(items); recomputeClothes(s); s.cleanClothes = s.maxClothes; s.phase = 'route';
-  s.log.push({ day: s.day, city: s.cityId, text: `Packed: ${v.weights.checked} lb checked, ${v.weights.backpack} lb on the back. ${s.maxClothes} days of clean clothes.` });
+  s.log.push({ day: s.day, city: s.cityId, text: `Packed: ${v.weights.checked} lb in the suitcase. ${s.maxClothes} days of clean clothes.` });
   if (v.ratio >= 0.95) s.log.push({ day: s.day, city: s.cityId, text: 'The bag is at the limit. Your back has noted this.' });
   return { ...v, state: s };
 }
 export const coffeePacked = (s: RunState) => accessibleItems(s).some(p => ITEM[p.id]?.tags.includes('coffee'));
 export const bundles = () => ITEMS;
-export const totalWeight = (s: RunState) => round1(bagWeight(s.items, 'checked') + bagWeight(s.items, 'backpack'));
+export const totalWeight = (s: RunState) => round1(bagWeight(s.items, 'checked'));
+/** A specific bundle, reachable right now (not in a delayed bag). */
+export const hasItem = (s: RunState, id: string) => accessibleItems(s).some(p => p.id === id);
+export const isOutdoorsy = (s: RunState) => !!CITY[s.cityId]?.outdoorsy;
+const km = (a: City, b: City) => { const r = Math.PI / 180; return 6371 * Math.acos(Math.min(1, Math.sin(a.lat * r) * Math.sin(b.lat * r) + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.cos((a.lon - b.lon) * r))); };
+/** Fare for a leg, USD: base + per-km, by transport. The trek is a one-off permits-and-guide fee. */
+export function fareFor(from: City, leg: Leg): number { const [base, perKm] = FARE[leg.transport] ?? FARE.bus; const to = CITY[leg.to]; return Math.round(base + perKm * (to ? km(from, to) : 0)); }
+/** Upcoming weekdays you could work, starting today. */
+export function nextWorkdays(s: RunState, n = 5): number[] { const out: number[] = []; for (let d = s.day; out.length < n && d < s.day + 14; d++) if (!isWeekend(d)) out.push(d); return out; }
 
 // ---------- Route ----------
 /** Signed longitude progress along the route in the chosen direction (degrees). */
@@ -135,13 +138,16 @@ export function travelTo(state: RunState, cityId: string): StepResult {
   // fatigue: legs in the last 30 days, before this one
   s.legsLast30 = s.legsLast30.filter(d => s.day - d <= 45); s.fatigue = s.legsLast30.length;
   const fatigueEnergy = 6 * s.fatigue, fatigueMood = 4 * s.fatigue;
-  s.energy = clamp(s.energy - leg.energy - fatigueEnergy - (s.wheelBroken ? 8 : 0), 0, energyCap(s));
+  const ratio0 = weightRatio(s.items); const legEnergy = Math.round(leg.energy * (0.8 + 0.8 * ratio0));   // a full suitcase roughly doubles the drain of a light one
+  s.energy = clamp(s.energy - legEnergy - fatigueEnergy - (s.wheelBroken ? 8 : 0), 0, energyCap(s));
+  const fare = fareFor(from, leg); s.money -= fare; s.workStreak = 0;
+  if (hasTag(s, 'luxury') && s.items.some(p => p.id === 'ereader')) s.mood = clamp(s.mood + 2, 0, 100);
   s.mood = clamp(s.mood - fatigueMood - (s.wheelBroken ? 3 : 0), 0, 100);
   s.day += leg.days; s.legsLast30.push(s.day); s.fatigue = s.legsLast30.length;
   s.cleanClothes = Math.max(0, s.cleanClothes - leg.days);
   const ratio = weightRatio(s.items);
   const ctx = { transport: leg.transport, timezones: leg.timezones, overweightRatio: ratio };
-  s.log.push({ day: s.day, city: cityId, text: `${leg.transport === 'trek' ? 'Fourteen days on foot' : leg.transport[0].toUpperCase() + leg.transport.slice(1)} from ${from.name} to ${leg.city.name}.${s.fatigue >= 3 ? ' Too many legs too fast; everything aches.' : ''}` });
+  s.log.push({ day: s.day, city: cityId, text: `${leg.transport === 'trek' ? 'Fourteen days on foot' : leg.transport[0].toUpperCase() + leg.transport.slice(1)} from ${from.name} to ${leg.city.name}, $${fare}.${ratio0 >= 0.85 ? ' The suitcase fights you the whole way.' : ''}${s.fatigue >= 3 ? ' Too many legs too fast; everything aches.' : ''}` });
   if (leg.transport === 'flight') events.push(...rollEvents(s, 'flight', ctx, rng, 1));
   events.push(...rollEvents(s, 'leg', ctx, rng, 2));
   // arrive
@@ -155,6 +161,7 @@ export function travelTo(state: RunState, cityId: string): StepResult {
   const conts = continentsVisited(s);
   if (conts.length === CONTINENTS_ALL.length && !s.achievements.includes('fivecontinents')) { s.achievements.push('fivecontinents'); s.log.push({ day: s.day, city: cityId, text: 'Five continents. The passport is running out of pages.' }); }
   if (leg.city.altitude && leg.city.altitude >= 3500 && !events.some(e => e.id === 'altitude')) { /* altitude event already weighted; nothing */ }
+  if (hasItem(s, 'hostgifts') && (leg.city.lodgings[0]?.id === 'airbnb' || leg.city.lodgings[0]?.id === 'coliving')) s.mood = clamp(s.mood + 3, 0, 100);
   if (leg.home) { s.log.push({ day: s.day, city: cityId, text: `Day ${s.day}. ${leg.city.name} again. The same skyline, a different person under it.` }); }
   checkEnding(s);
   return { state: s, events };
@@ -162,10 +169,18 @@ export function travelTo(state: RunState, cityId: string): StepResult {
 
 // ---------- City days ----------
 function tickDay(s: RunState, rng: Rng, opts: { rest?: boolean } = {}): ResolvedEvent[] {
-  const city = CITY[s.cityId]; const lodging = city.lodgings[0];
+  const city = CITY[s.cityId]; const lodging = city.lodgings[0]; const out: ResolvedEvent[] = [];
   s.day += 1; s.stayDays += 1;
-  s.cleanClothes -= 1;
-  const dirty = s.cleanClothes < 0; if (dirty) { s.cleanClothes = 0; s.mood -= 5; s.health -= 1; }
+  s.money -= city.costPerDay ?? DEFAULT_COST_PER_DAY;
+  const locked = s.bagLockedDays > 0;
+  if (locked) { s.energy -= 8; }                                   // living out of one carry-on outfit
+  else { s.cleanClothes -= 1; const dirty = s.cleanClothes < 0; if (dirty) { s.cleanClothes = 0; s.mood -= 5; s.health -= 1; } }
+  // radon: granite and alpine bedrock, realistic. The air monitor turns it into a window you open.
+  const radon = city.radon ?? 0;
+  if (radon) {
+    if (hasItem(s, 'airmonitor')) { if (s.stayDays === 1 && !hasFlag(s, 'radon_' + s.cityId)) { setFlag(s, 'radon_' + s.cityId, true); out.push(forceEvent(s, 'radonmonitor', rng)); } }
+    else { s.health -= 0.15 * radon; if (radon >= 2 && s.stayDays === 5 && !hasFlag(s, 'radon_' + s.cityId)) { setFlag(s, 'radon_' + s.cityId, true); out.push(forceEvent(s, 'radonheadache', rng)); } }
+  }
   s.energy += 5 + (lodging?.energyPerDay ?? 0) + (opts.rest ? 0 : 0);
   s.mood += (lodging?.moodPerDay ?? 0) - 1;
   // slow wear: the year itself is the opponent. Routine (training, cooking, supplements) pushes back.
@@ -177,9 +192,12 @@ function tickDay(s: RunState, rng: Rng, opts: { rest?: boolean } = {}): Resolved
   if (s.energy < 25) { s.health -= 2; s.mood -= 3; }
   if (s.mood < 25) s.energy -= 3;
   if (hasTag(s, 'health') && s.energy > 50) s.health += 0.4;
+  if (hasItem(s, 'travelkettle')) s.mood += 1;                      // tea at night; the other thing it does lives in events.json
+  if (hasItem(s, 'tablet') && opts.rest) s.mood += 2;
   s.health = clamp(s.health, 0, 100); s.energy = clamp(s.energy, 0, energyCap(s)); s.mood = clamp(s.mood, 0, 100);
-  const ev = rollEvents(s, 'day', { overweightRatio: weightRatio(s.items) }, rng, 1);
-  return ev;
+  out.push(...rollEvents(s, 'day', { overweightRatio: weightRatio(s.items) }, rng, 1));
+  if (s.money < 0 && !hasFlag(s, 'broke')) { setFlag(s, 'broke', true); out.push(forceEvent(s, 'broke', rng)); }
+  return out;
 }
 const DAILY: Record<string, string> = {
   work: 'A work day. Meetings at odd hours, the laptop on a kitchen table.',
@@ -192,23 +210,39 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
   if (state.pendingEvent) return { state, events: [], error: 'resolve the pending event first' };
   const s = clone(state); const rng = rngFor(s, 3); let events: ResolvedEvent[] = []; const city = CITY[s.cityId];
   const ctx = { overweightRatio: weightRatio(s.items) };
-  const diff = clamp(1 + (60 - s.energy) / 100, 0.6, 1.6);
+  const outdoors = !!city.outdoorsy, geared = hasTag(s, 'hike');
+  const diff = clamp(1 + (60 - s.energy) / 100 - (outdoors && geared ? 0.1 : 0), 0.5, 1.6);
+  const locked = s.bagLockedDays > 0;
   switch (action) {
-    case 'work': events = tickDay(s, rng); s.energy = clamp(s.energy - 12, 0, energyCap(s)); s.mood = clamp(s.mood - 1, 0, 100); s.workStreak += 1; s.log.push({ day: s.day, city: s.cityId, text: DAILY.work }); break;
-    case 'explore': events = tickDay(s, rng); s.energy = clamp(s.energy - 12, 0, energyCap(s)); s.mood = clamp(s.mood + 7, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: DAILY.explore }); events.push(...rollEvents(s, 'action', ctx, rngFor(s, 4), 1)); break;
+    case 'work': {
+      if (isWeekend(s.day)) return { state, events: [], error: 'It is the weekend. Nobody is paying.' };
+      s.workStreak += 1; const n = s.workStreak; events = tickDay(s, rng);
+      s.energy = clamp(s.energy - WORK_ENERGY(n), 0, energyCap(s)); s.mood = clamp(s.mood - WORK_MOOD(n), 0, 100); s.money += WORK_PAY;
+      s.log.push({ day: s.day, city: s.cityId, text: n >= 5 ? `Day ${n} in a row at the laptop, +$${WORK_PAY}. The kitchen table has a dent the shape of your elbows.` : `${DAILY.work} +$${WORK_PAY}.` }); break; }
+    case 'explore': {
+      s.workStreak = 0; events = tickDay(s, rng);
+      const bonus = outdoors && geared; s.energy = clamp(s.energy - (bonus ? 9 : 12), 0, energyCap(s)); s.mood = clamp(s.mood + 7 + (bonus ? 6 : 0), 0, 100);
+      s.log.push({ day: s.day, city: s.cityId, text: bonus ? `You go out with the whole kit. ${city.name} is built for it.` : DAILY.explore });
+      if (outdoors && !geared && rng.chance(0.3)) { s.mood = clamp(s.mood - 3, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: 'The trail was right there. You had the wrong shoes for it.' }); }
+      events.push(...rollEvents(s, 'action', ctx, rngFor(s, 4), 1)); break; }
     case 'rest': {
-      events = tickDay(s, rng, { rest: true }); s.energy = clamp(s.energy + 28, 0, energyCap(s)); s.mood = clamp(s.mood + 2, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: DAILY.rest });
+      s.workStreak = 0; events = tickDay(s, rng, { rest: true }); s.energy = clamp(s.energy + 28, 0, energyCap(s)); s.mood = clamp(s.mood + 2, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: DAILY.rest });
       const lvl = LEVEL_BY_CITY[s.cityId];
       if (hasTag(s, 'switch') && lvl) { checkEnding(s); return { state: s, events, minigame: { key: MINIGAME_KEYS.carryon, payload: { level: lvl, city: city.id }, difficulty: diff } }; }
       break; }
-    case 'laundry': events = tickDay(s, rng); s.cleanClothes = s.maxClothes; s.energy = clamp(s.energy - 4, 0, energyCap(s)); s.mood = clamp(s.mood - 2, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: DAILY.laundry }); checkEnding(s); return { state: s, events, minigame: { key: MINIGAME_KEYS.laundry, payload: { items: s.items.length }, difficulty: diff } };
+    case 'laundry': if (locked) return { state, events: [], error: 'The clothes are in the suitcase. The suitcase is somewhere else.' }; s.workStreak = 0; events = tickDay(s, rng); s.cleanClothes = s.maxClothes; s.energy = clamp(s.energy - 4, 0, energyCap(s)); s.mood = clamp(s.mood - 2, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: DAILY.laundry }); checkEnding(s); return { state: s, events, minigame: { key: MINIGAME_KEYS.laundry, payload: { items: s.items.length }, difficulty: diff } };
     case 'train': {
+      if (locked) return { state, events: [], error: 'The gear is in the suitcase. The suitcase is somewhere else.' };
       if (s.backInjuryDays > 0) return { state, events: [], error: 'Your back says no. Not today.' };
       if (s.energy < 20) return { state, events: [], error: 'Too tired to train. Rest first.' };
       const acts = city.activities.filter(a => (a !== 'kite' || hasTag(s, 'kite')) && (a !== 'boulder' && a !== 'ferrata' || hasTag(s, 'climb')) && (a !== 'swim' || hasTag(s, 'swim')) && (a !== 'bands' || hasTag(s, 'fitness')) && (a !== 'ski' || hasTag(s, 'cold')) && (a !== 'yoga' || hasTag(s, 'fitness')));
       const activity = acts.length ? acts[(s.stayDays + s.day) % acts.length] : 'trailrun';
-      return { state: s, events: [], minigame: { key: MINIGAME_KEYS.workout, payload: { activity, city: city.id }, difficulty: diff } }; }
+      const extraLives = hasItem(s, 'hikingboots') && OUTDOOR_ACTIVITIES.has(activity) && activity !== 'kite' ? 1 : 0;
+      s.workStreak = 0;
+      return { state: s, events: [], minigame: { key: MINIGAME_KEYS.workout, payload: { activity, city: city.id, extraLives }, difficulty: diff, ...(extraLives ? { extraLives } : {}) } }; }
     case 'cook': {
+      if (locked) return { state, events: [], error: 'No kitchen kit, no clean anything. The suitcase is somewhere else.' };
+      s.workStreak = 0;
       const dish = DISH[city.dishes[(s.stayDays + s.route.length) % city.dishes.length]] ?? DISH[city.dishes[0]];
       s.pendingDish = dish.id;
       return { state: s, events: [], minigame: { key: MINIGAME_KEYS.cooking, payload: { dish, city: city.id }, difficulty: diff } }; }
@@ -265,7 +299,7 @@ export function score(s: RunState): number {
   const gold = Object.values(s.stamps).filter(v => v === 'gold').length;
   const conts = continentsVisited(s).length;
   const base = s.visited.length * 25 + gold * 30 + visibleAchievements(s).length * 40 + s.coffeeMornings + conts * 150 + (conts === CONTINENTS_ALL.length ? 500 : 0);
-  return s.ending?.kind === 'win' ? base + daysLeft * 2 + s.health * 3 + s.mood + 500 : Math.round(base * 0.6);
+  return s.ending?.kind === 'win' ? base + daysLeft * 2 + s.health * 3 + s.mood + 500 + Math.max(0, Math.round(s.money / 20)) : Math.round(base * 0.6);
 }
 export function checkEnding(s: RunState): Ending | undefined {
   if (s.phase === 'ended') return s.ending;
@@ -273,6 +307,7 @@ export function checkEnding(s: RunState): Ending | undefined {
   const home = CITY[s.startCity].name;
   if (s.health <= 0) e = { kind: 'hospital', text: `Day ${s.day}. ${CITY[s.cityId].name}. A hospital bed with a view of a parking lot. The trail ends here; the story does not.`, score: 0 };
   else if (s.mood <= 0) e = { kind: 'flewhome', text: `Day ${s.day}. You book the flight home from ${CITY[s.cityId].name} without telling anyone. ${home} is nice this time of year.`, score: 0 };
+  else if (s.money < -OVERDRAFT) e = { kind: 'broke', text: `Day ${s.day}. The card declines in ${CITY[s.cityId].name}. ${home} has a couch.`, score: 0 };
   else if (s.day > TOTAL_DAYS) e = { kind: 'outofdays', text: `Day 366. The year ends in ${CITY[s.cityId].name}, ${Math.round(Math.max(0, HOME_PROGRESS_DEG + 60 - progress(s)))} degrees of longitude from home. Next year, maybe.`, score: 0 };
   else if (s.cityId === s.startCity && s.route.length > 1 && homeUnlocked(s)) e = { kind: 'win', text: `Day ${s.day}. ${home}. ${s.visited.length} cities, ${365 - s.day} days to spare, ${s.lostItems.length} things left in ${s.lostItems.length === 1 ? 'a room' : 'rooms'} around the world. You circled it.`, score: 0 };
   if (e) { e.cause = endingCause(s, e.kind); s.ending = e; s.phase = 'ended'; s.pendingEvent = undefined; e.score = score(s); s.log.push({ day: s.day, city: s.cityId, text: e.text }); }
@@ -287,6 +322,7 @@ export function endingCause(s: RunState, kind: Ending['kind']): string {
   switch (kind) {
     case 'hospital': return last ? `Hospitalised in ${city} after ${last}, day ${s.day}` : `Hospitalised in ${city}, worn down by the road, day ${s.day}`;
     case 'flewhome': return `Flew home from ${city} on day ${s.day}, mood zero`;
+    case 'broke': return `Broke in ${city} on day ${s.day}, $${Math.max(0, Math.round(-s.money))} in the hole`;
     case 'outofdays': return `Ran out of days in ${city}, ${conts} of 5 continents`;
     case 'win': return `Home to ${city} on day ${s.day}, ${conts} continent${conts === 1 ? '' : 's'}`;
     default: return `Left the trail in ${city} on day ${s.day}`;
@@ -301,8 +337,9 @@ export function pendingChoices(s: RunState): { id: string; title: string; text: 
 }
 
 export const Sim = {
-  GRID, TOTAL_DAYS, HOME_CITY, HOME_MIN_CONTINENTS, HOME_PROGRESS_DEG, CONTINENTS_ALL, CITIES, CITY, ITEM, DISH, LEVEL_BY_CITY,
-  createRun, validatePack, setPack, bagWeight, weightRatio, totalWeight, coffeePacked, bundles, hasTag, hasFlag,
+  GRID, TOTAL_DAYS, HOME_CITY, HOME_MIN_CONTINENTS, HOME_PROGRESS_DEG, CONTINENTS_ALL, START_MONEY, OVERDRAFT, WORK_PAY, CITIES, CITY, ITEM, DISH, LEVEL_BY_CITY,
+  createRun, validatePack, setPack, bagWeight, weightRatio, totalWeight, coffeePacked, bundles, hasTag, hasFlag, hasItem, isOutdoorsy,
+  shelfPack, buildPack, randomPack, idsWeight, weekdayOf, isWeekend, nextWorkdays, fareFor,
   availableLegs, travelTo, cityAction, applyMinigameResult, resolveChoice, pendingChoices, checkEnding, score, progress, homeUnlocked, homeRequirements, continentsVisited, endingCause, monthOf,
   visibleAchievements, energyCap, accessibleItems,
   save: saveRun, load: loadRun, clear: clearRun,

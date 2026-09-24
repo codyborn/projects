@@ -16,7 +16,7 @@ ev('backinjury', 'Something gives', "Lifting the bag onto the train rack, someth
    'leg', 0.45, dict(backInjury=10, energy=-30, mood=-15, unlockAchievement='back'), requiresOverweight=True)
 ev('wheel', 'Baggage carousel, one wheel short', "Your suitcase comes around the carousel on three wheels and a stump. The airline offers a form. The form offers nothing.",
    'flight', 0.05, dict(wheelBroken=True, mood=-8, energy=-5))
-ev('delayed', 'Delayed baggage', "Everyone else's bag comes out. Yours is, according to the app, still in {city}'s departure city, having a nice time. Whatever was in it is somewhere else for a while.",
+ev('delayed', 'Delayed baggage', "Everyone else's bag comes out. Yours is, according to the app, still in {city}'s departure city, having a nice time. The laptop is on your shoulder; everything else is somewhere else for a while. No clean clothes, no kitchen, no gym until it shows up.",
    'flight', 0.10, dict(bagLocked=3, mood=-10))
 ev('kettle', 'The kettle', "The collapsible travel kettle boils, then does not stop, then does something between boiling and detonation. Second-degree burns across the wrist. The hotel has a kettle. It always had a kettle.",
    'day', 0.02, dict(health=-21, mood=-10, energy=-10, sick=4, loseItemTag='kettle', unlockAchievement='kettle'), requiresTag='kettle')
@@ -91,5 +91,10 @@ ev('coffeeshop', 'The cafe', "You find the cafe in {city}. Not a cafe: THE cafe.
 ev('dirtyclothes', 'Running low', "Everything in the bag has been worn twice. You rotate the least offensive shirt to the front and hope for a laundromat.",
    'day', 0.0, dict(mood=-4))
 ids=[e['id'] for e in E]; assert len(ids)==len(set(ids))
+# ---- radon: fired by the engine on schedule (baseChance 0 = never rolled)
+ev('radonmonitor', 'The monitor', "The air monitor blinks red in {city}. Radon: the granite under the town has been quietly exhaling for ten thousand years. You open a window. Problem solved.", 'day', 0.0, dict(mood=2))
+ev('radonheadache', 'The headache', "You have had a headache since {city}. You do not know why. Old buildings on old mountains keep their reasons to themselves.", 'day', 0.0, dict(mood=-4))
+# ---- money: also engine-fired
+ev('broke', 'The card declines', "The card declines in {city}. You try it again. It declines again, but slower, as if to make a point.", 'day', 0.0, dict(mood=-5))
 json.dump(E, open('src/data/events.json','w'), indent=1, ensure_ascii=False)
 print('events', len(E))

@@ -8,8 +8,8 @@ export interface RollCtx { transport?: Transport; timezones?: number; overweight
 export const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 export const monthOf = (day: number) => { const d = new Date(Date.UTC(2026, 0, 1 + Math.max(0, day - 1))); return d.getUTCMonth() + 1; };
 
-/** Items the player can actually reach right now (checked bag contents vanish while the bag is delayed). */
-export function accessibleItems(s: RunState) { return s.items.filter(p => p.bag === 'backpack' || s.bagLockedDays <= 0); }
+/** Items the player can actually reach right now. One suitcase: while it is delayed only the essentials (laptop, watch, toiletries: assumed carried on) are reachable. */
+export function accessibleItems(s: RunState) { return s.bagLockedDays > 0 ? s.items.filter(p => ITEM[p.id]?.tags.includes('essential')) : s.items; }
 export function hasTag(s: RunState, tag: ItemTag, accessibleOnly = true): boolean {
   return (accessibleOnly ? accessibleItems(s) : s.items).some(p => ITEM[p.id]?.tags.includes(tag));
 }
@@ -104,6 +104,10 @@ export function rollEvents(s: RunState, when: GameEvent['when'], ctx: RollCtx, r
     out.push(r);
   }
   return out;
+}
+/** Fires a specific event unconditionally (engine-scheduled events like radon, money). */
+export function forceEvent(s: RunState, id: string, rng: Rng): ResolvedEvent {
+  const ev = EVENTS.find(e => e.id === id)!; return resolve(s, ev, false, rng);
 }
 function resolve(s: RunState, ev: GameEvent, mitigated: boolean, rng: Rng): ResolvedEvent {
   const useMit = mitigated && !!ev.mitigatedEffects;

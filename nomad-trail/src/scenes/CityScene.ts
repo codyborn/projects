@@ -29,7 +29,8 @@ export class CityScene extends Phaser.Scene {
     this.hud = new Hud(this); this.hud.refresh(run);
     new Panel(this, 12, 244, 336, 118, { fill: PAL.night1, border: PAL.night3 }); this.logLbl = txt(this, 20, 250, '', 8, PAL.gray2, { wrap: 320 }); this.refreshLog();
     ACTIONS.forEach((act, i) => { const b = new Button(this, 96 + (i % 2) * 168, 392 + Math.floor(i / 2) * 56, act.label, () => this.act(act.a), { w: 160, h: 48, size: 11, icon: act.icon, fill: act.a === 'moveon' ? PAL.sea0 : PAL.night2 }); this.btns.push(b); });
-    txt(this, 180, 620, 'one action = one day · work = five', 8, PAL.gray0).setOrigin(0.5);
+    txt(this, 180, 620, '1 action = 1 day · work week = Mon-Fri', 8, PAL.gray0).setOrigin(0.5);
+    this.refreshWorkBtn(run.day);
     if (data.arrived) this.arrivalCard();
   }
   private fallbackVista(cityId: string, climate: string) {
@@ -53,11 +54,16 @@ export class CityScene extends Phaser.Scene {
   }
   private act(a: CityAction) {
     if (this.busy) return; this.busy = true; this.btns.forEach(b => b.setDisabled(true));
-    const run = getRun(this); let res = Sim.cityAction(run, a);
-    if (a === 'work') { // work week: up to 5 days, stop early on events, ending, or bag trouble
-      for (let i = 1; i < 5 && !res.events.length && !res.minigame && !Sim.checkEnding(res.state) && res.state.cleanClothes > 0; i++) res = Sim.cityAction(res.state, a);
-      // collapse the five identical 'work day' log lines into one
+    const run = getRun(this);
+    if (a === 'work' && Sim.isWeekend(run.day)) { toast(this, 'No work on weekends. Explore, cook, rest.', PAL.sun1, 1400); this.busy = false; this.btns.forEach(b => b.setDisabled(false)); this.refreshWorkBtn(run.day); return; }
+    let res = Sim.cityAction(run, a);
+    if (a === 'work') { // work week: Mon to Fri from today; stop at the weekend, an event, a mini-game, an ending, or when the engine refuses
+      let days = res.state.day !== run.day ? 1 : 0; const money0 = (run as any).money ?? 0;
+      for (let i = 1; i < 5 && days > 0 && !res.events.length && !res.minigame && !Sim.checkEnding(res.state) && !Sim.isWeekend(res.state.day); i++) { const before = res.state.day; res = Sim.cityAction(res.state, a); if (res.state.day === before) break; days++; }
+      // collapse the identical 'work day' log lines into one
       { const lg = res.state.log; let n = 0; while (n < 5 && lg.length - 1 - n >= 0 && lg[lg.length - 1 - n].text === lg[lg.length - 1].text) n++; if (n > 1) { const last = lg[lg.length - 1]; lg.splice(lg.length - n, n, { day: last.day, city: last.city, text: `A work week. ${n} days of meetings at odd hours, the laptop on a kitchen table.` }); } }
+      const earned = Math.round(((res.state as any).money ?? 0) - money0);
+      if (days > 0) toast(this, earned > 0 ? `+$${earned.toLocaleString('en-US')} · ${days} day${days > 1 ? 's' : ''}` : `${days} work day${days > 1 ? 's' : ''}`, PAL.neon, 1300);
     }
     putRun(this, res.state); this.hud.refresh(res.state); this.refreshLog();
     const queue: (() => Promise<void>)[] = [];
@@ -69,11 +75,12 @@ export class CityScene extends Phaser.Scene {
     (async () => { for (const q of queue) await q(); this.after(a); })();
   }
   private overlay(key: string, data: any) { return new Promise<void>(resolve => { launchOnTop(this, key, { ...data, onDone: () => { if (this.scene.isActive(key) || this.scene.isPaused(key)) this.scene.stop(key); this.scene.resume(); resolve(); } }); this.scene.pause(); }); }
-  private minigame(m: { key: string; payload?: any; difficulty: number }) {
+  private refreshWorkBtn(day: number) { const b = this.btns[0]; if (!b) return; const wk = Sim.isWeekend(day); b.setLabel(wk ? 'WEEKEND' : 'WORK WEEK'); b.setAlpha(wk ? 0.55 : 1); }
+  private minigame(m: { key: string; payload?: any; difficulty: number; extraLives?: number }) {
     return new Promise<void>(resolve => {
       const run = getRun(this); const finish = (r: MinigameResult) => { const s = Sim.applyMinigameResult(getRun(this), m.key, r); putRun(this, s); this.hud.refresh(s); toast(this, r.failed ? 'that did not go well' : r.perfect ? 'PERFECT' : `score ${Math.round(r.score)}`, r.failed ? PAL.red : PAL.neon); resolve(); };
       if (!this.scene.get(m.key)) { toast(this, `(${m.key} not installed yet)`, PAL.gray2, 900); finish({ score: 50, perfect: false, failed: false }); return; }
-      const launch: MinigameLaunch = { energy: run.energy, difficulty: m.difficulty, payload: m.payload, onDone: (r) => { if (this.scene.isActive(m.key) || this.scene.isPaused(m.key)) this.scene.stop(m.key); this.scene.resume(); finish(r); } };
+      const launch: MinigameLaunch = { energy: run.energy, difficulty: m.difficulty, payload: m.payload, extraLives: m.extraLives, onDone: (r) => { if (this.scene.isActive(m.key) || this.scene.isPaused(m.key)) this.scene.stop(m.key); this.scene.resume(); finish(r); } };
       launchOnTop(this, m.key, launch); this.scene.pause();
     });
   }
@@ -82,7 +89,7 @@ export class CityScene extends Phaser.Scene {
     const end = Sim.checkEnding(run); if (end) { run.ending = end; run.phase = 'ended'; putRun(this, run); this.cameras.main.fadeOut(300, 0, 0, 0); this.time.delayedCall(320, () => this.scene.start('End')); return; }
     if (a === 'moveon' || run.phase === 'route') { this.cameras.main.fadeOut(200, 0, 0, 0); this.time.delayedCall(210, () => this.scene.start('Route')); return; }
     if (run.cleanClothes <= 0) toast(this, 'Out of clean clothes. Laundry, or consequences.', PAL.sun1, 1400);
-    this.busy = false; this.btns.forEach(b => b.setDisabled(false)); const lbl = this.children.list.find(o => (o as any).text?.startsWith?.(Data.city(run.cityId)?.country ?? '')) as Label | undefined; lbl?.setText(`${Data.city(run.cityId)?.country ?? ''} · stay day ${run.stayDays + 1}`);
+    this.busy = false; this.btns.forEach(b => b.setDisabled(false)); this.refreshWorkBtn(run.day); const lbl = this.children.list.find(o => (o as any).text?.startsWith?.(Data.city(run.cityId)?.country ?? '')) as Label | undefined; lbl?.setText(`${Data.city(run.cityId)?.country ?? ''} · stay day ${run.stayDays + 1}`);
   }
 }
 export default CityScene;
