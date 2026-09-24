@@ -1,0 +1,31 @@
+import { describe, it, expect } from 'vitest';
+import { Sim, fareFor, directionUndecided } from './engine';
+import { buildPack } from './pack';
+import { makeRng } from './rng';
+const packed = (seed = 7) => { const s = Sim.createRun(seed, 'orangecounty', 'east'); return Sim.setPack(s, buildPack('smart', makeRng(seed))).state!; };
+describe('direction is inferred from the first city', () => {
+  it('offers both directions before the first leg and locks direction after it', () => {
+    const s = packed(); expect(directionUndecided(s)).toBe(true);
+    const wrap = (d: number) => ((d + 540) % 360) - 180; const home = Sim.CITY['orangecounty'];
+    const legs = Sim.availableLegs(s); const ds = legs.map(l => wrap(l.city.lon - home.lon));
+    expect(ds.some(d => d < 0)).toBe(true); expect(ds.some(d => d > 0)).toBe(true);   // Pacific and Atlantic options from Orange County
+    const west = legs.find(l => wrap(l.city.lon - home.lon) < 0)!; const r = Sim.travelTo(s, west.to); expect(r.error).toBeUndefined();
+    expect(r.state.direction).toBe('west'); expect(directionUndecided(r.state)).toBe(false);
+    const s2 = packed(8); const east = Sim.availableLegs(s2).find(l => wrap(l.city.lon - home.lon) > 0)!; expect(Sim.travelTo(s2, east.to).state.direction).toBe('east');
+  });
+  it('always offers long-haul leaps once a direction is set, ranked after normal legs', () => {
+    const s = Sim.setDirection(packed(), 'east'); const st = { ...s, money: 20000 };   // rich enough that the leaps are on offer
+    const legs = Sim.availableLegs(st); const leaps = legs.filter(l => (l as any).longHaul);
+    expect(leaps.length).toBeGreaterThan(0); expect(leaps.length).toBeLessThanOrEqual(2);
+    for (const l of leaps) expect(legs.indexOf(l)).toBeGreaterThan(legs.findIndex(x => !(x as any).longHaul && !x.home));
+  });
+});
+describe('fares grow faster than distance', () => {
+  it('a 9,000 km flight costs far more than nine 1,000 km flights per km', () => {
+    const oc = Sim.CITY['orangecounty']; const ny = Sim.CITY['newyork']; const tokyo = Sim.CITY['tokyo'];
+    const fNY = fareFor(oc, { to: 'newyork', transport: 'flight', days: 1, energy: 20, timezones: 3 });
+    const fTokyo = fareFor(oc, { to: 'tokyo', transport: 'flight', days: 2, energy: 30, timezones: 7 });
+    expect(fTokyo).toBeGreaterThan(fNY * 2.2); expect(fTokyo).toBeLessThan(6 * 450);   // steep, but a week of work covers it
+    expect(ny && tokyo).toBeTruthy();
+  });
+});

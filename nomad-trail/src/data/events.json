@@ -2,7 +2,7 @@
  {
   "id": "otter",
   "title": "The otter",
-  "text": "Day {day}, {city}. An animal cafe. A sea otter with the eyes of a saint and the teeth of a can opener presses its paws to the glass. The handler nods toward the open tank. You pet the otter. It was worth it. Three days later the nick on your finger is hot and the fever arrives at 3 am. The hospital is very clean and very confused.",
+  "text": "Day {day}, {city}. Harajuku, dusk. A man on Takeshita-dori has a sea otter on his shoulder, the way other people have a scarf. It looks at you. Specifically at you. He nods. You pet the otter. It was worth it. Three days later the nick on your finger is hot and the fever arrives at 3 am. The hospital is very clean and very confused.",
   "when": "action",
   "baseChance": 0.35,
   "effects": {
@@ -16,7 +16,7 @@
   "mitigatedBy": [
    "firstaid"
   ],
-  "mitigatedText": "Day {day}, {city}. An animal cafe. A sea otter with the eyes of a saint and the teeth of a can opener presses its paws to the glass. The handler nods toward the open tank. You pet the otter. It was worth it. That night you clean the nick on your finger, and when it goes hot two days later the antibiotics are already in the bag. You keep your week.",
+  "mitigatedText": "Day {day}, {city}. Harajuku, dusk. A man on Takeshita-dori has a sea otter on his shoulder, the way other people have a scarf. It looks at you. Specifically at you. He nods. You pet the otter. It was worth it. That night you clean the nick on your finger, and when it goes hot two days later the antibiotics are already in the bag. You keep your week.",
   "mitigatedEffects": {
    "health": -8,
    "mood": 8,

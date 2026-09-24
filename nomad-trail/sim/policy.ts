@@ -11,7 +11,8 @@ import { buildPack, type PackStyle } from '../src/core/sim/pack';
 const aheadOf = (s: RunState, to: string) => { const here = Sim.CITY[s.cityId]; const d = ((Sim.CITY[to].lon - here.lon + 540) % 360) - 180; return s.direction === 'east' ? d : -d; };
 /** First-timers wander but mostly forward: weight legs by how far ahead they go. */
 function weightedLeg<T extends { to: string; home: boolean }>(legs: T[], s: RunState, rng: Rng): T {
-  const w = legs.map(l => Math.max(0.3, 1 + aheadOf(s, l.to) / 120));   // first-timers tap around; a slight lean forward
+  // first-timers tap around with a slight lean forward; a LONG HAUL price tag makes most of them flinch
+  const w = legs.map(l => Math.max(0.3, 1 + aheadOf(s, l.to) / 120) * ((l as any).longHaul ? 0.08 : 1));
   let r = rng.next() * w.reduce((a, b) => a + b, 0);
   for (let i = 0; i < legs.length; i++) { r -= w[i]; if (r <= 0) return legs[i]; }
   return legs[legs.length - 1];
@@ -19,14 +20,19 @@ function weightedLeg<T extends { to: string; home: boolean }>(legs: T[], s: RunS
 /** The learned player: keeps moving forward, takes a hero city when it is roughly on the way, and detours for a new continent. */
 function smartLeg<T extends { to: string; city: { hero: boolean; region: string } }>(legs: T[], s: RunState): T | undefined {
   const seen = new Set(Sim.continentsVisited(s));
-  const scored = legs.map(l => ({ l, v: aheadOf(s, l.to) + (l.city.hero ? 15 : 0) + (seen.has(CONTINENT_OF[Sim.CITY[l.to].region]) ? 0 : 25) }));
+  const here = Sim.CITY[s.cityId];
+  const scored = legs.map(l => { const fare = Sim.fareFor(here, l as any); const leap = !!(l as any).longHaul;
+    // a leap is worth it only when it opens a new continent and leaves plenty in the bank; otherwise the fare is a straight penalty
+    const newCont = !seen.has(CONTINENT_OF[Sim.CITY[l.to].region]);
+    const v = aheadOf(s, l.to) + (l.city.hero ? 15 : 0) + (newCont ? 25 : 0) - fare / 40 - (leap && !(newCont && s.money > fare * 4) ? 200 : 0);
+    return { l, v }; });
   return scored.sort((a, b) => b.v - a.v)[0]?.l;
 }
 export interface RunOutcome { ending: NonNullable<RunState['ending']>['kind']; day: number; score: number; cities: number; continents: number; money: number; events: Record<string, number>; state: RunState; }
 /** Plays one run headless. smart=true plays the "learned" policy. */
 export function playRun(seed: number, style: PackStyle, opts: { start?: string; direction?: 'east' | 'west'; skill?: number } = {}): RunOutcome {
   const rng = makeRng(seed ^ 0xabcdef);
-  let s = Sim.createRun(seed, opts.start, opts.direction ?? rng.pick(['east', 'west']));
+  let s = Sim.createRun(seed, opts.start, 'east'); if (opts.direction) s = Sim.setDirection(s, opts.direction);   // no direction given: the first pick decides, like a real player
   const v = Sim.setPack(s, buildPack(style, rng)); if (!v.ok || !v.state) throw new Error('pack failed: ' + v.errors.join('; '));
   s = v.state;
   const smart = style === 'smart'; const skill = opts.skill ?? (smart ? 0.8 : 0.5);

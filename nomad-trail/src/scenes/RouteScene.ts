@@ -19,7 +19,7 @@ export class RouteScene extends Phaser.Scene {
     if (!drewCustom) this.drawGlobe(cx, cy, R, run.route, cur);
     txt(this, 180, 96, `${cur?.name ?? run.cityId}, ${cur?.country ?? ''}`, 12, PAL.white, { align: 'center', wrap: 340 }).setOrigin(0.5);
     const home = Data.city(run.startCity)?.name ?? 'Orange County';
-    txt(this, 180, 112, `${run.direction === 'east' ? 'heading east →' : '← heading west'} · home: ${home}`, 8, PAL.gray2, { align: 'center', wrap: 340 }).setOrigin(0.5);
+    txt(this, 180, 112, run.route.length <= 1 ? 'your first stop sets east or west' : `${run.direction === 'east' ? 'heading east →' : '← heading west'} · home: ${home}`, 8, PAL.gray2, { align: 'center', wrap: 340 }).setOrigin(0.5);
     // continents strip: the second goal (hit all five) lights up here
     const visited = new Set(Sim.continentsVisited(run)); const ALL = Sim.CONTINENTS_ALL; const short: Record<string, string> = { 'North America': 'N.AM', 'South America': 'S.AM', Europe: 'EUR', Africa: 'AFR', Asia: 'ASIA' };
     txt(this, 12, 296, 'CONTINENTS', 8, PAL.gray2); const cw = (360 - 116) / ALL.length;
@@ -57,6 +57,7 @@ export class RouteScene extends Phaser.Scene {
     const c = Data.city(leg.to); const p = new Panel(this, x, y, 336, 56, { fill: PAL.night1, border: PAL.night3 }); const fare = Sim.legCost(getRun(this), leg);
     const glyph = TRANSPORT_GLYPH[leg.transport] ?? '·';
     p.add(txt(this, 10, 8, `${glyph}  ${c?.name ?? leg.to}${c?.hero ? ' ★' : ''}`, 12, PAL.white) as any);
+    if ((leg as any).longHaul) p.add(txt(this, 200, 12, 'LONG HAUL', 8, PAL.pink) as any);
     p.add(txt(this, 10, 30, `${c?.country ?? ''} · ${leg.days}d · energy −${leg.energy}${leg.timezones ? ` · ${Math.abs(leg.timezones)}h lag` : ''}${leg.months ? ' · in season' : ''}`, 8, PAL.gray2) as any);
     if (typeof fare === 'number') p.add(txt(this, 326, 12, `$${Math.round(fare)}`, 8, PAL.sun2).setOrigin(1, 0.5) as any);
     p.add(txt(this, 326, 36, 'GO →', 12, PAL.neon).setOrigin(1, 0.5) as any);

@@ -1,4 +1,4 @@
-# The Nomad Trail — status (2026-09-24, v1.2: money, single suitcase, radon)
+# The Nomad Trail — status (2026-09-24, v1.4: inferred direction, leap fares, Harajuku otter)
 
 Live: **https://cit.earth/trail/** (GitHub Pages, deploys on push to main). Source: `nomad-trail/`, build output: `trail/`.
 
@@ -16,17 +16,17 @@ node e2e/layout.mjs    # 1x layout screenshots in e2e/layout
 Debug API in the browser console: `__nomad.newRun('miami','east')`, `__nomad.autoPack('balanced'|'light'|'heavy')`, `__nomad.depart()`, `__nomad.travelFirst()`, `__nomad.act('cook')`, `__nomad.finishMinigame(80)`, `__nomad.forceEnding('win')`, `__nomad.goto('Coffee', {cityId:'tokyo', day:41})`, `__nomad.minigame('CarryOn')`. Mini-game picker: `?harness=1`.
 
 ## What works
-- Full loop: Title → direction (start and finish are always Orange County) → Pack (one 50 lb suitcase, 36 generic bundles with benefits, tap a card to pack, tap a tile to remove, swipe up/down for categories, SURPRISE for a random legal pack) → Route (pixel globe, season-gated legs, forward-only, home flight after 330° of progress) → Travel (parallax leg, baggage beat, events) → City (HUD, arrival stamp, 8 actions incl. Work Week, day log) → End (stats, score) → Share card (1080x1920 PNG, real QR to cit.earth/trail) / Passport.
+- Full loop: Title → (start and finish are always Orange County; the first city you fly to decides east or west) → Pack (one 50 lb suitcase, 36 generic bundles with benefits, tap a card to pack, tap a tile to remove, swipe up/down for categories, SURPRISE for a random legal pack) → Route (pixel globe, season-gated legs, forward-only, home flight after 330° of progress) → Travel (parallax leg, baggage beat, events) → City (HUD, arrival stamp, 8 actions incl. Work Week, day log) → End (stats, score) → Share card (1080x1920 PNG, real QR to cit.earth/trail) / Passport.
 - Save/resume: autosave after every action; Continue on the title; verified across reload in e2e.
 - All nine real incidents as events (otter only in Tokyo, via Explore), plus altitude, jet lag, wind days, lost phone, overweight, urchin, and flavor events.
 - Six mini-games: Cooking (6 micro-task kinds, 49 dishes), Workout (bands / boulder / ferrata / trail run / hike pace / swim), Carry-On (per-city platformer in a handheld bezel, 9 levels, gold stamp on clear), Kite, Airport, Laundry. Energy lowers timing windows.
 - Coffee cinematic (first morning in each city when the coffee kit is packed), passport with plain/gold stamps, chiptune loops per region + SFX, mute toggle, PWA installable/offline.
-- Money: $4,000 start, $450 per weekday of work (no work on weekends), city daily cost and fares per leg; −$1,500 ends the run 'broke'. Work drains energy and mood exponentially with consecutive days.
+- Money: $5,000 start, $450 per weekday of work (no work on weekends), city daily cost and fares per leg; −$2,500 ends the run 'broke'. Fares are linear to 3,000 km then quadratic (Vegas hop $150, Orange County→Tokyo ~$1,150, half the globe ~$4,000); up to two LONG HAUL leaps are always offered once you can afford 1.5× the fare. Work drains energy and mood exponentially with consecutive days.
 - Radon in 15 alpine/granite cities drains health unless the Air Quality Monitor is packed. Adventure gear pays off in 16 outdoorsy cities. Hiking boots add a life in outdoor workouts. Pack weight scales travel energy.
-- Ferrata is a Zeke's Peak style bouncing climb.
+- Ferrata is a Zeke's Peak style bouncing climb. The otter is a tap-to-pet scene in Harajuku (on a stranger's shoulder), the only option. Cooking has 14 step kinds and hand-drawn art for all 49 dishes. All copy lives in the Obsidian note 'Nomad Trail Copy' (`npm run copy:import` / `copy:export`).
 - Second goal: visit every continent (route screen shows the five; +150 each, +500 for all five; home unlocks after 330° of progress AND 4 continents).
 - Game over screen is the share card itself, with the one-line cause on it.
-- Balance (`npm run sim`): random first-timer pack fails 39% (broke is 8% of failures), mean end day ~195; heavy pack fails ~83%; smart pack wins 100%.
+- Balance (`npm run sim`): random first-timer pack fails 45% (broke ~12% of failures), mean end day ~185; heavy pack fails ~68%; smart pack wins 100%.
 
 ## Known rough edges / next
 - Pixel font is authored 5x7; long labels in tight spots can still clip. Emoji were removed from the pixel-font paths.

@@ -70,7 +70,9 @@ export const hasItem = (s: RunState, id: string) => accessibleItems(s).some(p =>
 export const isOutdoorsy = (s: RunState) => !!CITY[s.cityId]?.outdoorsy;
 const km = (a: City, b: City) => { const r = Math.PI / 180; return 6371 * Math.acos(Math.min(1, Math.sin(a.lat * r) * Math.sin(b.lat * r) + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.cos((a.lon - b.lon) * r))); };
 /** Fare for a leg, USD: base + per-km, by transport. The trek is a one-off permits-and-guide fee. */
-export function fareFor(from: City, leg: Leg): number { const [base, perKm] = FARE[leg.transport] ?? FARE.bus; const to = CITY[leg.to]; return Math.round(base + perKm * (to ? km(from, to) : 0)); }
+/** Fares grow faster than distance: a 1,000 km hop is cheap, a 9,000 km leap costs a week of work. Giant leaps stay possible if you saved. */
+export const LEAP_KM = 3000, LEAP_DIV = 8000;
+export function fareFor(from: City, leg: Leg): number { const [base, perKm] = FARE[leg.transport] ?? FARE.bus; const to = CITY[leg.to]; const d = to ? km(from, to) : 0; const leap = Math.max(0, d - LEAP_KM); return Math.round(base + perKm * d + perKm * leap * leap / LEAP_DIV); }  // linear to 3,000 km, then quadratic
 /** Upcoming weekdays you could work, starting today. */
 export function nextWorkdays(s: RunState, n = 5): number[] { const out: number[] = []; for (let d = s.day; out.length < n && d < s.day + 14; d++) if (!isWeekend(d)) out.push(d); return out; }
 
@@ -97,6 +99,11 @@ export function continentsVisited(s: RunState): Continent[] {
   return out;
 }
 const aheadOf = (s: RunState, here: City, to: City) => { const d = wrap(to.lon - here.lon); return s.direction === 'east' ? d : -d; };
+/** No direction until the first leg is taken: the first city you pick decides east or west. */
+export const directionUndecided = (s: RunState) => !s.directionSet && s.route.length <= 1;
+/** Force a direction (tests, the headless player). Players never call this: their first city decides. */
+export function setDirection(state: RunState, direction: 'east' | 'west'): RunState { const s = clone(state); s.direction = direction; s.directionSet = true; return s; }
+export interface LongHaulLeg extends AvailableLeg { longHaul: true; }
 const fallbackFlight = (s: RunState, here: City, c: City, home: boolean): AvailableLeg => {
   const tz = Math.abs(c.timezone - here.timezone);
   return { to: c.id, transport: 'flight', days: tz > 6 ? 2 : 1, energy: (home ? 18 : 22) + Math.floor(tz / 3) * 4, timezones: tz, city: c, home };
@@ -107,7 +114,7 @@ export function availableLegs(s: RunState): AvailableLeg[] {
   let out: AvailableLeg[] = [];
   for (const l of here.legs) {
     const to = CITY[l.to]; if (!to) continue;
-    if (aheadOf(s, here, to) < -20) continue;                       // no backtracks
+    if (!directionUndecided(s) && aheadOf(s, here, to) < -20) continue;  // no backtracks (both ways are open before the first leg)
     if (l.months && !l.months.includes(monthOf(s.day + l.days))) continue;
     if (l.to === s.startCity && !homeUnlocked(s)) continue;         // no early return
     if (l.to !== s.startCity && s.visited.includes(l.to)) continue; // no revisits: the trail only goes forward
@@ -117,17 +124,26 @@ export function availableLegs(s: RunState): AvailableLeg[] {
   if (!out.some(o => !o.home)) {
     const cands = CITIES.filter(c => c.id !== s.cityId && !s.visited.includes(c.id) && c.id !== s.startCity)
       .map(c => ({ c, ahead: aheadOf(s, here, c) }))
-      .filter(x => x.ahead > -20).sort((a, b) => Math.abs(a.ahead) - Math.abs(b.ahead)).slice(0, 3);
+      .filter(x => directionUndecided(s) || x.ahead > -20).sort((a, b) => Math.abs(a.ahead) - Math.abs(b.ahead)).slice(0, 3);
     for (const { c } of cands) {
       const l = c.legs.find(l => l.months); if (l && !l.months!.includes(month)) continue;
       out.push(fallbackFlight(s, here, c, false));
     }
   }
   if (homeUnlocked(s) && s.cityId !== s.startCity && !out.some(o => o.home) && here.legs.some(l => l.transport === 'flight')) out.push(fallbackFlight(s, here, CITY[s.startCity], true));
-  // rank: home flight first when available, then by forward progress; keep at most one sideways (< 8 degrees ahead) option
-  out.sort((a, b) => Number(b.home) - Number(a.home) || aheadOf(s, here, b.city) - aheadOf(s, here, a.city));
+  // Giant leaps: always offer up to two long-haul flights (5,000 km+, the most forward progress) at superlinear fares.
+  if (!directionUndecided(s)) {
+    const have = new Set(out.map(o => o.to));
+    const leaps = CITIES.filter(c => c.id !== s.cityId && !s.visited.includes(c.id) && c.id !== s.startCity && !have.has(c.id) && km(here, c) >= 5000 && aheadOf(s, here, c) >= 20)
+      .filter(c => { const l = c.legs.find(l => l.months); return !(l && !l.months!.includes(month)); })
+      .sort((a, b) => aheadOf(s, here, b) - aheadOf(s, here, a)).slice(0, 2);
+    for (const c of leaps) { const f = fallbackFlight(s, here, c, false); if (s.money >= fareFor(here, f) * 1.5) out.push({ ...f, energy: f.energy + 8, longHaul: true } as LongHaulLeg); }   // only if you saved up
+  }
+  if (directionUndecided(s)) { out.sort((a, b) => km(here, a.city) - km(here, b.city)); return out; }   // first pick: nearest first, both ways
+  // rank: home flight first when available, then by forward progress; keep at most one sideways (< 8 degrees ahead) option; long hauls last
+  out.sort((a, b) => Number(b.home) - Number(a.home) || Number(!!(a as any).longHaul) - Number(!!(b as any).longHaul) || aheadOf(s, here, b.city) - aheadOf(s, here, a.city));
   let sideways = 0;
-  out = out.filter(o => { if (o.home || aheadOf(s, here, o.city) >= 8) return true; return sideways++ < 1; });
+  out = out.filter(o => { if (o.home || (o as any).longHaul || aheadOf(s, here, o.city) >= 8) return true; return sideways++ < 1; });
   return out;
 }
 
@@ -139,6 +155,7 @@ export function travelTo(state: RunState, cityId: string): StepResult {
   if (!leg) return { state, events: [], error: 'no such leg from here' };
   const s = clone(state); const rng = rngFor(s, 1); const events: ResolvedEvent[] = [];
   const from = CITY[s.cityId];
+  if (directionUndecided(s)) { s.direction = wrap(leg.city.lon - from.lon) >= 0 ? 'east' : 'west'; s.directionSet = true; }   // the first city decides
   // fatigue: legs in the last 30 days, before this one
   s.legsLast30 = s.legsLast30.filter(d => s.day - d <= 45); s.fatigue = s.legsLast30.length;
   const fatigueEnergy = 6 * s.fatigue, fatigueMood = 4 * s.fatigue;
@@ -188,7 +205,7 @@ function tickDay(s: RunState, rng: Rng, opts: { rest?: boolean } = {}): Resolved
   s.energy += 5 + (lodging?.energyPerDay ?? 0) + (opts.rest ? 0 : 0);
   s.mood += (lodging?.moodPerDay ?? 0) - 1;
   // slow wear: the year itself is the opponent. Routine (training, cooking, supplements) pushes back.
-  s.health -= 0.12 + s.day * 0.0021 + (s.energy < 40 ? 0.35 : 0) + (hasTag(s, 'fitness') ? 0 : 0.2);
+  s.health -= 0.11 + s.day * 0.0019 + (s.energy < 40 ? 0.35 : 0) + (hasTag(s, 'fitness') ? 0 : 0.2);
   if (coffeePacked(s)) { s.energy += 15; s.mood += 2; s.coffeeMornings += 1; }
   if (s.sickDays > 0) { s.sickDays -= 1; s.health -= 4; s.energy -= 5; }
   if (s.backInjuryDays > 0) s.backInjuryDays -= 1;
@@ -338,7 +355,7 @@ export function pendingChoices(s: RunState): { id: string; title: string; text: 
 export const Sim = {
   GRID, TOTAL_DAYS, HOME_CITY, HOME_MIN_CONTINENTS, HOME_PROGRESS_DEG, CONTINENTS_ALL, START_MONEY, OVERDRAFT, WORK_PAY, CITIES, CITY, ITEM, DISH, LEVEL_BY_CITY,
   createRun, validatePack, setPack, bagWeight, weightRatio, totalWeight, coffeePacked, bundles, hasTag, hasFlag, hasItem, isOutdoorsy,
-  shelfPack, buildPack, randomPack, idsWeight, weekdayOf, isWeekend, nextWorkdays, fareFor,
+  shelfPack, buildPack, randomPack, idsWeight, weekdayOf, isWeekend, nextWorkdays, fareFor, directionUndecided, setDirection,
   availableLegs, travelTo, cityAction, applyMinigameResult, resolveChoice, pendingChoices, checkEnding, score, progress, homeUnlocked, homeRequirements, continentsVisited, endingCause, monthOf,
   visibleAchievements, energyCap, accessibleItems,
   save: saveRun, load: loadRun, clear: clearRun,

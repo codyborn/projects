@@ -14,7 +14,7 @@ const P = (id: string, bag: 'checked' | 'backpack' = 'checked', x = 0, y = 0): P
 const basic = (): PackedItem[] => [P('laptopkit', 'checked', 0, 0), P('clothes1', 'checked', 3, 0)];
 /** basic() plus more bundles, shelf-packed so they never overlap. */
 const withExtras = (...ids: string[]): PackedItem[] => shelfPack(['laptopkit', 'clothes1', ...ids])!;
-function packed(items = basic()): RunState { const s = Sim.createRun(42, undefined, 'east'); const v = Sim.setPack(s, items); expect(v.ok, v.errors.join(';')).toBe(true); return v.state!; }
+function packed(items = basic()): RunState { const s = Sim.createRun(42, undefined, 'east'); const v = Sim.setPack(s, items); expect(v.ok, v.errors.join(';')).toBe(true); return Sim.setDirection(v.state!, 'east'); }  // direction fixed here; inference is covered in route.test.ts
 const HEAVY = ['kitegear', 'dronekit', 'books', 'hikingboots', 'adventure', 'protein', 'clothes1', 'clothes2', 'hostgifts', 'laptopkit', 'coffeekit'];
 /** Travel along the first offered leg, resolving any pending choice. */
 function hop(s: RunState, pick = 0): RunState { const legs = Sim.availableLegs({ ...s, phase: 'route' }); let r = Sim.travelTo({ ...s, phase: 'route' }, legs[Math.min(pick, legs.length - 1)].to).state; if (r.pendingEvent) r = Sim.resolveChoice(r, r.pendingEvent, 0).state; return r; }
@@ -116,7 +116,7 @@ describe('packing', () => {
 
 describe('travel and route', () => {
   it('offers forward legs ranked by progress, at most one sideways option, never home early, never revisits', () => {
-    const s = packed(); const legs = Sim.availableLegs(s); const here = CITY[HOME_CITY];
+    const s = packed(); const legs = Sim.availableLegs(s).filter(l => !(l as any).longHaul); const here = CITY[HOME_CITY];   // leaps are listed after the normal legs and priced separately
     const ahead = (to: string) => { const d = ((CITY[to].lon - here.lon + 540) % 360) - 180; return s.direction === 'east' ? d : -d; };
     expect(legs.length).toBeGreaterThan(1); expect(legs.some(l => l.to === HOME_CITY)).toBe(false);
     for (let i = 1; i < legs.length; i++) expect(ahead(legs[i - 1].to)).toBeGreaterThanOrEqual(ahead(legs[i].to));

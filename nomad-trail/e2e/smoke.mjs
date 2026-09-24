@@ -66,7 +66,10 @@ await step(`window.__nomad.goto('Passport')`, '11-passport', 1200);
 await step(`window.__nomad.goto('Coffee', { cityId: 'tokyo', day: 41 })`, '12-coffee', 2500);
 if (await page.evaluate(() => !!window.__nomad.game.scene.getScene('Otter'))) {
   await step(`window.__nomad.goto('Otter', { onDone: () => { window.__otterDone = true; } })`, '12b-otter', 1500);
-  for (let i = 0; i < 6; i++) { await page.touchscreen.tap(180, 330); await sleep(250); }
+  // game px -> CSS px (the canvas is FIT-scaled and centered at phone size)
+  const rect = await page.evaluate(() => { const c = document.querySelector('canvas').getBoundingClientRect(); return { x: c.left, y: c.top, w: c.width, h: c.height }; });
+  const gx = 126, gy = 318; const cx = rect.x + gx * rect.w / 360, cy = rect.y + gy * rect.h / 640;
+  for (let i = 0; i < 6; i++) { await page.touchscreen.tap(cx, cy); await sleep(250); }
   await sleep(4500); console.log('otter onDone:', await page.evaluate(() => !!window.__otterDone));
 }
 for (const k of ['Cooking', 'Workout', 'CarryOn', 'Kite', 'Airport', 'Laundry']) {

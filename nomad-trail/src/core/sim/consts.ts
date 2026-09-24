@@ -8,8 +8,8 @@ export const HOME_PROGRESS_DEG = 330;   // longitude to cover before the flight 
 export const HOME_CITY = 'orangecounty'; // every run starts and ends here
 export const HOME_MIN_CONTINENTS = 4;    // the flight home also needs four of the five continents in the passport
 // money (USD)
-export const START_MONEY = 4000;
-export const OVERDRAFT = 1500;          // the card declines at 0; the run ends when the overdraft is gone too
+export const START_MONEY = 5000;
+export const OVERDRAFT = 2500;          // the card declines at 0; the run ends when the overdraft is gone too
 export const WORK_PAY = 450;             // per weekday worked
 export const DEFAULT_COST_PER_DAY = 100; // lodging + food when a city has no costPerDay
 export const FARE = { flight: [120, 0.08], train: [40, 0.05], bus: [30, 0.03], ferry: [30, 0.03], car: [30, 0.03], campervan: [30, 0.03], trek: [900, 0] } as const; // [base, per km]

@@ -44,11 +44,10 @@ export class TitleScene extends Phaser.Scene {
     const items: Phaser.GameObjects.GameObject[] = [dim, p];
     items.push(txt(this, 180, 200, hasSave ? 'This replaces your saved run.' : 'A new year begins.', 10, PAL.sun1).setOrigin(0.5) as any);
     items.push(txt(this, 180, 232, 'Start and finish: Orange County', 9, PAL.gray2).setOrigin(0.5) as any);
-    const start = 'orangecounty'; let dir: 'east' | 'west' = 'east';
-    items.push(txt(this, 180, 270, 'Heading', 12, PAL.gray2).setOrigin(0.5) as any);
-    const db: Button[] = []; (['east', 'west'] as const).forEach((d, i) => { const b = new Button(this, 100 + i * 160, 310, d === 'east' ? 'EAST  →' : '←  WEST', () => { dir = d; db.forEach((x, j) => x.setAlpha(j === i ? 1 : 0.5)); }, { w: 140, fill: PAL.dusk0 }); db.push(b); items.push(b); }); db[1].setAlpha(0.5);
-    items.push(txt(this, 180, 352, 'East: the Atlantic first.\nWest: the Pacific first.', 8, PAL.gray1, { align: 'center' }).setOrigin(0.5) as any);
-    items.push(new Button(this, 180, 400, 'START PACKING', () => { const s = Sim.createRun(Date.now() % 1e9, start, dir); putRun(this, s); this.scene.start('Pack'); }, { w: 240, fill: PAL.sun0 }));
+    const start = 'orangecounty';
+    items.push(txt(this, 180, 290, 'East or west? The first city\nyou fly to decides.', 10, PAL.gray2, { align: 'center' }).setOrigin(0.5) as any);
+    items.push(txt(this, 180, 340, 'Circle the planet, touch every continent,\nand make it back within the year.', 8, PAL.gray1, { align: 'center' }).setOrigin(0.5) as any);
+    items.push(new Button(this, 180, 400, 'START PACKING', () => { const s = Sim.createRun(Date.now() % 1e9, start, 'east'); putRun(this, s); this.scene.start('Pack'); }, { w: 240, fill: PAL.sun0 }));
     items.push(new Button(this, 180, 446, 'back', () => items.forEach(i => i.destroy()), { w: 120, h: 44, size: 10, fill: PAL.night2 }));
   }
 }

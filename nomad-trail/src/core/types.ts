@@ -51,7 +51,7 @@ export interface ArcadeLevel { city: string; hazard: Hazard; palette: [number, n
 // ---------- Run state (saved to localStorage) ----------
 export interface PackedItem { id: string; bag: Bag; x: number; y: number; rot?: boolean; }  // rot: footprint rotated 90°, swap w/h
 export interface RunState {
-  version: 2; seed: number; day: number; startCity: string; cityId: string; direction: 'east' | 'west';
+  version: 2; seed: number; day: number; startCity: string; cityId: string; direction: 'east' | 'west'; directionSet?: boolean;  // direction is inferred from the first leg unless set
   health: number; energy: number; mood: number; cleanClothes: number; maxClothes: number;
   money: number;                                      // USD; work days earn, everything else spends; < 0 ends the run ('broke')
   items: PackedItem[]; lostItems: string[];
