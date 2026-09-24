@@ -461,7 +461,7 @@
  {
   "id": "lostcharger",
   "title": "One cable short",
-  "text": "The watch cable is in the last hotel. The watch dies on day three and you become a person who does not know how far they walked.",
+  "text": "The watch cable is in the last hotel. The watch dies on day three and you become a person who does not know their current step count.",
   "when": "leave",
   "baseChance": 0.05,
   "effects": {

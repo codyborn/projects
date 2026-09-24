@@ -27,6 +27,7 @@ export class CityScene extends Phaser.Scene {
     { const name = (city?.name ?? run.cityId).toUpperCase(); const plateW = Math.min(300, Math.max(150, 20 + name.length * 13)); const plate = this.add.graphics().setDepth(2); plate.fillStyle(PAL.night0, 0.82); plate.fillRect(6, 90, plateW, 40); plate.fillStyle(PAL.sun1, 1); plate.fillRect(6, 90, 3, 40); }
     txt(this, 14, 96, (city?.name ?? run.cityId).toUpperCase(), 16, PAL.white).setDepth(3); txt(this, 14, 116, `${city?.country ?? ''} · stay day ${run.stayDays + 1}`, 8, PAL.gray2).setDepth(3);
     this.hud = new Hud(this); this.hud.refresh(run);
+    this.time.delayedCall(0, () => this.refreshButtons());
     new Panel(this, 12, 244, 336, 118, { fill: PAL.night1, border: PAL.night3 }); this.logLbl = txt(this, 20, 250, '', 8, PAL.gray2, { wrap: 320 }); this.refreshLog();
     ACTIONS.forEach((act, i) => { const b = new Button(this, 96 + (i % 2) * 168, 392 + Math.floor(i / 2) * 56, act.label, () => this.act(act.a), { w: 160, h: 48, size: 11, icon: act.icon, fill: act.a === 'moveon' ? PAL.sea0 : PAL.night2 }); this.btns.push(b); });
     txt(this, 180, 620, '1 action = 1 day · work week = Mon-Fri', 8, PAL.gray0).setOrigin(0.5);
@@ -66,6 +67,9 @@ export class CityScene extends Phaser.Scene {
       const earned = Math.round(((res.state as any).money ?? 0) - money0);
       if (days > 0) toast(this, earned > 0 ? `+$${earned.toLocaleString('en-US')} · ${days} day${days > 1 ? 's' : ''}` : `${days} work day${days > 1 ? 's' : ''}`, PAL.neon, 1300);
     }
+    if (res.error) {   // the engine refused (too tired, back injury, delayed suitcase, weekend): say so instead of silently doing nothing
+      toast(this, res.error, PAL.sun1, 1800); this.cameras.main.shake(80, 0.004); this.busy = false; this.btns.forEach(b => b.setDisabled(false)); this.refreshButtons(); return;
+    }
     putRun(this, res.state); this.hud.refresh(res.state); this.refreshLog();
     const queue: (() => Promise<void>)[] = [];
     // order: the morning (coffee) first, then whatever the day brought, then the mini-game the action asked for
@@ -85,12 +89,17 @@ export class CityScene extends Phaser.Scene {
       launchOnTop(this, m.key, launch); this.scene.pause();
     });
   }
+  /** Dim actions the engine would refuse right now (probe on a copy; the tap still explains why). */
+  private refreshButtons() {
+    const run = getRun(this);
+    ACTIONS.forEach((act, i) => { if (act.a === 'map' || act.a === 'moveon') return; const probe = Sim.cityAction(JSON.parse(JSON.stringify(run)), act.a as CityAction); const refused = !!(probe as any).error; this.btns[i]?.setAlpha(refused ? 0.55 : 1); });
+  }
   private after(a: CityAction) {
     const run = getRun(this); this.hud.refresh(run); this.refreshLog();
     const end = Sim.checkEnding(run); if (end) { run.ending = end; run.phase = 'ended'; putRun(this, run); this.cameras.main.fadeOut(300, 0, 0, 0); this.time.delayedCall(320, () => this.scene.start('End')); return; }
     if (a === 'moveon' || run.phase === 'route') { this.cameras.main.fadeOut(200, 0, 0, 0); this.time.delayedCall(210, () => this.scene.start('Route')); return; }
     if (run.cleanClothes <= 0) toast(this, 'Out of clean clothes. Laundry, or consequences.', PAL.sun1, 1400);
-    this.busy = false; this.btns.forEach(b => b.setDisabled(false)); this.refreshWorkBtn(run.day); const lbl = this.children.list.find(o => (o as any).text?.startsWith?.(Data.city(run.cityId)?.country ?? '')) as Label | undefined; lbl?.setText(`${Data.city(run.cityId)?.country ?? ''} · stay day ${run.stayDays + 1}`);
+    this.busy = false; this.btns.forEach(b => b.setDisabled(false)); this.refreshButtons(); this.refreshWorkBtn(run.day); const lbl = this.children.list.find(o => (o as any).text?.startsWith?.(Data.city(run.cityId)?.country ?? '')) as Label | undefined; lbl?.setText(`${Data.city(run.cityId)?.country ?? ''} · stay day ${run.stayDays + 1}`);
   }
 }
 export default CityScene;

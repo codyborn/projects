@@ -12,7 +12,7 @@ export interface SimApi {
   setPack(state: RunState, packed: PackedItem[]): { ok: boolean; errors: string[]; weights: { checked: number; backpack?: number } };
   availableLegs(state: RunState): Leg[];
   travelTo(state: RunState, cityId: string): { state: RunState; events: string[] };
-  cityAction(state: RunState, action: CityAction): { state: RunState; events: string[]; minigame?: { key: string; payload?: any; difficulty: number } };
+  cityAction(state: RunState, action: CityAction): { state: RunState; events: string[]; minigame?: { key: string; payload?: any; difficulty: number; extraLives?: number }; error?: string };
   applyMinigameResult(state: RunState, key: string, result: MinigameResult): RunState;
   resolveChoice(state: RunState, eventId: string, choiceIdx: number): RunState;
   checkEnding(state: RunState): Ending | undefined;
@@ -42,7 +42,7 @@ export const Sim: SimApi = {
   setPack: (state, packed) => { const r = E.setPack(state, packed); if (r.ok && r.state) Object.assign(state, r.state); return { ok: r.ok, errors: r.errors, weights: r.weights }; },
   availableLegs: (state) => E.availableLegs(state),
   travelTo: (state, cityId) => { const r = E.travelTo(state, cityId); if (r.error) console.warn('travelTo:', r.error); return { state: r.state, events: r.events.map((e: any) => e.id) }; },
-  cityAction: (state, action) => { const r = E.cityAction(state, action); if (r.error) console.warn('cityAction:', r.error); return { state: r.state, events: r.events.map((e: any) => e.id), minigame: r.minigame }; },
+  cityAction: (state, action) => { const r = E.cityAction(state, action); return { state: r.state, events: r.events.map((e: any) => e.id), minigame: r.minigame, error: r.error }; },
   applyMinigameResult: (state, key, result) => E.applyMinigameResult(state, key, result).state,
   resolveChoice: (state, eventId, idx) => { const r = E.resolveChoice(state, eventId, idx); if (r.error) console.warn('resolveChoice:', r.error); return r.state; },
   checkEnding: (state) => E.checkEnding(state),
