@@ -103,9 +103,9 @@ if (q.get('auto') === '1') {
   MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
   game.events.once('ready', () => {
     const mode = q.get('kite')!; const t0 = performance.now(); let calls = 0;
-    const launch: MinigameLaunch = { energy: 100, difficulty: 0.5, payload: { city: 'laventana', cityName: 'La Ventana' }, onDone: (res) => { calls++; out.textContent = JSON.stringify({ mode, res, secs: (performance.now() - t0) / 1000, calls, errors }); document.title = 'KITE_DONE'; } };
+    const launch: MinigameLaunch = { energy: 100, difficulty: 0.5, payload: { city: 'laventana', cityName: 'La Ventana' }, onDone: (res) => { calls++; out.textContent = JSON.stringify({ mode, res, secs: (performance.now() - t0) / 1000, clean: (scene as any).clean, wipeouts: (scene as any).wipeouts, air: (scene as any).airTotal, calls, errors }); document.title = 'KITE_DONE'; } };
     game.scene.start(MINIGAME_KEYS.kite, launch); const scene: any = game.scene.getScene(MINIGAME_KEYS.kite);
-    const ride = () => { if (!scene.scene.isActive() || !scene.frame?.active) return; if (scene.waiting) { scene.startRun(); return; } const hnt = scene.hint(); if (hnt.airborne || hnt.recovering) return; if (!scene.held) scene.press(hnt.x); else { scene.fingerX = hnt.x; if (hnt.speed > 0.85 && hnt.crest) scene.letGo(); } };
+    const ride = () => { if (!scene.scene.isActive() || !scene.frame?.active) return; if (scene.waiting) { scene.startRun(); return; } const hnt = scene.hint(); if (hnt.recovering) return; if (hnt.airborne) { /* press to drop only when the fast drop touches down on the swell (not a trough) */ if (!scene.held && hnt.dropLand > 0.3) scene.press(hnt.x); else if (scene.held && hnt.dropLand < -0.2) scene.held = false; return; } if (!scene.held) scene.press(hnt.x); else { scene.fingerX = hnt.x; if (hnt.speed > 0.85 && hnt.crest) scene.letGo(); } };
     if (mode === 'perfect' && q.get('fast') === '1') { game.loop.stop(); let t = performance.now(); setInterval(() => { for (let k = 0; k < 6; k++) { t += 16.67; ride(); game.loop.step(t); } }, 0); }
     else if (mode === 'perfect') setInterval(ride, 16);
     else if (mode === 'rt' && !q.get('hold')) setTimeout(() => { if (scene.waiting) scene.startRun(); }, 1500);

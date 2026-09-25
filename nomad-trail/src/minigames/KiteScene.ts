@@ -14,7 +14,7 @@ const DUR = 35;
 export class KiteScene extends Phaser.Scene {
   private frame!: MinigameFrame; private launch!: MinigameLaunch; private g!: Phaser.GameObjects.Graphics; private meter!: Meter;
   private kiteA = 0; private zoneC = 0; private zoneTarget = 0; private zoneW = 0.4; speed = 0; private elapsed = 0;
-  held = false; private fingerX = W / 2; private airborne = 0; private hang = 0; private airTotal = 0; private clean = 0; private wipeouts = 0; private recover = 0; private hop = 0;
+  held = false; fingerX = W / 2; airborne = 0; private hang = 0; airTotal = 0; clean = 0; wipeouts = 0; private recover = 0; private hop = 0; private jumps = 0;
   private waveOff = 0; private tick?: Phaser.Time.TimerEvent; private msg!: Phaser.GameObjects.Text; private rider!: Phaser.GameObjects.Sprite; private spray: { x: number; y: number; vx: number; vy: number; t: number }[] = [];
   waiting = true; private card: Phaser.GameObjects.GameObject[] = []; private gust = 0; private cityName = '';
   constructor() { super(MINIGAME_KEYS.kite); }
@@ -43,7 +43,7 @@ export class KiteScene extends Phaser.Scene {
     const row = (y: number, draw: () => void, label: string) => { ic.fillStyle(PAL.night3).fillRect(34, y - 22, 48, 44); draw(); add(txt(s, 94, y, label, 10, PAL.white, 'left').setDepth(902)); };
     row(212, () => { ic.fillStyle(PAL.neon).fillCircle(58, 212, 9); ic.fillStyle(PAL.night3).fillCircle(58, 212, 5); ic.fillStyle(PAL.neon).fillRect(40, 226, 36, 3); }, 'HOLD anywhere\nthe kite follows your finger\nleft and right');
     row(272, () => { ic.fillStyle(PAL.sun2).fillRect(40, 282, 36, 3); ic.fillStyle(PAL.sun2).fillRect(40, 282, 22, 3); ic.fillStyle(PAL.neon).fillRect(40, 268, 8, 10).fillRect(50, 262, 8, 16).fillRect(60, 256, 8, 22); }, 'KEEP IT IN THE GLOW\nthe power zone fills\nyour SPEED');
-    row(332, () => { ic.fillStyle(PAL.white).fillTriangle(58, 316, 48, 332, 68, 332); ic.fillStyle(PAL.white).fillRect(55, 332, 6, 12); }, 'RELEASE to jump\nmore speed = more air');
+    row(332, () => { ic.fillStyle(PAL.white).fillTriangle(58, 316, 48, 332, 68, 332); ic.fillStyle(PAL.white).fillRect(55, 332, 6, 12); }, 'RELEASE to jump, more speed = more air\npress again in the air to drop faster');
     row(392, () => { ic.lineStyle(3, PAL.sea3).beginPath(); for (let x = 0; x <= 40; x += 2) { const y = 396 + Math.sin(x / 6) * 6; if (x === 0) ic.moveTo(38 + x, y); else ic.lineTo(38 + x, y); } ic.strokePath(); ic.fillStyle(PAL.sun2).fillCircle(58, 386, 3); }, 'release on a CREST for a bonus\nland in a trough = wipeout');
     add(txt(s, W / 2, 440, `${DUR} seconds of wind. Air time and clean landings score.`, 9, PAL.sun1).setDepth(902));
     const btn = s.add.rectangle(W / 2, 510, 200, 52, PAL.sun0).setDepth(902).setStrokeStyle(2, PAL.ink).setInteractive({ useHandCursor: true }); add(btn); add(txt(s, W / 2, 510, 'READY', 18, PAL.white).setDepth(903));
@@ -65,14 +65,16 @@ export class KiteScene extends Phaser.Scene {
   press(x: number) { this.held = true; this.fingerX = x; }
   letGo() { if (this.held) { this.held = false; this.release(); } }
   /** Harness hint: the finger x that puts the kite in the zone, and whether the swell is under the board right now. */
-  hint() { return { x: W / 2 + this.zoneC * 140, crest: this.wavePhase() > 0.55, speed: this.speed, airborne: this.airborne > 0, recovering: this.recover > 0 }; }
+  hint() { return { x: W / 2 + this.zoneC * 140, crest: this.wavePhase() > 0.55, phase: this.wavePhase(), speed: this.speed, airborne: this.airborne > 0, recovering: this.recover > 0, clean: this.clean, wipeouts: this.wipeouts, held: this.held, dropLand: this.landPhase(true), floatLand: this.landPhase(false) }; }
 
   update(_t: number, dt: number) { this.frame.update(dt); const kb = this.input.keyboard; if (kb && this.frame.active && this.held) { if (kb.addKey('LEFT').isDown) this.fingerX -= 4; if (kb.addKey('RIGHT').isDown) this.fingerX += 4; } }
   private wavePhase() { return Math.sin(this.waveOff * 1.3); }
+  /** swell phase under the board when the current jump touches down, if the rider drops fast (held) or floats */
+  private landPhase(drop: boolean) { const secs = this.airborne / (drop ? 2.2 : 1); return Math.sin((this.waveOff + secs * (0.7 + this.speed * 1.4)) * 1.3); }
   private release() {
     if (!this.frame.active || this.airborne > 0 || this.recover > 0) return;
     if (this.speed < 0.25) { this.hop = 0.3; this.msg.setText('hop').setColor('#b4b9c4'); return; }
-    const crest = this.wavePhase() > 0.55; this.hang = (0.5 + this.speed * 1.4) * (crest ? 1.3 : 1); this.airborne = this.hang;
+    const crest = this.wavePhase() > 0.55; this.hang = (0.5 + this.speed * 1.4) * (crest ? 1.3 : 1); this.airborne = this.hang; this.jumps++;
     this.msg.setText(crest ? 'BOOST!' : 'AIR').setColor(crest ? '#f7cf6b' : '#f4f1ea'); this.frame.flash(PAL.white, 40);
     for (let i = 0; i < 14; i++) this.spray.push({ x: W / 2 + (Math.random() - 0.5) * 30, y: 470, vx: (Math.random() - 0.5) * 120, vy: -60 - Math.random() * 90, t: 0.6 });
   }
@@ -90,7 +92,7 @@ export class KiteScene extends Phaser.Scene {
     else this.speed = clamp(this.speed - dt / (this.held ? 1.5 : 1.2), 0, 1);
     this.waveOff += dt * (0.7 + this.speed * 1.4);
     // air
-    if (this.airborne > 0) { this.airborne -= dt; if (this.airborne <= 0) { this.airborne = 0; const trough = this.wavePhase() < -0.5; if (trough) { this.wipeouts++; this.recover = 1.5; this.speed = 0; this.msg.setText('WIPEOUT').setColor('#d63c3c'); this.frame.shake(200, 0.008); for (let i = 0; i < 26; i++) this.spray.push({ x: W / 2 + (Math.random() - 0.5) * 50, y: 470, vx: (Math.random() - 0.5) * 220, vy: -80 - Math.random() * 160, t: 0.9 }); } else { this.clean++; this.airTotal += this.hang; this.speed *= 0.55; this.msg.setText(`+${this.hang.toFixed(1)}s`).setColor('#3ef0c8'); this.frame.flash(PAL.neon, 30); } } }
+    if (this.airborne > 0) { this.airborne -= dt * (this.held ? 2.2 : 1); if (this.airborne <= 0) { this.airborne = 0; this.held = false; /* a drop press ends at touchdown: hold again to power up */ const trough = this.wavePhase() < -0.5; if (trough) { this.wipeouts++; this.recover = 1.5; this.speed = 0; this.msg.setText('WIPEOUT').setColor('#d63c3c'); this.frame.shake(200, 0.008); for (let i = 0; i < 26; i++) this.spray.push({ x: W / 2 + (Math.random() - 0.5) * 50, y: 470, vx: (Math.random() - 0.5) * 220, vy: -80 - Math.random() * 160, t: 0.9 }); } else { this.clean++; this.airTotal += this.hang; this.speed *= 0.55; this.msg.setText(`+${this.hang.toFixed(1)}s`).setColor('#3ef0c8'); this.frame.flash(PAL.neon, 30); } } }
     if (this.hop > 0) this.hop -= dt;
     // spray while riding fast
     if (this.airborne <= 0 && this.recover <= 0 && this.speed > 0.3 && Math.random() < this.speed) this.spray.push({ x: W / 2 - 14, y: 468, vx: -60 - Math.random() * 90 * this.speed, vy: -20 - Math.random() * 50, t: 0.35 });
@@ -122,21 +124,25 @@ export class KiteScene extends Phaser.Scene {
     const cx = W / 2, cy = 330, R = 150;
     g.lineStyle(2, PAL.white, 0.35); g.beginPath(); for (let a = -1; a <= 1.001; a += 0.05) { const x = cx + Math.sin(a * Math.PI / 2) * R, y = cy - Math.cos(a * Math.PI / 2) * R * 0.75; if (a === -1) g.moveTo(x, y); else g.lineTo(x, y); } g.strokePath();
     g.lineStyle(10, inZone ? PAL.neon : PAL.sun2, inZone ? 0.85 : 0.5); g.beginPath(); for (let a = this.zoneC - this.zoneW / 2; a <= this.zoneC + this.zoneW / 2; a += 0.02) { const aa = clamp(a, -1, 1); const x = cx + Math.sin(aa * Math.PI / 2) * R, y = cy - Math.cos(aa * Math.PI / 2) * R * 0.75; if (a === this.zoneC - this.zoneW / 2) g.moveTo(x, y); else g.lineTo(x, y); } g.strokePath();
-    // kite: curved canopy with panels and a leading edge, two lines to the bar
-    const ka = this.kiteA; const kx = cx + Math.sin(ka * Math.PI / 2) * R, ky = cy - Math.cos(ka * Math.PI / 2) * R * 0.75; const tilt = ka * 0.9;
-    const arc = (r: number, w: number) => { const pts: { x: number; y: number }[] = []; for (let t = -1; t <= 1.001; t += 0.125) { const ang = t * 1.1 + tilt; pts.push({ x: kx + Math.sin(ang) * w, y: ky + Math.cos(ang) * r - r }); } return pts; };
-    const top = arc(16, 17), bot = arc(6, 15);
-    g.fillStyle(PAL.red).beginPath(); g.moveTo(top[0].x, top[0].y); top.forEach(p => g.lineTo(p.x, p.y)); bot.slice().reverse().forEach(p => g.lineTo(p.x, p.y + 6)); g.closePath(); g.fillPath();
-    g.fillStyle(PAL.white, 0.9); for (let i = 1; i < top.length - 1; i += 4) { g.fillRect(top[i].x - 1, top[i].y + 1, 3, 6); } g.fillStyle(PAL.sun2); for (let i = 3; i < top.length - 1; i += 4) g.fillRect(top[i].x - 1, top[i].y + 2, 3, 5);
-    g.lineStyle(2, PAL.ink, 1); g.beginPath(); g.moveTo(top[0].x, top[0].y); top.forEach(p => g.lineTo(p.x, p.y)); g.strokePath();
-    const bar = { x: W / 2 + ka * 6, y: 446 - (this.airborne > 0 ? Math.sin(Math.PI * (1 - this.airborne / Math.max(0.01, this.hang))) * (60 + this.speed * 60) : 0) };
-    g.lineStyle(1, PAL.gray1, 0.9); g.beginPath(); g.moveTo(top[1].x, top[1].y + 4); g.lineTo(bar.x - 6, bar.y); g.moveTo(top[top.length - 2].x, top[top.length - 2].y + 4); g.lineTo(bar.x + 6, bar.y); g.strokePath();
+    // kite: a C-kite seen from behind the rider: the leading edge arches UP, the wingtips hang down toward the lines
+    const ka = this.kiteA; const kx = cx + Math.sin(ka * Math.PI / 2) * R, ky = cy - Math.cos(ka * Math.PI / 2) * R * 0.75; const tilt = ka * 0.5;
+    const arc = (r: number, w: number, drop: number) => { const pts: { x: number; y: number }[] = []; for (let t = -1; t <= 1.001; t += 0.125) { const ang = t * 1.15; pts.push({ x: kx + Math.sin(ang + tilt) * w, y: ky + drop + (1 - Math.cos(ang)) * r }); } return pts; };   // centre highest, tips lower
+    const lead = arc(18, 19, 0), trail = arc(16, 15, 7);
+    g.fillStyle(PAL.red).beginPath(); g.moveTo(lead[0].x, lead[0].y); lead.forEach(p => g.lineTo(p.x, p.y)); trail.slice().reverse().forEach(p => g.lineTo(p.x, p.y)); g.closePath(); g.fillPath();
+    for (let i = 1; i < lead.length - 1; i++) { const c = i % 4 === 0 ? PAL.sun2 : i % 2 === 0 ? PAL.white : null; if (c) { g.fillStyle(c, 0.9); g.fillRect((lead[i].x + trail[i].x) / 2 - 1, (lead[i].y + trail[i].y) / 2 - 2, 3, 5); } }
+    g.lineStyle(2, PAL.ink, 1); g.beginPath(); g.moveTo(lead[0].x, lead[0].y); lead.forEach(p => g.lineTo(p.x, p.y)); g.strokePath();   // the leading edge
+    const airP = this.airborne > 0 ? Math.sin(Math.PI * (1 - this.airborne / Math.max(0.01, this.hang))) : 0;
+    const bar = { x: W / 2 + ka * 6, y: 446 - airP * (60 + this.speed * 60) };
+    const tipL = trail[0], tipR = trail[trail.length - 1];
+    g.lineStyle(1, PAL.gray1, 0.9); g.beginPath(); g.moveTo(tipL.x, tipL.y); g.lineTo(bar.x - 6, bar.y); g.moveTo(tipR.x, tipR.y); g.lineTo(bar.x + 6, bar.y); g.strokePath();   // lines from the wingtips down to the bar
     g.fillStyle(PAL.ink).fillRect(bar.x - 9, bar.y - 1, 18, 3);
     // rider: frame by state, lifted by the jump, tilted by the wind
-    const air = this.airborne > 0 ? Math.sin(Math.PI * (1 - this.airborne / Math.max(0.01, this.hang))) : this.hop > 0 ? Math.sin(Math.PI * (1 - this.hop / 0.3)) * 0.2 : 0;
+    const air = this.airborne > 0 ? airP : this.hop > 0 ? Math.sin(Math.PI * (1 - this.hop / 0.3)) * 0.2 : 0;
     const lift = air * (60 + this.speed * 60); const landing = this.airborne > 0 && this.airborne < 0.25;
     this.rider.setFrame(this.recover > 0 ? 2 : this.airborne > 0 ? (landing ? 2 : 1) : 0).setPosition(W / 2, 470 - lift - wp * 4).setAngle(this.airborne > 0 ? -ka * 18 : -ka * 8).setAlpha(this.recover > 0 ? 0.6 : 1);
     if (this.recover > 0) g.fillStyle(PAL.white, 0.7).fillEllipse(W / 2, 470, 70, 16);
+    if (this.airborne > 0 && this.jumps <= 2) { const hy = 470 - lift - 84 + Math.sin(this.elapsed * 10) * 3; g.fillStyle(this.held ? PAL.neon : PAL.white).fillTriangle(W / 2, hy + 12, W / 2 - 8, hy, W / 2 + 8, hy).fillRect(W / 2 - 2, hy - 10, 4, 10); txt(this, W / 2, hy - 20, 'press to drop', 8, PAL.white).setDepth(8).setName('kb_drop'); }
+    this.children.list.filter(o => o.name === 'kb_drop').slice(0, this.airborne > 0 && this.jumps <= 2 ? -1 : undefined).forEach(o => o.destroy());
     // spray
     for (const sp of this.spray) g.fillStyle(PAL.white, Math.min(1, sp.t * 2)).fillRect(sp.x, sp.y, 3, 3);
     // labels
