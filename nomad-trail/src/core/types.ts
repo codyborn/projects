@@ -62,7 +62,7 @@ export interface RunState {
   achievements: string[]; log: LogLine[]; workStreak: number; coffeeMornings: number;
   phase: 'pack' | 'route' | 'city' | 'travel' | 'ended'; ending?: Ending;
   stayDays: number; pendingEvent?: string;
-  pendingDish?: string;                              // dish id chosen when Cook was tapped; the mini-game and the result must use the same one
+  pendingDish?: string; pendingGate?: string;              // gate for the airport dash after a taxi breakdown                              // dish id chosen when Cook was tapped; the mini-game and the result must use the same one
 }
 export interface LogLine { day: number; city: string; text: string; }
 export type Ending = { kind: 'win' | 'hospital' | 'flewhome' | 'outofdays' | 'broke' | 'quit'; text: string; score: number; cause?: string; };  // cause: the one-line reason shown on the share card

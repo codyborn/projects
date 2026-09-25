@@ -74,6 +74,19 @@ if (q.get('auto') === '1') {
   // real-time cooking reveal check: start ramen with a forced per-step accuracy; the driver (puppeteer) calls scene.endStep() to run the steps
   MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
   game.events.once('ready', () => { game.scene.start(MINIGAME_KEYS.cooking, { energy: 100, difficulty: 0.5, payload: { dish: (dishesJson as any[]).find(d => d.id === (q.get('dish') || 'ramen')), cityName: 'Tokyo', debugAccuracy: Number(q.get('cook')) }, onDone: () => { document.title = 'COOK_DONE'; } } as MinigameLaunch); document.title = 'COOK_UP'; });
+} else if (q.get('gate')) {
+  // gate dash checks: 'rt' = real-time, no input, must fail at the boarding deadline; 'perfect' = scripted perfect path via scene.hint() under the virtual clock
+  MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
+  game.events.once('ready', () => {
+    const mode = q.get('gate')!; const t0 = performance.now(); let calls = 0;
+    const launch: MinigameLaunch = { energy: 100, difficulty: 0.5, payload: { gate: q.get('g') || 'B56' }, onDone: (res) => { calls++; out.textContent = JSON.stringify({ mode, res, secs: (performance.now() - t0) / 1000, calls, errors }); document.title = 'GATE_DONE'; } };
+    game.scene.start(MINIGAME_KEYS.airport, launch); const scene: any = game.scene.getScene(MINIGAME_KEYS.airport);
+    // the scripted player reads scene.hint() once per virtual frame and presses arrow keys (real key events through Phaser's keyboard plugin)
+    const key = (kc: number) => { window.dispatchEvent(new KeyboardEvent('keydown', { keyCode: kc, which: kc } as any)); window.dispatchEvent(new KeyboardEvent('keyup', { keyCode: kc, which: kc } as any)); };
+    const steer = () => { if (!scene.scene.isActive() || !scene.frame?.active) return; const hnt = scene.hint(); if (hnt.lane < scene.lane) key(37); else if (hnt.lane > scene.lane) key(39); else if (hnt.jump) key(38); };
+    if (mode === 'perfect' && q.get('fast') === '1') { game.loop.stop(); let t = performance.now(); setInterval(() => { for (let k = 0; k < 6; k++) { t += 16.67; steer(); game.loop.step(t); } }, 0); }
+    else if (mode === 'perfect') setInterval(steer, 16);
+  });
 } else if (q.get('console')) {
   MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
   game.events.once('ready', () => { game.scene.start(MINIGAME_KEYS.carryon, { energy: 100, difficulty: 0.5, payload: { game: q.get('console'), city: q.get('city') || 'tokyo', cityName: q.get('cityName') || 'Tokyo', hazard: q.get('hazard') || 'otter', seed: Number(q.get('seed') || 7) }, onDone: () => { document.title = 'CONSOLE_DONE'; } } as MinigameLaunch); document.title = 'CONSOLE_UP'; });

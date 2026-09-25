@@ -26,7 +26,9 @@
   "leave": "You leave {city} after {stayDays} days.",
   "carryonGold": "Console: {city} cleared. Gold stamp.",
   "pink": "Everything is slightly pink now.",
-  "travelFatigue": " Too many legs too fast; everything aches."
+  "travelFatigue": " Too many legs too fast; everything aches.",
+  "gateMade": "Gate {gate}. Made it, barely. The suitcase has a new dent.",
+  "gateMissed": "You watch the gate close from thirty metres away. Next flight tomorrow. The airport floor is your Airbnb."
  },
  "endings": {
   "hospital": "Day {day}. {city}. A hospital bed with a view of a parking lot. The trail ends here; the story does not.",

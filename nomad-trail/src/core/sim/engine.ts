@@ -170,6 +170,9 @@ export function travelTo(state: RunState, cityId: string): StepResult {
   const ctx = { transport: leg.transport, timezones: leg.timezones, overweightRatio: ratio };
   s.log.push({ day: s.day, city: cityId, text: tpl(STR.log.travel, { transport: leg.transport === 'trek' ? STR.log.trek : leg.transport[0].toUpperCase() + leg.transport.slice(1), from: from.name, to: leg.city.name, fare }) + (ratio0 >= 0.85 ? STR.log.travelHeavy : '') + (s.fatigue >= 3 ? STR.log.travelFatigue : '') });
   if (leg.transport === 'flight') events.push(...rollEvents(s, 'flight', ctx, rng, 1));
+  // the taxi died on the way to the airport: the gate dash (Temple Run through the terminal) decides whether you make the flight
+  let dash: MinigameRequest | undefined;
+  if (events.some(e => e.id === 'taxibreakdown')) { const gate = `${'ABCDEF'[rng.int(0, 5)]}${rng.int(1, 99)}`; s.pendingGate = gate; dash = { key: MINIGAME_KEYS.airport, payload: { gate }, difficulty: clamp(0.3 + s.day / 600, 0, 0.8) }; }
   events.push(...rollEvents(s, 'leg', ctx, rng, 2));
   // arrive
   s.cityId = cityId; s.route.push(cityId); if (!s.visited.includes(cityId)) s.visited.push(cityId);
@@ -185,7 +188,7 @@ export function travelTo(state: RunState, cityId: string): StepResult {
   if (hasItem(s, 'hostgifts') && (leg.city.lodgings[0]?.id === 'airbnb' || leg.city.lodgings[0]?.id === 'coliving')) s.mood = clamp(s.mood + 3, 0, 100);
   if (leg.home) { s.log.push({ day: s.day, city: cityId, text: tpl(STR.log.homeAgain, { day: s.day, city: leg.city.name }) }); }
   checkEnding(s);
-  return { state: s, events };
+  return dash ? { state: s, events, minigame: dash } : { state: s, events };
 }
 
 // ---------- City days ----------
@@ -298,7 +301,11 @@ export function applyMinigameResult(state: RunState, key: string, result: Miniga
       break; }
     case MINIGAME_KEYS.laundry: { if (result.failed) { unlock(s, 'pinkshirts'); s.mood = clamp(s.mood - 2, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: STR.log.pink }); } else if (result.perfect) s.mood = clamp(s.mood + 3, 0, 100); break; }
     case MINIGAME_KEYS.kite: { s.mood = clamp(s.mood + 5 + Math.round(score * 15), 0, 100); s.energy = clamp(s.energy - 12, 0, energyCap(s)); if (result.perfect) unlock(s, 'kitemaster'); break; }
-    case MINIGAME_KEYS.airport: { if (result.failed) { s.energy = clamp(s.energy - 12, 0, energyCap(s)); s.mood = clamp(s.mood - 6, 0, 100); } break; }
+    case MINIGAME_KEYS.airport: {
+      const gate = s.pendingGate ?? '?'; s.pendingGate = undefined;
+      if (result.failed) { s.day += 1; s.energy = clamp(s.energy - 15, 0, energyCap(s)); s.mood = clamp(s.mood - 10, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.gateMissed, { gate }) }); }
+      else { s.mood = clamp(s.mood + 6, 0, 100); s.energy = clamp(s.energy - 6, 0, energyCap(s)); if (result.perfect) unlock(s, 'gatedash'); s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.gateMade, { gate }) }); }
+      break; }
   }
   checkEnding(s);
   return { state: s, events };

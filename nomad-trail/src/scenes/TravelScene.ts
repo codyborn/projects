@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { Leg, Region } from '../core/types';
+import type { Leg, Region, MinigameResult } from '../core/types';
 import { PAL, txt, rect, TRANSPORT_GLYPH } from '../ui/theme';
 import { Sim, Data, getRun, putRun } from '../ui/simBridge';
 import { launchOnTop } from '../ui/overlay';
@@ -47,7 +47,9 @@ export class TravelScene extends Phaser.Scene {
     if (leg.transport === 'flight') { if (after.wheelBroken && !before.wheel) beats.push('Your suitcase arrives on three wheels.'); else if (after.bagLockedDays > before.locked) beats.push(`Bag: delayed ${after.bagLockedDays} day${after.bagLockedDays > 1 ? 's' : ''}. Clothes, kitchen and gym are on hold.`); else beats.push('Bag: on the belt. Small miracle.'); }
     const showBeats = (i: number, then: () => void) => { if (i >= beats.length) return then(); const t = txt(this, 180, 470, beats[i], 11, PAL.sun2, { align: 'center', wrap: 300 }).setOrigin(0.5).setAlpha(0); this.tweens.add({ targets: t, alpha: 1, y: 462, duration: 250 }); this.time.delayedCall(1500, () => showBeats(i + 1, then)); };
     const events = [...res.events];
-    const runEvents = () => { const id = events.shift(); if (!id) { const end = Sim.checkEnding(getRun(this)); if (end) { const r = getRun(this); r.ending = end; r.phase = 'ended'; putRun(this, r); return this.scene.start('End'); } return this.scene.start('City', { arrived: true }); }
+    const dash = res.minigame; let dashDone = !dash;
+    const runEvents = () => { const id = events.shift(); if (!id && !dashDone) { dashDone = true; const launch = { energy: getRun(this).energy, difficulty: dash!.difficulty, payload: dash!.payload, onDone: (r: MinigameResult) => { if (this.scene.isActive(dash!.key) || this.scene.isPaused(dash!.key)) this.scene.stop(dash!.key); this.scene.resume(); const s = Sim.applyMinigameResult(getRun(this), dash!.key, r); putRun(this, s); runEvents(); } }; launchOnTop(this, dash!.key, launch); this.scene.pause(); return; }
+      if (!id) { const end = Sim.checkEnding(getRun(this)); if (end) { const r = getRun(this); r.ending = end; r.phase = 'ended'; putRun(this, r); return this.scene.start('End'); } return this.scene.start('City', { arrived: true }); }
       launchOnTop(this, 'Event', { eventId: id, onDone: () => { this.scene.stop('Event'); runEvents(); } }); };
     showBeats(0, runEvents);
   }

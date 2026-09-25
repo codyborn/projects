@@ -565,5 +565,15 @@
    "surf",
    "kite"
   ]
+ },
+ {
+  "id": "taxibreakdown",
+  "title": "The taxi dies",
+  "text": "Twenty minutes from the terminal the taxi coughs, rolls onto the shoulder and goes quiet. Out of gas, or out of will. You pay, you grab the suitcase, you run.",
+  "when": "flight",
+  "baseChance": 0.05,
+  "effects": {
+   "energy": -6
+  }
  }
 ]

@@ -49,3 +49,17 @@ describe('kiteboarding', () => {
     const r = Sim.cityAction({ ...s, energy: 90 }, 'train'); expect(r.minigame?.key).toBe('Kite');
   });
 });
+
+describe('the taxi breakdown and the gate dash', () => {
+  it('a breakdown on a flight leg hands the UI the airport dash; missing it costs a day', () => {
+    let hit = 0;
+    for (let seed = 1; seed <= 120 && !hit; seed++) {
+      let s = packed(seed); const flight = Sim.availableLegs(s).find(l => l.transport === 'flight'); if (!flight) continue;
+      const r = Sim.travelTo(s, flight.to);
+      if (r.events.some(e => e.id === 'taxibreakdown')) { hit++; expect(r.minigame?.key).toBe('Airport'); expect(r.minigame?.payload?.gate).toMatch(/^[A-F]\d{1,2}$/);
+        const before = r.state.day; const miss = Sim.applyMinigameResult(r.state, 'Airport', { score: 20, perfect: false, failed: true }); expect(miss.state.day).toBe(before + 1);
+        const made = Sim.applyMinigameResult(r.state, 'Airport', { score: 90, perfect: false, failed: false }); expect(made.state.day).toBe(before); expect(made.state.pendingGate).toBeUndefined(); }
+    }
+    expect(hit).toBeGreaterThan(0);
+  });
+});
