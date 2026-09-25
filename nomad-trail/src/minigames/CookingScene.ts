@@ -8,7 +8,7 @@ const DEFAULT_DISH: Dish = { id: 'dalbhat', name: 'Dal Bhat', city: 'kathmandu',
   steps: [{ kind: 'chop', count: 6 }, { kind: 'pour', count: 1 }, { kind: 'stir', count: 3 }, { kind: 'season', count: 4 }, { kind: 'flip', count: 3 }, { kind: 'knead', count: 12 }] };
 
 const STEP_TEXT: Record<DishStep['kind'], string> = {
-  chop: 'TAP when the knife is over the green band', stir: 'DRAG in circles to stir', flip: 'TAP at the top of the toss',
+  chop: 'TAP to chop: one cut per tap, keep a steady rhythm', slice: 'DRAG the knife onto the line, slide up and down', stir: 'DRAG in circles to stir', flip: 'TAP at the top of the toss',
   season: 'TAP exactly the right number of times, then wait', pour: 'HOLD to pour, release inside the band', knead: 'TAP fast to knead',
   grill: 'HOLD to sear, release in the golden band', dice: 'TAP the cubes in the order they lit up', roll: 'SWIPE left to right to roll',
   simmer: 'TAP to add heat, keep the needle in the green', shake: 'SWIPE left, right, left, right', fold: 'DRAG along the dotted path',
@@ -103,28 +103,120 @@ export class CookingScene extends Phaser.Scene {
     }
     const st = this.dish.steps[this.stepIdx];
     this.frame.setProgress(`STEP ${this.stepIdx + 1}/${this.dish.steps.length}`);
-    this.stepText.setText(st.kind.toUpperCase()); this.hint.setText(STEP_TEXT[st.kind]);
-    const table: Record<DishStep['kind'], () => void> = { chop: () => this.stepChop(st), stir: () => this.stepStir(st), flip: () => this.stepFlip(st), season: () => this.stepSeason(st), pour: () => this.stepPour(st), knead: () => this.stepKnead(st),
+    this.stepText.setText(`${st.kind.toUpperCase()}!`); this.hint.setText(STEP_TEXT[st.kind]);
+    const table: Record<DishStep['kind'], () => void> = { chop: () => this.stepChop(st), slice: () => this.stepSlice(st), stir: () => this.stepStir(st), flip: () => this.stepFlip(st), season: () => this.stepSeason(st), pour: () => this.stepPour(st), knead: () => this.stepKnead(st),
       grill: () => this.stepGrill(st), dice: () => this.stepDice(st), roll: () => this.stepRoll(st), simmer: () => this.stepSimmer(st), shake: () => this.stepShake(st), fold: () => this.stepFold(st), plate: () => this.stepPlate(st), skewer: () => this.stepSkewer(st) };
     (table[st.kind] ?? table.season)();
   }
 
-  // --- CHOP: knife sweeps over an ingredient; tap in the band.
+  /** Colours for the ingredient under the knife, picked from the dish's ingredient list (first cuttable match). */
+  private ingredientLook(): { body: number; edge: number; inner: number; name: string } {
+    const looks: [RegExp, { body: number; edge: number; inner: number }][] = [
+      [/onion|shallot|garlic/, { body: PAL.white, edge: PAL.earth3, inner: PAL.sun3 }],
+      [/tomato/, { body: PAL.red, edge: PAL.dusk3, inner: PAL.sun2 }],
+      [/salmon|lox|tuna/, { body: PAL.pink, edge: PAL.dusk3, inner: PAL.white }],
+      [/fish|cod|rockfish|conch|shrimp/, { body: PAL.white, edge: PAL.gray2, inner: PAL.sky3 }],
+      [/bread|bagel|bun|pastry|tortilla|noodle|dough/, { body: PAL.earth3, edge: PAL.earth2, inner: PAL.sun3 }],
+      [/cheese|curd|cheddar|graukase/, { body: PAL.sun2, edge: PAL.sun1, inner: PAL.sun3 }],
+      [/pork|beef|lamb|bison|chicken|haggis|ham|hot dog|weisswurst|belly/, { body: PAL.dusk3, edge: PAL.dusk2, inner: PAL.pink }],
+      [/potato|fries|turnip|root|plantain/, { body: PAL.sun3, edge: PAL.earth2, inner: PAL.sun2 }],
+      [/cilantro|herb|scallion|cabbage|lettuce|bok choy|vegetable|pepper|fennel|zucchini|spinach|chile|chili/, { body: PAL.grass2, edge: PAL.grass1, inner: PAL.grass3 }],
+      [/lime|avocado|pickle|olive|apricot|pineapple|carrot|eggplant/, { body: PAL.grass1, edge: PAL.grass0, inner: PAL.grass3 }],
+    ];
+    for (const name of this.dish.ingredients) for (const [re, l] of looks) if (re.test(name)) return { ...l, name };
+    return { body: PAL.earth3, edge: PAL.earth2, inner: PAL.sun3, name: this.dish.ingredients[0] ?? '' };
+  }
+
+  /** A chunky pixel chef's knife, tip at (x, y), blade pointing down, handle above. lean tilts the blade for a slicing grip. */
+  private drawKnife(g: Phaser.GameObjects.Graphics, x: number, y: number, lean = 0) {
+    const bladeH = 46, bladeW = 14; const bx = x - bladeW / 2 + lean;
+    g.fillStyle(PAL.ink).fillRect(bx - 2, y - bladeH - 2, bladeW + 4, bladeH + 2);                      // outline
+    g.fillStyle(PAL.gray2).fillRect(bx, y - bladeH, bladeW, bladeH - 6);                                // blade body
+    g.fillStyle(PAL.gray2).fillTriangle(bx, y - 6, bx + bladeW, y - 6, bx, y);                          // tip taper
+    g.fillStyle(PAL.white).fillRect(bx, y - bladeH, 4, bladeH - 8);                                     // cutting edge highlight
+    g.fillStyle(PAL.gray1).fillRect(bx + bladeW - 4, y - bladeH, 4, bladeH - 10);                       // spine shade
+    g.fillStyle(PAL.ink).fillRect(bx - 4, y - bladeH - 10, bladeW + 8, 10);                             // bolster
+    g.fillStyle(PAL.earth0).fillRect(bx - 2, y - bladeH - 44, bladeW + 4, 36);                          // handle
+    g.fillStyle(PAL.earth1).fillRect(bx, y - bladeH - 42, 4, 32);                                       // handle highlight
+    g.fillStyle(PAL.gray2).fillRect(bx + 4, y - bladeH - 36, 4, 4).fillRect(bx + 4, y - bladeH - 22, 4, 4);   // rivets
+  }
+
+  // --- CHOP: tapping. Each tap is one cut at the next dotted line; the piece separates with a hop. Score = cuts done × rhythm evenness.
   private stepChop(st: DishStep) {
-    const y = 450, x0 = 60, x1 = W - 60; let t = 0, hits = 0, taps = 0; const need = st.count; const bandW = 0.18 * this.frame.window + 0.06; const bandC = 0.5;
-    const speed = 1.1 * this.frame.speed; const knife = this.add.graphics().setDepth(5);
+    const need = st.count; const look = this.ingredientLook(); const x0 = 70, x1 = W - 70, y = 484, h = 44; const len = x1 - x0;
+    let cuts = 0; let drop = 0; const tapTimes: number[] = []; const hops: number[] = Array(need + 1).fill(0);
+    const cutX = (i: number) => x0 + (len * (i + 1)) / (need + 1);
+    const knife = this.add.graphics().setDepth(5);
     const tick = this.time.addEvent({ delay: 16, loop: true, callback: () => {
-      t += 0.016 * speed; const ph = (Math.sin(t * Math.PI) + 1) / 2; const kx = x0 + ph * (x1 - x0);
-      this.work.clear(); this.work.fillStyle(PAL.grass1).fillRoundedRect(x0, y - 14, x1 - x0, 28, 4);
-      this.work.fillStyle(PAL.neon, 0.5).fillRect(x0 + (bandC - bandW / 2) * (x1 - x0), y - 18, bandW * (x1 - x0), 36);
-      for (let i = 0; i < hits; i++) this.work.fillStyle(PAL.ink).fillRect(x0 + 8 + i * ((x1 - x0 - 16) / need), y - 12, 2, 24);
-      knife.clear(); knife.fillStyle(PAL.gray2).fillRect(kx - 2, y - 60, 4, 50); knife.fillStyle(PAL.earth0).fillRect(kx - 3, y - 74, 6, 16);
-      (knife as any).ph = ph; this.meter.set(hits / need);
+      drop = Math.max(0, drop - 0.1); for (let i = 0; i < hops.length; i++) hops[i] = Math.max(0, hops[i] - 0.06);
+      this.work.clear();
+      this.work.fillStyle(PAL.earth2).fillRoundedRect(x0 - 30, y - 40, len + 60, 90, 6); this.work.fillStyle(PAL.earth1).fillRect(x0 - 30, y + 44, len + 60, 6);   // board
+      for (let i = 0; i <= need; i++) {                                                                // pieces, left to right
+        const sx = i === 0 ? x0 : cutX(i - 1), ex = i === need ? x1 : cutX(i); const loose = i < cuts;
+        const ox = loose ? -6 * (cuts - i) : 0, hop = Math.sin(hops[i] * Math.PI) * 12; const px = sx + ox + (loose ? 2 : 0), pw = ex - sx - (loose ? 4 : 0), py = y - h / 2 - hop;
+        this.work.fillStyle(look.edge).fillRect(px, py, pw, h); this.work.fillStyle(look.body).fillRect(px + 3, py + 3, pw - 6, h - 6);
+        this.work.fillStyle(look.inner, 0.7).fillRect(px + 6, py + 8, Math.max(2, pw - 12), 6);
+        if (loose) { this.work.fillStyle(look.inner).fillRect(px + pw - 4, py + 3, 4, h - 6); }         // cut face
+      }
+      for (let i = cuts; i < need; i++) { this.work.fillStyle(i === cuts ? PAL.neon : PAL.white, i === cuts ? 0.9 : 0.45); for (let d = 0; d < h; d += 8) this.work.fillRect(cutX(i) - 1, y - h / 2 + d, 2, 4); }   // dotted cut lines
+      knife.clear(); const nx = cutX(Math.min(cuts, need - 1)); const lift = cuts >= need ? 26 : 26 - drop * 26 + Math.sin(this.time.now / 180) * 3 * (1 - drop);   // hovers 26 px over the next line, clear of the step title
+      this.drawKnife(knife, nx, y - h / 2 + 2 - lift + (drop > 0.7 ? h - 4 : 0));
+      this.meter.set(cuts / need);
     } });
-    const handler = () => { taps++; const ph = (knife as any).ph as number; if (Math.abs(ph - bandC) <= bandW / 2) { hits++; this.frame.flash(PAL.neon, 40); } else this.frame.shake(60, 0.002); if (hits >= need) this.endStep(hits / Math.max(taps, need)); };
+    const rhythm = () => { if (tapTimes.length < 3) return 1; const gaps = tapTimes.slice(1).map((t, i) => t - tapTimes[i]); const m = gaps.reduce((a, b) => a + b, 0) / gaps.length; const sd = Math.sqrt(gaps.reduce((a, g) => a + (g - m) ** 2, 0) / gaps.length); return clamp(1 - Math.max(0, sd / Math.max(1, m) - 0.06) * 1.5, 0, 1); };   // 6% jitter is free, then evenness falls off
+    const acc = () => (cuts / need) * (0.7 + 0.3 * rhythm());
+    const handler = () => { if (cuts >= need) return; tapTimes.push(this.time.now); hops[cuts] = 1; cuts++; drop = 1; this.frame.flash(PAL.white, 20); if (cuts >= need) this.time.delayedCall(250, () => this.endStep(acc())); };
     this.frame.onTap(handler);
-    this.stepTimer = this.time.delayedCall(need * 1100 + 1500, () => this.endStep(hits / Math.max(taps, need) * 0.8));
-    this.cleanup.push(() => { tick.remove(); knife.destroy(); this.removeTap(handler); });
+    (this as any).cook = { kind: 'chop', hint: () => ({ cuts, need, nextX: cutX(Math.min(cuts, need - 1)) }), tap: handler };
+    this.stepTimer = this.time.delayedCall(need * 700 / this.frame.speed + 1500, () => this.endStep(acc()));
+    this.cleanup.push(() => { tick.remove(); knife.destroy(); this.removeTap(handler); (this as any).cook = undefined; });
+  }
+
+  // --- SLICE: a guided straight cut. Drag the knife onto the dotted line (it highlights when aligned), slide up and down ~3 strokes per slice.
+  private stepSlice(st: DishStep) {
+    const need = st.count; const look = this.ingredientLook(); const cx = W / 2, cy = 462, sw = 200, sh = 88; const y0 = cy - sh / 2, y1 = cy + sh / 2;
+    let slices = 0, strokes = 0, down = false, lastY = 0, dir = 0, travel = 0, devSum = 0, devN = 0, fx = W - 60, fy = 400; const accs: number[] = []; const marks: { x: number; y: number }[][] = [];
+    let cur: { y: number; dx: number }[] = []; const STROKE = 36, TOL = 14, COUNT_TOL = 48;
+    const lineX = () => cx - sw / 2 + (sw * (slices + 1)) / (need + 1);
+    const knife = this.add.graphics().setDepth(5);
+    const draw = () => {
+      this.work.clear();
+      this.work.fillStyle(PAL.earth2).fillRoundedRect(cx - sw / 2 - 30, y0 - 22, sw + 60, sh + 50, 6); this.work.fillStyle(PAL.earth1).fillRect(cx - sw / 2 - 30, y1 + 22, sw + 60, 6);   // board
+      this.work.fillStyle(look.edge).fillRoundedRect(cx - sw / 2, y0, sw, sh, 10); this.work.fillStyle(look.body).fillRoundedRect(cx - sw / 2 + 4, y0 + 4, sw - 8, sh - 8, 8);
+      for (let i = 0; i < 4; i++) this.work.fillStyle(look.inner, 0.55).fillRect(cx - sw / 2 + 14, y0 + 14 + i * 18, sw - 28, 4);                           // grain / flesh stripes
+      for (const m of marks) { this.work.fillStyle(PAL.ink, 0.85); for (let i = 1; i < m.length; i++) { const a = m[i - 1], b = m[i]; const steps = 4; for (let k = 0; k < steps; k++) { const t = k / steps; this.work.fillRect(Math.round(a.x + (b.x - a.x) * t) - 1, a.y + (b.y - a.y) * t, 3, (b.y - a.y) / steps + 1); } } }   // finished cuts
+      if (slices < need) {
+        const lx = lineX(); const aligned = down && Math.abs(fx - lx) <= TOL;
+        this.work.fillStyle(aligned ? PAL.neon : PAL.white, aligned ? 1 : 0.7); for (let d = 0; d < sh; d += 8) this.work.fillRect(lx - 1, y0 + d, 2, 4);
+        if (aligned) this.work.fillStyle(PAL.neon, 0.18).fillRect(lx - 8, y0 - 6, 16, sh + 12);
+        for (let k = 0; k < 3; k++) this.work.fillStyle(k < strokes ? PAL.neon : PAL.gray0).fillRect(lx - 14 + k * 10, y1 + 12, 8, 4);                          // stroke pips
+      }
+      knife.clear(); this.drawKnife(knife, fx, fy + 44, down ? 0 : 0);
+      this.meter.set((slices + Math.min(1, strokes / 3)) / need);
+    };
+    const finishStroke = () => {
+      if (travel < STROKE) return; travel = 0; const lx = lineX(); if (Math.abs(fx - lx) > COUNT_TOL) return;                                                   // knife off the ingredient line: no cut
+      strokes++; this.frame.flash(PAL.white, 15);
+      if (strokes >= 3) {
+        const meanDev = devN ? devSum / devN : 0; const a = clamp(1 - Math.max(0, meanDev - 4) / 28, 0, 1); accs.push(a);
+        const pts = cur.length >= 2 ? cur : [{ y: y0, dx: 0 }, { y: y1, dx: 0 }]; pts.sort((p, q) => p.y - q.y);
+        marks.push(pts.map(p => ({ x: lx + clamp(p.dx, -30, 30), y: p.y })));
+        slices++; strokes = 0; devSum = 0; devN = 0; cur = []; if (a > 0.85) this.frame.flash(PAL.neon, 30); else if (a < 0.5) this.frame.shake(80, 0.003);
+        if (slices >= need) this.time.delayedCall(250, () => this.endStep(accs.reduce((p, q) => p + q, 0) / accs.length));
+      }
+    };
+    const onDown = (x: number, y: number) => { down = true; fx = x; fy = y; lastY = y; dir = 0; travel = 0; draw(); };
+    const onMove = (x: number, y: number) => { if (!down) return; fx = x; fy = y; const lx = lineX(); const dy = y - lastY; lastY = y;
+      if (Math.abs(fx - lx) <= COUNT_TOL && y >= y0 - 20 && y <= y1 + 20) { devSum += Math.abs(fx - lx); devN++; if (!cur.length || Math.abs(cur[cur.length - 1].y - y) >= 8) cur.push({ y: clamp(y, y0, y1), dx: fx - lx }); }
+      const d = Math.sign(dy); if (d !== 0 && dir !== 0 && d !== dir) finishStroke(); if (d !== 0) dir = d; travel += Math.abs(dy); draw(); };
+    const onUp = () => { finishStroke(); down = false; dir = 0; travel = 0; draw(); };
+    const pd = (p: Phaser.Input.Pointer) => onDown(p.x, p.y), pm = (p: Phaser.Input.Pointer) => onMove(p.x, p.y), pu = () => onUp();
+    this.input.on('pointerdown', pd); this.input.on('pointermove', pm); this.input.on('pointerup', pu);
+    const kb = this.input.keyboard; const key = () => { const lx = lineX(); onDown(lx, y0); onMove(lx, y1); onMove(lx, y0); onMove(lx, y1); onUp(); }; kb?.on('keydown-DOWN', key);   // desktop: one clean slice
+    (this as any).cook = { kind: 'slice', hint: () => ({ lineX: lineX(), y0, y1, slices, strokes, need, accs: accs.slice() }), down: onDown, move: onMove, up: onUp };
+    draw();
+    this.stepTimer = this.time.delayedCall(need * 4000 / this.frame.speed + 2000, () => this.endStep(accs.length ? (accs.reduce((p, q) => p + q, 0) / accs.length) * (slices / need) : 0));
+    this.cleanup.push(() => { this.input.off('pointerdown', pd); this.input.off('pointermove', pm); this.input.off('pointerup', pu); kb?.off('keydown-DOWN', key); knife.destroy(); (this as any).cook = undefined; });
   }
 
   // --- STIR: drag circles around the bowl.

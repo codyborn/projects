@@ -17,7 +17,7 @@ if (q.get('auto') === '1') {
   MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
   const runs: { key: string; payload?: any; energy: number; extraLives?: number }[] = [
     { key: MINIGAME_KEYS.cooking, energy: 100 }, { key: MINIGAME_KEYS.cooking, energy: 20, payload: { id: 'x', name: 'Tacos', city: 'lapaz', ingredients: ['a'], health: 1, mood: 1, steps: [{ kind: 'season', count: 3 }, { kind: 'pour', count: 1 }, { kind: 'stir', count: 1 }] } },
-    ...(['grill', 'dice', 'roll', 'simmer', 'shake', 'fold', 'plate', 'skewer'] as const).map(k => ({ key: MINIGAME_KEYS.cooking, energy: 100, payload: { id: 'ramen', name: 'Step ' + k, city: 'tokyo', ingredients: ['x'], health: 1, mood: 1, steps: [{ kind: k, count: 3 }] } })),
+    ...(['chop', 'slice', 'grill', 'dice', 'roll', 'simmer', 'shake', 'fold', 'plate', 'skewer'] as const).map(k => ({ key: MINIGAME_KEYS.cooking, energy: 100, payload: { id: 'ramen', name: 'Step ' + k, city: 'tokyo', ingredients: ['x'], health: 1, mood: 1, steps: [{ kind: k, count: 3 }] } })),
     ...(['ramen', 'tacos', 'kaiserschmarrn', 'sushi'] as const).map(id => ({ key: MINIGAME_KEYS.cooking, energy: 100, payload: { dish: (dishesJson as any[]).find(d => d.id === id), cityName: id } })),
     ...(['bands', 'boulder', 'ferrata', 'trailrun', 'hike', 'swim', 'yoga', 'surf', 'ski', 'bogus'] as const).map(a => ({ key: MINIGAME_KEYS.workout, energy: a === 'hike' ? 30 : 100, payload: { activity: a, city: 'Test', day: 7 } })),
     { key: MINIGAME_KEYS.workout, energy: 100, payload: { activity: 'trailrun', city: 'newyork', day: 5 } }, { key: MINIGAME_KEYS.workout, energy: 100, extraLives: 1, payload: { activity: 'bands', city: 'newyork', plan: ['cityrun'] } }, { key: MINIGAME_KEYS.workout, energy: 40, payload: { activity: 'bands', city: 'tokyo', plan: ['cityrun'] } },
@@ -88,6 +88,25 @@ if (q.get('auto') === '1') {
     if (mode === 'perfect' && q.get('fast') === '1') { game.loop.stop(); let t = performance.now(); setInterval(() => { for (let k = 0; k < 6; k++) { t += 16.67; steer(); game.loop.step(t); } }, 0); }
     else if (mode === 'perfect') setInterval(steer, 16);
     else if (mode === 'rt' && !q.get('hold')) setTimeout(() => { if (scene.waiting) scene.startRun(); }, 1500);   // no gameplay input: only READY is tapped (hold=1 keeps the card up for screenshots)
+  });
+} else if (q.get('chop') || q.get('slice') || q.get('chopslice')) {
+  // chop / slice checks (real time). chop=1: N evenly spaced taps -> 100. slice=aligned|off: three strokes per slice on / 26 px beside the line.
+  // chopslice=1: a full real dish that has both (completo); non-knife steps are skipped with endStep(1) so the check is about the knife steps + onDone once.
+  MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
+  game.events.once('ready', () => {
+    const mode = q.get('chop') ? 'chop' : q.get('slice') ? `slice:${q.get('slice')}` : 'chopslice'; let calls = 0; const t0 = performance.now();
+    const steps = mode === 'chop' ? [{ kind: 'chop', count: Number(q.get('n') || 6) }] : mode.startsWith('slice') ? [{ kind: 'slice', count: 2 }] : null;
+    const payload = steps ? { id: 'completo', name: 'Knife test', city: 'santiago', ingredients: q.get('ing') ? [q.get('ing')] : ['tomato', 'onion'], health: 1, mood: 1, steps } : { dish: (dishesJson as any[]).find(d => d.id === 'completo'), cityName: 'Santiago' };
+    game.scene.start(MINIGAME_KEYS.cooking, { energy: 100, difficulty: 0.5, payload, onDone: (res: any) => { calls++; out.textContent = JSON.stringify({ mode, res, accs: (scene as any).accuracies, secs: (performance.now() - t0) / 1000, calls, errors }); document.title = 'KNIFE_DONE'; } } as MinigameLaunch);
+    const scene: any = game.scene.getScene(MINIGAME_KEYS.cooking); let busy = false; let shot = false;
+    const drive = async () => { if (busy || !scene.scene.isActive()) return; if (!scene.frame?.active) { scene.frame?.ready?.(); return; } const c = scene.cook; const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+      if (!c) { if (mode === 'chopslice' && scene.stepIdx < scene.dish.steps.length && !scene.cleanup.length) return; if (mode === 'chopslice' && scene.stepIdx < scene.dish.steps.length && scene.cleanup.length && !['chop', 'slice'].includes(scene.dish.steps[scene.stepIdx].kind)) { busy = true; await sleep(300); scene.endStep(1); busy = false; } return; }
+      busy = true;
+      if (c.kind === 'chop') { await sleep(420); if (scene.cook === c) c.tap(); if (shot && document.title === 'SHOT_CHOP') document.title = 'KNIFE_UP'; if (!shot && c.hint().cuts === 3) { shot = true; document.title = 'SHOT_CHOP'; } }   /* the shot title rides along without pausing the rhythm */
+      else { const off = mode === 'slice:off' ? 26 : 0; const h = c.hint(); const x = h.lineX + off; c.down(x, h.y0 + 4); await sleep(40); if (!shot && mode !== 'chop') { shot = true; c.move(x, (h.y0 + h.y1) / 2); document.title = 'SHOT_SLICE'; await sleep(400); document.title = 'KNIFE_UP'; }
+        for (let k = 0; k < 3; k++) { for (let i = 1; i <= 6; i++) { if (scene.cook !== c) break; c.move(x, h.y0 + (h.y1 - h.y0) * (k % 2 === 0 ? i / 6 : 1 - i / 6)); await sleep(16); } } if (scene.cook === c) c.up(); await sleep(200); }
+      busy = false; };
+    setInterval(drive, 50); document.title = 'KNIFE_UP';
   });
 } else if (q.get('knead') === '1') {
   // knead check: a single knead step, real time; the driver taps and screenshots mid-step; title flips when the step completes

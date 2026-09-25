@@ -45,7 +45,7 @@ export interface EventChoice { label: string; text: string; effects: Effects; re
 export interface Effects { health?: number; energy?: number; mood?: number; days?: number; loseRandomItem?: boolean; loseItemTag?: ItemTag;
   bagLocked?: number; wheelBroken?: boolean; backInjury?: number; sick?: number; unlockAchievement?: string; }
 export interface Dish { id: string; name: string; city: string; ingredients: string[]; steps: DishStep[]; health: number; mood: number; art?: string; }  // art: key into the dish art table (defaults to id)
-export type DishStepKind = 'chop' | 'stir' | 'flip' | 'season' | 'pour' | 'knead' | 'grill' | 'dice' | 'roll' | 'simmer' | 'shake' | 'fold' | 'plate' | 'skewer';
+export type DishStepKind = 'chop' | 'slice' | 'stir' | 'flip' | 'season' | 'pour' | 'knead' | 'grill' | 'dice' | 'roll' | 'simmer' | 'shake' | 'fold' | 'plate' | 'skewer';
 export type DishStep = { kind: DishStepKind; count: number; };
 export interface ArcadeLevel { city: string; hazard: Hazard; palette: [number, number, number]; tiles: string[]; stampPieces: number; parTime: number; }
 
