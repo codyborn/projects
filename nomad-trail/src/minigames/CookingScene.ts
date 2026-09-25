@@ -61,17 +61,27 @@ export class CookingScene extends Phaser.Scene {
     const key = drawDish(this, this.dish.id, shown, this.dish.art);
     if (this.plateImg.texture.key !== key) { this.plateImg.setTexture(key); this.tweens.add({ targets: this.plateImg, scaleY: { from: 1.85, to: 2 }, duration: 160, ease: 'Back.Out' }); }
   }
-  private finalReveal() {
-    this.drawPlate(true);
-    const g = this.add.graphics().setDepth(7); const cx = W / 2, cy = 200;
-    for (let i = 0; i < 3; i++) { const wisp = this.add.graphics().setDepth(7); wisp.fillStyle(PAL.gray2, 0.9); for (let k = 0; k < 4; k++) wisp.fillRect(cx - 24 + i * 24 + ((k + i) % 2) * 3, cy - 50 - k * 8, 3, 5); wisp.setAlpha(0); this.tweens.add({ targets: wisp, alpha: { from: 0.9, to: 0 }, y: -28, duration: 1300, delay: i * 150, onComplete: () => wisp.destroy() }); }
-    for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; const sp = this.add.rectangle(cx + Math.cos(a) * 70, cy + Math.sin(a) * 34, 4, 4, PAL.sun2).setDepth(7).setAlpha(0); this.tweens.add({ targets: sp, alpha: { from: 1, to: 0 }, scale: { from: 1.4, to: 0.4 }, x: cx + Math.cos(a) * 96, y: cy + Math.sin(a) * 48, duration: 600, delay: 120 + i * 60, onComplete: () => sp.destroy() }); }
-    this.tweens.add({ targets: this.plateImg, scale: { from: 2.2, to: 2 }, duration: 260, ease: 'Back.Out' });
-    g.destroy();
+  /** The finished dish, big and centred, with a treatment for how well it went: sparkle (90+), plain (50-90), a bit burnt (30-50), questionable (<30). */
+  private finalReveal(score01: number) {
+    this.drawPlate(true); const pct = score01 * 100; const cx = W / 2, cy = 250;
+    this.frame.pauseCap();
+    const grade = pct >= 90 ? 'kiss' : pct >= 50 ? 'good' : pct >= 30 ? 'burnt' : 'bad';
+    const label = { kiss: "CHEF'S KISS", good: 'GOOD', burnt: 'A BIT BURNT', bad: 'QUESTIONABLE' }[grade]; const color = { kiss: PAL.sun2, good: PAL.neon, burnt: PAL.earth2, bad: PAL.grass2 }[grade];
+    this.plateImg.setDepth(8); this.tweens.add({ targets: this.plateImg, x: cx, y: cy, scale: 3.4, duration: 420, ease: 'Back.Out' });
+    if (grade === 'burnt') this.plateImg.setTint(PAL.earth1);          // slightly brown
+    if (grade === 'bad') { this.plateImg.setTint(PAL.grass1); this.tweens.add({ targets: this.plateImg, angle: { from: -3, to: 3 }, duration: 260, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }); }   // slightly green, queasy
+    if (grade === 'kiss') { const glow = this.add.rectangle(cx, cy, 340, 220, PAL.sun1, 0.22).setDepth(7).setBlendMode(Phaser.BlendModes.ADD); this.tweens.add({ targets: glow, alpha: 0, scaleX: 1.2, scaleY: 1.2, duration: 1400 });
+      for (let i = 0; i < 14; i++) { const a = (i / 14) * Math.PI * 2; const sp = this.add.rectangle(cx + Math.cos(a) * 90, cy + Math.sin(a) * 50, 5, 5, i % 2 ? PAL.sun3 : PAL.white).setDepth(9).setAlpha(0); this.tweens.add({ targets: sp, alpha: { from: 1, to: 0 }, scale: { from: 1.6, to: 0.3 }, x: cx + Math.cos(a) * 150, y: cy + Math.sin(a) * 90, duration: 800, delay: 150 + i * 50, onComplete: () => sp.destroy() }); } }
+    if (grade === 'burnt' || grade === 'bad') for (let i = 0; i < 4; i++) { const wisp = this.add.graphics().setDepth(9); wisp.fillStyle(grade === 'burnt' ? PAL.gray0 : PAL.grass1, 0.9); for (let k = 0; k < 5; k++) wisp.fillRect(cx - 40 + i * 26 + ((k + i) % 2) * 4, cy - 70 - k * 9, 4, 6); wisp.setAlpha(0); this.tweens.add({ targets: wisp, alpha: { from: 0.9, to: 0 }, y: -36, duration: 1500, delay: i * 140, onComplete: () => wisp.destroy() }); }
+    else if (grade === 'good') for (let i = 0; i < 3; i++) { const wisp = this.add.graphics().setDepth(9); wisp.fillStyle(PAL.gray2, 0.9); for (let k = 0; k < 4; k++) wisp.fillRect(cx - 24 + i * 24 + ((k + i) % 2) * 3, cy - 74 - k * 8, 3, 5); wisp.setAlpha(0); this.tweens.add({ targets: wisp, alpha: { from: 0.9, to: 0 }, y: -28, duration: 1300, delay: i * 150, onComplete: () => wisp.destroy() }); }
+    const t = txt(this, cx, cy + 108, label, 14, color).setDepth(9).setAlpha(0); this.tweens.add({ targets: t, alpha: 1, y: cy + 100, duration: 300, delay: 350 });
+    txt(this, cx, cy + 124, `${Math.round(pct)} / 100`, 9, PAL.gray2).setDepth(9);
+    this.time.delayedCall(1500, () => { this.frame.resumeCap(); this.frame.finish(pct); });
   }
 
   private endStep(acc: number) {
     this.cleanup.forEach(f => f()); this.cleanup = []; this.stepTimer?.remove(); this.work.clear();
+    const dbg = (this.launch.payload as any)?.debugAccuracy; if (typeof dbg === 'number') acc = dbg;   // harness only
     acc = clamp(acc, 0, 1); this.accuracies.push(acc);
     const g = this.add.graphics().setDepth(6); g.fillStyle(acc > 0.85 ? PAL.neon : acc > 0.5 ? PAL.sun2 : PAL.red).fillCircle(W / 2, 330, 4);
     txt(this, W / 2, 360, acc > 0.85 ? 'great' : acc > 0.5 ? 'ok' : 'sloppy', 11, acc > 0.85 ? PAL.neon : acc > 0.5 ? PAL.sun2 : PAL.red).setDepth(6).setName('fb');
@@ -83,8 +93,7 @@ export class CookingScene extends Phaser.Scene {
   private nextStep() {
     if (this.stepIdx >= this.dish.steps.length) {
       const mean = this.accuracies.reduce((a, b) => a + b, 0) / Math.max(1, this.accuracies.length);
-      this.finalReveal(); this.stepText.setText(this.dish.name.toUpperCase()); this.hint.setText('');
-      this.time.delayedCall(900, () => this.frame.finish(mean * 100)); return;
+      this.stepText.setText(this.dish.name.toUpperCase()); this.hint.setText(''); this.finalReveal(mean); return;
     }
     const st = this.dish.steps[this.stepIdx];
     this.frame.setProgress(`STEP ${this.stepIdx + 1}/${this.dish.steps.length}`);

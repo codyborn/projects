@@ -22,4 +22,7 @@ export function globeHook(scene: Phaser.Scene, cx: number, cy: number, r: number
   const cur = CITIES.find(k => k.id === run.cityId);
   return drawGlobe(scene, cx, cy, r, CITIES, run.visited, run.cityId, run.route, cur ? -cur.lon : 0);
 }
-(window as any).__nomadArt = { generate: generateAllArt, skyline: skylineHook, globe: globeHook };
+export function skylineAt(scene: Phaser.Scene, cityId: string, tod: 'dawn' | 'day' | 'dusk' | 'night', x: number, y: number, w: number, h: number) {
+  const c = CITIES.find(k => k.id === cityId); const sk = buildSkyline(scene, cityId, tod, c?.climate ?? 'temperate', w, h, Math.round(h * 0.66), c?.region); sk.container.setPosition(x, y); return sk;
+}
+(window as any).__nomadArt = { generate: generateAllArt, skyline: skylineHook, skylineAt, globe: globeHook };

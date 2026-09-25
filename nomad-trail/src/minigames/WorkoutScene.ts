@@ -46,7 +46,7 @@ export class WorkoutScene extends Phaser.Scene {
     }
     // ---- one micro-game, three escalating rounds
     this.frame.capSec = 30; const forced = ((this.launch.payload || {}) as Partial<WorkoutPayload>).plan?.filter(id => MICRO_REGISTRY[id]);
-    this.microId = forced?.length ? forced[0] : pickOne(this.activity, this.rng); this.athlete = new Athlete(this, W / 2, 330); this.athlete.show(false);
+    this.microId = forced?.length ? forced[0] : pickOne(this.activity, this.rng, ((this.launch.payload || {}) as any).city); this.athlete = new Athlete(this, W / 2, 330); this.athlete.show(false);
     this.frame.scoreNow = () => this.sessionScore();
     const meta = MICRO_REGISTRY[this.microId]();
     this.frame.intro(`${meta.instr} ${ROUNDS} rounds. Each one faster.`, () => this.nextRound());

@@ -4,6 +4,13 @@ import type { RunState, MinigameResult } from './core/types';
 import { MINIGAME_KEYS } from './core/types';
 import { buildPack } from './core/sim/pack';
 import { makeRng } from './core/sim/rng';
+import { renderDishCanvas } from './minigames/dishArt';
+import { META as WORKOUT_META, POOLS as WORKOUT_POOLS, DENSE_CITIES } from './minigames/workout/pools';
+import { CONSOLE_GAME_IDS } from './minigames/console/games';
+import citiesJson from './data/cities.json';
+import dishesJson from './data/dishes.json';
+import eventsJson from './data/events.json';
+import itemsJson from './data/items.json';
 
 export function installDebug(game: Phaser.Game) {
   const w = window as any;
@@ -41,6 +48,12 @@ export function installDebug(game: Phaser.Game) {
     forceEnding: (kind: 'win' | 'hospital' | 'flewhome' | 'outofdays' | 'quit' = 'hospital') => { const s = run()!; if (kind === 'hospital') s.health = 0; if (kind === 'flewhome') s.mood = 0; if (kind === 'outofdays') s.day = 366; if (kind === 'win') { s.cityId = s.startCity; s.visited = Array.from(new Set([...s.visited, 'tokyo', 'lisbon'])); s.day = Math.max(s.day, 200); } const e = SimMod.checkEnding(s, kind === 'win'); s.ending = e ?? { kind, text: 'forced', score: 0 }; s.phase = 'ended'; setRun(s); go('End'); },
     activeScenes: () => game.scene.getScenes(true).map(s => s.scene.key),
     errors: [] as string[],
+  };
+  // review hub data (tools/review.mjs)
+  (api as any).review = {
+    cities: citiesJson, dishes: dishesJson, events: eventsJson, items: itemsJson,
+    workoutMeta: WORKOUT_META, workoutPools: WORKOUT_POOLS, denseCities: Array.from(DENSE_CITIES), consoleGames: CONSOLE_GAME_IDS,
+    dishPng: (id: string) => renderDishCanvas(id).toDataURL('image/png'),
   };
   w.__nomad = api;
   window.addEventListener('error', e => api.errors.push(String(e.message)));

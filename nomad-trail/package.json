@@ -6,11 +6,12 @@
   "scripts": {
     "test": "vitest run",
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node tools/review.mjs",
     "preview": "vite preview",
     "sim": "tsx sim/run.ts",
     "copy:export": "python3 tools/copy_sync.py export",
-    "copy:import": "python3 tools/copy_sync.py import"
+    "copy:import": "python3 tools/copy_sync.py import",
+    "review": "node tools/review.mjs"
   },
   "keywords": [],
   "author": "",

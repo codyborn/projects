@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { META, MICRO_IDS, POOLS, pickSession, pickOne, seededRng, SESSION_LEN, ROUNDS } from './pools';
+import { META, MICRO_IDS, POOLS, DENSE_CITIES, pickSession, pickOne, seededRng, SESSION_LEN, ROUNDS } from './pools';
 describe('workout micro-game pools', () => {
   it('every pool entry has metadata; every micro has a command word, an instruction and a 4 to 9 s duration', () => {
     for (const [act, ids] of Object.entries(POOLS)) for (const id of ids!) expect(META[id], `${act}:${id}`).toBeDefined();
@@ -16,6 +16,12 @@ describe('workout micro-game pools', () => {
     expect(POOLS.boulder).toEqual(['boulderbeta', 'dyno']); expect(POOLS.trailrun).toEqual(['runner', 'riverstones']); expect(POOLS.hike).toEqual(['pace', 'riverstones']);
     expect(POOLS.swim).toEqual(['swimbreath']); for (const a of ['yoga', 'surf', 'ski'] as const) expect(POOLS[a]).toEqual(['balance', 'pose']);
     for (const id of POOLS.bands!) expect(['pushup', 'plank', 'jumprope', 'curls', 'burpee', 'squat', 'kettlebell', 'sprint', 'stretch']).toContain(id);
+  });
+  it('dense cities turn a run into City Run (Frogger); other cities keep the trail runner; the pick is seeded', () => {
+    expect(META.cityrun.word).toBe('CROSS!'); expect(DENSE_CITIES.has('newyork')).toBe(true);
+    let city = 0, elsewhere = 0; for (let s = 1; s <= 40; s++) { if (pickOne('trailrun', seededRng(s), 'newyork') === 'cityrun') city++; if (pickOne('trailrun', seededRng(s), 'boulder') === 'cityrun') elsewhere++; }
+    expect(city).toBeGreaterThan(24); expect(elsewhere).toBe(0);
+    expect(pickOne('bands', seededRng(3), 'tokyo')).toBe(pickOne('bands', seededRng(3), 'tokyo'));
   });
   it('three rounds of the longest game plus cards, intro and result stay under the 32 s budget', () => {
     const worst = Math.max(...MICRO_IDS.map(id => META[id].durationSec)); const play = [1.0, 1.3, 1.6].slice(0, ROUNDS).reduce((a, sp) => a + worst / sp, 0); expect(play + 0.7 + 0.5 * (ROUNDS - 1) + 0.65 * ROUNDS + 1 + 1.5).toBeLessThanOrEqual(30);

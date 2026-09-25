@@ -254,9 +254,12 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       if (s.backInjuryDays > 0) return { state, events: [], error: 'Your back says no. Not today.' };
       if (s.energy < 20) return { state, events: [], error: 'Too tired to train. Rest first.' };
       const acts = city.activities.filter(a => (a !== 'kite' || hasTag(s, 'kite')) && (a !== 'boulder' && a !== 'ferrata' || hasTag(s, 'climb')) && (a !== 'swim' || hasTag(s, 'swim')) && (a !== 'bands' || hasTag(s, 'fitness')) && (a !== 'ski' || hasTag(s, 'cold')) && (a !== 'yoga' || hasTag(s, 'fitness')));
-      const activity = acts.length ? acts[(s.stayDays + s.day) % acts.length] : 'trailrun';
+      // kite cities with the kite packed: the first training day is a kite day, then rotate
+      const ordered = acts.includes('kite') ? ['kite', ...acts.filter(a => a !== 'kite')] : acts;
+      const activity = ordered.length ? ordered[(s.stayDays + s.day) % ordered.length] : 'trailrun';
       const extraLives = hasItem(s, 'hikingboots') && OUTDOOR_ACTIVITIES.has(activity) && activity !== 'kite' ? 1 : 0;
       s.workStreak = 0;
+      if (activity === 'kite') return { state: s, events: [], minigame: { key: MINIGAME_KEYS.kite, payload: { city: city.id, day: s.day }, difficulty: diff } };
       return { state: s, events: [], minigame: { key: MINIGAME_KEYS.workout, payload: { activity, city: city.id, day: s.day, extraLives }, difficulty: diff, ...(extraLives ? { extraLives } : {}) } }; }
     case 'cook': {
       if (locked) return { state, events: [], error: 'No kitchen kit, no clean anything. The suitcase is somewhere else.' };

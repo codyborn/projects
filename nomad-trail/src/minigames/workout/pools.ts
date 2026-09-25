@@ -16,7 +16,8 @@ export const META: Record<string, MicroMeta> = {
   riverstones: { word: 'HOP!',      instr: 'Tap when the next stone is at its highest.', durationSec: 8 },
   swimbreath:  { word: 'STROKE!',   instr: "Tap LEFT, RIGHT, LEFT... When the bubble appears, DON'T tap: breathe.", durationSec: 8 },
   balance:     { word: 'STEADY!',   instr: 'Hold LEFT or RIGHT to lean against the gusts. Stay centred.', durationSec: 7 },
-  pose:        { word: 'MATCH!',    instr: 'Drag up/down to rotate the arm until it matches the shadow.', durationSec: 7 },
+  pose:        { word: 'MATCH!',    instr: 'Drag up/down to rotate into the pose the shadow shows: Downward Dog, Cobra or Warrior II. Hold it.', durationSec: 7 },
+  cityrun:     { word: 'CROSS!',    instr: 'Tap to run forward a lane. Tap the sides to sidestep. Swipe DOWN to step back. Do not get hit.', durationSec: 9 },
   runner:      { word: 'RUN!',      instr: 'Tap to jump the rocks. Swipe DOWN to duck the branches.', durationSec: 8 },
   pace:        { word: 'PACE!',     instr: 'Hold to walk. Keep the marker in the green band. Too fast and you get dizzy.', durationSec: 8 },
 };
@@ -34,12 +35,15 @@ export const SESSION_LEN = 1;
 export const ROUNDS = 3;
 export const ROUND_SPEEDS = [1.0, 1.3, 1.6];
 /** Pick the workout's micro-game(s) for an activity (unknown → hotel room), shuffled with rng(); seeded by city+day upstream so days differ. */
-export function pickSession(activity: string, rng: () => number): string[] {
+/** Cities where a run is a Frogger game: cyclists, cabs and buses instead of rocks and branches. */
+export const DENSE_CITIES = new Set(['newyork', 'tokyo', 'bangkok', 'hongkong', 'london']);
+export function pickSession(activity: string, rng: () => number, city?: string): string[] {
+  if (city && DENSE_CITIES.has(city) && (activity === 'trailrun' || activity === 'bands' || !POOLS[activity as ActivityId]) && rng() < 0.8) return ['cityrun'];
   const pool = [...(POOLS[activity as ActivityId] ?? POOLS.bands!)];
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
   return pool.slice(0, Math.min(SESSION_LEN, pool.length));
 }
-export function pickOne(activity: string, rng: () => number): string { return pickSession(activity, rng)[0]; }
+export function pickOne(activity: string, rng: () => number, city?: string): string { return pickSession(activity, rng, city)[0]; }
 /** mulberry32 */
 export function seededRng(seed: number) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 export function hashStr(s: string) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }

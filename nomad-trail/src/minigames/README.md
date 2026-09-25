@@ -35,6 +35,10 @@ Console extras: `?auto=1&fast=1&only=CarryOn&limit=3` filters the auto run; `?co
 - Carry-On hazard AI is simple (no pathing); the validator ignores mid-air ceilings.
 - Cooking `stir` on desktop needs a mouse drag or holding RIGHT.
 
+## Cooking reveal (round 8)
+
+When the last step ends, the finished dish art grows to ~3.4x, centred, for 1.5 s (cap paused) with a treatment for the mean accuracy: 90-100 sparkle + warm glow (**CHEF'S KISS**), 50-90 plain with steam (**GOOD**), 30-50 tinted towards `earth1` with dark smoke (**A BIT BURNT**), 0-30 tinted towards `grass1` with a queasy wobble (**QUESTIONABLE**). Harness: `?cook=<accuracy>` forces every step's accuracy (`payload.debugAccuracy`).
+
 ## Workout (round 6): one WarioWare-style micro-game per workout, three escalating rounds
 
 `Workout` (payload `{ activity, city, day?, seed?, plan? }`) plays ONE fitness micro-game that matches the activity, picked from the activity's pool and seeded by `city|day` (so different days give different games; `plan: [id]` forces one for tests). The game runs for 3 ROUNDS: a command-word card (0.7 s) opens round 1; `ROUND 2` / `FINAL` cards (0.5 s) open the others; game speed steps x1.0 → x1.3 → x1.6 and each round is shorter (`durationSec / speed`). A countdown bar under the HUD shows the round's time. Lives = 1 + `extraLives` (hiking boots), drawn as hearts: a round scored under 50% costs a life and the session continues to the next round; out of lives → FAILED with the partial score. Session score = mean of round scores. Frame cap 30 s; a full session is 22 to 28 s. Ferrata is the Zeke's Peak climb, unchanged.
@@ -47,6 +51,7 @@ Console extras: `?auto=1&fast=1&only=CarryOn&limit=3` filters the auto run; `?co
 | hike | pace, riverstones |
 | swim | swimbreath |
 | yoga, surf, ski | balance, pose |
+| newyork, tokyo, bangkok, hongkong, london (trailrun or bands) | cityrun, 80% of days (seeded); otherwise the normal pool |
 | ferrata | the marble climb (no micro-game) |
 
 | id | word | skill test | controls |
@@ -65,7 +70,8 @@ Console extras: `?auto=1&fast=1&only=CarryOn&limit=3` filters the auto run; `?co
 | riverstones | HOP! | tap when the next bobbing stone is at its highest; 5 stones, 3 splashes ends it | tap |
 | swimbreath | STROKE! | alternate LEFT/RIGHT taps to the beat; when the bubble shows, do NOT tap (breathe) | tap sides / ←→ |
 | balance | STEADY! | hold left/right against visible gusts to keep the ball centred; falling off ends it | hold sides / ←→ |
-| pose | MATCH! | drag up/down to rotate the arm onto the shadow within tolerance, hold 0.5 s; 3 poses | drag / ↑↓ |
+| pose | MATCH! | drag up/down; the figure SNAPS to the nearest yoga pose by angle band (Downward Dog `\`, Cobra `/`, Warrior II `–`); match the shadow's pose and hold 0.5 s; 3 poses | drag / ↑↓ |
+| cityrun | CROSS! | Frogger in a dense city: cross 6 lanes (bike lanes with fast cyclists, avenues with cabs, a bus lane); tap/swipe up to advance, tap the sides to sidestep, swipe down to step back; 3 crossings per round, traffic +15% per crossing, a hit sends you back to the kerb (3 hits ends it) | tap, swipes / arrows |
 | runner | RUN! | trail run: tap to jump rocks, swipe DOWN to duck branches | tap / swipe down |
 | pace | PACE! | hike pace meter: hold to walk, stay in the green, too fast = dizzy | hold |
 

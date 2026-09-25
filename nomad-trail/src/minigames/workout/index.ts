@@ -5,10 +5,11 @@ import { Plank, Squat, Stretch, BalanceBoard, SprintStop } from './hold';
 import { Curls, Burpee, SwimBreath, PoseMatch } from './gesture';
 import { BoulderBeta } from './boulder';
 import { Runner, Pace } from './legacy';
-export { POOLS, META, MICRO_IDS, SESSION_LEN, ROUNDS, ROUND_SPEEDS, pickSession, pickOne, seededRng, hashStr } from './pools';
+import { CityRun } from './cityrun';
+export { POOLS, META, MICRO_IDS, SESSION_LEN, ROUNDS, ROUND_SPEEDS, DENSE_CITIES, pickSession, pickOne, seededRng, hashStr } from './pools';
 
 export const MICRO_REGISTRY: Record<string, () => Micro> = {
   pushup: () => new PushUp(), plank: () => new Plank(), jumprope: () => new JumpRope(), curls: () => new Curls(), burpee: () => new Burpee(), squat: () => new Squat(),
   kettlebell: () => new Kettlebell(), sprint: () => new SprintStop(), stretch: () => new Stretch(), boulderbeta: () => new BoulderBeta(), dyno: () => new Dyno(),
-  riverstones: () => new RiverStones(), swimbreath: () => new SwimBreath(), balance: () => new BalanceBoard(), pose: () => new PoseMatch(), runner: () => new Runner(), pace: () => new Pace(),
+  riverstones: () => new RiverStones(), swimbreath: () => new SwimBreath(), balance: () => new BalanceBoard(), pose: () => new PoseMatch(), runner: () => new Runner(), pace: () => new Pace(), cityrun: () => new CityRun(),
 };
