@@ -66,7 +66,8 @@ function drawVessel(p: Px, v: Vessel, vc?: PalKey) {
     case 'slice': p.tri(8, 6, 40, 6, 24, 30, 'ink'); p.tri(9, 7, 39, 7, 24, 28, 'earth3'); p.rect(9, 7, 30, 3, 'earth2'); break;
     case 'pan': p.ellipse(22, 19, 17, 8, 'gray0'); p.ellipseRaw(22, 19, 15, 7, 'ink'); p.rect(38, 18, 9, 2, 'gray0'); p.rect(38, 17.5, 9, 0.6, 'gray1'); break;
     case 'grill': p.box(5, 9, 38, 20, 'ink'); for (let i = 0; i < 9; i++) p.rect(6, 10 + i * 2.2, 36, 1, 'gray0'); p.rect(6, 10, 36, 1, 'gray1'); break;
-    case 'tagine': p.ellipse(cx, 22, 20, 7, 'sun0'); p.ellipseRaw(cx, 21, 18, 6, 'earth2'); p.ellipseRaw(cx, 20.5, 17, 5.5, 'sun0'); p.tri(40, 8, 46, 8, 43, 3, 'sun0'); p.rect(39, 8, 8, 2, 'earth2'); break;
+    case 'tagine': p.ellipse(cx, 23, 19, 6, 'sun0'); p.rect(5, 19, 38, 4, 'sun0'); p.rect(4.5, 19, 1, 4, 'ink'); p.rect(42.5, 19, 1, 4, 'ink'); p.ellipse(cx, 19, 19, 5, 'earth2'); p.ellipseRaw(cx, 19, 17, 4, 'sun0');   // shallow base, food heaps above it
+      p.tri(2, 14, 16, 14, 9, 2, 'ink'); p.tri(3, 13, 15, 13, 9, 3, 'sun0'); p.rect(2, 13, 14, 2, 'earth2'); p.dot(9, 2, 'earth2'); break;   // the conical lid set aside
   }
 }
 
@@ -168,7 +169,7 @@ export const dishArtSpecs: Record<string, DishArtSpec> = {
   kaiserschmarrn: { vessel: 'plate', layers: [{ s: 'pile', c: 'sun1', c2: 'sun2', n: 10, w: 24, h: 6 }, { s: 'pile', c: 'sun2', c2: 'sun3', n: 5, w: 18, h: 4, y: -2 }, { s: 'sprinkles', c: 'white', n: 9, w: 22, h: 5, y: -2 }, { s: 'sauce', c: 'dusk2', c2: 'dusk3', w: 8, h: 3, x: 13, y: 2 }] },
   kaspressknoedel: { vessel: 'bowl', vc: 'earth2', layers: [{ s: 'sauce', c: 'sun3', w: 26, h: 8 }, { s: 'patty', c: 'earth2', c2: 'earth3', w: 9, h: 4, x: -5, y: -1 }, { s: 'patty', c: 'earth2', c2: 'earth3', w: 9, h: 4, x: 5, y: 1 }, { s: 'sprinkles', c: 'grass2', n: 6, w: 20, h: 4, y: -1 }] },
   // --- Morocco
-  tagine: { vessel: 'tagine', layers: [{ s: 'cubes', c: 'earth0', c2: 'earth1', n: 5, w: 22, h: 5 }, { s: 'pile', c: 'sun1', c2: 'sun2', n: 5, w: 20, h: 4, y: -1 }, { s: 'sprinkles', c: 'earth3', n: 6, w: 20, h: 4, y: -1 }, { s: 'sauce', c: 'sun0', w: 24, h: 3, y: 3 }] },
+  tagine: { vessel: 'tagine', layers: [{ s: 'mound', c: 'earth1', c2: 'earth2', w: 30, h: 12, y: -3 }, { s: 'cubes', c: 'earth0', c2: 'earth1', n: 7, w: 24, h: 7, y: -4 }, { s: 'pile', c: 'sun1', c2: 'sun2', n: 6, w: 22, h: 6, y: -5 }, { s: 'sprinkles', c: 'white', n: 7, w: 22, h: 6, y: -5 }, { s: 'leaves', c: 'grass2', n: 4, w: 18, h: 4, y: -7 }] },
   couscous: { vessel: 'plate', layers: [{ s: 'dome', c: 'sun3', c2: 'white', w: 24, h: 9, y: -1 }, { s: 'sticks', c: 'sun0', n: 2, w: 6, x: -6, y: -3 }, { s: 'cubes', c: 'grass2', n: 3, w: 14, h: 4, y: -2 }, { s: 'sprinkles', c: 'sun2', n: 8, w: 20, h: 5, y: -2 }, { s: 'sauce', c: 'red', w: 5, h: 2, x: 12, y: 2 }] },
   // --- Asia
   bibimbap: { vessel: 'stonebowl', layers: [{ s: 'dome', c: 'white', c2: 'sun3', w: 26, h: 8, y: -1 }, { s: 'medley', c: 'grass2', c2: 'sun0', c3: 'earth1', n: 6, y: -2 }, { s: 'pile', c: 'sun3', c2: 'white', n: 3, w: 14, h: 2, y: 1 }, { s: 'yolk', c2: 'sun2', y: -3 }, { s: 'sauce', c: 'red', w: 4, h: 2, x: 8, y: -4 }] },
