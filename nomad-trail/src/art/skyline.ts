@@ -89,7 +89,7 @@ const CITY: Record<string, Drawer> = {
   tokyo: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') buildings(ctx, w, hy, c, win, r, 40, 110, 8, 18, 0.5);
     else if (L === 'mid') { buildings(ctx, w, hy, c, win, r, 30, 80, 10, 22, 0.5); neonSigns(ctx, w, hy, r, 12);
       // Godzilla, Shinjuku-style: a subtle head-and-shoulders shape in the building colour, peeking over a rooftop in the right third
-      const gx = Math.floor(w * 0.39), gt = hy - 58, gc = PAL.night3; R(ctx, gx - 22, gt + 10, 44, 60, c); for (let wy = gt + 14; wy < hy; wy += 4) for (let wx = gx - 20; wx < gx + 20; wx += 3) if (r.chance(0.4)) P(ctx, wx, wy, win);   // the building he is behind
+      const gx = Math.floor(w * 0.39), gt = hy - 58, gc = c;   // the same colour the mid-layer buildings use at this time of day R(ctx, gx - 22, gt + 10, 44, 60, c); for (let wy = gt + 14; wy < hy; wy += 4) for (let wx = gx - 20; wx < gx + 20; wx += 3) if (r.chance(0.4)) P(ctx, wx, wy, win);   // the building he is behind
       R(ctx, gx - 14, gt - 6, 28, 16, gc); R(ctx, gx - 6, gt - 18, 16, 14, gc); R(ctx, gx + 8, gt - 14, 8, 6, gc);   // shoulders, head, snout
       for (let i = 0; i < 4; i++) { const sy = gt - 16 + i * 6; for (let k = 0; k < 5; k++) R(ctx, gx - 10 - k, sy + k, 1, 5 - k, gc); }   // back spines
       P(ctx, gx + 4, gt - 13, PAL.sun1, 1, 1);   // a faint eye
@@ -97,10 +97,11 @@ const CITY: Record<string, Drawer> = {
       const ty = hy - 46; R(ctx, 0, ty + 8, w, 3, c); for (let x = 12; x < w; x += 40) R(ctx, x, ty + 11, 4, hy - ty - 11, c);
       for (let seg = 0; seg < 4; seg++) { const tx = 20 + seg * 26; R(ctx, tx, ty - 2, 24, 10, PAL.gray2); R(ctx, tx, ty + 4, 24, 2, PAL.grass1); for (let k = 2; k < 22; k += 5) R(ctx, tx + k, ty, 3, 3, win); }
     } else { buildings(ctx, w, hy, c, win, r, 10, 34, 14, 30, 0.3); neonSigns(ctx, w, hy, r, 8); } },
-  innsbruck: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { const mc = tod === 'day' ? PAL.night3 : tod === 'night' ? PAL.night2 : PAL.dusk0; peaks(ctx, w, hy, mc, r, 82, 26, PAL.white, 0.7); R(ctx, 0, hy - 2, w, 4, mc); } else if (L === 'mid') { const jag = 40, amp = 60; let px0 = 0; const pts: number[] = []; while (px0 <= w) { pts.push(hy - r.int(amp * 0.3, amp)); px0 += jag; }
-      const prof: number[] = []; for (let px = 0; px < w; px++) { const i = Math.floor(px / jag), t = (px % jag) / jag; const y = Math.round(pts[i] * (1 - t) + (pts[Math.min(i + 1, pts.length - 1)]) * t); prof.push(y); R(ctx, px, y, 1, hy - y + 2, c); }
-      trees(ctx, w, hy, c, r, 30);
-      const hx = Math.floor(w * 0.31), hb = prof[hx] + 2, hw = 10;   // the Hütte on the Nordkette slope
+  innsbruck: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { const mc = tod === 'day' ? PAL.night3 : tod === 'night' ? PAL.night2 : PAL.dusk0; peaks(ctx, w, hy, mc, r, 82, 26, PAL.white, 0.7); R(ctx, 0, hy - 2, w, 4, mc); } else if (L === 'mid') { const rc = tod === 'day' ? PAL.night2 : c;   // one step darker than the far peaks so the ridge reads as its own line
+      const jag = 40, amp = 60; let px0 = 0; const pts: number[] = []; while (px0 <= w) { pts.push(hy - r.int(amp * 0.3, amp)); px0 += jag; }
+      const prof: number[] = []; for (let px = 0; px < w; px++) { const i = Math.floor(px / jag), t = (px % jag) / jag; const y = Math.round(pts[i] * (1 - t) + (pts[Math.min(i + 1, pts.length - 1)]) * t); prof.push(y); R(ctx, px, y, 1, hy - y + 2, rc); }
+      trees(ctx, w, hy, rc, r, 30);
+      const hx = Math.floor(w * 0.18), hb = prof[hx] + 2, hw = 10;   // the Hütte on the Nordkette slope, clear of the tower
       R(ctx, hx - 1, hb - 8, hw + 2, 9, PAL.ink); R(ctx, hx, hb - 7, hw, 7, PAL.white); for (let k = 0; k < 4; k++) R(ctx, hx - 1 + k, hb - 8 - 4 + k, hw + 2 - k * 2, 1, PAL.earth0); R(ctx, hx + 3, hb - 4, 2, 2, win); R(ctx, hx + hw + 1, hb - 16, 1, 9, PAL.gray1); R(ctx, hx + hw + 2, hb - 16, 4, 3, PAL.red);
     } else { buildings(ctx, w, hy, c, win, r, 14, 30, 12, 22, 0.4); const x = Math.floor(w * 0.3); R(ctx, x, hy - 60, 8, 60, c); circle(ctx, x + 4, hy - 64, 6, c); R(ctx, x + 3, hy - 74, 2, 6, c); P(ctx, x + 2, hy - 50, win); P(ctx, x + 5, hy - 50, win); } },
   dakhla: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') sandDunes(ctx, w, hy, PAL.sun3, PAL.earth3, r, 34); else if (L === 'mid') { water(ctx, w, hy - 14, 14, tod, r); kites(ctx, w, hy - 14, r, 8); } else sandDunes(ctx, w, hy + 6, PAL.earth3, PAL.earth2, r, 22); },
