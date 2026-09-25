@@ -19,7 +19,8 @@ export interface ConsoleCtx {
 
 export interface ConsoleGame {
   readonly id: ConsoleGameId; readonly name: string; readonly instructions: string;
-  /** seconds of play before the shell ends the game with scoreNow() */ readonly capSec: number;
+  /** 2 to 3 short lines mapping the D-pad / A / B for this cartridge, shown on the title card */ readonly controls: string[];
+  /** seconds of play before the shell ends the game with scoreNow(); 0 = no cap, the game decides (Pack-Tris) */ readonly capSec: number;
   init(ctx: ConsoleCtx, done: (r: ConsoleResult) => void): void;
   update(dt: number, pad: Pad): void;
   scoreNow(): number;

@@ -11,7 +11,7 @@ interface Mover { spr: Phaser.GameObjects.Rectangle; vx: number; vy: number; kin
 const RAMP_AT = 40;
 
 export class CarryOnGame implements ConsoleGame {
-  readonly id = 'carryon' as const; readonly name = 'CARRY-ON'; readonly capSec = 60;
+  readonly id = 'carryon' as const; readonly name = 'CARRY-ON'; readonly controls = ['D-PAD  move', 'A      jump (hold for higher)', 'START  pause']; readonly capSec = 60;
   get instructions() { return `Collect the ${this.total || 'stamp'} pieces. Dodge the ${this.level.hazard}s. D-pad moves, A jumps.`; }
   private ctx!: ConsoleCtx; private done!: (r: ConsoleResult) => void; private level!: ArcadeLevel; private ox = 0; private oy = 0; private cols = 23; private rows = 20;
   private player!: Phaser.Physics.Arcade.Sprite; private solids!: Phaser.Physics.Arcade.StaticGroup; private oneways!: Phaser.Physics.Arcade.StaticGroup;

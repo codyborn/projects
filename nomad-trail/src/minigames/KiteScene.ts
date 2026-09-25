@@ -1,57 +1,160 @@
 import Phaser from 'phaser';
 import { PAL } from '../core/palette';
 import { MINIGAME_KEYS, type MinigameLaunch } from '../core/types';
-import { MinigameFrame, Meter, W, H, clamp, normalizeLaunch, txt } from './_shared';
+import { MinigameFrame, Meter, W, H, clamp, normalizeLaunch, panel, txt, pixTexture } from './_shared';
 
-/** Kiteboarding: keep the kite in the power zone as gusts shift it; tap to jump off the swell peaks. 35s. */
+/**
+ * KITEBOARDING, one loop: HOLD anywhere and the kite steers toward your finger across the wind window; keep it in the glowing
+ * power zone to fill the SPEED meter (~2 s in the zone; drains outside it) while the rider tears across the water.
+ * RELEASE to jump: height and hang time scale with speed, with a bonus when the swell crest is under the board. Land clean
+ * for points; a low-speed release is a hop; landing in a trough is a wipeout (splash, 1.5 s). 35 s. Score = air time + clean landings.
+ * An instruction card (HOLD / RELEASE / SWELL) waits for READY; the cap is paused while it is up. Payload: { city? } (for the label).
+ */
 const DUR = 35;
 export class KiteScene extends Phaser.Scene {
   private frame!: MinigameFrame; private launch!: MinigameLaunch; private g!: Phaser.GameObjects.Graphics; private meter!: Meter;
-  private kiteA = 0; private zoneC = 0; private zoneTarget = 0; private zoneW = 0.5; private speed = 0; private inZone = 0; private elapsed = 0; private jumps = 0; private wipeouts = 0; private airborne = 0; private riderY = 0; private gustWarn = 0; private dragging = false;
-  private waveOff = 0; private tick?: Phaser.Time.TimerEvent; private msg!: Phaser.GameObjects.Text;
+  private kiteA = 0; private zoneC = 0; private zoneTarget = 0; private zoneW = 0.4; speed = 0; private elapsed = 0;
+  held = false; private fingerX = W / 2; private airborne = 0; private hang = 0; private airTotal = 0; private clean = 0; private wipeouts = 0; private recover = 0; private hop = 0;
+  private waveOff = 0; private tick?: Phaser.Time.TimerEvent; private msg!: Phaser.GameObjects.Text; private rider!: Phaser.GameObjects.Sprite; private spray: { x: number; y: number; vx: number; vy: number; t: number }[] = [];
+  waiting = true; private card: Phaser.GameObjects.GameObject[] = []; private gust = 0; private cityName = '';
   constructor() { super(MINIGAME_KEYS.kite); }
-  init(data: any) { this.launch = normalizeLaunch(data); this.kiteA = 0; this.zoneC = 0; this.zoneTarget = 0; this.speed = 0; this.inZone = 0; this.elapsed = 0; this.jumps = 0; this.wipeouts = 0; this.airborne = 0; this.riderY = 0; this.waveOff = 0; }
+  init(data: any) {
+    this.launch = normalizeLaunch(data); const p = this.launch.payload || {}; this.cityName = String(p.cityName || p.city || '').toUpperCase();
+    this.kiteA = 0; this.zoneC = 0.15; this.zoneTarget = 0.15; this.speed = 0; this.elapsed = 0; this.held = false; this.fingerX = W / 2; this.airborne = 0; this.hang = 0; this.airTotal = 0; this.clean = 0; this.wipeouts = 0; this.recover = 0; this.hop = 0; this.waveOff = 0; this.spray = []; this.waiting = true; this.card = []; this.gust = 0;
+  }
   create() {
-    this.frame = new MinigameFrame(this, this.launch, 'Kiteboarding'); this.cameras.main.setBackgroundColor(PAL.sky1);
-    this.g = this.add.graphics().setDepth(3); this.meter = new Meter(this, 40, 600, W - 80, 8); this.zoneW = 0.34 * this.frame.window + 0.12;
-    this.msg = txt(this, W / 2, 130, '', 12, PAL.white).setDepth(8);
-    this.frame.hud();
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { if (p.y < 420) this.dragging = true; }); this.input.on('pointerup', () => { this.dragging = false; });
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => { if (this.dragging && this.frame.active) this.kiteA = clamp((p.x - W / 2) / 140, -1, 1); });
-    this.frame.onTap(p => { if (p && p.y < 420) return; this.tryJump(); }); this.input.keyboard?.on('keydown-UP', () => this.tryJump());
-    this.frame.scoreNow = () => 60 * (this.inZone / DUR) + Math.min(40, this.jumps * 8) - this.wipeouts * 4;
-    this.frame.intro('Drag the kite left/right to stay in the bright power zone. Gusts move it. Tap the water when a wave peaks under you to jump.', () => { this.tick = this.time.addEvent({ delay: 16, loop: true, callback: () => this.step(0.016) }); });
+    this.frame = new MinigameFrame(this, this.launch, 'Kiteboarding'); this.frame.capSec = DUR + 1; this.cameras.main.setBackgroundColor(PAL.sky1);
+    this.g = this.add.graphics().setDepth(3); this.meter = new Meter(this, 40, 604, W - 80, 10, PAL.neon); this.zoneW = 0.3 * this.frame.window + 0.14;
+    this.buildRider(); this.rider = this.add.sprite(W / 2, 470, 'kb_rider', 0).setOrigin(0.5, 1).setDepth(6).setScale(3);
+    this.msg = txt(this, W / 2, 130, '', 14, PAL.white).setDepth(8);
+    this.frame.hud(); this.frame.setProgress(this.cityName || 'WIND DAY');
+    this.frame.scoreNow = () => this.score();
+    this.frame.intro('Wind at 2 pm, like a train timetable. Read the card, then ride.', () => { this.frame.pauseCap(); this.showCard(); }, { auto: true });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.tick?.remove());
   }
-  update(_t: number, dt: number) { this.frame.update(dt); const kb = this.input.keyboard; if (kb && this.frame.active) { if (kb.addKey('LEFT').isDown) this.kiteA = clamp(this.kiteA - 0.03, -1, 1); if (kb.addKey('RIGHT').isDown) this.kiteA = clamp(this.kiteA + 0.03, -1, 1); } }
+  private score() { return clamp((this.airTotal / 13) * 70 + Math.min(30, this.clean * 6) - this.wipeouts * 6, 0, 100); }
+
+  // ---------- instruction card ----------
+  private showCard() {
+    const s = this; const add = (o: Phaser.GameObjects.GameObject) => { this.card.push(o); return o; };
+    add(s.add.rectangle(W / 2, H / 2, W, H, PAL.night0, 0.9).setDepth(900)); add(panel(s, 16, 96, W - 32, 470, PAL.night2).setDepth(901));
+    add(txt(s, W / 2, 124, 'KITEBOARDING', 10, PAL.gray2).setDepth(902)); add(txt(s, W / 2, 150, this.cityName || 'WIND DAY', 24, PAL.sun3).setDepth(902));
+    const ic = s.add.graphics().setDepth(902); add(ic);
+    const row = (y: number, draw: () => void, label: string) => { ic.fillStyle(PAL.night3).fillRect(34, y - 22, 48, 44); draw(); add(txt(s, 94, y, label, 10, PAL.white, 'left').setDepth(902)); };
+    row(212, () => { ic.fillStyle(PAL.neon).fillCircle(58, 212, 9); ic.fillStyle(PAL.night3).fillCircle(58, 212, 5); ic.fillStyle(PAL.neon).fillRect(40, 226, 36, 3); }, 'HOLD anywhere\nthe kite follows your finger\nleft and right');
+    row(272, () => { ic.fillStyle(PAL.sun2).fillRect(40, 282, 36, 3); ic.fillStyle(PAL.sun2).fillRect(40, 282, 22, 3); ic.fillStyle(PAL.neon).fillRect(40, 268, 8, 10).fillRect(50, 262, 8, 16).fillRect(60, 256, 8, 22); }, 'KEEP IT IN THE GLOW\nthe power zone fills\nyour SPEED');
+    row(332, () => { ic.fillStyle(PAL.white).fillTriangle(58, 316, 48, 332, 68, 332); ic.fillStyle(PAL.white).fillRect(55, 332, 6, 12); }, 'RELEASE to jump\nmore speed = more air');
+    row(392, () => { ic.lineStyle(3, PAL.sea3).beginPath(); for (let x = 0; x <= 40; x += 2) { const y = 396 + Math.sin(x / 6) * 6; if (x === 0) ic.moveTo(38 + x, y); else ic.lineTo(38 + x, y); } ic.strokePath(); ic.fillStyle(PAL.sun2).fillCircle(58, 386, 3); }, 'release on a CREST for a bonus\nland in a trough = wipeout');
+    add(txt(s, W / 2, 440, `${DUR} seconds of wind. Air time and clean landings score.`, 9, PAL.sun1).setDepth(902));
+    const btn = s.add.rectangle(W / 2, 510, 200, 52, PAL.sun0).setDepth(902).setStrokeStyle(2, PAL.ink).setInteractive({ useHandCursor: true }); add(btn); add(txt(s, W / 2, 510, 'READY', 18, PAL.white).setDepth(903));
+    s.tweens.add({ targets: btn, scaleX: 1.04, scaleY: 1.06, yoyo: true, repeat: -1, duration: 600 });
+    btn.on('pointerdown', () => this.startRun()); const kb = this.input.keyboard; kb?.once('keydown-SPACE', () => this.startRun()); kb?.once('keydown-ENTER', () => this.startRun());
+  }
+  /** Dismiss the card and start the 35 s of wind (also called by the harness). */
+  startRun() {
+    if (!this.waiting) return; this.waiting = false; this.card.forEach(o => o.destroy()); this.card = []; this.frame.resumeCap();
+    this.time.delayedCall(60, () => {   // a beat so the READY tap itself is not read as the first hold
+      this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { this.held = true; this.fingerX = p.x; });
+      this.input.on('pointermove', (p: Phaser.Input.Pointer) => { if (this.held) this.fingerX = p.x; });
+      this.input.on('pointerup', () => { if (this.held) { this.held = false; this.release(); } });
+      const kb = this.input.keyboard; kb?.on('keydown-SPACE', () => { if (!this.held) { this.held = true; this.fingerX = W / 2 + this.kiteA * 140; } }); kb?.on('keyup-SPACE', () => { if (this.held) { this.held = false; this.release(); } });
+      this.tick = this.time.addEvent({ delay: 16, loop: true, callback: () => this.step(0.016) });
+    });
+  }
+  /** Harness: press/release programmatically. */
+  press(x: number) { this.held = true; this.fingerX = x; }
+  letGo() { if (this.held) { this.held = false; this.release(); } }
+  /** Harness hint: the finger x that puts the kite in the zone, and whether the swell is under the board right now. */
+  hint() { return { x: W / 2 + this.zoneC * 140, crest: this.wavePhase() > 0.55, speed: this.speed, airborne: this.airborne > 0, recovering: this.recover > 0 }; }
+
+  update(_t: number, dt: number) { this.frame.update(dt); const kb = this.input.keyboard; if (kb && this.frame.active && this.held) { if (kb.addKey('LEFT').isDown) this.fingerX -= 4; if (kb.addKey('RIGHT').isDown) this.fingerX += 4; } }
   private wavePhase() { return Math.sin(this.waveOff * 1.3); }
-  private tryJump() { if (!this.frame.active || this.airborne > 0) return; const peak = this.wavePhase() > 0.75 - 0.25 * this.frame.window; if (peak && this.speed > 0.35) { this.airborne = 0.9 + this.speed * 0.5; this.jumps++; this.frame.flash(PAL.white, 40); this.msg.setText('AIR!'); } else { this.wipeouts++; this.speed = 0; this.frame.shake(200, 0.01); this.msg.setText(peak ? 'not enough speed' : 'wipeout'); } this.time.delayedCall(900, () => this.msg.setText('')); }
+  private release() {
+    if (!this.frame.active || this.airborne > 0 || this.recover > 0) return;
+    if (this.speed < 0.25) { this.hop = 0.3; this.msg.setText('hop').setColor('#b4b9c4'); return; }
+    const crest = this.wavePhase() > 0.55; this.hang = (0.5 + this.speed * 1.4) * (crest ? 1.3 : 1); this.airborne = this.hang;
+    this.msg.setText(crest ? 'BOOST!' : 'AIR').setColor(crest ? '#f7cf6b' : '#f4f1ea'); this.frame.flash(PAL.white, 40);
+    for (let i = 0; i < 14; i++) this.spray.push({ x: W / 2 + (Math.random() - 0.5) * 30, y: 470, vx: (Math.random() - 0.5) * 120, vy: -60 - Math.random() * 90, t: 0.6 });
+  }
   private step(dt: number) {
-    if (!this.frame.active) return; this.elapsed += dt; this.waveOff += dt * (0.8 + this.speed * 1.2);
-    // gusts: every 3..5s pick a new zone center with a 0.8s warning
-    this.gustWarn -= dt; if (this.gustWarn < -Phaser.Math.FloatBetween(2.2, 4) / this.frame.speed) { this.gustWarn = 0.8; this.zoneTarget = Phaser.Math.FloatBetween(-0.75, 0.75); }
-    if (this.gustWarn <= 0) this.zoneC += (this.zoneTarget - this.zoneC) * Math.min(1, dt * 3);
-    const inz = Math.abs(this.kiteA - this.zoneC) <= this.zoneW / 2; if (inz) { this.inZone += dt; this.speed = clamp(this.speed + dt * 0.5, 0, 1); } else this.speed = clamp(this.speed - dt * 0.35 * (1 + this.frame.hard), 0, 1);
-    if (this.airborne > 0) { this.airborne -= dt; this.riderY = -Math.sin(Math.PI * clamp(this.airborne / 1.2, 0, 1)) * 90; if (this.airborne <= 0) { this.riderY = 0; this.frame.shake(60, 0.002); } }
-    // draw
-    const g = this.g; g.clear(); const horizon = 300;
-    g.fillStyle(PAL.sky2).fillRect(0, 26, W, horizon - 26); g.fillStyle(PAL.sun3, 0.6).fillCircle(60, 90, 22);
-    // wind window arc + zone
-    const cx = W / 2, cy = 320, R = 150; g.lineStyle(2, PAL.white, 0.5).beginPath(); for (let a = -1; a <= 1.001; a += 0.05) { const x = cx + Math.sin(a * 1.2) * R, y = cy - Math.cos(a * 1.2) * R; if (a === -1) g.moveTo(x, y); else g.lineTo(x, y); } g.strokePath();
-    g.lineStyle(10, this.gustWarn > 0 ? PAL.pink : PAL.sun2, inz ? 0.9 : 0.5).beginPath(); for (let a = this.zoneC - this.zoneW / 2; a <= this.zoneC + this.zoneW / 2 + 0.001; a += 0.02) { const aa = clamp(a, -1, 1); const x = cx + Math.sin(aa * 1.2) * R, y = cy - Math.cos(aa * 1.2) * R; if (a === this.zoneC - this.zoneW / 2) g.moveTo(x, y); else g.lineTo(x, y); } g.strokePath();
-    if (this.gustWarn > 0) { for (let i = 0; i < 6; i++) g.fillStyle(PAL.white, 0.5).fillRect(((i * 61 + this.elapsed * 500) % W), 60 + i * 30, 26, 1); }
-    // kite + lines
-    const kx = cx + Math.sin(this.kiteA * 1.2) * R, ky = cy - Math.cos(this.kiteA * 1.2) * R; const rx = cx, ry = 400 + this.riderY;
-    g.lineStyle(1, PAL.gray2, 0.8).lineBetween(kx - 6, ky + 4, rx - 3, ry - 10).lineBetween(kx + 6, ky + 4, rx + 3, ry - 10);
-    g.fillStyle(PAL.ink).fillTriangle(kx - 26, ky + 6, kx, ky - 14, kx + 26, ky + 6); g.fillStyle(inz ? PAL.sun0 : PAL.dusk3).fillTriangle(kx - 24, ky + 5, kx, ky - 11, kx + 24, ky + 5);
-    // sea + waves
-    g.fillStyle(PAL.sea1).fillRect(0, horizon, W, H - horizon); for (let i = 0; i < 4; i++) { const ph = Math.sin(this.waveOff * 1.3 + i * 1.7); g.fillStyle(PAL.sea2, 0.7).fillEllipse(((i * 130 - this.waveOff * 60) % (W + 200) + W + 200) % (W + 200) - 100, 430 + i * 14, 120, 14 + ph * 10); }
-    const bump = this.wavePhase(); g.fillStyle(PAL.sea3, 0.8).fillEllipse(cx, 428 - bump * 8, 90, 16 + bump * 10);
-    // rider + board
-    g.fillStyle(PAL.ink).fillRect(rx - 22, ry + 10, 44, 6); g.fillStyle(PAL.sun2).fillRect(rx - 20, ry + 10, 40, 4); g.fillStyle(PAL.earth3).fillRect(rx - 5, ry - 12, 10, 22); g.fillStyle(PAL.ink).fillRect(rx - 4, ry - 20, 8, 8);
-    if (this.speed > 0.3 && this.airborne <= 0) for (let i = 0; i < 5; i++) g.fillStyle(PAL.white, 0.6).fillCircle(rx - 24 - i * 6 - Math.random() * 6, ry + 12 + Math.random() * 6, 2 + this.speed * 2);
-    if (bump > 0.5 && this.airborne <= 0) txt(this, cx, 470, 'TAP', 10, PAL.white).setName('tapcue').setDepth(9); else this.children.list.filter(o => o.name === 'tapcue').forEach(o => o.destroy());
-    this.meter.set(this.speed, PAL.neon); this.frame.setTimer(`${Math.max(0, Math.ceil(DUR - this.elapsed))}s`); this.frame.setProgress(`${this.jumps} jumps`);
-    if (this.elapsed >= DUR) this.frame.finish(this.frame.scoreNow());
+    if (!this.frame.active) return; this.elapsed += dt; this.frame.setTimer(`${Math.max(0, DUR - this.elapsed).toFixed(1)}s`);
+    // wind: the power zone drifts, gusts shove it
+    this.gust -= dt; if (this.gust <= 0) { this.zoneTarget = clamp((Math.random() - 0.5) * 1.2, -0.7, 0.7); this.gust = 3 + Math.random() * 4; }
+    this.zoneC += (this.zoneTarget - this.zoneC) * Math.min(1, dt * 0.9);
+    // kite follows the finger while held
+    if (this.held && this.recover <= 0) { const target = clamp((this.fingerX - W / 2) / 140, -1, 1); this.kiteA += (target - this.kiteA) * Math.min(1, dt * 6); }
+    const inZone = Math.abs(this.kiteA - this.zoneC) < this.zoneW / 2;
+    if (this.recover > 0) { this.recover -= dt; this.speed = 0; }
+    else if (this.airborne > 0) { /* speed holds in the air */ }
+    else if (this.held && inZone) this.speed = clamp(this.speed + dt / 2, 0, 1);
+    else this.speed = clamp(this.speed - dt / (this.held ? 1.5 : 1.2), 0, 1);
+    this.waveOff += dt * (0.7 + this.speed * 1.4);
+    // air
+    if (this.airborne > 0) { this.airborne -= dt; if (this.airborne <= 0) { this.airborne = 0; const trough = this.wavePhase() < -0.5; if (trough) { this.wipeouts++; this.recover = 1.5; this.speed = 0; this.msg.setText('WIPEOUT').setColor('#d63c3c'); this.frame.shake(200, 0.008); for (let i = 0; i < 26; i++) this.spray.push({ x: W / 2 + (Math.random() - 0.5) * 50, y: 470, vx: (Math.random() - 0.5) * 220, vy: -80 - Math.random() * 160, t: 0.9 }); } else { this.clean++; this.airTotal += this.hang; this.speed *= 0.55; this.msg.setText(`+${this.hang.toFixed(1)}s`).setColor('#3ef0c8'); this.frame.flash(PAL.neon, 30); } } }
+    if (this.hop > 0) this.hop -= dt;
+    // spray while riding fast
+    if (this.airborne <= 0 && this.recover <= 0 && this.speed > 0.3 && Math.random() < this.speed) this.spray.push({ x: W / 2 - 14, y: 468, vx: -60 - Math.random() * 90 * this.speed, vy: -20 - Math.random() * 50, t: 0.35 });
+    for (const sp of this.spray) { sp.t -= dt; sp.x += sp.vx * dt; sp.y += sp.vy * dt; sp.vy += 260 * dt; } this.spray = this.spray.filter(sp => sp.t > 0);
+    this.meter.set(this.speed, this.speed > 0.7 ? PAL.sun2 : PAL.neon);
+    this.draw(inZone);
+    if (this.elapsed >= DUR) { this.tick?.remove(); this.frame.finish(this.score()); }
+  }
+
+  // ---------- drawing ----------
+  private draw(inZone: boolean) {
+    const g = this.g; g.clear();
+    // sky bands, sun, far shore
+    const skies = [PAL.sky0, PAL.sky1, PAL.sky1, PAL.sky2, PAL.sky3]; skies.forEach((c, i) => g.fillStyle(c).fillRect(0, 26 + i * 60, W, 60));
+    g.fillStyle(PAL.sun3).fillCircle(290, 120, 22); g.fillStyle(PAL.sun2, 0.5).fillCircle(290, 120, 28);
+    g.fillStyle(PAL.earth3).fillRect(0, 300, W, 12); for (let i = 0; i < 9; i++) { const x = i * 44 + 10; g.fillStyle(PAL.earth2).fillTriangle(x, 300, x + 30, 300, x + 16, 288 - (i % 3) * 5); }
+    for (let i = 0; i < 5; i++) { const x = 30 + i * 78; g.fillStyle(PAL.grass0).fillRect(x, 282, 2, 20); g.fillStyle(PAL.grass1).fillTriangle(x - 8, 284, x + 10, 284, x + 1, 274).fillTriangle(x - 9, 280, x + 11, 280, x + 1, 288); }
+    // water with rolling swell: three crest layers, foam on the tops
+    g.fillStyle(PAL.sea1).fillRect(0, 312, W, H - 312);
+    for (let layer = 0; layer < 3; layer++) {
+      const base = 400 + layer * 46, amp = 6 + layer * 4, freq = 0.045 - layer * 0.008, ph = this.waveOff * (1.3 + layer * 0.4) + layer;
+      g.fillStyle([PAL.sea0, PAL.sea1, PAL.sea2][layer]).beginPath(); g.moveTo(0, H);
+      for (let x = 0; x <= W; x += 6) g.lineTo(x, base - Math.sin(x * freq + ph) * amp); g.lineTo(W, H); g.closePath(); g.fillPath();
+      g.fillStyle(PAL.sea3, 0.7); for (let x = 0; x <= W; x += 6) { const v = Math.sin(x * freq + ph); if (v > 0.75) g.fillRect(x, base - v * amp - 2, 5, 2); }
+    }
+    // the swell under the rider (what you time the release to): a crest rising through the board line
+    const wp = this.wavePhase(); g.fillStyle(PAL.sea3, 0.6 + 0.4 * Math.max(0, wp)); g.fillEllipse(W / 2, 474 - wp * 10, 90, 14 + wp * 6); if (wp > 0.55) g.fillStyle(PAL.white, 0.8).fillRect(W / 2 - 34, 464 - wp * 10, 68, 2);
+    // wind window arc with the power zone
+    const cx = W / 2, cy = 330, R = 150;
+    g.lineStyle(2, PAL.white, 0.35); g.beginPath(); for (let a = -1; a <= 1.001; a += 0.05) { const x = cx + Math.sin(a * Math.PI / 2) * R, y = cy - Math.cos(a * Math.PI / 2) * R * 0.75; if (a === -1) g.moveTo(x, y); else g.lineTo(x, y); } g.strokePath();
+    g.lineStyle(10, inZone ? PAL.neon : PAL.sun2, inZone ? 0.85 : 0.5); g.beginPath(); for (let a = this.zoneC - this.zoneW / 2; a <= this.zoneC + this.zoneW / 2; a += 0.02) { const aa = clamp(a, -1, 1); const x = cx + Math.sin(aa * Math.PI / 2) * R, y = cy - Math.cos(aa * Math.PI / 2) * R * 0.75; if (a === this.zoneC - this.zoneW / 2) g.moveTo(x, y); else g.lineTo(x, y); } g.strokePath();
+    // kite: curved canopy with panels and a leading edge, two lines to the bar
+    const ka = this.kiteA; const kx = cx + Math.sin(ka * Math.PI / 2) * R, ky = cy - Math.cos(ka * Math.PI / 2) * R * 0.75; const tilt = ka * 0.9;
+    const arc = (r: number, w: number) => { const pts: { x: number; y: number }[] = []; for (let t = -1; t <= 1.001; t += 0.125) { const ang = t * 1.1 + tilt; pts.push({ x: kx + Math.sin(ang) * w, y: ky + Math.cos(ang) * r - r }); } return pts; };
+    const top = arc(16, 17), bot = arc(6, 15);
+    g.fillStyle(PAL.red).beginPath(); g.moveTo(top[0].x, top[0].y); top.forEach(p => g.lineTo(p.x, p.y)); bot.slice().reverse().forEach(p => g.lineTo(p.x, p.y + 6)); g.closePath(); g.fillPath();
+    g.fillStyle(PAL.white, 0.9); for (let i = 1; i < top.length - 1; i += 4) { g.fillRect(top[i].x - 1, top[i].y + 1, 3, 6); } g.fillStyle(PAL.sun2); for (let i = 3; i < top.length - 1; i += 4) g.fillRect(top[i].x - 1, top[i].y + 2, 3, 5);
+    g.lineStyle(2, PAL.ink, 1); g.beginPath(); g.moveTo(top[0].x, top[0].y); top.forEach(p => g.lineTo(p.x, p.y)); g.strokePath();
+    const bar = { x: W / 2 + ka * 6, y: 446 - (this.airborne > 0 ? Math.sin(Math.PI * (1 - this.airborne / Math.max(0.01, this.hang))) * (60 + this.speed * 60) : 0) };
+    g.lineStyle(1, PAL.gray1, 0.9); g.beginPath(); g.moveTo(top[1].x, top[1].y + 4); g.lineTo(bar.x - 6, bar.y); g.moveTo(top[top.length - 2].x, top[top.length - 2].y + 4); g.lineTo(bar.x + 6, bar.y); g.strokePath();
+    g.fillStyle(PAL.ink).fillRect(bar.x - 9, bar.y - 1, 18, 3);
+    // rider: frame by state, lifted by the jump, tilted by the wind
+    const air = this.airborne > 0 ? Math.sin(Math.PI * (1 - this.airborne / Math.max(0.01, this.hang))) : this.hop > 0 ? Math.sin(Math.PI * (1 - this.hop / 0.3)) * 0.2 : 0;
+    const lift = air * (60 + this.speed * 60); const landing = this.airborne > 0 && this.airborne < 0.25;
+    this.rider.setFrame(this.recover > 0 ? 2 : this.airborne > 0 ? (landing ? 2 : 1) : 0).setPosition(W / 2, 470 - lift - wp * 4).setAngle(this.airborne > 0 ? -ka * 18 : -ka * 8).setAlpha(this.recover > 0 ? 0.6 : 1);
+    if (this.recover > 0) g.fillStyle(PAL.white, 0.7).fillEllipse(W / 2, 470, 70, 16);
+    // spray
+    for (const sp of this.spray) g.fillStyle(PAL.white, Math.min(1, sp.t * 2)).fillRect(sp.x, sp.y, 3, 3);
+    // labels
+    txt(this, W - 12, 586, `AIR ${this.airTotal.toFixed(1)}s  ·  ${this.clean} clean${this.wipeouts ? `  ·  ${this.wipeouts} wipeout${this.wipeouts > 1 ? 's' : ''}` : ''}`, 9, PAL.gray2, 'right').setDepth(8).setName('kb_lbl');
+    this.children.list.filter(o => o.name === 'kb_lbl').slice(0, -1).forEach(o => o.destroy());
+    txt(this, 40, 586, this.held ? (inZone ? 'POWER' : 'find the glow') : 'HOLD to power up', 9, this.held && inZone ? PAL.neon : PAL.gray2, 'left').setDepth(8).setName('kb_hint');
+    this.children.list.filter(o => o.name === 'kb_hint').slice(0, -1).forEach(o => o.destroy());
+  }
+  private buildRider() {
+    if (this.textures.exists('kb_rider')) return;
+    const map: Record<string, number> = { h: PAL.sun0, s: PAL.earth3, k: PAL.ink, w: PAL.white, b: PAL.night3, r: PAL.red, g: PAL.gray2, n: PAL.neon };
+    // 20x28: helmet, arms up to the bar, harness, twin-tip board with an edge; frames: riding, tucked, landing
+    const ride = ['.......hhhhhh.......', '......hhhhhhhh......', '......hssssssh......', '......ssskksss......', '..k....ssssss....k..', '..k.....kkkk.....k..', '..k....kkkkkk....k..', '...k..kkkkkkkk..k...', '....kkkkkkkkkkkk....', '.....kkrrrrrrkk.....', '......krrrrrrk......', '......krrrrrrk......', '......kbbbbbbk......', '......bbbbbbbb......', '......bbbbbbbb......', '......bbb..bbb......', '......bbb..bbb......', '......bbb..bbb......', '......www..www......', '......www..www......', '....nnnnnnnnnnnn....', '..nnnnnnnnnnnnnnnn..', '.nnnnnnnnnnnnnnnnnn.', '..kkkkkkkkkkkkkkkk..', '....................', '....................', '....................', '....................'];
+    const tuck = ['.......hhhhhh.......', '......hhhhhhhh......', '......hssssssh......', '......ssskksss......', '..k....ssssss....k..', '..k.....kkkk.....k..', '..k....kkkkkk....k..', '...k..kkkkkkkk..k...', '....kkkkkkkkkkkk....', '.....kkrrrrrrkk.....', '......krrrrrrk......', '......krrrrrrk......', '......kbbbbbbk......', '.....bbbbbbbbbb.....', '....bbbbbbbbbbbb....', '...bbbb......bbbb...', '..www..........www..', '.nnnnnnnnnnnnnnnnnn.', 'nnnnnnnnnnnnnnnnnnnn', '.kkkkkkkkkkkkkkkkkk.', '....................', '....................', '....................', '....................', '....................', '....................', '....................', '....................'];
+    const land = ['.......hhhhhh.......', '......hhhhhhhh......', '......hssssssh......', '......ssskksss......', '..k....ssssss....k..', '..k.....kkkk.....k..', '..k....kkkkkk....k..', '...k..kkkkkkkk..k...', '....kkkkkkkkkkkk....', '.....kkrrrrrrkk.....', '......krrrrrrk......', '......krrrrrrk......', '......kbbbbbbk......', '......bbbbbbbb......', '.....bbbbbbbbbb.....', '....bbbb....bbbb....', '...bbbb......bbbb...', '..www..........www..', '..www..........www..', '.nnnnnnnnnnnnnnnnnnn', 'nnnnnnnnnnnnnnnnnnnn', 'kkkkkkkkkkkkkkkkkkkk', '....................', '....................', '....................', '....................', '....................', '....................'];
+    const frames = [ride, tuck, land]; const fw = 20, fh = 28; const g = this.add.graphics();
+    frames.forEach((rows, fi) => rows.forEach((r, y) => [...r].forEach((ch, x) => { if (ch !== '.' && map[ch] !== undefined) g.fillStyle(map[ch]).fillRect(fi * fw + x, y, 1, 1); })));
+    g.generateTexture('kb_rider', fw * frames.length, fh); g.destroy(); const tex = this.textures.get('kb_rider'); for (let i = 0; i < frames.length; i++) tex.add(i, 0, i * fw, 0, fw, fh);
+    void pixTexture;
   }
 }

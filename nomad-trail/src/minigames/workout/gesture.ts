@@ -65,11 +65,12 @@ export class SwimBreath extends Micro {
 
 /** POSE MATCH: drag up/down to rotate; the figure SNAPS to the nearest of three yoga poses by angle band
  *  (Downward Dog = backslash, Cobra = slash, Warrior II = horizontal). Match the shadow's pose and hold it 0.5 s. */
-const POSE_NAMES = ['DOWNWARD DOG', 'COBRA', 'WARRIOR II'] as const;
+const POSE_NAMES = ['DOWNWARD DOG', 'COBRA', 'WARRIOR II', 'PLANK'];
 export class PoseMatch extends Micro {
   readonly id = 'pose'; readonly word = META.pose.word; readonly instr = META.pose.instr; readonly durationSec = META.pose.durationSec;
-  private ang = 0; private snapped = 2; private target = 0; private hold = 0; private matched = 0; private need = 3;
-  private figure!: Phaser.GameObjects.Image; private shadow!: Phaser.GameObjects.Image; private nameLbl!: Phaser.GameObjects.Text; private keys: string[] = [];
+  /** the wheel position, 0..3 continuous; the nearest integer is the pose the figure shows */
+  pos = 3; private snapped = -1; target = 0; private hold = 0; private matched = 0; private need = 3; private dragging = false;
+  private figure!: Phaser.GameObjects.Image; private shadow!: Phaser.GameObjects.Image; private nameLbl!: Phaser.GameObjects.Text; private keys: string[] = []; private icons: Phaser.GameObjects.Image[] = [];
   private buildPoses() {
     const sc = this.ctx.scene; const map = { o: PAL.earth3, h: PAL.earth0, s: PAL.sun0, p: PAL.night3, k: PAL.ink };
     const P = (rows: string[], key: string) => pixTexture(sc, key, rows, map, 4);
@@ -80,27 +81,37 @@ export class PoseMatch extends Micro {
       P(['..................hhhh', '..................oooo', '.................ssooo', '................sss...', '...............sss....', '..............sss.....', '.............ssso.....', '............ssss.o....', '...........ssss...o...', '..........ssss....o...', '.........ssss.....o...', 'pppppppppssss.....o...', 'pppppppppsss......o...', 'kkk.ppppppp.......oo..', '......................', '......................'], 'yoga_cobra'),
       // Warrior II: wide stance, both arms horizontal
       P(['..........hhhh........', '..........oooo........', '..........oooo........', '...........oo.........', 'oooosssssssssssssssoooo', '.....sssssssssssss....', '.......sssssss........', '.......sssssss........', '.......pppppppp.......', '......ppp....ppp......', '.....ppp......ppp.....', '....ppp........ppp....', '...ppp..........ppp...', '..ppp............ppp..', '.ppp..............ppp.', 'kkkk..............kkkk'], 'yoga_warrior'),
+      // Plank: head left, a straight horizontal body on straight arms, feet on the mat at the right, low to the ground
+      P(['......................', '......................', '......................', '......................', '......................', '......................', '......................', '..hhhh................', '..oooo................', '..oooossssssssssppppp.', '....sssssssssssssspppp', '.....oo..........pp...', '.....oo..........pp...', '.....oo..........pp...', '.....oo..........kkk..', '......................'], 'yoga_plank'),
     ];
   }
-  private snapFor(a: number) { return a < -0.45 ? 0 : a > 0.45 ? 1 : 2; }   // \ , / , –
   protected begin() {
-    this.buildPoses(); const sc = this.ctx.scene; const cx = W / 2, cy = 330; this.ctx.athlete.show(false);
-    this.shadow = this.add(sc.add.image(cx, cy - 10, this.keys[0]).setDepth(3).setTint(PAL.night3).setAlpha(0.9).setScale(1.15));
-    this.figure = this.add(sc.add.image(cx, cy - 10, this.keys[2]).setDepth(5));
-    this.nameLbl = this.label(cx, 150, '', 12, PAL.gray2);
-    const nextT = () => { let t = Math.floor(this.ctx.rng() * 3); if (t === this.target && this.matched > 0) t = (t + 1) % 3; this.target = t; this.hold = 0; this.shadow.setTexture(this.keys[t]); this.nameLbl.setText(POSE_NAMES[t]); };
-    let ly = 0; this.on('pointerdown', (p: any) => { ly = p.y; }); this.on('pointermove', (p: any) => { if (!p.isDown) return; this.ang = clamp(this.ang - (p.y - ly) / 90, -1.2, 1.2); ly = p.y; });
-    this.key('keydown-UP', () => { this.ang = clamp(this.ang + 0.3, -1.2, 1.2); }); this.key('keydown-DOWN', () => { this.ang = clamp(this.ang - 0.3, -1.2, 1.2); });
+    this.buildPoses(); const sc = this.ctx.scene; const cx = 120, cy = 330; this.ctx.athlete.show(false);
+    // left: the target silhouette and its name; the live figure stands on the mat beside it
+    this.shadow = this.add(sc.add.image(cx, cy - 10, this.keys[0]).setDepth(3).setTintFill(PAL.night3).setAlpha(0.6).setScale(1.15));   // a dim single-colour silhouette behind the figure: the shape to fill
+    this.figure = this.add(sc.add.image(cx, cy - 10, this.keys[3]).setDepth(5));
+    this.nameLbl = this.label(cx, 150, '', 12, PAL.gray2); this.label(W - 58, 150, 'WHEEL', 9, PAL.gray1); this.label(W - 58, 470, 'drag up / down', 8, PAL.gray1);
+    // right: the vertical wheel of the four poses, a window in the middle shows the current one
+    this.icons = this.keys.map(k => this.add(sc.add.image(W - 58, cy, k).setDepth(6).setScale(0.45)));
+    const nextT = () => { let t = Math.floor(this.ctx.rng() * 4); if (t === this.target && this.matched > 0) t = (t + 1) % 4; this.target = t; this.hold = 0; this.shadow.setTexture(this.keys[t]); this.nameLbl.setText(POSE_NAMES[t]); };
+    let ly = 0; this.on('pointerdown', (p: any) => { ly = p.y; this.dragging = true; }); this.on('pointermove', (p: any) => { if (!p.isDown || !this.dragging) return; this.pos = clamp(this.pos + (p.y - ly) / 70, 0, 3); ly = p.y; });   // drag down = scroll the strip down = next pose
+    this.on('pointerup', () => { this.dragging = false; });
+    this.key('keydown-UP', () => { this.pos = clamp(Math.round(this.pos) - 1, 0, 3); }); this.key('keydown-DOWN', () => { this.pos = clamp(Math.round(this.pos) + 1, 0, 3); });
+    (this as any).setPose = (i: number) => { this.pos = clamp(i, 0, 3); this.dragging = false; };
     nextT();
-    this.loop(dt => { const sn = this.snapFor(this.ang);
-      if (sn !== this.snapped) { this.snapped = sn; this.figure.setTexture(this.keys[sn]); sc.tweens.add({ targets: this.figure, scaleX: { from: 0.85, to: 1 }, scaleY: { from: 1.15, to: 1 }, duration: 120, ease: 'Back.Out' }); }
-      const ok = sn === this.target; if (ok) { this.hold += dt; if (this.hold > 0.5) { this.matched++; this.pop(cx, 200, 'MATCH'); this.ctx.frame.setProgress(`${this.matched}/${this.need}`); if (this.matched >= this.need) { this.after(250, () => this.finish(this.scoreNow())); return; } nextT(); } } else this.hold = 0;
-      this.figure.setTint(ok ? 0xffffff : 0xffffff); this.shadow.setTint(ok ? PAL.grass0 : PAL.night3);
-      this.g.clear(); this.backdrop(390, 410); this.g.fillStyle(PAL.earth0).fillRect(0, 392, W, 4);   // the mat
-      // angle dial: where your drag is within the three bands
-      const dx0 = W / 2, dy0 = 460; this.g.lineStyle(2, PAL.night3).lineBetween(dx0 - 70, dy0, dx0 + 70, dy0);
-      this.g.fillStyle(PAL.gray0).fillRect(dx0 - 70, dy0 - 3, 140, 6); this.g.fillStyle(PAL.gray1).fillRect(dx0 - 70 + 140 * 0.31, dy0 - 3, 140 * 0.38, 6);
-      this.g.fillStyle(ok ? PAL.neon : PAL.sun0).fillCircle(dx0 + (this.ang / 1.2) * 70, dy0, 7);
+    this.loop(dt => {
+      if (!this.dragging) { const sn = Math.round(this.pos); this.pos += (sn - this.pos) * Math.min(1, dt * 14); }   // snap with a settle
+      const sn = Math.round(this.pos);
+      if (sn !== this.snapped) { this.snapped = sn; this.figure.setTexture(this.keys[sn]); sc.tweens.add({ targets: this.figure, scaleX: { from: 0.85, to: 1 }, scaleY: { from: 1.15, to: 1 }, duration: 120, ease: 'Back.Out' }); this.ctx.frame.flash(PAL.night3, 20); }
+      const ok = sn === this.target && Math.abs(this.pos - sn) < 0.25;
+      if (ok) { this.hold += dt; if (this.hold > 0.5) { this.matched++; this.pop(cx, 200, 'MATCH'); this.ctx.frame.setProgress(`${this.matched}/${this.need}`); if (this.matched >= this.need) { this.after(250, () => this.finish(this.scoreNow())); return; } nextT(); } } else this.hold = 0;
+      this.shadow.setTintFill(ok ? PAL.grass0 : PAL.night3).setAlpha(ok ? 0.75 : 0.6);
+      this.g.clear(); this.backdrop(390, 410); this.g.fillStyle(PAL.earth0).fillRect(0, 392, W - 110, 4);   // the mat
+      // the wheel: a strip with the four icons stacked, scrolled by pos; the middle window is the current pose
+      const wx = W - 58, wy = cy, pitch = 58; this.g.fillStyle(PAL.gray0).fillRect(wx - 30, 170, 60, 300); this.g.fillStyle(PAL.ink).fillRect(wx - 30, 170, 60, 2).fillRect(wx - 30, 468, 60, 2);
+      this.g.fillStyle(ok ? PAL.grass0 : PAL.night3).fillRect(wx - 30, wy - pitch / 2, 60, pitch); this.g.lineStyle(2, ok ? PAL.neon : PAL.sun2).strokeRect(wx - 29, wy - pitch / 2 + 1, 58, pitch - 2);
+      this.icons.forEach((ic, i) => { const y = wy + (i - this.pos) * pitch; const vis = y > 176 && y < 464; ic.setVisible(vis).setPosition(wx, y).setAlpha(i === sn ? 1 : 0.55).setScale(i === sn ? 0.5 : 0.4); });
+      this.g.fillStyle(PAL.gray2).fillTriangle(wx, 178, wx - 6, 186, wx + 6, 186).fillTriangle(wx, 462, wx - 6, 454, wx + 6, 454);
       this.g.fillStyle(PAL.ink).fillRect(cx - 40, 480, 80, 6); this.g.fillStyle(PAL.neon).fillRect(cx - 40, 480, 80 * clamp(this.hold / 0.5, 0, 1), 6); });
   }
   protected scoreNow() { return clamp(this.matched / this.need, 0, 1); }

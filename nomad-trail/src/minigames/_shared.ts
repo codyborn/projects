@@ -96,25 +96,43 @@ export class MinigameFrame {
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.tapHandlers = []; this.active = false; this.capTimer?.remove(); });
   }
 
-  /** Dim overlay + title + instruction + READY for ~1s, then cb(). */
-  intro(instruction: string, cb: () => void) {
-    const s = this.scene;
-    const ov = s.add.rectangle(W / 2, H / 2, W, H, PAL.night0, 0.82).setDepth(900);
-    const p = panel(s, 24, H / 2 - 80, W - 48, 160, PAL.night2).setDepth(901);
-    const t1 = txt(s, W / 2, H / 2 - 48, this.title.toUpperCase(), 18, PAL.sun2).setDepth(902);
-    const t2 = txt(s, W / 2, H / 2 - 10, instruction, 11, PAL.gray2).setDepth(902);
-    t2.setWordWrapWidth(W - 80).setAlign('center');
-    const t3 = txt(s, W / 2, H / 2 + 44, 'READY', 22, PAL.neon).setDepth(902);
-    if (this.hard > 0.3) txt(s, W / 2, H / 2 + 66, 'low energy: everything feels slower', 9, PAL.pink).setDepth(902).setName('tired');
-    this.introObjs = [ov, p, t1, t2, t3, ...s.children.list.filter(o => o.name === 'tired')];
-    s.tweens.add({ targets: t3, scale: { from: 1.3, to: 1 }, duration: 300, ease: 'Back.Out' });
-    s.time.delayedCall(1000, () => {
+  /** Instruction card: title, instruction, optional extra content, and a READY button. Waits for the tap (SPACE/ENTER too); the play
+   *  clock and cap start on READY. Games with their own full card pass { auto: true } to get the old 1 s READY flash instead. */
+  intro(instruction: string, cb: () => void, opts: { auto?: boolean; extra?: (s: Phaser.Scene, add: (o: Phaser.GameObjects.GameObject) => void) => void; height?: number } = {}) {
+    const s = this.scene; const add = (o: Phaser.GameObjects.GameObject) => { this.introObjs.push(o); return o; };
+    const start = () => {
+      if (this.active || this.finished) return;
       this.introObjs.forEach(o => o.destroy()); this.introObjs = [];
       this.active = true; this.playStart = s.time.now;
       this.capTimer = s.time.delayedCall(this.capSec * 1000, () => { if (!this.finished) this.finish(this.scoreNow()); });
       cb();
-    });
+    };
+    add(s.add.rectangle(W / 2, H / 2, W, H, PAL.night0, 0.86).setDepth(900));
+    if (opts.auto) {
+      add(panel(s, 24, H / 2 - 80, W - 48, 160, PAL.night2).setDepth(901));
+      add(txt(s, W / 2, H / 2 - 48, this.title.toUpperCase(), 18, PAL.sun2).setDepth(902));
+      const t2 = add(txt(s, W / 2, H / 2 - 10, instruction, 11, PAL.gray2).setDepth(902)) as Phaser.GameObjects.Text; t2.setWordWrapWidth(W - 80).setAlign('center');
+      const t3 = add(txt(s, W / 2, H / 2 + 44, 'READY', 22, PAL.neon).setDepth(902));
+      s.tweens.add({ targets: t3, scale: { from: 1.3, to: 1 }, duration: 300, ease: 'Back.Out' });
+      this.readyHandler = start; s.time.delayedCall(1000, start); return;
+    }
+    const ph = opts.height ?? 340; const top = H / 2 - ph / 2;
+    add(panel(s, 20, top, W - 40, ph, PAL.night2).setDepth(901));
+    add(txt(s, W / 2, top + 30, this.title.toUpperCase(), 18, PAL.sun2).setDepth(902));
+    const t2 = add(txt(s, W / 2, top + 52, instruction, 11, PAL.gray2).setDepth(902)) as Phaser.GameObjects.Text; t2.setOrigin(0.5, 0).setWordWrapWidth(W - 72).setAlign('center');
+    if (opts.extra) opts.extra(s, o => { (o as any).setDepth?.(902); add(o); });
+    if (this.hard > 0.3) add(txt(s, W / 2, top + ph - 78, 'low energy: everything feels slower', 9, PAL.pink).setDepth(902));
+    const btn = add(s.add.rectangle(W / 2, top + ph - 44, 180, 48, PAL.sun0).setDepth(902).setStrokeStyle(2, PAL.ink).setInteractive({ useHandCursor: true })) as Phaser.GameObjects.Rectangle;
+    add(txt(s, W / 2, top + ph - 44, 'READY', 18, PAL.white).setDepth(903));
+    s.tweens.add({ targets: btn, scaleX: 1.04, scaleY: 1.06, yoyo: true, repeat: -1, duration: 600 });
+    btn.on('pointerdown', start); const kb = s.input.keyboard; kb?.once('keydown-SPACE', start); kb?.once('keydown-ENTER', start);
+    this.readyHandler = start;
   }
+  /** Harness: press READY programmatically. */
+  ready() { this.readyHandler?.(); }
+  /** Games that draw their own card (Airport, Kite, CarryOn) call this when their READY/START is pressed: starts the play clock and cap. */
+  beginPlay() { if (this.readyHandler) { this.readyHandler(); return; } if (this.active || this.finished) return; this.introObjs.forEach(o => o.destroy()); this.introObjs = []; this.active = true; this.playStart = this.scene.time.now; this.capTimer = this.scene.time.delayedCall(this.capSec * 1000, () => { if (!this.finished) this.finish(this.scoreNow()); }); }
+  private readyHandler?: () => void;
 
   /** Top HUD strip: title left, progress right, timer center. */
   hud() {

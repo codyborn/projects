@@ -49,7 +49,13 @@ export class CookingScene extends Phaser.Scene {
     this.meter = new Meter(this, 40, 590, W - 80, 8);
     this.frame.hud();
     this.frame.scoreNow = () => { const done = this.accuracies; return done.length ? (done.reduce((a, b) => a + b, 0) / done.length) * 100 * (0.6 + 0.4 * done.length / this.dish.steps.length) : 40; };
-    this.frame.intro(`${this.dish.steps.length} steps. Follow each instruction.`, () => this.nextStep());
+    this.frame.intro(`${this.dish.steps.length} steps. Each one shows what to do.`, () => this.nextStep(), { height: 400, extra: (s, add) => {
+      const top = H / 2 - 200;
+      add(txt(s, W / 2, top + 108, this.dish.ingredients.join(' · '), 9, PAL.gray2));
+      add(s.add.image(W / 2, top + 186, drawDish(s, this.dish.id, undefined, this.dish.art)).setScale(1.8));
+      add(txt(s, W / 2, top + 262, this.dish.steps.map(st => st.kind.toUpperCase()).join('  →  '), 10, PAL.neon));
+      add(txt(s, W / 2, top + 284, 'each step tells you the gesture', 8, PAL.gray1));
+    } });
   }
 
   update(_t: number, dt: number) { this.frame.update(dt); }

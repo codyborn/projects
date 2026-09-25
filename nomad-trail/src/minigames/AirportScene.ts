@@ -1,32 +1,36 @@
 import Phaser from 'phaser';
 import { PAL } from '../core/palette';
 import { MINIGAME_KEYS, type MinigameLaunch } from '../core/types';
-import { MinigameFrame, Meter, W, clamp, normalizeLaunch, txt } from './_shared';
+import { MinigameFrame, Meter, W, H, clamp, normalizeLaunch, panel, txt } from './_shared';
 
 /**
  * GATE DASH: the taxi died on the way to the airport; run to your gate. Temple-Run down a terminal corridor.
+ * An instruction card (gate, the three controls, the fork rule) stays up until READY is tapped; the boarding clock starts then.
  * Swipe left/right (or tap the left/right third) to change lane, swipe up (or tap the middle) to jump. Arrows on desktop.
- * Your gate (e.g. B56) is pinned at the top. Every ~7 s the corridor forks under two overhead signs showing gate ranges:
- * take the side that contains your gate. Five forks narrow it down (letters → letter → numbers → numbers → the door itself,
- * a three-lane pick). Wrong side = WRONG WAY, a U-turn, 3 s lost, the fork repeats. Boarding closes after 40 s of play.
- * Payload: { gate?: string } like 'B56'. Score: 100 − 8 per wrong turn − 1 per collision (−4 each beyond two); fail = boarding closed.
+ * Every so often the corridor ends at a T-junction wall far ahead with two gate-range signs; it grows as you approach (~4 s
+ * of reading time). Be in the left or right lane when you reach it and you TURN that way (a 0.6 s perspective sweep); the
+ * middle lane runs into the wall (PICK A SIDE). A wrong side turns into a dead end: WRONG WAY, U-turn, 3 s lost, the fork repeats.
+ * Five forks narrow the gate down (letters → letter → numbers → numbers → the door itself across the three lanes).
+ * Payload: { gate?: string } like 'B56'. Boarding closes 45 s after READY. Score: 100 − 8 per wrong turn − 1 per collision (−4 each beyond two).
  */
 type ObKind = 'traveller' | 'bag' | 'rope' | 'cart' | 'walkway';
 interface Ob { kind: ObKind; lane: number; z: number; hit?: boolean; used?: boolean; }
-interface Fork { z: number; left: string; right: string; correct: 0 | 2 | number; doors?: string[]; correctLane?: number; resolved?: boolean; }
+interface Fork { z: number; hold: number; left: string; right: string; correct: number; doors?: string[]; resolved?: boolean; }
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 const HORIZON = 210, FLOOR = 560, VX = W / 2;
 const LANE_NEAR = 96, LANE_FAR = 12;
-const BOARDING_SEC = 40;
+const BOARDING_SEC = 45, FORK_HOLD = 1.6, FORK_GAP = 2.6, FIRST_FORK = 2.4, TURN_SEC = 0.6;
 
 export class AirportScene extends Phaser.Scene {
   private frame!: MinigameFrame; private launch!: MinigameLaunch; private g!: Phaser.GameObjects.Graphics; private meter!: Meter;
   private gateLetter = 'B'; private gateNum = 56;
-  lane = 1; private laneX = 0; private jumpT = -1; private speed = 0.42; private boost = 0; private dist = 0; private elapsed = 0;
-  private obstacles: Ob[] = []; private fork?: Fork; private stage = 0; private nextForkAt = 3.5; private nextObAt = 1.2;
+  lane = 1; private laneX = 0; private jumpT = -1; private speed = 0.5; private boost = 0; private dist = 0; private elapsed = 0;
+  private obstacles: Ob[] = []; private fork?: Fork; private stage = 0; private nextForkAt = FIRST_FORK; private nextObAt = 1.0;
   private wrong = 0; private collisions = 0; private penalty = 0; private stunned = 0; private iframes = 0; private ended = false; private uturn = 0;
+  /** waiting = instruction card up; turning = the 90° sweep; deadEnd = the wall after a wrong turn (z), -1 when none */
+  waiting = true; private turning?: { dir: number; t: number; ok: boolean }; private deadEnd = -1; private ox = 0;
   private runner!: Phaser.GameObjects.Sprite; private signL!: Phaser.GameObjects.Text; private signR!: Phaser.GameObjects.Text; private signM!: Phaser.GameObjects.Text;
-  private gateLbl!: Phaser.GameObjects.Text; private banner?: Phaser.GameObjects.Text; private runT = 0;
+  private banner?: Phaser.GameObjects.Text; private runT = 0; private card: Phaser.GameObjects.GameObject[] = [];
   private sx = 0; private sy = 0; private swiped = false;
 
   constructor() { super(MINIGAME_KEYS.airport); }
@@ -34,8 +38,9 @@ export class AirportScene extends Phaser.Scene {
     this.launch = normalizeLaunch(data);
     const gate = String(this.launch.payload?.gate ?? 'B56').toUpperCase(); const m = /^([A-F])(\d{1,2})$/.exec(gate);
     this.gateLetter = m ? m[1] : 'B'; this.gateNum = m ? clamp(parseInt(m[2], 10), 1, 99) : 56;
-    this.lane = 1; this.jumpT = -1; this.dist = 0; this.elapsed = 0; this.obstacles = []; this.fork = undefined; this.stage = 0; this.nextForkAt = 3.5; this.nextObAt = 1.2;
+    this.lane = 1; this.jumpT = -1; this.dist = 0; this.elapsed = 0; this.obstacles = []; this.fork = undefined; this.stage = 0; this.nextForkAt = FIRST_FORK; this.nextObAt = 1.0;
     this.wrong = 0; this.collisions = 0; this.penalty = 0; this.stunned = 0; this.iframes = 0; this.ended = false; this.uturn = 0; this.boost = 0; this.runT = 0;
+    this.waiting = true; this.turning = undefined; this.deadEnd = -1; this.ox = 0; this.card = [];
   }
   get gate() { return `${this.gateLetter}${this.gateNum}`; }
 
@@ -47,12 +52,40 @@ export class AirportScene extends Phaser.Scene {
     this.buildRunner(); this.runner = this.add.sprite(VX, FLOOR - 6, 'gd_run', 0).setOrigin(0.5, 1).setDepth(10).setScale(3);
     this.laneX = this.laneScreenX(1, 0);
     this.frame.hud(); this.meter = new Meter(this, 40, 40, W - 80, 6, PAL.sun2);
-    this.gateLbl = txt(this, W / 2, 62, `GATE ${this.gate}`, 22, PAL.sun3).setDepth(801);
+    txt(this, W / 2, 62, `GATE ${this.gate}`, 22, PAL.sun3).setDepth(801);
     txt(this, W / 2, 80, 'boarding closes when the bar runs out', 8, PAL.gray1).setDepth(801);
-    this.signL = txt(this, 0, 0, '', 10, PAL.sun2).setDepth(20).setVisible(false); this.signR = txt(this, 0, 0, '', 10, PAL.sun2).setDepth(20).setVisible(false); this.signM = txt(this, 0, 0, '', 10, PAL.sun2).setDepth(20).setVisible(false);
+    this.signL = txt(this, 0, 0, '', 12, PAL.sun2).setDepth(20).setVisible(false); this.signR = txt(this, 0, 0, '', 12, PAL.sun2).setDepth(20).setVisible(false); this.signM = txt(this, 0, 0, '', 12, PAL.sun2).setDepth(20).setVisible(false);
     this.frame.scoreNow = () => this.partialScore();
-    this.frame.intro(`The taxi died on the highway. Run to gate ${this.gate}: swipe left / right to change lane, up to jump. Follow the signs at every fork.`, () => { this.setupInput(); });
-    this.frame.setProgress(`fork 0/5`);
+    this.frame.setProgress('fork 0/5'); this.meter.set(1);
+    this.frame.intro('The taxi died on the highway. Read the card, then run.', () => { this.frame.pauseCap(); this.showCard(); }, { auto: true });
+  }
+
+  // ---------- instruction card ----------
+  private showCard() {
+    const s = this; const add = (o: Phaser.GameObjects.GameObject) => { this.card.push(o); return o; };
+    add(s.add.rectangle(W / 2, H / 2, W, H, PAL.night0, 0.9).setDepth(900));
+    add(panel(s, 16, 96, W - 32, 470, PAL.night2).setDepth(901));
+    add(txt(s, W / 2, 122, 'YOUR GATE', 10, PAL.gray2).setDepth(902));
+    add(txt(s, W / 2, 152, this.gate, 34, PAL.sun3).setDepth(902));
+    add(txt(s, W / 2, 184, 'The taxi died on the highway. Run.', 10, PAL.gray2).setDepth(902));
+    const ic = s.add.graphics().setDepth(902); add(ic);
+    const row = (y: number, draw: () => void, label: string) => { ic.fillStyle(PAL.night3).fillRect(34, y - 20, 44, 40); draw(); add(txt(s, 90, y, label, 10, PAL.white, 'left').setDepth(902)); };
+    // swipe left / right
+    row(230, () => { ic.fillStyle(PAL.neon).fillTriangle(40, 230, 50, 222, 50, 238).fillTriangle(72, 230, 62, 222, 62, 238).fillRect(50, 228, 12, 4); }, 'SWIPE LEFT / RIGHT\nchange lane, dodge people');
+    row(288, () => { ic.fillStyle(PAL.neon).fillTriangle(56, 270, 48, 282, 64, 282).fillRect(54, 282, 4, 16); }, 'SWIPE UP\njump bags and ropes');
+    row(346, () => { ic.fillStyle(PAL.sun2).fillRect(40, 336, 14, 8).fillRect(58, 336, 14, 8); ic.fillStyle(PAL.gray2).fillRect(55, 344, 2, 14); ic.fillStyle(PAL.ink).fillRect(42, 338, 10, 4).fillRect(60, 338, 10, 4); }, 'AT A WALL: READ THE SIGNS\nleft or right lane = you turn\nmiddle = you hit the wall');
+    add(txt(s, W / 2, 404, `Follow the ranges that contain ${this.gate}.\nA–C or D–F, then the letter, then the numbers.`, 9, PAL.gray2).setDepth(902));
+    add(txt(s, W / 2, 440, 'Boarding closes in 45 seconds of running.', 9, PAL.sun1).setDepth(902));
+    const btn = s.add.rectangle(W / 2, 510, 200, 52, PAL.sun0).setDepth(902).setStrokeStyle(2, PAL.ink).setInteractive({ useHandCursor: true }); add(btn);
+    add(txt(s, W / 2, 510, 'READY', 18, PAL.white).setDepth(903));
+    s.tweens.add({ targets: btn, scaleX: 1.04, scaleY: 1.06, yoyo: true, repeat: -1, duration: 600 });
+    btn.on('pointerdown', () => this.startRun());
+    const kb = this.input.keyboard; kb?.once('keydown-SPACE', () => this.startRun()); kb?.once('keydown-ENTER', () => this.startRun());
+  }
+  /** Dismiss the card and start the boarding clock (also called by the harness). */
+  startRun() {
+    if (!this.waiting) return; this.waiting = false; this.card.forEach(o => o.destroy()); this.card = [];
+    this.frame.resumeCap(); this.setupInput(); this.frame.flash(PAL.neon, 60);
   }
 
   // ---------- input ----------
@@ -62,28 +95,31 @@ export class AirportScene extends Phaser.Scene {
     this.input.on('pointerup', (p: Phaser.Input.Pointer) => { if (this.swiped) return; const dx = p.x - this.sx, dy = p.y - this.sy; if (Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy)) return this.move(dx > 0 ? 1 : -1); if (dy < -28) return this.jump(); if (p.x < W / 3) this.move(-1); else if (p.x > (2 * W) / 3) this.move(1); else this.jump(); });
     const kb = this.input.keyboard; kb?.on('keydown-LEFT', () => this.move(-1)); kb?.on('keydown-RIGHT', () => this.move(1)); kb?.on('keydown-UP', () => this.jump()); kb?.on('keydown-SPACE', () => this.jump());
   }
-  private act(fn: () => void) { if (!this.frame.active || this.ended || this.uturn > 0) return; if (this.frame.lag > 0) this.time.delayedCall(this.frame.lag, fn); else fn(); }
+  private busy() { return this.waiting || !this.frame.active || this.ended || this.uturn > 0 || !!this.turning || this.deadEnd >= 0; }
+  private act(fn: () => void) { if (this.busy()) return; if (this.frame.lag > 0) this.time.delayedCall(this.frame.lag, fn); else fn(); }
   move(dir: number) { this.act(() => { this.lane = clamp(this.lane + dir, 0, 2); }); }
   jump() { this.act(() => { if (this.jumpT < 0) this.jumpT = 0; }); }
   /** Harness hint: the lane to be in and whether to jump right now, for a scripted perfect run. */
   hint(): { lane: number; jump: boolean } {
     const f = this.fork; const near = this.obstacles.filter(o => !o.hit && !o.used && o.z < 0.34).sort((a, b) => a.z - b.z)[0];
     let lane = this.lane;
-    if (f && f.z < 0.9) lane = f.correctLane ?? (f.correct === 0 ? 0 : 2);
+    if (f) lane = f.correct;
     else if (near && near.kind !== 'walkway' && near.lane === this.lane && (near.kind === 'traveller' || near.kind === 'cart')) lane = this.lane === 1 ? 0 : 1;
     const jump = !!near && near.lane === this.lane && (near.kind === 'bag' || near.kind === 'rope') && near.z < 0.14 && this.jumpT < 0;
     return { lane, jump };
   }
 
   // ---------- geometry ----------
-  private laneScreenX(lane: number, z: number) { const off = LANE_NEAR + (LANE_FAR - LANE_NEAR) * z; return VX + (lane - 1) * off; }
+  private laneScreenX(lane: number, z: number) { const off = LANE_NEAR + (LANE_FAR - LANE_NEAR) * z; return VX + this.ox + (lane - 1) * off; }
   private screenY(z: number) { return HORIZON + (FLOOR - HORIZON) * Math.pow(1 - z, 1.6); }
+  private ceilY(z: number) { return 26 + (HORIZON - 30) * Math.pow(1 - z, 1.8); }
+  private halfW(z: number) { return (LANE_NEAR * 1.5 + 10) * (1 - z) + (LANE_FAR * 1.5 + 4) * z; }
   private scaleAt(z: number) { return 0.12 + 0.88 * Math.pow(1 - z, 1.6); }
 
   // ---------- forks ----------
   private makeFork(): Fork {
-    const L = this.gateLetter, N = this.gateNum; const li = LETTERS.indexOf(L); const side: 0 | 2 = Math.random() < 0.5 ? 0 : 2;
-    const put = (correctTxt: string, otherTxt: string): Fork => ({ z: 1, left: side === 0 ? correctTxt : otherTxt, right: side === 2 ? correctTxt : otherTxt, correct: side });
+    const L = this.gateLetter, N = this.gateNum; const li = LETTERS.indexOf(L); const side = Math.random() < 0.5 ? 0 : 2;
+    const put = (correctTxt: string, otherTxt: string): Fork => ({ z: 1, hold: FORK_HOLD, left: side === 0 ? correctTxt : otherTxt, right: side === 2 ? correctTxt : otherTxt, correct: side });
     switch (this.stage) {
       case 0: return put(li < 3 ? 'GATES A–C' : 'GATES D–F', li < 3 ? 'GATES D–F' : 'GATES A–C');
       case 1: { const others = (li < 3 ? LETTERS.slice(0, 3) : LETTERS.slice(3)).filter(x => x !== L); return put(`GATES ${L}`, `GATES ${others.join(' · ')}`); }
@@ -92,22 +128,25 @@ export class AirportScene extends Phaser.Scene {
       default: { // the doors: three gates across the lanes, one is yours
         const lane = Phaser.Math.Between(0, 2); const doors: string[] = []; const step = Math.random() < 0.5 ? 1 : 2;
         for (let i = 0; i < 3; i++) doors.push(`${L}${clamp(N + (i - lane) * step, 1, 99)}`); doors[lane] = this.gate;
-        return { z: 1, left: doors[0], right: doors[2], doors, correct: lane, correctLane: lane };
+        return { z: 1, hold: FORK_HOLD, left: doors[0], right: doors[2], doors, correct: lane };
       }
     }
   }
-  private resolveFork(f: Fork) {
+  /** Reached the wall. Doors: the lane picks the gate. Otherwise the side lane turns (right or wrong), the middle lane hits the wall. */
+  private reachFork(f: Fork) {
     f.resolved = true;
-    const ok = f.doors ? this.lane === f.correctLane : (this.lane === f.correct);
-    if (ok) {
-      this.stage++; this.frame.setProgress(`fork ${Math.min(this.stage, 5)}/5`); this.frame.flash(PAL.neon, 40);
-      if (this.stage >= 5) { this.boarding(); return; }
-      this.fork = undefined; this.nextForkAt = this.elapsed + 4.4 / Math.max(0.8, this.frame.speed);
-    } else {
-      this.wrong++; this.penalty += 3; this.uturn = 1.3; this.frame.shake(160, 0.006); this.frame.flash(PAL.red, 120);
-      this.say(!f.doors && this.lane === 1 ? 'PICK A SIDE' : 'WRONG WAY', PAL.red);
-      this.fork = undefined; this.nextForkAt = this.elapsed + 1.6; this.obstacles = [];
-    }
+    if (f.doors) { if (this.lane === f.correct) this.forkPassed(); else this.wrongWay(false); return; }
+    if (this.lane === 1) { this.wrongWay(false, 'PICK A SIDE'); return; }
+    const ok = this.lane === f.correct; this.turning = { dir: this.lane === 0 ? -1 : 1, t: 0, ok }; this.obstacles = []; this.fork = undefined;
+  }
+  private forkPassed() {
+    this.stage++; this.frame.setProgress(`fork ${Math.min(this.stage, 5)}/5`); this.frame.flash(PAL.neon, 40);
+    if (this.stage >= 5) { this.boarding(); return; }
+    this.fork = undefined; this.nextForkAt = this.elapsed + FORK_GAP / Math.max(0.8, this.frame.speed);
+  }
+  private wrongWay(afterTurn: boolean, label = 'WRONG WAY') {
+    this.wrong++; this.penalty += 3; this.uturn = 1.3; this.frame.shake(160, 0.006); this.frame.flash(PAL.red, 120); this.say(label, PAL.red);
+    this.fork = undefined; this.deadEnd = -1; this.obstacles = []; this.nextForkAt = this.elapsed + (afterTurn ? 1.2 : 1.6);
   }
   private say(s: string, color: number) { this.banner?.destroy(); this.banner = txt(this, W / 2, 300, s, 20, color).setDepth(30); this.tweens.add({ targets: this.banner, alpha: 0, y: 270, duration: 900, delay: 300, onComplete: () => { this.banner?.destroy(); this.banner = undefined; } }); }
   private boarding() {
@@ -116,30 +155,39 @@ export class AirportScene extends Phaser.Scene {
     const beyond = Math.max(0, this.collisions - 2); const score = clamp(100 - 8 * this.wrong - Math.min(2, this.collisions) - 4 * beyond, 40, 100);
     this.time.delayedCall(900, () => this.frame.finish(score));
   }
-  private partialScore() { const f = this.fork; const within = f ? clamp(1 - f.z, 0, 1) : clamp((this.elapsed - (this.nextForkAt - 4.4)) / 4.4, 0, 1); return clamp((this.stage / 5) * 60 + within * 8 - this.wrong * 3, 0, 45); }
+  private partialScore() { const f = this.fork; const within = f ? clamp(1 - f.z, 0, 1) : 0; return clamp((this.stage / 5) * 60 + within * 8 - this.wrong * 3, 0, 45); }
 
   // ---------- update ----------
   update(_t: number, dtMs: number) {
     this.frame.update(dtMs); if (!this.frame.active || this.ended) return;
+    if (this.waiting) { this.draw(); return; }
     const dt = Math.min(0.05, dtMs / 1000); this.elapsed += dt;
     const left = BOARDING_SEC - this.elapsed - this.penalty; this.meter.set(left / BOARDING_SEC, left < 8 ? PAL.red : PAL.sun2); this.frame.setTimer(`${Math.max(0, left).toFixed(1)}s`);
     if (left <= 0) { this.ended = true; this.say('BOARDING CLOSED', PAL.red); this.time.delayedCall(700, () => this.frame.finish(this.partialScore(), true)); return; }
+    // the 90° turn: the corridor sweeps sideways, the runner leans, then the new corridor is straight ahead
+    if (this.turning) {
+      const tr = this.turning; tr.t += dt / TURN_SEC; const p = clamp(tr.t, 0, 1); const sw = Math.sin(p * Math.PI);
+      this.ox = -tr.dir * sw * 150; this.runner.setAngle(-tr.dir * 14 * sw); this.dist += this.speed * 0.6 * dt;
+      if (p >= 1) { this.ox = 0; this.runner.setAngle(0); this.turning = undefined; this.lane = 1; if (tr.ok) this.forkPassed(); else this.deadEnd = 0.62; }
+      this.draw(); return;
+    }
     if (this.uturn > 0) { this.uturn -= dt; this.runner.setFlipX(true).setAlpha(0.7); this.draw(); return; } else { this.runner.setFlipX(false).setAlpha(1); }
     // motion
     this.stunned = Math.max(0, this.stunned - dt); this.iframes = Math.max(0, this.iframes - dt); this.boost = Math.max(0, this.boost - dt);
     const ramp = 1 + 0.006 * this.elapsed + 0.25 * this.frame.hard; const v = this.speed * ramp * (this.stunned > 0 ? 0.45 : 1) * (this.boost > 0 ? 1.5 : 1);
     this.dist += v * dt;
+    if (this.deadEnd >= 0) { this.deadEnd -= v * 1.4 * dt; if (this.deadEnd <= 0.04) this.wrongWay(true); this.draw(); return; }
     if (this.jumpT >= 0) { this.jumpT += dt / 0.6; if (this.jumpT >= 1) this.jumpT = -1; }
-    // spawn
-    const forking = !!this.fork;
-    if (!forking && this.elapsed >= this.nextForkAt && this.stage < 5) { this.fork = this.makeFork(); }
-    if (this.elapsed >= this.nextObAt && !(this.fork && this.fork.z < 0.45)) {
+    // spawn: a fork wall appears far ahead and holds at the horizon so the signs can be read, then approaches
+    if (!this.fork && this.elapsed >= this.nextForkAt && this.stage < 5) this.fork = this.makeFork();
+    if (!this.fork && this.elapsed >= this.nextObAt) {
       const kinds: ObKind[] = ['traveller', 'traveller', 'bag', 'bag', 'rope', 'cart', 'walkway']; const kind = Phaser.Utils.Array.GetRandom(kinds); const lane = Phaser.Math.Between(0, 2);
       if (!this.obstacles.some(o => o.z > 0.8)) this.obstacles.push({ kind, lane, z: 1 });
       this.nextObAt = this.elapsed + clamp(1.15 / (ramp * this.frame.speed), 0.55, 1.4);
     }
     // advance
-    for (const o of this.obstacles) o.z -= v * dt; if (this.fork) this.fork.z -= v * dt;
+    for (const o of this.obstacles) o.z -= v * dt;
+    if (this.fork) { if (this.fork.hold > 0) this.fork.hold -= dt; else this.fork.z -= v * dt; }
     const airborne = this.jumpT > 0.2 && this.jumpT < 0.8;
     for (const o of this.obstacles) {
       if (o.z < 0.07 && o.z > -0.02 && o.lane === this.lane && !o.hit && !o.used) {
@@ -149,7 +197,7 @@ export class AirportScene extends Phaser.Scene {
       }
     }
     this.obstacles = this.obstacles.filter(o => o.z > -0.15);
-    if (this.fork && !this.fork.resolved && this.fork.z <= 0.02) this.resolveFork(this.fork);
+    if (this.fork && !this.fork.resolved && this.fork.z <= 0.03) this.reachFork(this.fork);
     // runner
     this.runT += dt * (this.stunned > 0 ? 6 : 12); const fr = this.jumpT >= 0 ? 3 : Math.floor(this.runT) % 3; this.runner.setFrame(fr);
     const tx = this.laneScreenX(this.lane, 0); this.laneX += (tx - this.laneX) * Math.min(1, dt * 14);
@@ -159,37 +207,26 @@ export class AirportScene extends Phaser.Scene {
 
   // ---------- drawing ----------
   private draw() {
-    const g = this.g; g.clear();
+    const g = this.g; g.clear(); const vx = VX + this.ox;
     // ceiling with fluorescent strips receding
     g.fillStyle(PAL.night1).fillRect(0, 26, W, HORIZON - 26); g.fillStyle(PAL.night3).fillRect(0, HORIZON - 3, W, 3);
-    for (let i = 0; i < 6; i++) { const z = ((i / 6) + (this.dist * 0.5) % (1 / 6)) % 1; const y = 26 + (HORIZON - 30) * Math.pow(1 - z, 1.8); const s = this.scaleAt(z); g.fillStyle(PAL.sky3, 0.5 + 0.4 * (1 - z)).fillRect(VX - 60 * s, y, 120 * s, Math.max(1, 3 * s)); }
+    for (let i = 0; i < 6; i++) { const z = ((i / 6) + (this.dist * 0.5) % (1 / 6)) % 1; const y = this.ceilY(z); const s = this.scaleAt(z); g.fillStyle(PAL.sky3, 0.5 + 0.4 * (1 - z)).fillRect(vx - 60 * s, y, 120 * s, Math.max(1, 3 * s)); }
     // floor: corridor trapezoid, tiles scrolling toward the player
     g.fillStyle(PAL.gray0).fillRect(0, HORIZON, W, FLOOR - HORIZON + 30);
-    g.fillStyle(PAL.gray1).beginPath(); g.moveTo(VX - (LANE_NEAR * 1.5 + 10), FLOOR + 30); g.lineTo(VX - (LANE_FAR * 1.5 + 4), HORIZON); g.lineTo(VX + (LANE_FAR * 1.5 + 4), HORIZON); g.lineTo(VX + (LANE_NEAR * 1.5 + 10), FLOOR + 30); g.closePath(); g.fillPath();
-    for (let i = 0; i < 9; i++) { const z = ((i / 9) + (this.dist % (1 / 9))) % 1; const y = this.screenY(z); const hw = (LANE_NEAR * 1.5 + 10) * (1 - z) + (LANE_FAR * 1.5 + 4) * z; g.fillStyle(PAL.gray2, 0.35).fillRect(VX - hw, y, hw * 2, 1); }
-    for (const lane of [-0.5, 0.5]) { g.lineStyle(1, PAL.gray2, 0.25); g.beginPath(); g.moveTo(VX + lane * 2 * LANE_NEAR, FLOOR + 30); g.lineTo(VX + lane * 2 * LANE_FAR, HORIZON); g.strokePath(); }
+    g.fillStyle(PAL.gray1).beginPath(); g.moveTo(vx - this.halfW(0), FLOOR + 30); g.lineTo(vx - this.halfW(1), HORIZON); g.lineTo(vx + this.halfW(1), HORIZON); g.lineTo(vx + this.halfW(0), FLOOR + 30); g.closePath(); g.fillPath();
+    for (let i = 0; i < 9; i++) { const z = ((i / 9) + (this.dist % (1 / 9))) % 1; const y = this.screenY(z); const hw = this.halfW(z); g.fillStyle(PAL.gray2, 0.35).fillRect(vx - hw, y, hw * 2, 1); }
+    for (const lane of [-0.5, 0.5]) { g.lineStyle(1, PAL.gray2, 0.25); g.beginPath(); g.moveTo(vx + lane * 2 * LANE_NEAR, FLOOR + 30); g.lineTo(vx + lane * 2 * LANE_FAR, HORIZON); g.strokePath(); }
     // walls
-    g.fillStyle(PAL.night3).beginPath(); g.moveTo(0, 26); g.lineTo(VX - (LANE_FAR * 1.5 + 4), HORIZON - 3); g.lineTo(VX - (LANE_NEAR * 1.5 + 10), FLOOR + 30); g.lineTo(0, FLOOR + 30); g.closePath(); g.fillPath();
-    g.fillStyle(PAL.night3).beginPath(); g.moveTo(W, 26); g.lineTo(VX + (LANE_FAR * 1.5 + 4), HORIZON - 3); g.lineTo(VX + (LANE_NEAR * 1.5 + 10), FLOOR + 30); g.lineTo(W, FLOOR + 30); g.closePath(); g.fillPath();
-    for (let i = 0; i < 5; i++) { const z = ((i / 5) + (this.dist * 0.7) % (1 / 5)) % 1; const y = this.screenY(z) - 90 * this.scaleAt(z); const s = this.scaleAt(z); const xl = VX - ((LANE_NEAR * 1.5 + 10) * (1 - z) + (LANE_FAR * 1.5 + 4) * z) - 4; g.fillStyle(PAL.sky1, 0.5).fillRect(xl - 26 * s, y, 24 * s, 34 * s); g.fillStyle(PAL.sky1, 0.5).fillRect(W - xl + 2, y, 24 * s, 34 * s); }
-    // fork signs (and doors) then obstacles far → near
+    g.fillStyle(PAL.night3).beginPath(); g.moveTo(vx - 400, 26); g.lineTo(vx - this.halfW(1), HORIZON - 3); g.lineTo(vx - this.halfW(0), FLOOR + 30); g.lineTo(vx - 400, FLOOR + 30); g.closePath(); g.fillPath();
+    g.fillStyle(PAL.night3).beginPath(); g.moveTo(vx + 400, 26); g.lineTo(vx + this.halfW(1), HORIZON - 3); g.lineTo(vx + this.halfW(0), FLOOR + 30); g.lineTo(vx + 400, FLOOR + 30); g.closePath(); g.fillPath();
+    for (let i = 0; i < 5; i++) { const z = ((i / 5) + (this.dist * 0.7) % (1 / 5)) % 1; const y = this.screenY(z) - 90 * this.scaleAt(z); const s = this.scaleAt(z); const xl = vx - this.halfW(z) - 4; g.fillStyle(PAL.sky1, 0.5).fillRect(xl - 26 * s, y, 24 * s, 34 * s); g.fillStyle(PAL.sky1, 0.5).fillRect(vx + this.halfW(z) + 6, y, 24 * s, 34 * s); }
+    // the junction wall (fork) or the dead-end wall
     this.signL.setVisible(false); this.signR.setVisible(false); this.signM.setVisible(false);
     const f = this.fork;
-    if (f && f.z > -0.02) {
-      const s = this.scaleAt(f.z), y = this.screenY(f.z), zc = clamp(f.z, 0, 1);
-      if (f.doors) {
-        f.doors.forEach((d, lane) => { const x = this.laneScreenX(lane, zc); const w = 44 * s, h = 70 * s; g.fillStyle(PAL.ink).fillRect(x - w / 2 - 2, y - h - 2, w + 4, h + 2); g.fillStyle(lane === f.correctLane ? PAL.sea1 : PAL.dusk0).fillRect(x - w / 2, y - h, w, h); g.fillStyle(PAL.sun2).fillRect(x - w / 2, y - h - 12 * s, w, 10 * s); });
-        const sc = clamp(s * 1.1, 0.3, 1.1); this.signL.setText(f.doors[0]).setPosition(this.laneScreenX(0, zc), y - 76 * s).setScale(sc).setColor('#0a0a12').setVisible(true); this.signM.setText(f.doors[1]).setPosition(this.laneScreenX(1, zc), y - 76 * s).setScale(sc).setColor('#0a0a12').setVisible(true); this.signR.setText(f.doors[2]).setPosition(this.laneScreenX(2, zc), y - 76 * s).setScale(sc).setColor('#0a0a12').setVisible(true);
-      } else {
-        // a pillar splits the corridor; two overhead boards
-        const pw = 14 * s, ph = 120 * s; g.fillStyle(PAL.gray1).fillRect(VX - pw / 2, y - ph, pw, ph); g.fillStyle(PAL.gray2).fillRect(VX - pw / 2, y - ph, 3 * s, ph);
-        const bw = 92 * s, bh = 26 * s, by = y - ph - 6 * s; const xl = VX - 58 * s - bw / 2, xr = VX + 58 * s - bw / 2;
-        g.fillStyle(PAL.ink).fillRect(xl - 2, by - 2, bw + 4, bh + 4); g.fillStyle(PAL.night0).fillRect(xl, by, bw, bh); g.fillStyle(PAL.ink).fillRect(xr - 2, by - 2, bw + 4, bh + 4); g.fillStyle(PAL.night0).fillRect(xr, by, bw, bh);
-        g.fillStyle(PAL.sun2).fillTriangle(xl + 6 * s, by + bh / 2, xl + 14 * s, by + 5 * s, xl + 14 * s, by + bh - 5 * s); g.fillStyle(PAL.sun2).fillTriangle(xr + bw - 6 * s, by + bh / 2, xr + bw - 14 * s, by + 5 * s, xr + bw - 14 * s, by + bh - 5 * s);
-        const sc = clamp(s * 1.05, 0.28, 1.05); this.signL.setText(f.left).setPosition(xl + bw / 2 + 4 * s, by + bh / 2).setScale(sc).setColor('#f7cf6b').setVisible(true); this.signR.setText(f.right).setPosition(xr + bw / 2 - 4 * s, by + bh / 2).setScale(sc).setColor('#f7cf6b').setVisible(true);
-      }
-    }
-    const obs = [...this.obstacles].sort((a, b) => b.z - a.z);
+    if (f && f.z > -0.02) this.drawWall(f);
+    else if (this.deadEnd >= 0) this.drawDeadEnd(clamp(this.deadEnd, 0, 1));
+    // obstacles far → near (nothing beyond a wall)
+    const obs = [...this.obstacles].filter(o => !f || o.z < f.z).sort((a, b) => b.z - a.z);
     for (const o of obs) {
       if (o.z < -0.02) continue; const z = clamp(o.z, 0, 1), s = this.scaleAt(z), x = this.laneScreenX(o.lane, z), y = this.screenY(z); const a = o.hit ? 0.35 : 1;
       switch (o.kind) {
@@ -200,12 +237,36 @@ export class AirportScene extends Phaser.Scene {
         case 'walkway': { const hw = 30 * s; g.fillStyle(o.used ? PAL.night3 : PAL.sea1, 0.8).fillRect(x - hw, y - 6 * s, hw * 2, 6 * s); g.fillStyle(PAL.neon, 0.9).fillTriangle(x - 6 * s, y - 5 * s, x + 6 * s, y - 5 * s, x, y - 1 * s); break; }
       }
     }
-    // runner shadow
-    g.fillStyle(PAL.ink, 0.35).fillEllipse(this.laneX, FLOOR - 4, 40, 8);
+    g.fillStyle(PAL.ink, 0.35).fillEllipse(this.laneX + this.ox, FLOOR - 4, 40, 8);
+  }
+  /** The T-junction: an end wall across the corridor at the fork's depth with two sign boards (or three gate doors). */
+  private drawWall(f: Fork) {
+    const g = this.g; const vx = VX + this.ox; const z = clamp(f.z, 0, 1); const s = Math.max(0.16, this.scaleAt(z)); const yF = this.screenY(z), yC = this.ceilY(z); const hw = this.halfW(z) + 2;
+    g.fillStyle(PAL.night1).fillRect(vx - hw, yC, hw * 2, yF - yC); g.fillStyle(PAL.night3).fillRect(vx - hw, yF - 3 * s, hw * 2, 3 * s);   // the wall and its skirting
+    // side openings: darker slots at the wall's edges hint that the corridor continues left and right
+    g.fillStyle(PAL.night0).fillRect(vx - hw, yC + (yF - yC) * 0.3, 6 * s, (yF - yC) * 0.7); g.fillStyle(PAL.night0).fillRect(vx + hw - 6 * s, yC + (yF - yC) * 0.3, 6 * s, (yF - yC) * 0.7);
+    const sc = clamp(s * 1.05, 0.85, 1.05);   // signs stay legible even far away
+    if (f.doors) {
+      f.doors.forEach((d, lane) => { const x = this.laneScreenX(lane, z); const w = 44 * s, h = 70 * s; g.fillStyle(PAL.ink).fillRect(x - w / 2 - 2, yF - h - 2, w + 4, h + 2); g.fillStyle(lane === f.correct ? PAL.sea1 : PAL.dusk0).fillRect(x - w / 2, yF - h, w, h); g.fillStyle(PAL.sun2).fillRect(x - w / 2, yF - h - 12 * s, w, 10 * s); void d; });
+      this.signL.setText(f.doors[0]).setPosition(this.laneScreenX(0, z), yF - 76 * s).setScale(sc).setColor('#0a0a12').setVisible(true); this.signM.setText(f.doors[1]).setPosition(this.laneScreenX(1, z), yF - 76 * s).setScale(sc).setColor('#0a0a12').setVisible(true); this.signR.setText(f.doors[2]).setPosition(this.laneScreenX(2, z), yF - 76 * s).setScale(sc).setColor('#0a0a12').setVisible(true);
+    } else {
+      const bw = Math.max(84, 92 * s), bh = Math.max(22, 26 * s); const by = Math.min(yC + (yF - yC) * 0.32 - bh / 2, yF - bh - 12); const gap = Math.max(hw * 0.5, bw / 2 + 4); const xl = vx - gap - bw / 2, xr = vx + gap - bw / 2;   // boards keep a readable size and never overlap
+      for (const [bx, arrowLeft] of [[xl, true], [xr, false]] as [number, boolean][]) {
+        g.fillStyle(PAL.ink).fillRect(bx - 2, by - 2, bw + 4, bh + 4); g.fillStyle(PAL.night0).fillRect(bx, by, bw, bh);
+        const ax = arrowLeft ? bx + 5 : bx + bw - 5; const dir = arrowLeft ? 1 : -1; g.fillStyle(PAL.sun2).fillTriangle(ax, by + bh / 2, ax + dir * 8, by + 4, ax + dir * 8, by + bh - 4);
+      }
+      this.signL.setText(f.left).setPosition(xl + bw / 2 + 5, by + bh / 2).setScale(sc).setColor('#f7cf6b').setVisible(true); this.signR.setText(f.right).setPosition(xr + bw / 2 - 5, by + bh / 2).setScale(sc).setColor('#f7cf6b').setVisible(true);
+    }
+  }
+  /** After a wrong turn: a blank end wall rushing up with a NO EXIT board. */
+  private drawDeadEnd(z: number) {
+    const g = this.g; const vx = VX + this.ox; const s = Math.max(0.16, this.scaleAt(z)); const yF = this.screenY(z), yC = this.ceilY(z); const hw = this.halfW(z) + 2;
+    g.fillStyle(PAL.night1).fillRect(vx - hw, yC, hw * 2, yF - yC); g.fillStyle(PAL.red, 0.9).fillRect(vx - hw, yF - 8 * s, hw * 2, 4 * s);
+    const bw = Math.max(70, 100 * s), bh = Math.max(18, 26 * s), bx = vx - bw / 2, by = yC + (yF - yC) * 0.35; g.fillStyle(PAL.ink).fillRect(bx - 2, by - 2, bw + 4, bh + 4); g.fillStyle(PAL.red).fillRect(bx, by, bw, bh);
+    this.signM.setText('NO EXIT').setPosition(vx, by + bh / 2).setScale(clamp(s * 1.05, 0.6, 1.05)).setColor('#f4f1ea').setVisible(true);
   }
   private buildRunner() {
     const map: Record<string, number> = { h: PAL.earth3, k: PAL.ink, o: PAL.sun0, b: PAL.night3, s: PAL.sea1, w: PAL.white };
-    // 14x18 frames: run A, run B, run C, jump; the suitcase trails on the right
     const A = ['....hhhh......', '....hkhk......', '....hhhh......', '.....oo...ss..', '...oooooo.ss..', '..o.oooo.oss..', '..o.oooo.o.k..', '....bbbb...k..', '....bbbb..sss.', '...bb..bb.sss.', '...bb..bb.sss.', '..bb....bbsss.', '..k......k.kk.', '..............'];
     const B = ['....hhhh......', '....hkhk......', '....hhhh......', '.....oo...ss..', '...oooooo.ss..', '..o.oooo.oss..', '..o.oooo.o.k..', '....bbbb...k..', '....bbbb..sss.', '....bbbb..sss.', '....bbbb..sss.', '....bb.b..sss.', '....k..k...kk.', '..............'];
     const C = ['....hhhh......', '....hkhk......', '....hhhh......', '.....oo...ss..', '...oooooo.ss..', '..o.oooo.oss..', '..o.oooo.o.k..', '....bbbb...k..', '....bbbb..sss.', '...bb.bb..sss.', '..bb...bb.sss.', '.bb.....bbsss.', '.k.......k.kk.', '..............'];

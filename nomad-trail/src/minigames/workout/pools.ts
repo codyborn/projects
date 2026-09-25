@@ -16,7 +16,7 @@ export const META: Record<string, MicroMeta> = {
   riverstones: { word: 'HOP!',      instr: 'Tap when the next stone is at its highest.', durationSec: 8 },
   swimbreath:  { word: 'STROKE!',   instr: "Tap LEFT, RIGHT, LEFT... When the bubble appears, DON'T tap: breathe.", durationSec: 8 },
   balance:     { word: 'STEADY!',   instr: 'Hold LEFT or RIGHT to lean against the gusts. Stay centred.', durationSec: 7 },
-  pose:        { word: 'MATCH!',    instr: 'Drag up/down to rotate into the pose the shadow shows: Downward Dog, Cobra or Warrior II. Hold it.', durationSec: 7 },
+  pose:        { word: 'YOGA!',     instr: 'Scroll the wheel on the right to the pose the shadow shows: Downward Dog, Cobra, Warrior II or Plank. Hold it half a second.', durationSec: 8 },
   cityrun:     { word: 'CROSS!',    instr: 'Tap to run forward a lane. Tap the sides to sidestep. Swipe DOWN to step back. Do not get hit.', durationSec: 9 },
   runner:      { word: 'RUN!',      instr: 'Tap to jump the rocks. Swipe DOWN to duck the branches.', durationSec: 8 },
   pace:        { word: 'PACE!',     instr: 'Hold to walk. Keep the marker in the green band. Too fast and you get dizzy.', durationSec: 8 },

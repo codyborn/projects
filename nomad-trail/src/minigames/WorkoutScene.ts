@@ -39,9 +39,10 @@ export class WorkoutScene extends Phaser.Scene {
     this.lives = 1 + (this.launch.extraLives ?? 0); this.heartsG = this.add.graphics().setDepth(801); this.drawHearts();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.ticks.forEach(t => t.remove()); this.current?.destroy(); this.cdTimer?.remove(); });
     if (this.activity === 'ferrata') {
-      this.frame.capSec = 35;
+      this.frame.capSec = 1e7;   // no timeout: the climb ends at the flag (or the give-up hatch)
+      this.heartsG.setVisible(false);
       const scoreNow: Record<string, () => number> = {}; (this as any)._scoreNow = scoreNow; this.frame.scoreNow = () => (scoreNow.ferrata ? scoreNow.ferrata() : 50);
-      this.frame.intro('The marble bounces on its own. Hold LEFT or RIGHT to steer it up the ledges. Green ledges save your progress. Reach the flag.', () => this.ferrata());
+      this.frame.intro('The marble bounces on its own. HOLD the left or right side of the screen (or TILT the phone) to steer it onto the next ledge. Green ledges save your progress; a fall just drops you back to the last one. Reach the flag. Faster is better.', () => this.ferrata(), { height: 300 });
       return;
     }
     // ---- one micro-game, three escalating rounds
@@ -67,7 +68,9 @@ export class WorkoutScene extends Phaser.Scene {
     const word = txt(this, W / 2, H / 2 - 18, big, first ? 40 : 30, PAL.white); const sub = txt(this, W / 2, H / 2 + 34, first ? micro.instr : `${micro.word}  x${speed.toFixed(1)} speed`, 10, PAL.night0); sub.setWordWrapWidth(W - 80).setAlign('center');
     card.add([bg, p, word, sub]); word.setScale(0.4); this.tweens.add({ targets: word, scale: 1, duration: 220, ease: 'Back.Out' });
     // the athlete demonstrates on the card; tap anywhere to start early. Card time does not count against the cap.
-    this.athlete.show(true).pose(0); this.athlete.sprite.setDepth(701).setPosition(W / 2, H / 2 - 120); const hint = txt(this, W / 2, H / 2 + 62, 'tap to start', 8, PAL.night0).setAlpha(0.8); card.add(hint);   // the athlete demonstrates above the card
+    this.athlete.show(true).pose(0); this.athlete.sprite.setDepth(701).setPosition(W / 2, H / 2 - 120);   // the athlete demonstrates above the card
+    if (first) { const rb = this.add.rectangle(W / 2, H / 2 + 112, 160, 44, PAL.night0).setStrokeStyle(2, PAL.white).setInteractive({ useHandCursor: true }); const rt = txt(this, W / 2, H / 2 + 112, 'READY', 16, PAL.white); card.add([rb, rt]); rb.on('pointerdown', () => begin()); this.tweens.add({ targets: rb, scaleX: 1.04, scaleY: 1.08, yoyo: true, repeat: -1, duration: 600 }); }
+    else { const hint = txt(this, W / 2, H / 2 + 62, 'tap to skip', 8, PAL.night0).setAlpha(0.8); card.add(hint); }
     this.frame.pauseCap();
     let began = false; const begin = () => {
       if (began) return; began = true; cardTimer.remove(); this.input.off('pointerdown', begin); this.input.keyboard?.off('keydown-SPACE', begin);
@@ -75,7 +78,7 @@ export class WorkoutScene extends Phaser.Scene {
       const flash = txt(this, W / 2, H / 2, 'GO', 30, PAL.neon).setDepth(750); this.tweens.add({ targets: flash, alpha: 0, scale: 1.8, duration: 260, onComplete: () => flash.destroy() });
       startMicro();
     };
-    const cardTimer = this.time.delayedCall(first ? 1800 : 1000, begin);
+    const cardTimer = first ? this.time.delayedCall(1e9, begin) : this.time.delayedCall(1000, begin);   // the first card waits for READY (or any tap); round cards auto-skip after 1 s
     this.time.delayedCall(120, () => { this.input.once('pointerdown', begin); this.input.keyboard?.once('keydown-SPACE', begin); });   // ignore the tap that opened the card
     const startMicro = () => {
       const ctx: MicroCtx = { scene: this, frame: this.frame, speed, window: this.frame.window, hard: this.frame.hard, rng: this.rng, athlete: this.athlete };
@@ -112,57 +115,56 @@ export class WorkoutScene extends Phaser.Scene {
 
   // ---- FERRATA: Zeke's Peak style bouncing climb (unchanged from round 3).
   private ferrata() {
-    const F = FERRATA; const ledges: Ledge[] = genLedges(Phaser.Math.Between(1, 10000)); const gone = new Set<number>(); const crumbling = new Map<number, number>();
+    const F = FERRATA; const ledges: Ledge[] = genLedges(Phaser.Math.Between(1, 10000));
     const top = ledges[ledges.length - 1]; const flagY = top.y - 40;
     // marble state (world coords: y decreases upward; start ledge at y = 0). Screen y = worldY - camY.
-    let mx = ledges[0].x + ledges[0].w / 2, my = -F.radius, vx = 0, vy = -F.bounce, prevY = my, camY = -420, anchorIdx = 0, best = 0, finished = false, tilt = 0;
-    let holdL = false, holdR = false, gustT = 0, gustDir = 0, gustNext = 8, t = 0; const t0 = this.time.now;
-    const steerHard = 1 - 0.25 * this.frame.hard;
-    // input: hold a side (touch/mouse), arrows on desktop, device tilt if the browser already delivers it (never prompted)
+    let mx = ledges[0].x + ledges[0].w / 2, my = -F.radius, vx = 0, vy = -F.bounce, prevY = my, camY = -420, anchorIdx = 0, best = 0, bestIdx = 0, finished = false, tilt = 0, falls = 0;
+    let holdL = false, holdR = false, gustT = 0, gustDir = 0, gustNext = 9, t = 0; const t0 = this.time.now; let giveUpBtn: Phaser.GameObjects.GameObject[] = [];
+    const giveUpAt = Number(((this.launch.payload || {}) as any).giveUpAt ?? 120);   // seconds; the harness shortens it
+    // input: hold a side (touch/mouse), arrows on desktop, device tilt with a 4 degree deadzone if the browser already delivers it (never prompted)
     const setHold = (p: Phaser.Input.Pointer | null, down: boolean) => { if (!p) return; if (!down) { holdL = holdR = false; return; } holdL = p.x < W / 2; holdR = !holdL; };
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => setHold(p, true)); this.input.on('pointermove', (p: Phaser.Input.Pointer) => { if (p.isDown) setHold(p, true); }); this.input.on('pointerup', () => { holdL = holdR = false; });
     const kb = this.input.keyboard; let kL = false, kR = false; kb?.on('keydown-LEFT', () => { kL = true; }); kb?.on('keyup-LEFT', () => { kL = false; }); kb?.on('keydown-RIGHT', () => { kR = true; }); kb?.on('keyup-RIGHT', () => { kR = false; });
-    const onTilt = (e: DeviceOrientationEvent) => { if (typeof e.gamma === 'number') tilt = clamp(e.gamma / 25, -1, 1); }; try { window.addEventListener('deviceorientation', onTilt); } catch { /* not available */ }
+    const onTilt = (e: DeviceOrientationEvent) => { if (typeof e.gamma === 'number') tilt = Math.abs(e.gamma) < 4 ? 0 : clamp((e.gamma - Math.sign(e.gamma) * 4) / 22, -1, 1); }; try { window.addEventListener('deviceorientation', onTilt); } catch { /* not available */ }
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { try { window.removeEventListener('deviceorientation', onTilt); } catch { /* noop */ } });
-    // art: cliff strata are drawn from the world so they scroll with the camera; marble + flag + wind are graphics too
-    const cliff = this.add.graphics().setDepth(2); const marble = this.add.graphics().setDepth(6); const fx = this.add.graphics().setDepth(7); const hint = txt(this, W / 2, 560, 'hold LEFT / RIGHT to steer', 9, PAL.gray1).setDepth(8);
+    // harness hooks: where the next ledge is, and a steer override
+    let steerOverride = 0; (this as any).ferr = { hint: () => { const next = ledges[Math.min(ledges.length - 1, bestIdx + 1)]; return { targetX: next.x + next.w / 2, mx, my, vy, finished, falls, t, bestIdx }; }, steer: (d: number) => { steerOverride = d; } };
+    const cliff = this.add.graphics().setDepth(2); const marble = this.add.graphics().setDepth(6); const fx = this.add.graphics().setDepth(7); const hint = txt(this, W / 2, 560, 'hold LEFT / RIGHT (or tilt) to steer', 9, PAL.gray1).setDepth(8);
     const heightFrac = () => clamp(-best / -flagY, 0, 1);
-    ((this as any)._scoreNow as Record<string, () => number>).ferrata = () => clamp(heightFrac() * 92 - (1 + (this.launch.extraLives ?? 0) - this.lives) * 3, 0, 100);
-    const respawn = () => { const a = ledges[anchorIdx]; mx = a.x + a.w / 2; my = a.y - F.radius; vx = 0; vy = -F.bounce; prevY = my; camY = my - 400; holdL = holdR = false; };
-    const win = () => { if (finished) return; finished = true; fx.clear(); this.frame.setProgress('SUMMIT'); this.time.delayedCall(350, () => this.frame.finish(clamp(100 - (1 + (this.launch.extraLives ?? 0) - this.lives) * 3, 0, 100))); };
+    const timeScore = (secs: number) => clamp(100 - Math.max(0, secs - 25) * (60 / 65), 40, 100);   // 100 at <= 25 s, 40 at 90 s
+    ((this as any)._scoreNow as Record<string, () => number>).ferrata = () => clamp(heightFrac() * 60 - falls * 2, 0, 45);
+    const respawn = () => { const a = ledges[anchorIdx]; mx = a.x + a.w / 2; my = a.y - F.radius; vx = 0; vy = -F.bounce; prevY = my; camY = my - 400; holdL = holdR = false; falls++; this.frame.flash(PAL.sun1, 60); };
+    const win = () => { if (finished) return; finished = true; fx.clear(); this.frame.setProgress('SUMMIT'); const secs = (this.time.now - t0) / 1000; this.time.delayedCall(350, () => this.frame.finish(clamp(timeScore(secs) - falls * 3, 30, 100))); };
+    const giveUp = () => { if (finished) return; finished = true; this.frame.finish(clamp(heightFrac() * 60 - falls * 2, 0, 45), true); };
     this.loop(() => {
       if (!this.frame.active || finished) return; const dt = 0.016; t += dt;
-      // wind: a gust every ~8 s for 1.2 s, visible as streaks
-      if (t > gustNext) { gustDir = Math.random() < 0.5 ? -1 : 1; gustT = 1.2; gustNext = t + 7 + Math.random() * 2.5; }
-      const gust = gustT > 0 ? gustDir * 120 * (0.6 + 0.4 * this.launch.difficulty) : 0; if (gustT > 0) gustT -= dt;
-      const steer = (holdL || kL ? -1 : 0) + (holdR || kR ? 1 : 0) || (holdL || holdR || kL || kR ? 0 : tilt);
-      vx = steer * F.steer * steerHard + gust; vy += F.gravity * dt; prevY = my; my += vy * dt; mx += vx * dt;
-      if (mx < F.wallPad + F.radius) { mx = F.wallPad + F.radius; } if (mx > W - F.wallPad - F.radius) { mx = W - F.wallPad - F.radius; }
-      // landing: bottom of the marble crosses a ledge top while falling
-      if (vy > 0) for (let i = 0; i < ledges.length; i++) { if (gone.has(i)) continue; const l = ledges[i]; if (prevY + F.radius <= l.y + 1 && my + F.radius >= l.y && mx >= l.x - 2 && mx <= l.x + l.w + 2) {
-        my = l.y - F.radius; vy = -F.bounce; if (i > best / -F.rise) best = -l.y;
+      if (t > gustNext) { gustDir = Math.random() < 0.5 ? -1 : 1; gustT = 1.0; gustNext = t + 8 + Math.random() * 3; }
+      const gust = gustT > 0 ? gustDir * 60 * (0.6 + 0.4 * this.launch.difficulty) : 0; if (gustT > 0) gustT -= dt;
+      const steerIn = steerOverride || ((holdL || kL ? -1 : 0) + (holdR || kR ? 1 : 0) || (holdL || holdR || kL || kR ? 0 : tilt));
+      // forgiving control: ease toward the target speed, damp when nothing is held so the marble does not overshoot the ledge
+      const targetVx = steerIn * F.steer + gust; vx += (targetVx - vx) * Math.min(1, dt * 10); if (steerIn === 0) vx *= 0.9;
+      vy += F.gravity * dt; prevY = my; my += vy * dt; mx += vx * dt;
+      if (mx < F.wallPad + F.radius) { mx = F.wallPad + F.radius; vx = 0; } if (mx > W - F.wallPad - F.radius) { mx = W - F.wallPad - F.radius; vx = 0; }
+      if (vy > 0) for (let i = 0; i < ledges.length; i++) { const l = ledges[i]; if (prevY + F.radius <= l.y + 1 && my + F.radius >= l.y && mx >= l.x - 3 && mx <= l.x + l.w + 3) {
+        my = l.y - F.radius; vy = -F.bounce; if (-l.y > best) best = -l.y; if (i > bestIdx) bestIdx = i;
         if (l.kind === 'anchor' && i > anchorIdx) { anchorIdx = i; this.frame.flash(PAL.neon, 40); }
-        if (l.kind === 'crumble' && !crumbling.has(i)) crumbling.set(i, 0.25);
         if (i === ledges.length - 1) win(); break; } }
-      for (const [i, left] of [...crumbling]) { const n = left - dt; if (n <= 0) { crumbling.delete(i); gone.add(i); } else crumbling.set(i, n); }
-      // fell well below the last anchor: a life, then respawn there
-      if (my > ledges[anchorIdx].y + 200) { if (this.loseLife()) { finished = true; this.frame.finish(clamp(heightFrac() * 60, 0, 45), true); return; } respawn(); }
-      // camera: follow upward smoothly, keep the marble around 60% down the screen
+      // fell well below the last anchor: no life lost, back to the anchor and a few seconds gone
+      if (my > ledges[anchorIdx].y + 200) respawn();
       const targetCam = my - 380; camY += (Math.min(targetCam, camY) - camY) * 0.18; if (targetCam > camY) camY += (targetCam - camY) * 0.06;
-      // draw
       cliff.clear(); cliff.fillStyle(PAL.gray0).fillRect(0, 26, W, H - 26);
       for (let yy = Math.floor((camY + 26) / 40) * 40; yy < camY + H; yy += 40) { const sy = yy - camY; cliff.fillStyle(((yy / 40) % 2 === 0) ? PAL.night3 : PAL.gray0).fillRect(0, sy, F.wallPad, 40).fillRect(W - F.wallPad, sy, F.wallPad, 40); cliff.fillStyle(PAL.night2, 0.35).fillRect(F.wallPad, sy + ((yy * 7) % 23), W - F.wallPad * 2, 3); }
-      for (let i = 0; i < ledges.length; i++) { if (gone.has(i)) continue; const l = ledges[i]; const sy = l.y - camY; if (sy < 20 || sy > H) continue; const cr = crumbling.get(i);
-        const col = l.kind === 'anchor' ? PAL.neon : l.kind === 'crumble' ? PAL.earth2 : l.kind === 'thin' ? PAL.gray2 : PAL.earth3; const a = cr !== undefined ? clamp(cr / 0.25, 0.2, 1) : 1;
-        cliff.fillStyle(PAL.ink, a).fillRect(l.x - 1, sy - 1, l.w + 2, 8); cliff.fillStyle(col, a).fillRect(l.x, sy, l.w, 6);
-        if (l.kind === 'anchor') { cliff.fillStyle(PAL.ink).fillCircle(l.x + l.w / 2, sy + 3, 3); cliff.fillStyle(i <= anchorIdx ? PAL.sun2 : PAL.gray2).fillCircle(l.x + l.w / 2, sy + 3, 2); }
-        if (l.kind === 'crumble') { cliff.fillStyle(PAL.ink, a).fillRect(l.x + 8, sy + 2, 1, 4).fillRect(l.x + l.w - 12, sy, 1, 4); } }
-      // flag
+      for (let i = 0; i < ledges.length; i++) { const l = ledges[i]; const sy = l.y - camY; if (sy < 20 || sy > H) continue;
+        const col = l.kind === 'anchor' ? PAL.neon : l.kind === 'thin' ? PAL.gray2 : PAL.earth3;
+        cliff.fillStyle(PAL.ink).fillRect(l.x - 1, sy - 1, l.w + 2, 8); cliff.fillStyle(col).fillRect(l.x, sy, l.w, 6);
+        if (l.kind === 'anchor') { cliff.fillStyle(PAL.ink).fillCircle(l.x + l.w / 2, sy + 3, 3); cliff.fillStyle(i <= anchorIdx ? PAL.sun2 : PAL.gray2).fillCircle(l.x + l.w / 2, sy + 3, 2); } }
       { const sy = flagY - camY; if (sy > 0 && sy < H) { cliff.fillStyle(PAL.gray2).fillRect(top.x + top.w / 2 - 1, sy, 2, 40); cliff.fillStyle(PAL.red).fillTriangle(top.x + top.w / 2 + 1, sy, top.x + top.w / 2 + 22, sy + 7, top.x + top.w / 2 + 1, sy + 14); } }
       marble.clear(); const sy = my - camY; marble.fillStyle(PAL.ink).fillCircle(mx, sy, F.radius + 1); marble.fillStyle(PAL.sun0).fillCircle(mx, sy, F.radius); marble.fillStyle(PAL.sun3).fillRect(mx - 3, sy - 5, 3, 2); marble.fillStyle(PAL.sun1).fillRect(mx - 4, sy + 2, 8, 2);
       fx.clear(); if (gustT > 0) { fx.lineStyle(1, PAL.sky3, 0.8); for (let k = 0; k < 8; k++) { const yy = 40 + ((k * 73 + t * 400) % (H - 60)); const x0 = ((k * 131 + t * 500 * gustDir) % W + W) % W; fx.lineBetween(x0, yy, x0 + 26 * gustDir, yy); } }
       if (t > 3) hint.setAlpha(Math.max(0, 1 - (t - 3)));
-      this.meter.set(heightFrac(), PAL.neon); this.frame.setProgress(`${Math.round(heightFrac() * 100)}%`); this.frame.setTimer(`${Math.max(0, Math.ceil(this.frame.capSec - (this.time.now - t0) / 1000))}s${gustT > 0 ? '  WIND' : ''}`);
+      this.meter.set(heightFrac(), PAL.neon); this.frame.setProgress(`${Math.round(heightFrac() * 100)}%${falls ? `  ·  ${falls} fall${falls > 1 ? 's' : ''}` : ''}`); this.frame.setTimer(`${Math.floor(t)}s${gustT > 0 ? '  WIND' : ''}`);
+      // the hatch: nobody is stuck forever
+      if (t > giveUpAt && !giveUpBtn.length) { const rb = this.add.rectangle(W / 2, 600, 150, 40, PAL.night0, 0.9).setStrokeStyle(2, PAL.red).setDepth(20).setInteractive({ useHandCursor: true }); const rt = txt(this, W / 2, 600, 'GIVE UP', 12, PAL.red).setDepth(21); rb.on('pointerdown', giveUp); giveUpBtn = [rb, rt]; (this as any).ferr.giveUp = giveUp; }
     });
   }
 }

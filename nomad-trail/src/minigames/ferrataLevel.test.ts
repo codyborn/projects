@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { genLedges, validateLedges, horizontalReach, FERRATA } from './ferrataLevel';
 describe('ferrata ledges', () => {
   it('bounce apex clears the rise with margin', () => { expect((FERRATA.bounce ** 2) / (2 * FERRATA.gravity)).toBeGreaterThan(FERRATA.rise + 20); });
-  it('every seed yields a reachable, staggered, in-bounds column with anchors every 6th ledge', () => {
+  it('every seed yields a reachable, staggered, in-bounds column with anchors every 4th ledge, no crumble, nothing narrower than 40 px', () => {
     for (let seed = 1; seed <= 40; seed++) {
       const ls = genLedges(seed); expect(ls.length).toBe(FERRATA.ledges + 1); expect(validateLedges(ls)).toEqual([]);
       expect(ls.filter(l => l.kind === 'anchor').length).toBeGreaterThanOrEqual(3);

@@ -22,7 +22,7 @@ export class CarryOnScene extends Phaser.Scene {
   private frame!: MinigameFrame; private launch!: MinigameLaunch; private pad!: Pad; private cart?: ConsoleGame; private gameId: ConsoleGameId = 'carryon';
   private level!: ArcadeLevel; private cityName = ''; private hazard: Hazard = 'pigeon'; private palette: [number, number, number] = [PAL.night2, PAL.night3, PAL.gray1]; private rng: () => number = Math.random; private family?: LevelFamily;
   private padG!: Phaser.GameObjects.Graphics; private heartsG!: Phaser.GameObjects.Graphics; private statusT!: Phaser.GameObjects.Text; private pauseT?: Phaser.GameObjects.Text; private ledT = 0; private led!: Phaser.GameObjects.Arc;
-  private paused = false; private started = false; private lastPad = '';
+  private paused = false; private started = false; private lastPad = ''; private titleCard?: Phaser.GameObjects.Container;
 
   constructor() { super(MINIGAME_KEYS.carryon); }
 
@@ -58,17 +58,21 @@ export class CarryOnScene extends Phaser.Scene {
       setHearts: (n, max) => this.drawHearts(n, max), setStatus: (t) => this.statusT.setText(t), flash: (c, ms) => this.frame.flash(c, ms), shake: (ms, k) => this.frame.shake(ms, k), sfx: (n) => { try { Audio.playSfx(n as any); } catch { /* audio not unlocked yet */ } },
     };
     this.cart.init(ctx, (r) => { if (!this.frame.active) return; this.frame.finish(r.score, !!r.failed); });
-    this.frame.capSec = this.cart.capSec; this.frame.scoreNow = () => this.cart?.scoreNow() ?? 0;
+    this.frame.capSec = this.cart.capSec > 0 ? this.cart.capSec : 24 * 3600; this.frame.scoreNow = () => this.cart?.scoreNow() ?? 0;   // capSec 0 = the cartridge decides when it ends (Pack-Tris)
     // screen mask so games never draw over the bezel
     const maskShape = this.make.graphics({}); maskShape.fillStyle(0xffffff).fillRect(SCREEN.x, SCREEN.y, SCREEN.width, SCREEN.height);
     const mask = maskShape.createGeometryMask(); this.children.list.forEach(o => { const d = (o as any).depth; if (typeof d === 'number' && d >= 2 && d < 20 && (o as any).setMask) (o as any).setMask(mask); });
     (this as any)._screenMask = mask;
-    // boot: chime + title card (0.8 s) → READY card → play
+    // boot: chime, then the cartridge's title card (name, city, instructions, controls). It waits for START, A, or a tap on the
+    // screen; nothing auto-starts and the play cap is not running until then.
     try { Audio.playSfx('chime'); } catch { /* not unlocked */ }
-    const card = this.add.container(0, 0).setDepth(940);
-    card.add([this.add.rectangle(SCREEN.centerX, SCREEN.centerY, SCREEN.width, SCREEN.height, PAL.ink).setAlpha(0.92),
-      txt(this, W / 2, SCREEN.centerY - 14, this.cart.name, 22, PAL.sun2), txt(this, W / 2, SCREEN.centerY + 16, `— ${this.cityName.toUpperCase()} —`, 10, PAL.gray2)]);
-    this.time.delayedCall(800, () => { card.destroy(); this.frame.intro(this.cart!.instructions, () => { this.started = true; }); });
+    const card = this.add.container(0, 0).setDepth(940); this.titleCard = card;
+    card.add(this.add.rectangle(SCREEN.centerX, SCREEN.centerY, SCREEN.width, SCREEN.height, PAL.ink).setAlpha(0.94));
+    card.add(txt(this, W / 2, SCREEN.y + 34, this.cart.name, 22, PAL.sun2)); card.add(txt(this, W / 2, SCREEN.y + 60, `— ${this.cityName.toUpperCase()} —`, 10, PAL.gray2));
+    const instr = txt(this, W / 2, SCREEN.y + 118, this.cart.instructions, 10, PAL.white); instr.setWordWrapWidth(SCREEN.width - 60).setAlign('center'); card.add(instr);
+    this.cart.controls.forEach((line, i) => card.add(txt(this, W / 2, SCREEN.y + 196 + i * 18, line, 9, PAL.gray2)));
+    const go = txt(this, W / 2, SCREEN.bottom - 30, 'PRESS START · A · OR TAP THE SCREEN', 9, PAL.neon); card.add(go); this.tweens.add({ targets: go, alpha: 0.35, yoyo: true, repeat: -1, duration: 600 });
+    const tap = (p: Phaser.Input.Pointer) => { if (Phaser.Geom.Rectangle.Contains(SCREEN, p.x, p.y)) this.beginPlay(); }; this.input.on('pointerdown', tap); (this as any)._tapToStart = tap;
     this.frame.hud(); this.frame.setProgress(''); this.frame.setTimer('');
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.cart?.destroy(); this.cart = undefined; });
   }
@@ -111,10 +115,18 @@ export class CarryOnScene extends Phaser.Scene {
   }
   private drawHearts(n: number, max: number) { const g = this.heartsG; g.clear(); for (let i = 0; i < max; i++) { const x = W / 2 - 20 + i * 14, y = 44; g.fillStyle(i < n ? PAL.red : PAL.night1).fillRect(x - 5, y - 3, 4, 3).fillRect(x + 1, y - 3, 4, 3).fillRect(x - 6, y, 12, 3).fillRect(x - 4, y + 3, 8, 2).fillRect(x - 2, y + 5, 4, 2); } }
   private onPadPress(k: PadKey) {
+    if ((k === 'start' || k === 'a') && !this.started && this.titleCard) { this.beginPlay(); return; }
     if (k === 'start' && this.started && this.frame.active) { this.paused = !this.paused; if (this.paused) { this.frame.pauseCap(); this.pauseT = txt(this, SCREEN.centerX, SCREEN.centerY, 'PAUSED', 24, PAL.white).setDepth(930); (this as any)._pauseBg = this.add.rectangle(SCREEN.centerX, SCREEN.centerY, SCREEN.width, SCREEN.height, PAL.ink, 0.6).setDepth(929); } else { this.frame.resumeCap(); this.pauseT?.destroy(); (this as any)._pauseBg?.destroy(); } }
     if (k === 'a' || k === 'b') { try { Audio.playSfx('blip'); } catch { /* */ } }
   }
 
+  /** Title card dismissed by the player: start the play clock and hand the pad to the cartridge. */
+  private beginPlay() {
+    if (this.started || !this.titleCard) return; this.titleCard.destroy(); this.titleCard = undefined;
+    const tap = (this as any)._tapToStart; if (tap) this.input.off('pointerdown', tap);
+    try { Audio.playSfx('confirm'); } catch { /* */ }
+    this.started = true; this.frame.beginPlay();
+  }
   update(_t: number, dtMs: number) {
     this.frame.update(dtMs); this.pad.update();
     // anything a cartridge spawned since last frame gets clipped to the screen (bezel stays clean)
@@ -123,6 +135,6 @@ export class CarryOnScene extends Phaser.Scene {
     this.ledT += dtMs; this.led.setFillStyle(this.paused ? PAL.sun2 : (Math.sin(this.ledT / 400) > -0.5 ? PAL.red : PAL.dusk1));
     if (!this.started || !this.frame.active || this.paused || !this.cart) return;
     this.cart.update(Math.min(0.05, dtMs / 1000), this.pad);
-    this.frame.setTimer(`${Math.max(0, Math.ceil(this.frame.remaining))}s`);
+    this.frame.setTimer(this.cart.capSec > 0 ? `${Math.max(0, Math.ceil(this.frame.remaining))}s` : '');
   }
 }

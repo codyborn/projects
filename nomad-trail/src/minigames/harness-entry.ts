@@ -9,7 +9,7 @@ import { drawDish, DISH_ART_IDS, renderDishCanvas, DISH_TEX_W, DISH_TEX_H } from
 
 const game = new Phaser.Game({ type: Phaser.CANVAS, parent: 'game', width: GAME_W, height: GAME_H, pixelArt: true, backgroundColor: PAL.night0,
   physics: { default: 'arcade', arcade: { gravity: { x: 0, y: 900 } } }, scene: [] });
-(window as any).__game = game; const q = new URLSearchParams(location.search);
+(window as any).__game = game; const q = new URLSearchParams(location.search); if (q.get('hitboxes') === '1') (window as any).__hitboxes = true;
 const out = document.getElementById('results')!; const prog = (m: string) => { (window as any).__progress = m; document.getElementById('progress')!.textContent = m; };
 const errors: string[] = []; window.addEventListener('error', e => errors.push(String(e.message) + ' @ ' + String((e as any).error?.stack || '').split('\n').slice(1, 4).join(' | '))); window.addEventListener('unhandledrejection', e => errors.push('rej:' + String((e as any).reason)));
 
@@ -47,10 +47,11 @@ if (q.get('auto') === '1') {
       // drag a little (stir / kite / carry-on swipe)
       for (let k = 0; k < 4; k++) { const pm = mkPointer(x + Math.cos(k) * 30, y - k * 15 + Math.sin(k) * 30, true); scene.input.emit('pointermove', pm); }
       setTimeout(() => { const pu = mkPointer(x, y - 60, false); scene.input.emit('pointerup', pu); }, 60);
-      const keys = [32, 37, 38, 39, 40, 49, 50, 51]; const kc = keys[Math.floor(Math.random() * keys.length)];
+      const keys = [32, 37, 38, 39, 40, 49, 50, 51, 13, 90, 88]; const kc = keys[Math.floor(Math.random() * keys.length)];   // + ENTER (START), Z (A), X (B) for the console
       window.dispatchEvent(new KeyboardEvent('keydown', { keyCode: kc, which: kc, code: 'KeyX' } as any)); setTimeout(() => window.dispatchEvent(new KeyboardEvent('keyup', { keyCode: kc, which: kc } as any)), 80);
       // interactive objects (boulder holds, airport bins/gates) get poked via emit
       scene.children.list.forEach(o => { if ((o as any).input && Math.random() < 0.08) o.emit('pointerdown', p); });
+      if ((scene as any).frame && !(scene as any).frame.active && Math.random() < 0.3) (scene as any).frame.ready?.();
     }, 120);
     // safety: if a scene never finishes in 150s, record and move on
     setTimeout(() => { if (results.length < i) { results.push({ key: r.key, payload: r.payload?.activity || r.payload?.hazard || '', energy: r.energy, TIMEOUT: true }); scene.scene.stop(); next(); } }, 150000);
@@ -83,17 +84,70 @@ if (q.get('auto') === '1') {
     game.scene.start(MINIGAME_KEYS.airport, launch); const scene: any = game.scene.getScene(MINIGAME_KEYS.airport);
     // the scripted player reads scene.hint() once per virtual frame and presses arrow keys (real key events through Phaser's keyboard plugin)
     const key = (kc: number) => { window.dispatchEvent(new KeyboardEvent('keydown', { keyCode: kc, which: kc } as any)); window.dispatchEvent(new KeyboardEvent('keyup', { keyCode: kc, which: kc } as any)); };
-    const steer = () => { if (!scene.scene.isActive() || !scene.frame?.active) return; const hnt = scene.hint(); if (hnt.lane < scene.lane) key(37); else if (hnt.lane > scene.lane) key(39); else if (hnt.jump) key(38); };
+    const steer = () => { if (!scene.scene.isActive() || !scene.frame?.active) return; if (scene.waiting) { scene.startRun(); return; } const hnt = scene.hint(); if (hnt.lane < scene.lane) key(37); else if (hnt.lane > scene.lane) key(39); else if (hnt.jump) key(38); };
     if (mode === 'perfect' && q.get('fast') === '1') { game.loop.stop(); let t = performance.now(); setInterval(() => { for (let k = 0; k < 6; k++) { t += 16.67; steer(); game.loop.step(t); } }, 0); }
     else if (mode === 'perfect') setInterval(steer, 16);
+    else if (mode === 'rt' && !q.get('hold')) setTimeout(() => { if (scene.waiting) scene.startRun(); }, 1500);   // no gameplay input: only READY is tapped (hold=1 keeps the card up for screenshots)
   });
 } else if (q.get('knead') === '1') {
   // knead check: a single knead step, real time; the driver taps and screenshots mid-step; title flips when the step completes
   MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
   game.events.once('ready', () => { game.scene.start(MINIGAME_KEYS.cooking, { energy: 100, difficulty: 0.5, payload: { id: 'ramen', name: 'Knead test', city: 'tokyo', ingredients: ['dough'], health: 1, mood: 1, steps: [{ kind: 'knead', count: 6 }] }, onDone: (res: any) => { out.textContent = JSON.stringify({ res, errors }); document.title = 'KNEAD_DONE'; } }); });
+} else if (q.get('stall') === '1') {
+  // Pack-Tris with NO input: must end only on top-out (never a clock). Reports wall seconds, doneCalls.
+  MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
+  game.events.once('ready', () => { const t0 = performance.now(); let calls = 0; game.loop.stop(); let t = performance.now(); setInterval(() => { for (let k = 0; k < 10; k++) { t += 16.67; game.loop.step(t); } }, 0);
+    game.scene.start(MINIGAME_KEYS.carryon, { energy: 100, payload: { game: 'tetris', city: 'lisbon', cityName: 'Lisbon', seed: Number(q.get('seed') || 5) }, difficulty: Number(q.get('diff') || 0.5), onDone: (r) => { calls++; out.textContent = JSON.stringify({ virtualSeconds: (game.getTime()) / 1000, wall: (performance.now() - t0) / 1000, calls, result: r, errors }); document.title = 'STALL_DONE'; } } as MinigameLaunch); });
+} else if (q.get('kite')) {
+  // kite checks: 'rt' = READY only, no riding input, must finish on its own; 'perfect' = scripted hold-in-zone / release-on-crest under the virtual clock
+  MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
+  game.events.once('ready', () => {
+    const mode = q.get('kite')!; const t0 = performance.now(); let calls = 0;
+    const launch: MinigameLaunch = { energy: 100, difficulty: 0.5, payload: { city: 'laventana', cityName: 'La Ventana' }, onDone: (res) => { calls++; out.textContent = JSON.stringify({ mode, res, secs: (performance.now() - t0) / 1000, calls, errors }); document.title = 'KITE_DONE'; } };
+    game.scene.start(MINIGAME_KEYS.kite, launch); const scene: any = game.scene.getScene(MINIGAME_KEYS.kite);
+    const ride = () => { if (!scene.scene.isActive() || !scene.frame?.active) return; if (scene.waiting) { scene.startRun(); return; } const hnt = scene.hint(); if (hnt.airborne || hnt.recovering) return; if (!scene.held) scene.press(hnt.x); else { scene.fingerX = hnt.x; if (hnt.speed > 0.85 && hnt.crest) scene.letGo(); } };
+    if (mode === 'perfect' && q.get('fast') === '1') { game.loop.stop(); let t = performance.now(); setInterval(() => { for (let k = 0; k < 6; k++) { t += 16.67; ride(); game.loop.step(t); } }, 0); }
+    else if (mode === 'perfect') setInterval(ride, 16);
+    else if (mode === 'rt' && !q.get('hold')) setTimeout(() => { if (scene.waiting) scene.startRun(); }, 1500);
+  });
+} else if (q.get('ferrata')) {
+  // ferrata checks: 'perfect' = scripted climb toward the next ledge under the virtual clock; 'random' = random steering, give-up hatch shortened via giveUpAt
+  MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
+  game.events.once('ready', () => {
+    const mode = q.get('ferrata')!; const t0 = performance.now(); let calls = 0;
+    const launch: MinigameLaunch = { energy: 100, difficulty: 0.5, payload: { activity: 'ferrata', city: 'innsbruck', day: 3, giveUpAt: Number(q.get('giveUpAt') || 120) }, onDone: (res) => { calls++; const f = (scene as any).ferr?.hint?.(); out.textContent = JSON.stringify({ mode, res, secs: (performance.now() - t0) / 1000, falls: f?.falls, climbSecs: f?.t, calls, errors }); document.title = 'FERRATA_DONE'; } };
+    game.scene.start(MINIGAME_KEYS.workout, launch); const scene: any = game.scene.getScene(MINIGAME_KEYS.workout);
+    const drive = () => { if (!scene.scene.isActive()) return; if (!scene.frame?.active) { scene.frame?.ready?.(); return; } const f = scene.ferr; if (!f) return; if (mode === 'perfect') { const hn = f.hint(); const dx = hn.targetX - hn.mx; f.steer(Math.abs(dx) < 6 ? 0 : dx > 0 ? 1 : -1); } else { if (Math.random() < 0.1) f.steer([-1, 0, 1][Math.floor(Math.random() * 3)]); if (f.giveUp && Math.random() < 0.2) f.giveUp(); } };
+    if (q.get('fast') === '1') { game.loop.stop(); let t = performance.now(); setInterval(() => { for (let k = 0; k < 6; k++) { t += 16.67; drive(); game.loop.step(t); } }, 0); } else setInterval(drive, 16);
+  });
+} else if (q.get('cityrun')) {
+  // city run checks: 'safe' = scripted crossing that only steps into a clear lane; 'random' = random taps/swipes; both press READY
+  MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
+  game.events.once('ready', () => {
+    const mode = q.get('cityrun')!; const t0 = performance.now(); let calls = 0;
+    const launch: MinigameLaunch = { energy: 100, difficulty: 0.5, payload: { activity: 'bands', city: 'newyork', day: 5, plan: ['cityrun'] }, onDone: (res) => { calls++; const cur = (scene as any).current; out.textContent = JSON.stringify({ mode, res, secs: (performance.now() - t0) / 1000, hits: cur?.hits, crossings: cur?.crossings, calls, errors }); document.title = 'CITYRUN_DONE'; } };
+    game.scene.start(MINIGAME_KEYS.workout, launch); const scene: any = game.scene.getScene(MINIGAME_KEYS.workout);
+    const mk = (x: number, y: number, downF: boolean) => { const p = game.input.activePointer; p.x = x; p.y = y; (p as any).isDown = downF; return p; };
+    let hitsSeen = 0;
+    const drive = () => { if (!scene.scene.isActive()) return; if (!scene.frame?.active) { scene.frame?.ready?.(); return; } const cur = scene.current; if (!cur) { scene.input.emit('pointerdown', mk(180, 500, true)); scene.input.emit('pointerup', mk(180, 500, false)); return; }
+      if (cur.hits > hitsSeen) hitsSeen = cur.hits;
+      if (mode === 'safe') cur.autoSafe?.(); else if (Math.random() < 0.15) { const x = 40 + Math.random() * 280, y = 200 + Math.random() * 300; scene.input.emit('pointerdown', mk(x, y, true)); scene.input.emit('pointerup', mk(x + (Math.random() - 0.5) * 60, y - Math.random() * 60, false)); } };
+    if (q.get('fast') === '1') { game.loop.stop(); let t = performance.now(); setInterval(() => { for (let k = 0; k < 6; k++) { t += 16.67; drive(); game.loop.step(t); } }, 0); } else setInterval(drive, 16);
+  });
+} else if (q.get('yoga')) {
+  // yoga checks: 'perfect' = scroll the wheel to the target pose each frame (virtual clock); 'shots' = hold each pose for screenshots (real time, no finish)
+  MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
+  game.events.once('ready', () => {
+    const mode = q.get('yoga')!; const t0 = performance.now(); let calls = 0;
+    const launch: MinigameLaunch = { energy: 100, difficulty: 0.5, payload: { activity: 'yoga', city: 'laventana', day: 4, plan: ['pose'] }, onDone: (res) => { calls++; out.textContent = JSON.stringify({ mode, res, secs: (performance.now() - t0) / 1000, calls, errors }); document.title = 'YOGA_DONE'; } };
+    game.scene.start(MINIGAME_KEYS.workout, launch); const scene: any = game.scene.getScene(MINIGAME_KEYS.workout);
+    const mk = (x: number, y: number, downF: boolean) => { const p = game.input.activePointer; p.x = x; p.y = y; (p as any).isDown = downF; return p; };
+    const drive = () => { if (!scene.scene.isActive()) return; if (!scene.frame?.active) { scene.frame?.ready?.(); return; } const cur = scene.current; if (!cur) { scene.input.emit('pointerdown', mk(180, 500, true)); scene.input.emit('pointerup', mk(180, 500, false)); return; } if (mode === 'perfect') cur.setPose?.(cur.target); };
+    if (mode === 'perfect' && q.get('fast') === '1') { game.loop.stop(); let t = performance.now(); setInterval(() => { for (let k = 0; k < 6; k++) { t += 16.67; drive(); game.loop.step(t); } }, 0); } else setInterval(drive, 16);
+  });
 } else if (q.get('console')) {
   MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
-  game.events.once('ready', () => { game.scene.start(MINIGAME_KEYS.carryon, { energy: 100, difficulty: 0.5, payload: { game: q.get('console'), city: q.get('city') || 'tokyo', cityName: q.get('cityName') || 'Tokyo', hazard: q.get('hazard') || 'otter', seed: Number(q.get('seed') || 7) }, onDone: () => { document.title = 'CONSOLE_DONE'; } } as MinigameLaunch); document.title = 'CONSOLE_UP'; });
+  game.events.once('ready', () => { game.scene.start(MINIGAME_KEYS.carryon, { energy: 100, difficulty: 0.5, payload: { game: q.get('console'), city: q.get('city') || 'tokyo', cityName: q.get('cityName') || 'Tokyo', hazard: q.get('hazard') || 'otter', seed: Number(q.get('seed') || 7) }, onDone: () => { document.title = 'CONSOLE_DONE'; } } as MinigameLaunch); document.title = 'CONSOLE_UP'; if (q.get('autostart') !== '0') { const press = setInterval(() => { const sc: any = game.scene.getScene(MINIGAME_KEYS.carryon); if (sc?.titleCard && !sc.started) { sc.beginPlay(); clearInterval(press); } }, 300); } });
 } else if (q.get('sheet') === '1') {
   // contact sheet: draw finished dishes into #results as a single canvas
   const ids = (q.get('ids') || 'ramen,tacos,kaiserschmarrn,sushi,paella,bibimbap').split(',');

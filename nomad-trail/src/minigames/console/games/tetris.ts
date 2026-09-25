@@ -1,4 +1,5 @@
 // PACK-TRIS: a 10x16 well, the seven tetrominoes as suitcase bundles. D-pad left/right, down = soft drop, up = hard drop, A / B rotate.
+// No clock: the game ends only on 8 lines (win) or top-out (fail). Gravity ramps per level so a slow player is pressured by speed.
 import Phaser from 'phaser';
 import { PAL } from '../../../core/palette';
 import { clamp } from '../../_shared';
@@ -20,21 +21,21 @@ const COLORS: Record<string, number> = { I: PAL.sky1, O: PAL.sun1, T: PAL.dusk3,
 const NAMES = Object.keys(SHAPES);
 
 export class TetrisGame implements ConsoleGame {
-  readonly id = 'tetris' as const; readonly name = 'PACK-TRIS'; readonly capSec = 45;
-  readonly instructions = `Clear ${GOAL} lines. D-pad moves, DOWN soft-drops, UP hard-drops, A / B rotate.`;
+  readonly id = 'tetris' as const; readonly name = 'PACK-TRIS'; readonly controls = ['D-PAD  move · DOWN soft drop · UP hard drop', 'A / B  rotate', 'START  pause']; readonly capSec = 0;   // 0 = no cap: play until 8 lines or top-out
+  readonly instructions = `Clear ${GOAL} lines. No clock: it ends when you do, or when the well fills. D-pad moves, DOWN soft-drops, UP hard-drops, A / B rotate.`;
   private ctx!: ConsoleCtx; private done!: (r: ConsoleResult) => void;
   private grid: (string | null)[][] = []; private cur = { k: 'T', r: 0, x: 3, y: 0 }; private next = 'I'; private bag: string[] = [];
-  private lines = 0; private t = 0; private fall = 0; private level = 0; private das = 0; private dasDir = 0; private ended = false; private lockT = 0;
+  private lines = 0; private t = 0; private fall = 0; private level = 0; private level0 = 0; private das = 0; private dasDir = 0; private ended = false; private lockT = 0;
   private g!: Phaser.GameObjects.Graphics; private ox = 0; private oy = 0; private objs: Phaser.GameObjects.GameObject[] = [];
 
   init(ctx: ConsoleCtx, done: (r: ConsoleResult) => void) {
     this.ctx = ctx; this.done = done; const s = ctx.scene;
-    this.grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null)); this.level = Math.floor(ctx.rng() * 3) + Math.round(ctx.difficulty * 2);
+    this.grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null)); this.level = Math.floor(ctx.rng() * 3) + Math.round(ctx.difficulty * 2); this.level0 = this.level;
     this.ox = Math.round(ctx.screen.x + 60); this.oy = Math.round(ctx.screen.y + (ctx.screen.height - ROWS * CELL) / 2);
     this.objs.push(s.add.rectangle(ctx.screen.centerX, ctx.screen.centerY, ctx.screen.width, ctx.screen.height, ctx.palette[0]).setDepth(ctx.depth));
     this.g = s.add.graphics().setDepth(ctx.depth + 2); this.objs.push(this.g);
     this.objs.push(s.add.text(this.ox + COLS * CELL + 16, this.oy + 6, 'NEXT', { fontFamily: 'monospace', fontSize: '10px', color: '#b4b9c4' }).setDepth(ctx.depth + 3));
-    this.objs.push(s.add.text(this.ox + COLS * CELL + 16, this.oy + 90, `LINES\n0 / ${GOAL}`, { fontFamily: 'monospace', fontSize: '10px', color: '#f7cf6b' }).setDepth(ctx.depth + 3).setName('tt_lines'));
+    this.objs.push(s.add.text(this.ox + COLS * CELL + 16, this.oy + 90, `LINES  0 / ${GOAL}\nLEVEL  ${this.level + 1}`, { fontFamily: 'monospace', fontSize: '10px', color: '#f7cf6b' }).setDepth(ctx.depth + 3).setName('tt_lines'));
     this.next = this.draw(); this.spawn(); ctx.setHearts(0, 0); ctx.setStatus(`0/${GOAL}`);
   }
   private draw() { if (!this.bag.length) { this.bag = NAMES.slice(); for (let i = this.bag.length - 1; i > 0; i--) { const j = Math.floor(this.ctx.rng() * (i + 1)); [this.bag[i], this.bag[j]] = [this.bag[j], this.bag[i]]; } } return this.bag.pop()!; }
@@ -44,7 +45,7 @@ export class TetrisGame implements ConsoleGame {
   private gravity() { return Math.max(0.12, 0.8 * Math.pow(0.82, this.level)) / this.ctx.speed; }
 
   update(dt: number, pad: Pad) {
-    if (this.ended) return; this.t += dt; const c = this.cur;
+    if (this.ended) return; this.t += dt; const c = this.cur; if (this.t > (this.level - this.level0 + 1) * 25) this.level++;   // time also raises the level
     // horizontal with DAS
     const ax = pad.axisX; if (ax !== this.dasDir) { this.dasDir = ax; this.das = 0; if (ax && !this.collides(c.x + ax, c.y, c.r)) c.x += ax; } else if (ax) { this.das += dt; if (this.das > 0.16) { this.das -= 0.05; if (!this.collides(c.x + ax, c.y, c.r)) c.x += ax; } }
     if (pad.justPressed('a')) this.rotate(1); if (pad.justPressed('b')) this.rotate(-1);
@@ -57,11 +58,11 @@ export class TetrisGame implements ConsoleGame {
   private lock() {
     const c = this.cur; for (const [x, y] of this.cells(c.k, c.r, c.x, c.y)) { if (y < 0) { this.topOut(); return; } this.grid[y][x] = c.k; }
     let cleared = 0; for (let y = ROWS - 1; y >= 0; y--) if (this.grid[y].every(v => v)) { this.grid.splice(y, 1); this.grid.unshift(Array(COLS).fill(null)); cleared++; y++; }
-    if (cleared) { this.lines += cleared; this.level += cleared >= 2 ? 1 : 0; this.ctx.flash(PAL.sun2, 40); this.ctx.sfx(cleared >= 4 ? 'win' : 'coin'); (this.ctx.scene.children.getByName('tt_lines') as Phaser.GameObjects.Text | null)?.setText(`LINES\n${this.lines} / ${GOAL}`); this.ctx.setStatus(`${this.lines}/${GOAL}`); }
+    if (cleared) { this.lines += cleared; this.level += cleared >= 2 ? 1 : 0; this.ctx.flash(PAL.sun2, 40); this.ctx.sfx(cleared >= 4 ? 'win' : 'coin'); (this.ctx.scene.children.getByName('tt_lines') as Phaser.GameObjects.Text | null)?.setText(`LINES  ${this.lines} / ${GOAL}\nLEVEL  ${this.level + 1}`); this.ctx.setStatus(`${this.lines}/${GOAL}`); }
     if (this.lines >= GOAL) { this.ended = true; this.render(); const score = clamp(100 - Math.max(0, this.t - 30) * 1.5, 60, 100); this.ctx.scene.time.delayedCall(500, () => this.done({ score, perfect: score >= 99 })); return; }
     this.spawn();
   }
-  private topOut() { if (this.ended) return; this.ended = true; this.ctx.shake(200, 0.01); this.ctx.sfx('lose'); this.render(); this.ctx.scene.time.delayedCall(500, () => this.done({ score: (this.lines / GOAL) * 45, failed: true })); }
+  private topOut() { if (this.ended) return; this.ended = true; this.ctx.shake(200, 0.01); this.ctx.sfx('lose'); this.render(); this.ctx.scene.time.delayedCall(500, () => this.done({ score: (this.lines / GOAL) * 60, failed: true })); }
   private render() {
     const g = this.g; g.clear(); g.fillStyle(PAL.ink).fillRect(this.ox - 2, this.oy - 2, COLS * CELL + 4, ROWS * CELL + 4); g.fillStyle(PAL.night0).fillRect(this.ox, this.oy, COLS * CELL, ROWS * CELL);
     g.lineStyle(1, PAL.night2, 0.6); for (let x = 1; x < COLS; x++) g.lineBetween(this.ox + x * CELL, this.oy, this.ox + x * CELL, this.oy + ROWS * CELL);
