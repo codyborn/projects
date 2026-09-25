@@ -198,7 +198,7 @@ function tickDay(s: RunState, rng: Rng, opts: { rest?: boolean } = {}): Resolved
   s.money -= city.costPerDay ?? DEFAULT_COST_PER_DAY;
   const locked = s.bagLockedDays > 0;
   if (locked) { s.energy -= 8; }                                   // living out of one carry-on outfit
-  else { s.cleanClothes -= 1; const dirty = s.cleanClothes < 0; if (dirty) { s.cleanClothes = 0; s.mood -= 5; s.health -= 1; } }
+  else { s.cleanClothes -= 1; const dirty = s.cleanClothes < 0; if (dirty) { s.cleanClothes = 0; s.dirtyDays = (s.dirtyDays ?? 0) + 1; s.mood -= Math.min(10, 4 + s.dirtyDays); s.health -= 1; } else s.dirtyDays = 0; }
   // radon: granite and alpine bedrock, realistic. The air monitor turns it into a window you open.
   const radon = city.radon ?? 0;
   if (radon) {
@@ -251,7 +251,11 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       const lvl = LEVEL_BY_CITY[s.cityId] ?? (LEVEL_BY_CITY['generic'] ? { ...LEVEL_BY_CITY['generic'], city: city.name, hazard: city.hazard } : undefined);
       if (hasTag(s, 'switch') && lvl && s.stamps[s.cityId] !== 'gold' && !hasFlag(s, 'carryon_' + s.cityId)) { setFlag(s, 'carryon_' + s.cityId, true); checkEnding(s); const games = ['carryon', 'tetris', 'heli'] as const; const ci = Math.max(0, CITIES.findIndex(c => c.id === s.cityId)); const game = games[hash32(s.seed, s.day, ci, 77) % games.length]; return { state: s, events, minigame: { key: MINIGAME_KEYS.carryon, payload: { game, level: lvl, city: city.id, cityName: city.name, hazard: city.hazard, climate: city.climate, seed: hash32(s.seed, ci, 99) }, difficulty: diff } }; }
       break; }
-    case 'laundry': if (locked) return { state, events: [], error: 'The clothes are in the suitcase. The suitcase is somewhere else.' }; s.workStreak = 0; events = tickDay(s, rng); s.cleanClothes = s.maxClothes; s.energy = clamp(s.energy - 4, 0, energyCap(s)); s.mood = clamp(s.mood - 2, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: DAILY.laundry }); checkEnding(s); return { state: s, events, minigame: { key: MINIGAME_KEYS.laundry, payload: { items: s.items.length }, difficulty: diff } };
+    case 'laundry': {
+      if (locked) return { state, events: [], error: 'The clothes are in the suitcase. The suitcase is somewhere else.' };
+      // the day is spent either way; how many clean days you get back depends on how the sorting goes (applyMinigameResult)
+      s.workStreak = 0; checkEnding(s);
+      return { state: s, events: [], minigame: { key: MINIGAME_KEYS.laundry, payload: { city: city.id }, difficulty: diff } }; }
     case 'train': {
       if (locked) return { state, events: [], error: 'The gear is in the suitcase. The suitcase is somewhere else.' };
       if (s.backInjuryDays > 0) return { state, events: [], error: 'Your back says no. Not today.' };
@@ -299,7 +303,15 @@ export function applyMinigameResult(state: RunState, key: string, result: Miniga
       s.mood = clamp(s.mood + 8 + Math.round(score * 12), 0, 100);
       if (result.perfect || score >= 0.99) { s.stamps[s.cityId] = 'gold'; unlock(s, 'gold_' + s.cityId); s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.carryonGold, { city: city.name }) }); }
       break; }
-    case MINIGAME_KEYS.laundry: { if (result.failed) { unlock(s, 'pinkshirts'); s.mood = clamp(s.mood - 2, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: STR.log.pink }); } else if (result.perfect) s.mood = clamp(s.mood + 3, 0, 100); break; }
+    case MINIGAME_KEYS.laundry: {
+      // a good sort buys extra clean days (folded, sorted, nothing lost); a bad one gives back less and turns things pink
+      events = tickDay(s, rng); s.energy = clamp(s.energy - 4, 0, energyCap(s));
+      const bonus = result.perfect ? 3 : score >= 0.8 ? 2 : score >= 0.6 ? 1 : 0;
+      const back = result.failed ? Math.ceil(s.maxClothes * 0.5) : Math.round(s.maxClothes * (0.6 + 0.4 * score)) + bonus;
+      s.cleanClothes = clamp(back, 1, s.maxClothes + 3);
+      if (result.failed) { unlock(s, 'pinkshirts'); s.mood = clamp(s.mood - 3, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.laundryBad, { days: s.cleanClothes }) }); }
+      else { if (result.perfect) s.mood = clamp(s.mood + 3, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: tpl(bonus ? STR.log.laundryGreat : STR.log.laundryOk, { days: s.cleanClothes }) }); }
+      break; }
     case MINIGAME_KEYS.kite: { s.mood = clamp(s.mood + 5 + Math.round(score * 15), 0, 100); s.energy = clamp(s.energy - 12, 0, energyCap(s)); if (result.perfect) unlock(s, 'kitemaster'); break; }
     case MINIGAME_KEYS.airport: {
       const gate = s.pendingGate ?? '?'; s.pendingGate = undefined;

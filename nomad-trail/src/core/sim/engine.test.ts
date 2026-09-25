@@ -245,7 +245,8 @@ describe('city loop, minigames, endings', () => {
     let s = hop(packed()); s = { ...s, day: 5 };   // day 5 is a Monday
     expect(Sim.cityAction(s, 'moveon').error).toMatch(/at least/);
     const d0 = s.day; s = Sim.cityAction(s, 'work').state; expect(s.day).toBe(d0 + 1); expect(s.workStreak).toBe(1);
-    s = { ...s, cleanClothes: 0 }; const r = Sim.cityAction(s, 'laundry'); expect(r.minigame?.key).toBe('Laundry'); expect(r.state.cleanClothes).toBe(r.state.maxClothes);
+    s = { ...s, cleanClothes: 0 }; const r = Sim.cityAction(s, 'laundry'); expect(r.minigame?.key).toBe('Laundry'); expect(r.state.cleanClothes).toBe(0);   // clothes come back through the result, scaled by how well you sorted
+    const done = Sim.applyMinigameResult(r.state, 'Laundry', { score: 90, perfect: false, failed: false }).state; expect(done.cleanClothes).toBeGreaterThanOrEqual(done.maxClothes);
   });
   it('cook picks a dish from the current city, remembers it, and scores exactly that dish', () => {
     let s = hop(packed(withExtras('fitnesskit')));

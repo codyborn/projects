@@ -28,7 +28,10 @@
   "pink": "Everything is slightly pink now.",
   "travelFatigue": " Too many legs too fast; everything aches.",
   "gateMade": "Gate {gate}. Made it, barely. The suitcase has a new dent.",
-  "gateMissed": "You watch the gate close from thirty metres away. Next flight tomorrow. The airport floor is your Airbnb."
+  "gateMissed": "You watch the gate close from thirty metres away. Next flight tomorrow. The airport floor is your Airbnb.",
+  "laundryGreat": "Laundry day. Sorted, folded, nothing pink. {days} days of clean clothes, somehow more than you own.",
+  "laundryOk": "Laundry day. The glamorous part. {days} days of clean clothes.",
+  "laundryBad": "Laundry day. Everything is slightly pink now and half of it is still damp. {days} days of clean-ish clothes."
  },
  "endings": {
   "hospital": "Day {day}. {city}. A hospital bed with a view of a parking lot. The trail ends here; the story does not.",

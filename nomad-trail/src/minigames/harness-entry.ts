@@ -87,6 +87,10 @@ if (q.get('auto') === '1') {
     if (mode === 'perfect' && q.get('fast') === '1') { game.loop.stop(); let t = performance.now(); setInterval(() => { for (let k = 0; k < 6; k++) { t += 16.67; steer(); game.loop.step(t); } }, 0); }
     else if (mode === 'perfect') setInterval(steer, 16);
   });
+} else if (q.get('knead') === '1') {
+  // knead check: a single knead step, real time; the driver taps and screenshots mid-step; title flips when the step completes
+  MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
+  game.events.once('ready', () => { game.scene.start(MINIGAME_KEYS.cooking, { energy: 100, difficulty: 0.5, payload: { id: 'ramen', name: 'Knead test', city: 'tokyo', ingredients: ['dough'], health: 1, mood: 1, steps: [{ kind: 'knead', count: 6 }] }, onDone: (res: any) => { out.textContent = JSON.stringify({ res, errors }); document.title = 'KNEAD_DONE'; } }); });
 } else if (q.get('console')) {
   MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
   game.events.once('ready', () => { game.scene.start(MINIGAME_KEYS.carryon, { energy: 100, difficulty: 0.5, payload: { game: q.get('console'), city: q.get('city') || 'tokyo', cityName: q.get('cityName') || 'Tokyo', hazard: q.get('hazard') || 'otter', seed: Number(q.get('seed') || 7) }, onDone: () => { document.title = 'CONSOLE_DONE'; } } as MinigameLaunch); document.title = 'CONSOLE_UP'; });

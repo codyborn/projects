@@ -66,7 +66,7 @@ export class OtterScene extends Phaser.Scene {
       this.tweens.add({ targets: h, y: h.y - 70 - i * 12, x: h.x + Phaser.Math.Between(-14, 14), alpha: 0, duration: 800 + i * 120, ease: 'Sine.Out', onComplete: () => h.destroy() });
     }
     for (let i = 0; i < 4; i++) {
-      const b = this.add.rectangle(this.otter.x + Phaser.Math.Between(-40, 40), this.otter.y + Phaser.Math.Between(-20, 20), 2, 2, PAL.sun3, 0.9).setDepth(5);
+      const b = this.add.image(this.otter.x + Phaser.Math.Between(-40, 40), this.otter.y + Phaser.Math.Between(-20, 20), 'otter_spark').setScale(2).setDepth(5).setAlpha(0.9);
       this.tweens.add({ targets: b, y: b.y - 30, alpha: 0, scale: 0, duration: 500 + i * 80, onComplete: () => b.destroy() });
     }
     if (this.pets >= PETS_NEEDED) this.celebrate();
@@ -83,7 +83,10 @@ export class OtterScene extends Phaser.Scene {
     this.tweens.add({ targets: [plate, cap], alpha: 1, duration: 500, delay: 500 });
     const nick = txt(this, GAME_W / 2, 612, 'you notice a small nick on your finger', 8, PAL.gray1, { align: 'center' }).setOrigin(0.5).setDepth(6).setAlpha(0);
     this.tweens.add({ targets: nick, alpha: 1, duration: 700, delay: 1500 });
-    this.time.delayedCall(3000, () => this.finish());
+    const cont = txt(this, GAME_W / 2, 628, 'tap to continue', 8, PAL.gray0, { align: 'center' }).setOrigin(0.5).setDepth(6).setAlpha(0);
+    this.tweens.add({ targets: cont, alpha: 1, duration: 500, delay: 2600 });
+    this.time.delayedCall(2600, () => { this.input.once('pointerdown', () => this.finish()); });
+    this.time.delayedCall(5200, () => this.finish());
   }
 
   private finish() {
@@ -120,18 +123,29 @@ export class OtterScene extends Phaser.Scene {
       });
     }
     if (!T.exists('otter_man')) px(this, 'otter_man', 100, 118, ctx => {
-      // three-quarter from behind: dark jacket, hair, right hand up steadying the otter on his left shoulder (screen-left)
-      const jacket = PAL.night2, jacketHi = PAL.night3, skin = PAL.earth3, hair = PAL.ink, jeans = PAL.night1;
+      // three-quarter view, turned toward the player's right: dark jacket, face reads on the right side of the head, left hand up steadying the otter
+      const jacket = PAL.night2, jacketHi = PAL.night3, skin = PAL.earth3, skinSh = PAL.earth2, hair = PAL.ink, jeans = PAL.night1;
       R(ctx, 26, 44, 52, 74, jacket); R(ctx, 22, 48, 60, 40, jacket); R(ctx, 30, 44, 44, 4, jacketHi);   // torso + shoulders
-      R(ctx, 26, 46, 6, 50, jacketHi);                                                                  // seam highlight
+      R(ctx, 52, 46, 6, 50, jacketHi); R(ctx, 42, 48, 10, 40, PAL.night0);                               // zip line + open collar shadow
       R(ctx, 20, 52, 10, 30, jacket); R(ctx, 74, 52, 10, 30, jacket);                                  // upper arms
-      R(ctx, 16, 30, 14, 26, jacket); R(ctx, 14, 26, 12, 8, skin); R(ctx, 15, 22, 10, 6, skin);        // left arm raised, hand up steadying
-      R(ctx, 36, 10, 30, 32, skin); R(ctx, 34, 4, 34, 22, hair); R(ctx, 32, 12, 6, 16, hair); R(ctx, 64, 12, 6, 14, hair); // head from behind, hair
-      R(ctx, 42, 40, 18, 8, skin);                                                                     // neck
+      R(ctx, 16, 30, 14, 26, jacket); R(ctx, 14, 26, 12, 8, skin); R(ctx, 15, 22, 10, 6, skin);        // left arm raised, hand up
+      // head: three-quarter. skin block, shaded far side, hair over the top and down the back (left)
+      R(ctx, 36, 12, 30, 30, skin); R(ctx, 36, 12, 8, 30, skinSh);                                     // face, far-side shade
+      R(ctx, 34, 4, 34, 12, hair); R(ctx, 32, 10, 8, 22, hair); R(ctx, 66, 8, 4, 8, hair);              // hair top, back, fringe edge
+      R(ctx, 44, 14, 12, 3, hair);                                                                    // fringe over the brow
+      R(ctx, 56, 20, 4, 1, hair); R(ctx, 56, 22, 3, 3, PAL.ink); P(ctx, 57, 22, PAL.white);          // brow, eye with highlight
+      R(ctx, 64, 24, 3, 5, skinSh); P(ctx, 66, 28, PAL.earth1);                                       // nose bump + nostril shadow
+      R(ctx, 58, 33, 6, 1, PAL.earth1); P(ctx, 59, 34, PAL.earth1);                                   // small mouth
+      R(ctx, 34, 22, 4, 7, skin); P(ctx, 35, 25, skinSh);                                              // ear on the near-back side
+      R(ctx, 44, 40, 16, 8, skin); R(ctx, 44, 40, 5, 8, skinSh);                                       // neck
       R(ctx, 30, 96, 20, 22, jeans); R(ctx, 54, 96, 20, 22, jeans);                                    // legs
-      R(ctx, 22, 74, 60, 2, PAL.night0);                                                               // jacket hem line
+      R(ctx, 22, 74, 60, 2, PAL.night0);                                                               // hem
       outlineSheet(ctx, 100, 118, PAL.ink);
     });
+    if (!T.exists('otter_heart')) px(this, 'otter_heart', 7, 6, ctx => {
+      const c = PAL.pink; R(ctx, 1, 0, 2, 1, c); R(ctx, 4, 0, 2, 1, c); R(ctx, 0, 1, 7, 2, c); R(ctx, 1, 3, 5, 1, c); R(ctx, 2, 4, 3, 1, c); P(ctx, 3, 5, c);
+    });
+    if (!T.exists('otter_spark')) px(this, 'otter_spark', 3, 3, ctx => { R(ctx, 0, 1, 3, 1, PAL.sun3); R(ctx, 1, 0, 1, 3, PAL.sun3); });
     if (!T.exists('otter_crowd')) px(this, 'otter_crowd', 240, 60, ctx => {
       // far crowd: blurred silhouettes, two tones, no faces
       for (let i = 0; i < 26; i++) { const x = (i * 37) % 236, h = 34 + (i % 4) * 5, c = i % 3 === 0 ? PAL.night3 : PAL.night2; R(ctx, x, 60 - h, 8, h, c); R(ctx, x + 1, 56 - h, 6, 6, c); }

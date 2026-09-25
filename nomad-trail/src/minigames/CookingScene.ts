@@ -185,10 +185,16 @@ export class CookingScene extends Phaser.Scene {
 
   // --- KNEAD: rapid taps.
   private stepKnead(st: DishStep) {
-    let taps = 0; const need = st.count; let squish = 0;
+    let taps = 0; const need = st.count; let squish = 0; let side = 1;   // side alternates each tap so the two lobes read as kneading
     const tick = this.time.addEvent({ delay: 16, loop: true, callback: () => { squish = Math.max(0, squish - 0.05);
-      this.work.clear(); this.work.fillStyle(PAL.earth3).fillEllipse(W / 2, 460 + squish * 10, 110 + squish * 30, 70 - squish * 20); this.work.fillStyle(PAL.earth2, 0.5).fillEllipse(W / 2 - 20, 445, 30, 14); this.meter.set(taps / need); } });
-    const h = () => { taps++; squish = 1; if (taps >= need) this.endStep(1); };
+      this.work.clear();
+      for (const k of [-1, 1]) {   // two lobes of dough; both squash on every tap, the pressed side a little more and nudged toward the other
+        const lead = k === side ? 1 : 0.7; const sq = squish * lead; const cx = W / 2 + k * (34 - sq * 8), cy = 460 + sq * 10;
+        this.work.fillStyle(PAL.earth3).fillEllipse(cx, cy, 72 + sq * 26, 66 - sq * 22);
+        this.work.fillStyle(PAL.earth2, 0.5).fillEllipse(cx - 12, cy - 16 + sq * 6, 24 - sq * 6, 12 - sq * 4);
+      }
+      this.meter.set(taps / need); } });
+    const h = () => { taps++; squish = 1; side = -side; if (taps >= need) this.endStep(1); };
     this.frame.onTap(h);
     this.stepTimer = this.time.delayedCall(need * 350 / (1 - 0.2 * this.frame.hard) + 1200, () => this.endStep(taps / need));
     this.cleanup.push(() => { tick.remove(); this.removeTap(h); });
