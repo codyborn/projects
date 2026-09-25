@@ -191,14 +191,17 @@ export class CookingScene extends Phaser.Scene {
 
   // --- KNEAD: rapid taps.
   private stepKnead(st: DishStep) {
-    let taps = 0; const need = st.count; let squish = 0; let side = 1;   // side alternates each tap so the two lobes read as kneading
+    let taps = 0; const need = st.count; let squish = 0; let side = 1;   // side alternates each tap: a slight left/right lean so it reads as kneading
     const tick = this.time.addEvent({ delay: 16, loop: true, callback: () => { squish = Math.max(0, squish - 0.05);
       this.work.clear();
-      for (const k of [-1, 1]) {   // two lobes of dough; both squash on every tap, the pressed side a little more and nudged toward the other
-        const lead = k === side ? 1 : 0.7; const sq = squish * lead; const cx = W / 2 + k * (34 - sq * 8), cy = 460 + sq * 10;
-        this.work.fillStyle(PAL.earth3).fillEllipse(cx, cy, 72 + sq * 26, 66 - sq * 22);
-        this.work.fillStyle(PAL.earth2, 0.5).fillEllipse(cx - 12, cy - 16 + sq * 6, 24 - sq * 6, 12 - sq * 4);
-      }
+      // ONE dough ball centred on the board. The whole ball squashes (wider, shorter) on each tap and springs back;
+      // its shadow and highlight ovals squash by the same proportion and keep their offsets scaled with the ball.
+      const sx = 1 + squish * 0.36, sy = 1 - squish * 0.32, cx = W / 2 + side * squish * 10, cy = 460 + squish * 12;
+      const rx = 52 * sx, ry = 46 * sy;
+      this.work.fillStyle(PAL.ink, 0.25).fillEllipse(W / 2 + side * squish * 4, 460 + 46, rx * 1.1, 14 * sx);   // ground shadow under the ball
+      this.work.fillStyle(PAL.earth3).fillEllipse(cx, cy, rx * 2, ry * 2);
+      this.work.fillStyle(PAL.earth1, 0.35).fillEllipse(cx + 10 * sx, cy + 14 * sy, 36 * sx, 20 * sy);            // shaded side, squashes with the ball
+      this.work.fillStyle(PAL.earth2, 0.5).fillEllipse(cx - 16 * sx, cy - 18 * sy, 26 * sx, 14 * sy);            // highlight, same proportion and offset
       this.meter.set(taps / need); } });
     const h = () => { taps++; squish = 1; side = -side; if (taps >= need) this.endStep(1); };
     this.frame.onTap(h);

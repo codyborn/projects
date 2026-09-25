@@ -92,7 +92,8 @@ if (q.get('auto') === '1') {
 } else if (q.get('knead') === '1') {
   // knead check: a single knead step, real time; the driver taps and screenshots mid-step; title flips when the step completes
   MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
-  game.events.once('ready', () => { game.scene.start(MINIGAME_KEYS.cooking, { energy: 100, difficulty: 0.5, payload: { id: 'ramen', name: 'Knead test', city: 'tokyo', ingredients: ['dough'], health: 1, mood: 1, steps: [{ kind: 'knead', count: 6 }] }, onDone: (res: any) => { out.textContent = JSON.stringify({ res, errors }); document.title = 'KNEAD_DONE'; } }); });
+  let kneadCalls = 0;
+  game.events.once('ready', () => { game.scene.start(MINIGAME_KEYS.cooking, { energy: 100, difficulty: 0.5, payload: { id: 'ramen', name: 'Knead test', city: 'tokyo', ingredients: ['dough'], health: 1, mood: 1, steps: [{ kind: 'knead', count: 6 }] }, onDone: (res: any) => { kneadCalls++; out.textContent = JSON.stringify({ res, calls: kneadCalls, errors }); document.title = 'KNEAD_DONE'; } }); });
 } else if (q.get('stall') === '1') {
   // Pack-Tris with NO input: must end only on top-out (never a clock). Reports wall seconds, doneCalls.
   MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
