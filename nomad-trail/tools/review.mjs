@@ -17,7 +17,7 @@ const saveDataUrl = (file, url) => fs.writeFileSync(path.join(IMG, file), Buffer
 const hideTitle = () => pg.evaluate(() => { const sc = window.__nomad.game.scene.getScene('Title'); sc.children.list.forEach(o => o.setVisible && o.setVisible(false)); });
 await hideTitle();
 for (const c of R.cities) {
-  for (const tod of ['dawn', 'dusk']) {
+  for (const tod of ['day', 'dusk']) {
     await pg.evaluate((id, tod) => { const sc = window.__nomad.game.scene.getScene('Title'); if (window.__sk) { try { window.__sk.destroy(); } catch {} } window.__sk = window.__nomadArt.skylineAt(sc, id, tod, 0, 100, 360, 150); }, c.id, tod);
     await sleep(120); await pg.screenshot({ path: path.join(IMG, `sky-${c.id}-${tod}.png`), clip: { x: 0, y: 100, width: 360, height: 150 } });
   }
@@ -32,12 +32,12 @@ await startScene('Workout', { energy: 80, difficulty: 0.4, payload: { activity: 
 for (const game of R.console) { await startScene('CarryOn', { energy: 80, difficulty: 0.4, payload: { game, city: 'lisbon', cityName: 'Lisbon', hazard: 'tram', climate: 'temperate', seed: 7 } }); await sleep(3200); await pg.screenshot({ path: path.join(IMG, `console-${game}.png`) }); }
 for (const [key, data, file, wait] of [['Kite', { energy: 80, difficulty: 0.4, payload: { city: 'laventana' } }, 'kite', 2500], ['Cooking', { energy: 80, difficulty: 0.4, payload: R.dishes.find(d => d.id === 'ramen') || R.dishes[0] }, 'cooking', 2500], ['Laundry', { energy: 80, difficulty: 0.4 }, 'laundry', 2600], ['Airport', { energy: 80, difficulty: 0.4 }, 'airport', 2500], ['Otter', {}, 'otter', 1500], ['Coffee', { cityId: 'tokyo', day: 41, climate: 'rainy', region: 'asia' }, 'coffee', 1400]]) { await startScene(key, data); await sleep(wait); await pg.screenshot({ path: path.join(IMG, `game-${file}.png`) }); }
 // ---- 4. the page
-const byCity = id => R.dishes.filter(d => d.city === id);
+const byCity = id => { const c = R.cities.find(x => x.id === id); return (c?.dishes || []).map(did => R.dishes.find(d => d.id === did)).filter(Boolean); };   // the city's menu, not the dish's home town
 const poolFor = (activity, cityId) => { if (activity === 'ferrata') return ['ferrata (Zeke\'s Peak climb)']; if (activity === 'kite') return ['kiteboarding (Kite game)']; let p = R.pools[activity] || R.pools.bands || []; if (R.dense.includes(cityId) && (activity === 'trailrun' || activity === 'bands')) p = ['cityrun', ...p]; return p; };
 const cityEvents = c => R.events.filter(e => e.requiresCity === c.id || (e.requiresClimate && e.requiresClimate.includes(c.climate)) || (e.requiresOutdoorsy && c.outdoorsy) || (e.requiresActivity && e.requiresActivity.some(a => c.activities.includes(a)))).map(e => e.id);
 const cityCard = c => `<section class="city" id="${c.id}"><h2>${esc(c.name)} <small>${esc(c.country)} · ${c.region} · ${c.climate}${c.hero ? ' · ★ hero' : ''}${c.outdoorsy ? ' · outdoorsy' : ''}${c.radon ? ' · radon ' + c.radon : ''} · $${c.costPerDay}/day · stay ${c.minStay}–${c.suggestedStay}d</small></h2>
 <p class="blurb">${esc(c.blurb)}</p>
-<div class="row"><figure><img src="img/sky-${c.id}-dawn.png" alt=""><figcaption>dawn</figcaption></figure><figure><img src="img/sky-${c.id}-dusk.png" alt=""><figcaption>dusk</figcaption></figure></div>
+<div class="row"><figure><img src="img/sky-${c.id}-day.png" alt=""><figcaption>day</figcaption></figure><figure><img src="img/sky-${c.id}-dusk.png" alt=""><figcaption>dusk</figcaption></figure></div>
 <div class="cols"><div><h3>Dishes</h3><div class="dishes">${byCity(c.id).map(d => `<figure><img src="img/dish-${d.id}.png" alt=""><figcaption><b>${esc(d.name)}</b><br>${esc(d.ingredients.join(', '))}<br><i>${d.steps.map(s => s.kind).join(' → ')}</i></figcaption></figure>`).join('') || '<i>none</i>'}</div></div>
 <div><h3>Workouts</h3><ul>${c.activities.map(a => `<li><b>${a}</b>: ${poolFor(a, c.id).map(m => `<a href="#micro-${m.split(' ')[0]}">${esc(m)}</a>`).join(', ')}</li>`).join('')}</ul>
 <h3>Console (rest day, Switch packed)</h3><p>${R.console.map(g => `<a href="#console-${g}">${g}</a>`).join(', ')} · hazard: <b>${c.hazard}</b></p>
