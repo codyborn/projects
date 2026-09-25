@@ -179,7 +179,7 @@ const CITY: Record<string, Drawer> = {
       const jx = Math.floor(w * 0.4), jy = hy - 8; R(ctx, jx - 16, jy - 4, 34, 5, PAL.ink); R(ctx, jx - 12, jy - 7, 26, 3, PAL.earth0); for (let k = 0; k < 4; k++) R(ctx, jx + 14 + k, jy - 8 + k, 1, 4, PAL.ink);
       for (const [mx, mh, mw] of [[-8, 20, 9], [2, 26, 11], [12, 18, 8]]) { R(ctx, jx + mx, jy - 7 - mh, 1, mh, PAL.ink); for (let y = 0; y < mh; y++) { const sw = Math.round(mw * (0.4 + 0.6 * y / mh)); R(ctx, jx + mx + 1, jy - 7 - mh + y, sw, 1, y % 4 === 0 ? PAL.earth0 : PAL.red); } }
     } else { for (let i = 0; i < 4; i++) { const x = r.int(0, w); R(ctx, x, hy - 8, 20, 6, c); R(ctx, x + 4, hy - 14, 12, 6, c); P(ctx, x + 8, hy - 12, win); } } },
-  kathmandu: (ctx, w, hy, L, c, win, r) => { if (L === 'far') peaks(ctx, w, hy, c, r, 170, 24, PAL.white, 0.6);
+  kathmandu: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { const mc = tod === 'day' ? PAL.night3 : tod === 'night' ? PAL.night2 : PAL.dusk0; peaks(ctx, w, hy, mc, r, 76, 22, PAL.white, 0.7); R(ctx, 0, hy - 2, w, 4, mc); }   // the Himalaya: bases at the horizon, summits inside the frame, snow on the caps only
     else if (L === 'mid') { // Boudhanath: white dome, gold harmika with the eyes, thirteen-step spire, prayer flags
       const x = Math.floor(w * 0.3), by = hy - 6; R(ctx, x - 44, by - 8, 88, 10, PAL.gray2); for (let y = 0; y < 30; y++) { const hw = Math.round(Math.sqrt(1 - Math.pow(1 - y / 30, 2)) * 40); R(ctx, x - hw, by - 8 - 30 + y, hw * 2, 1, PAL.white); }
       R(ctx, x - 9, by - 54, 18, 16, PAL.sun2); R(ctx, x - 7, by - 50, 4, 3, PAL.ink); R(ctx, x + 3, by - 50, 4, 3, PAL.ink); R(ctx, x - 6, by - 52, 3, 1, PAL.ink); R(ctx, x + 3, by - 52, 3, 1, PAL.ink); P(ctx, x, by - 46, PAL.red, 1, 3);
