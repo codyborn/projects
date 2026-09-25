@@ -11,5 +11,6 @@ import { CoffeeScene } from './scenes/CoffeeScene';
 import { PassportScene } from './scenes/PassportScene';
 import { ShareScene } from './share/ShareScene';
 import { OtterScene } from './scenes/OtterScene';
+import { PlayEndScene } from './playLink';
 import { MINIGAME_SCENES } from './minigames/devHarness';
-export const SCENES: (typeof Phaser.Scene)[] = [BootScene, TitleScene, PackScene, RouteScene, TravelScene, CityScene, EventScene, EndScene, CoffeeScene, PassportScene, ShareScene, OtterScene, ...MINIGAME_SCENES] as any;
+export const SCENES: (typeof Phaser.Scene)[] = [BootScene, TitleScene, PackScene, RouteScene, TravelScene, CityScene, EventScene, EndScene, CoffeeScene, PassportScene, ShareScene, OtterScene, PlayEndScene, ...MINIGAME_SCENES] as any;
