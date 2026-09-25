@@ -22,7 +22,7 @@ export class CityScene extends Phaser.Scene {
     const city = Data.city(run.cityId);
     rect(this, 0, 0, 360, 640, PAL.night0);
     // vista
-    let drew = false; const hook = (window as any).__nomadArt?.skyline; if (hook) { try { hook(this, run.cityId, 0, 86, 360, 150); drew = true; } catch {} }
+    let drew = false; if ((window as any).__nomadArt?.skylineAt) { try { this.setSky(this.todFor(run.day), false); drew = true; } catch {} }
     if (!drew) this.fallbackVista(run.cityId, city?.climate ?? 'temperate');
     { const name = (city?.name ?? run.cityId).toUpperCase(); const plateW = Math.min(300, Math.max(150, 20 + name.length * 13)); const plate = this.add.graphics().setDepth(2); plate.fillStyle(PAL.night0, 0.82); plate.fillRect(6, 90, plateW, 40); plate.fillStyle(PAL.sun1, 1); plate.fillRect(6, 90, 3, 40); }
     txt(this, 14, 96, (city?.name ?? run.cityId).toUpperCase(), 16, PAL.white).setDepth(3); txt(this, 14, 116, `${city?.country ?? ''} · stay day ${run.stayDays + 1}`, 8, PAL.gray2).setDepth(3);
@@ -33,6 +33,18 @@ export class CityScene extends Phaser.Scene {
     txt(this, 180, 620, '1 action = 1 day · work week = Mon-Fri', 8, PAL.gray0).setOrigin(0.5);
     this.refreshWorkBtn(run.day);
     if (data.arrived) this.arrivalCard();
+  }
+  // ---- the vista cycles day → dusk → night → dawn as days pass, crossfading between skylines ----
+  private sky?: any; private skyUpd?: (t: number, dt: number) => void;
+  private todFor(day: number): 'day' | 'dusk' | 'night' | 'dawn' { return (['day', 'dusk', 'night', 'dawn'] as const)[day % 4]; }
+  private setSky(tod: 'day' | 'dusk' | 'night' | 'dawn', animate: boolean) {
+    const run = getRun(this); const art = (window as any).__nomadArt; if (!art?.skylineAt) return;
+    const sk = art.skylineAt(this, run.cityId, tod, 0, 86, 360, 150); sk.container.setDepth(1);
+    const upd = (_t: number, dt: number) => sk.update(dt); this.events.on('update', upd);
+    const old = this.sky, oldUpd = this.skyUpd; this.sky = sk; this.skyUpd = upd;
+    const dropOld = () => { if (oldUpd) this.events.off('update', oldUpd); try { old?.destroy(); } catch {} };
+    if (old && animate) { sk.container.setAlpha(0); this.tweens.add({ targets: sk.container, alpha: 1, duration: 900, ease: 'Sine.easeInOut', onComplete: dropOld }); }
+    else dropOld();
   }
   private fallbackVista(cityId: string, climate: string) {
     const sky = climate === 'hot' ? [PAL.sun1, PAL.sun2] : climate === 'cold' || climate === 'alpine' ? [PAL.sky0, PAL.sky2] : climate === 'rainy' ? [PAL.gray0, PAL.gray1] : [PAL.sky1, PAL.sky2];
@@ -71,6 +83,7 @@ export class CityScene extends Phaser.Scene {
       toast(this, res.error, PAL.sun1, 1800); this.cameras.main.shake(80, 0.004); this.busy = false; this.btns.forEach(b => b.setDisabled(false)); this.refreshButtons(); return;
     }
     putRun(this, res.state); this.hud.refresh(res.state); this.refreshLog();
+    if (res.state.day !== this.lastDay && this.sky) this.setSky(this.todFor(res.state.day), true);
     const queue: (() => Promise<void>)[] = [];
     // order: the morning (coffee) first, then whatever the day brought, then the mini-game the action asked for
     if (res.state.day !== this.lastDay && res.state.stayDays === 1 && Sim.coffeePacked(res.state) && this.scene.get('Coffee') && a !== 'moveon') { const c = Data.city(res.state.cityId); queue.push(() => this.overlay('Coffee', { cityId: res.state.cityId, day: res.state.day, climate: c?.climate, region: c?.region })); }
