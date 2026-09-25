@@ -3369,8 +3369,8 @@
   "lat": 27.72,
   "lon": 85.32,
   "hero": true,
-  "minStay": 8,
-  "suggestedStay": 10,
+  "minStay": 10,
+  "suggestedStay": 18,
   "climate": "temperate",
   "timezone": 6,
   "dishes": [
@@ -3420,17 +3420,6 @@
     "timezones": 5
    },
    {
-    "to": "manaslu",
-    "transport": "trek",
-    "days": 14,
-    "energy": 30,
-    "timezones": 0,
-    "months": [
-     10,
-     11
-    ]
-   },
-   {
     "to": "bangkok",
     "transport": "flight",
     "days": 1,
@@ -3445,61 +3434,11 @@
     "timezones": 2
    }
   ],
-  "blurb": "Permits, a duffel, the last real shower for two weeks.",
+  "blurb": "Permits, a duffel, and the Manaslu Circuit two weeks out and back: dal bhat power, twenty-four hour.",
   "stampIcon": "stupa",
   "altitude": 1400,
   "costPerDay": 45,
   "radon": 2,
-  "outdoorsy": true
- },
- {
-  "id": "manaslu",
-  "name": "Manaslu Circuit",
-  "country": "Nepal",
-  "region": "himalaya",
-  "lat": 28.55,
-  "lon": 84.56,
-  "hero": true,
-  "minStay": 2,
-  "suggestedStay": 4,
-  "climate": "alpine",
-  "timezone": 6,
-  "dishes": [
-   "dalbhat",
-   "momo"
-  ],
-  "activities": [
-   "hike"
-  ],
-  "hazard": "yak",
-  "lodgings": [
-   {
-    "id": "teahouse",
-    "name": "Tea house",
-    "cancelChance": 0.0,
-    "quiet": 1,
-    "moodPerDay": 3,
-    "energyPerDay": -1
-   }
-  ],
-  "eventWeights": {
-   "altitude": 3.0,
-   "foodpoisoning": 1.5,
-   "goodday": 2.0
-  },
-  "legs": [
-   {
-    "to": "kathmandu",
-    "transport": "bus",
-    "days": 2,
-    "energy": 14,
-    "timezones": 0
-   }
-  ],
-  "blurb": "Fourteen days on foot around the eighth-highest mountain in the world. Dal bhat power, twenty-four hour.",
-  "stampIcon": "yak",
-  "altitude": 5106,
-  "costPerDay": 40,
   "outdoorsy": true
  }
 ]

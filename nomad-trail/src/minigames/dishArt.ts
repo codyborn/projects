@@ -5,7 +5,7 @@ import type Phaser from 'phaser';
 import { PAL, type PalKey } from '../core/palette';
 
 export type Vessel = 'plate' | 'bowl' | 'board' | 'mat' | 'stick' | 'glass' | 'cone' | 'basket' | 'boat' | 'slice' | 'pan' | 'grill' | 'tagine' | 'thali' | 'tray' | 'stonebowl' | 'paper';
-export type Shape = 'mound' | 'slices' | 'noodles' | 'sauce' | 'cubes' | 'leaves' | 'egg' | 'steam' | 'sprinkles' | 'wedge' | 'patty' | 'bun' | 'bunbottom' | 'fries' | 'sticks'
+export type Shape = 'friesup' | 'friestilt' | 'conefront' | 'mound' | 'slices' | 'noodles' | 'sauce' | 'cubes' | 'leaves' | 'egg' | 'steam' | 'sprinkles' | 'wedge' | 'patty' | 'bun' | 'bunbottom' | 'fries' | 'sticks'
   | 'ring' | 'fish' | 'shrimp' | 'dome' | 'stripes' | 'pile' | 'roll' | 'nigiri' | 'dumpling' | 'claw' | 'stack' | 'sausage' | 'pretzel' | 'shot' | 'cup' | 'medley' | 'halfmoon' | 'nori' | 'tart' | 'waffle' | 'yolk' | 'chopsticks' | 'grate' | 'bread' | 'tortilla';
 export interface Layer { s: Shape; c?: PalKey; c2?: PalKey; c3?: PalKey; x?: number; y?: number; w?: number; h?: number; n?: number; }
 export interface DishArtSpec { vessel: Vessel; vc?: PalKey; layers: Layer[]; }
@@ -93,6 +93,9 @@ function drawLayer(p: Px, v: Vessel, L: Layer, idx: number) {
       for (let row = 0; row <= ry; row++) { const t = row / ry; const half = rx * Math.sqrt(Math.max(0, 1 - (1 - t) * (1 - t))); p.rect(cx - half, base - ry + row, half * 2, 1, c); }
       p.rect(cx - rx, base, w, 1, 'earth2'); p.rect(cx - rx + 1, base - ry, 1, ry, 'ink'); p.rect(cx + rx - 2, base - ry, 1, ry, 'ink'); p.rect(cx - rx + 2, base - ry - 1, w - 4, 1, 'ink');
       for (let i = 0; i < 4; i++) p.dot(cx - 5 + i * 3, base - ry + 2 + (i % 2), 'sun3'); break; }
+    case 'friesup': for (let i = 0; i < n; i++) { const x = cx - (n - 1) * 1.4 + i * 2.8; const hh = h + ((i * 7) % 4); const lean = (i - (n - 1) / 2) * 0.35; for (let k = 0; k < hh; k++) { const xx = x + lean * k / hh; p.rect(xx - 0.5, cy - k, 2, 1, 'ink'); } for (let k = 0; k < hh; k++) { const xx = x + lean * k / hh; p.rect(xx, cy - k, 1, 1, c); } } break;
+    case 'friestilt': for (let i = 0; i < n; i++) { const ang = (-0.9 + i * (1.8 / Math.max(1, n - 1))) + ((i % 2) ? 0.2 : -0.2); const x0 = cx + (i - (n - 1) / 2) * 3; for (let k = 0; k < h; k++) { const xx = x0 + Math.sin(ang) * k, yy = cy - Math.cos(ang) * k; p.rect(xx - 0.5, yy, 2, 1.2, 'ink'); } for (let k = 0; k < h; k++) { const xx = x0 + Math.sin(ang) * k, yy = cy - Math.cos(ang) * k; p.rect(xx, yy, 1, 1, c); } } break;
+    case 'conefront': p.tri(12, 6, 36, 6, 24, 30, 'ink'); p.tri(13, 7, 35, 7, 24, 28, 'white'); p.tri(15, 8, 24, 8, 21, 20, 'gray2'); p.rect(13, 7, 22, 1, 'gray2'); break;
     case 'fries': for (let i = 0; i < n; i++) { const x = cx - (n - 1) * 1.5 + i * 3; const hh = h + (i % 3); p.rect(x - 0.5, cy - hh + 1, 2, hh, 'ink'); p.rect(x, cy - hh + 1, 1, hh, c); } break;
     case 'sticks': for (let i = 0; i < n; i++) { const y = cy - (n - 1) * 1.2 + i * 2.4; p.box(cx - w / 2, y, w, 1, c); } break;
     case 'chopsticks': p.rect(cx + 8, cy - 9, 1, 18, 'earth1'); p.rect(cx + 10, cy - 9, 1, 18, 'earth1'); break;
@@ -152,8 +155,8 @@ export const dishArtSpecs: Record<string, DishArtSpec> = {
   // --- UK / Benelux / France
   fishandchips: { vessel: 'paper', layers: [{ s: 'fries', c: 'sun2', n: 7, h: 7, x: 9, y: 4 }, { s: 'fish', c: 'sun1', c2: 'earth3', w: 18, h: 7, x: -6 }, { s: 'pile', c: 'grass1', c2: 'grass2', n: 6, w: 10, h: 4, x: -12, y: 4 }, { s: 'wedge', c: 'sun2', c2: 'sun3', x: 4, y: -4 }] },
   sundayroast: { vessel: 'plate', layers: [{ s: 'stripes', c: 'earth1', c2: 'pink', n: 2, w: 12, x: -8 }, { s: 'cubes', c: 'sun1', c2: 'sun2', n: 3, w: 8, h: 4, x: 6, y: 1 }, { s: 'sticks', c: 'sun0', n: 2, w: 8, x: 8, y: -3 }, { s: 'dome', c: 'earth3', c2: 'sun3', w: 8, h: 5, x: 0, y: -3 }, { s: 'sauce', c: 'earth0', w: 14, h: 2, y: 3 }] },
-  moules: { vessel: 'bowl', vc: 'gray1', layers: [{ s: 'sauce', c: 'sun3', w: 26, h: 8 }, { s: 'pile', c: 'night3', c2: 'sun1', n: 8, w: 22, h: 6 }, { s: 'pile', c: 'ink', c2: 'sun2', n: 5, w: 18, h: 4, y: -1 }, { s: 'fries', c: 'sun2', n: 5, h: 8, x: 13, y: -3 }, { s: 'leaves', c: 'grass2', n: 3, w: 14, h: 2, y: -2 }] },
-  frites: { vessel: 'cone', layers: [{ s: 'fries', c: 'sun2', n: 9, h: 9, y: 0 }, { s: 'sauce', c: 'sun1', c2: 'sun2', w: 8, h: 3, y: -6 }] },
+  moules: { vessel: 'bowl', vc: 'gray1', layers: [{ s: 'sauce', c: 'sun3', w: 26, h: 8 }, { s: 'pile', c: 'night3', c2: 'sun1', n: 8, w: 22, h: 6 }, { s: 'pile', c: 'ink', c2: 'sun2', n: 5, w: 18, h: 4, y: -1 }, { s: 'friestilt', c: 'sun2', n: 4, h: 9, y: -2 }, { s: 'leaves', c: 'grass2', n: 3, w: 14, h: 2, y: -2 }] },
+  frites: { vessel: 'cone', layers: [{ s: 'friesup', c: 'sun2', n: 7, h: 11, y: 1 }, { s: 'conefront' }, { s: 'sauce', c: 'sun1', c2: 'sun2', w: 7, h: 3, y: -9 }] },
   stroopwafel: { vessel: 'plate', layers: [{ s: 'waffle', c: 'earth2', c2: 'earth1', w: 20, h: 8, y: 1 }, { s: 'sauce', c: 'earth1', w: 8, h: 2, x: 8, y: 3 }, { s: 'waffle', c: 'earth3', c2: 'earth2', w: 18, h: 7, y: -2, x: -2 }] },
   bouillabaisse: { vessel: 'bowl', vc: 'sun0', layers: [{ s: 'sauce', c: 'sun0', c2: 'sun1', w: 26, h: 8 }, { s: 'cubes', c: 'white', c2: 'sky3', n: 4, w: 18, h: 4 }, { s: 'shrimp', c: 'sun1', c2: 'sun3', n: 2, x: 4, y: -1 }, { s: 'bread', c: 'earth3', c2: 'sun3', w: 6, h: 3, x: -9, y: -2 }, { s: 'leaves', c: 'grass2', n: 3, w: 16, h: 2, y: -2 }] },
   ratatouille: { vessel: 'pan', layers: [{ s: 'sauce', c: 'red', w: 26, h: 10 }, { s: 'medley', c: 'red', c2: 'sun2', c3: 'dusk1', n: 7, y: -1 }, { s: 'leaves', c: 'grass1', n: 4, w: 20, h: 4, y: 2 }] },

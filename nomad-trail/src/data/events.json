@@ -153,21 +153,21 @@
  {
   "id": "altitude",
   "title": "Thin air",
-  "text": "Above 3,500 m in {city} the headache starts behind the eyes and the appetite leaves. Slowly, slowly: the only rule up here.",
-  "when": "arrive",
+  "text": "Above 3,500 m on the circuit out of {city} the headache starts behind the eyes and the appetite leaves. Slowly, slowly: the only rule up here.",
+  "when": "action",
   "baseChance": 0.7,
   "effects": {
    "health": -13,
    "energy": -25,
    "mood": -5
   },
-  "requiresCity": "manaslu",
+  "requiresCity": "kathmandu",
   "mitigatedBy": [
    "meds",
    "water",
    "health"
   ],
-  "mitigatedText": "Above 3,500 m in {city}. Altitude pills tingle in your fingers, electrolytes in the bottle, a rest day in the plan. The headache stays a rumour.",
+  "mitigatedText": "Above 3,500 m on the circuit out of {city}. Altitude pills tingle in your fingers, electrolytes in the bottle, a rest day in the plan. The headache stays a rumour.",
   "mitigatedEffects": {
    "energy": -12
   }

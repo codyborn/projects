@@ -52,9 +52,8 @@ describe('data integrity', () => {
       expect(CITY[l.to].legs.some(b => b.to === c.id), `${l.to} back to ${c.id}`).toBe(true);
       if (l.transport === 'flight') expect(l.days === 1 || (l.days === 2 && (l.timezones > 6 || true)), `${c.id}->${l.to} ${l.days}d`).toBe(true);
       if (l.transport === 'flight' && l.timezones <= 3) { const a = CITY[c.id], b = CITY[l.to]; const km = 6371 * Math.acos(Math.min(1, Math.sin(a.lat * Math.PI / 180) * Math.sin(b.lat * Math.PI / 180) + Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.cos((a.lon - b.lon) * Math.PI / 180))); if (km < 4000) expect(l.days, `${c.id}->${l.to}`).toBe(1); }
-      if (l.transport !== 'flight' && l.days > 1) expect(['kathmandu', 'manaslu']).toContain(c.id);
+      if (l.transport !== 'flight') expect(l.days).toBe(1);   // the Manaslu trek lives inside the Kathmandu stay now
     }
-    expect(CITY.kathmandu.legs.find(l => l.to === 'manaslu')!.months).toEqual([10, 11]);
     expect(CITY.highlands.legs.find(l => l.to === 'reykjavik')!.months).toEqual([6, 7, 8, 9]);
   });
   it('the whole graph is connected and a learned player circles the globe both ways from Orange County', () => {
@@ -318,7 +317,6 @@ describe('round 3: money, weekends, streaks, weight, outdoors, radon', () => {
   it('every day and every leg cost money; the card declines below zero and the run ends past the overdraft', () => {
     const s = inCity(); const r = Sim.cityAction(s, 'rest'); expect(r.state.money).toBe(s.money - CITY.lisbon.costPerDay!);
     const route = packed(); const leg = Sim.availableLegs(route)[0]; const t = Sim.travelTo(route, leg.to); expect(t.state.money).toBe(START_MONEY - Sim.fareFor(CITY[HOME_CITY], leg)); expect(Sim.fareFor(CITY[HOME_CITY], leg)).toBeGreaterThan(100);
-    expect(Sim.fareFor(CITY.kathmandu, CITY.kathmandu.legs.find(l => l.to === 'manaslu')!)).toBe(900);
     const poor = Sim.cityAction({ ...s, money: 20 }, 'rest'); expect(poor.state.money).toBeLessThan(0); expect(poor.events.some(e => e.id === 'broke')).toBe(true); expect(poor.state.phase).toBe('city');
     const gone = Sim.cityAction({ ...s, money: -OVERDRAFT + 10 }, 'rest'); expect(gone.state.ending?.kind).toBe('broke');
   });
