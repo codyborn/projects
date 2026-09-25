@@ -83,11 +83,11 @@ function loungeChair(ctx: Ctx, x: number, y: number, stripe: number) { R(ctx, x,
 const CITY: Record<string, Drawer> = {
   tokyo: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') buildings(ctx, w, hy, c, win, r, 40, 110, 8, 18, 0.5);
     else if (L === 'mid') { buildings(ctx, w, hy, c, win, r, 30, 80, 10, 22, 0.5); neonSigns(ctx, w, hy, r, 12);
-      // Godzilla, Shinjuku-style: head and shoulders peeking over a rooftop in the mid layer
-      const gx = Math.floor(w * 0.24), gt = hy - 58; R(ctx, gx - 22, gt + 10, 44, 60, c); for (let wy = gt + 14; wy < hy; wy += 4) for (let wx = gx - 20; wx < gx + 20; wx += 3) if (r.chance(0.4)) P(ctx, wx, wy, win);   // the building he is behind
-      R(ctx, gx - 14, gt - 6, 28, 16, PAL.ink); R(ctx, gx - 6, gt - 18, 16, 14, PAL.ink); R(ctx, gx + 8, gt - 14, 8, 6, PAL.ink);   // shoulders, head, snout
-      for (let i = 0; i < 4; i++) { const sy = gt - 16 + i * 6; for (let k = 0; k < 5; k++) R(ctx, gx - 10 - k, sy + k, 1, 5 - k, PAL.ink); }   // back spines
-      P(ctx, gx + 4, gt - 13, PAL.sun2, 2, 2);
+      // Godzilla, Shinjuku-style: a subtle head-and-shoulders shape in the building colour, peeking over a rooftop in the right third
+      const gx = Math.floor(w * 0.39), gt = hy - 58, gc = PAL.night3; R(ctx, gx - 22, gt + 10, 44, 60, c); for (let wy = gt + 14; wy < hy; wy += 4) for (let wx = gx - 20; wx < gx + 20; wx += 3) if (r.chance(0.4)) P(ctx, wx, wy, win);   // the building he is behind
+      R(ctx, gx - 14, gt - 6, 28, 16, gc); R(ctx, gx - 6, gt - 18, 16, 14, gc); R(ctx, gx + 8, gt - 14, 8, 6, gc);   // shoulders, head, snout
+      for (let i = 0; i < 4; i++) { const sy = gt - 16 + i * 6; for (let k = 0; k < 5; k++) R(ctx, gx - 10 - k, sy + k, 1, 5 - k, gc); }   // back spines
+      P(ctx, gx + 4, gt - 13, PAL.sun1, 1, 1);   // a faint eye
       // the Yamanote-style train on an elevated track
       const ty = hy - 46; R(ctx, 0, ty + 8, w, 3, c); for (let x = 12; x < w; x += 40) R(ctx, x, ty + 11, 4, hy - ty - 11, c);
       for (let seg = 0; seg < 4; seg++) { const tx = 20 + seg * 26; R(ctx, tx, ty - 2, 24, 10, PAL.gray2); R(ctx, tx, ty + 4, 24, 2, PAL.grass1); for (let k = 2; k < 22; k += 5) R(ctx, tx + k, ty, 3, 3, win); }
@@ -132,9 +132,11 @@ const CITY: Record<string, Drawer> = {
       const tx = r.int(80, w - 80), ty = hy - 34; for (let k = 0; k < 6; k++) R(ctx, tx - 2, ty - k * 2, 4, 2, PAL.night3); R(ctx, tx - 10, ty - 14, 8, 3, PAL.night3); R(ctx, tx + 2, ty - 14, 8, 3, PAL.night3); R(ctx, tx - 13, ty - 16, 5, 2, PAL.night3); R(ctx, tx + 8, ty - 16, 5, 2, PAL.night3);   // whale tail
       for (let i = 0; i < 3; i++) { const bx = r.int(10, w - 30); R(ctx, bx, hy - 33, 18, 4, PAL.white); R(ctx, bx + 2, hy - 35, 14, 2, PAL.sky0); } }   // pangas
     else { R(ctx, 0, hy - 6, w, 8, PAL.earth3); palms(ctx, w, hy, c, r, 2);
-      for (const base of [w * 0.34, w * 0.34 + w / 2]) for (let i = 0; i < 5; i++) { const cx = Math.round(base + i * 20 + r.int(-4, 4)), ch = r.int(25, 45), cw = 6;   // cardón cacti, grouped on the right
-        R(ctx, cx, hy - ch, cw, ch, PAL.grass0); R(ctx, cx + 1, hy - ch, 1, ch, PAL.grass1); R(ctx, cx + cw / 2 - 1, hy - ch - 1, 2, 1, PAL.grass0);
-        const arms = r.int(1, 2); for (let a = 0; a < arms; a++) { const side = a % 2 ? 1 : -1; const ay = hy - ch + r.int(8, ch - 12); R(ctx, side < 0 ? cx - 6 : cx + cw, ay, 6, 4, PAL.grass0); R(ctx, side < 0 ? cx - 6 : cx + cw + 2, ay - r.int(8, 14), 4, r.int(10, 16), PAL.grass0); } } } },
+      for (const base of [w * 0.33, w * 0.33 + w / 2]) { const hs = [52, 78, 64, 58, 70]; for (let i = 0; i < 5; i++) { const cw = r.int(6, 8), cx = Math.round(base + i * 22 + r.int(-3, 3)), ch = hs[i] + r.int(-4, 4);   // cardón cacti: tall ribbed trunks, grouped on the right third
+        R(ctx, cx - 1, hy - ch - 1, cw + 2, ch + 1, PAL.ink); R(ctx, cx, hy - ch, cw, ch, PAL.grass0); R(ctx, cx, hy - ch - 1, cw, 1, PAL.grass0);
+        for (let rib = 2; rib < cw; rib += 2) R(ctx, cx + rib, hy - ch + 2, 1, ch - 2, PAL.grass1);                                             // ribbing
+        const arms = r.int(2, 3); for (let a = 0; a < arms; a++) { const side = a % 2 ? 1 : -1; const ay = hy - ch + r.int(10, Math.max(12, ch - 30)); const ax = side < 0 ? cx - 8 : cx + cw + 2, ah = r.int(14, 26);
+          R(ctx, side < 0 ? cx - 8 : cx + cw, ay, 8, 5, PAL.grass0); R(ctx, ax - 1, ay - ah - 1, 7, ah + 2, PAL.ink); R(ctx, ax, ay - ah, 5, ah + 5, PAL.grass0); R(ctx, ax + 2, ay - ah + 2, 1, ah, PAL.grass1); } } } } },
   laventana: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') mountains(ctx, w, hy, c, r, 40, 60); else if (L === 'mid') { water(ctx, w, hy - 30, 30, tod, r); kites(ctx, w, hy - 30, r, 10); }
     else { R(ctx, 0, hy - 6, w, 8, PAL.earth3); palms(ctx, w, hy, c, r, 3); } },
   roatan: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') mountains(ctx, w, hy, c, r, 30, 50); else if (L === 'mid') { water(ctx, w, hy - 26, 26, tod, r); for (let i = 0; i < 20; i++) P(ctx, r.int(0, w), hy - r.int(2, 24), PAL.sea3); }
@@ -191,9 +193,17 @@ const CITY: Record<string, Drawer> = {
       for (const [x0, y0, x1, y1] of strands) for (let xx = x0; xx < x1; xx += 7) { const t = (xx - x0) / (x1 - x0); const yy = Math.round(y0 + (y1 - y0) * t + Math.sin(t * Math.PI) * 12); const yn = Math.round(y0 + (y1 - y0) * (t + 7 / (x1 - x0)) + Math.sin((t + 7 / (x1 - x0)) * Math.PI) * 12); line(ctx, xx, yy, xx + 7, yn, PAL.gray0); R(ctx, xx + 1, yy + 1, 4, 5, cols[(xx / 7 | 0) % 5]); }
     } else { buildings(ctx, w, hy, c, win, r, 10, 26, 12, 22, 0.3); } },
   iguazu: (ctx, w, hy, L, c, win, r) => { if (L === 'far') { mountains(ctx, w, hy, PAL.grass0, r, 70, 50); for (let px = 0; px < w; px += 2) for (let y = hy - 70; y < hy; y += 2) if (((px + y) / 2) % 3 === 0 && r.chance(0.35)) P(ctx, px, y, PAL.grass1); trees(ctx, w, hy - 40, PAL.grass0, r, 6); }
-    else if (L === 'mid') { mountains(ctx, w, hy, PAL.grass1, r, 46, 40); for (let px = 0; px < w; px += 2) for (let y = hy - 46; y < hy; y += 2) if (((px + y) / 2) % 4 === 0 && r.chance(0.3)) P(ctx, px, y, PAL.grass2);
-      for (let i = 0; i < 5; i++) { const x = 40 + i * 60 + r.int(-10, 10), top = hy - r.int(30, 44), fw = r.int(8, 16); R(ctx, x, top, fw, hy - top, PAL.white); R(ctx, x + 2, top, fw - 4, hy - top, PAL.sky3); speckle(ctx, x - 6, hy - 14, fw + 12, 16, PAL.white, 0.35, r); }   // the falls and their mist
-      trees(ctx, w, hy - 30, PAL.grass0, r, 5); birds(ctx, w, hy - 80, r, 6, PAL.ink);
+    else if (L === 'mid') { mountains(ctx, w, hy - 26, PAL.grass1, r, 30, 40); for (let px = 0; px < w; px += 2) for (let y = hy - 56; y < hy - 26; y += 2) if (((px + y) / 2) % 4 === 0 && r.chance(0.3)) P(ctx, px, y, PAL.grass2);
+      // the Devil's Throat: a horseshoe ledge across the green with a curtain of narrow falls dropping to the river
+      const ledgeY = (x: number) => hy - 26 - Math.round(Math.sin((x / w) * Math.PI * 2) * 6);
+      R(ctx, 0, hy - 6, w, 8, PAL.sea0); for (let i = 0; i < w / 3; i++) R(ctx, r.int(0, w), hy - r.int(1, 6), r.int(2, 5), 1, PAL.sea1);   // the river
+      for (let x = 0; x < w; x++) R(ctx, x, ledgeY(x) - 1, 1, 2, PAL.grass0);                                                                // the ledge
+      let x = 0; while (x < w) { const fw = r.int(2, 7), ly = ledgeY(x), len = hy - 4 - ly - r.int(0, 6); const gap = r.int(1, 5);
+        R(ctx, x, ly + 1, fw, len, PAL.white); for (let k = 0; k < fw; k++) if ((k + x) % 2 === 0) for (let y = ly + 2 + (k % 3); y < ly + len; y += 3) P(ctx, x + k, y, PAL.sky2);   // falling-water streaks
+        if (r.chance(0.25)) R(ctx, x + Math.floor(fw / 2), ly + 3, 1, len - 4, PAL.sky3); x += fw + gap; }
+      for (let y = 0; y < 12; y++) for (let px = 0; px < w; px += 2) if (((px + y) / 2) % 2 === 0 && r.chance(1 - y / 12)) P(ctx, px, hy - 8 - y, y < 5 ? PAL.white : PAL.sky3);   // foam band fading upward
+      for (let i = 0; i < w / 4; i++) P(ctx, r.int(0, w), hy - r.int(14, 44), PAL.sky3);                                                       // spray haze
+      birds(ctx, w, hy - 80, r, 6, PAL.ink);
     } else { R(ctx, 0, hy - 4, w, 6, PAL.grass0); trees(ctx, w, hy, PAL.grass0, r, 8); } },
   edinburgh: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { mountains(ctx, w, hy, c, r, 50, 60);
       const x = Math.floor(w * 0.36); for (let y = 0; y < 40; y++) R(ctx, x - 30 - Math.round(y * 0.8), hy - y, 60 + Math.round(y * 1.6), 1, c);   // castle rock
