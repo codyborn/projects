@@ -88,7 +88,7 @@ export class PoseMatch extends Micro {
   protected begin() {
     this.buildPoses(); const sc = this.ctx.scene; const cx = 120, cy = 330; this.ctx.athlete.show(false);
     // left: the target silhouette and its name; the live figure stands on the mat beside it
-    this.shadow = this.add(sc.add.image(cx, cy - 10, this.keys[0]).setDepth(3).setTintFill(PAL.night3).setAlpha(0.6).setScale(1.15));   // a dim single-colour silhouette behind the figure: the shape to fill
+    this.shadow = this.add(sc.add.image(cx, cy - 10, this.keys[0]).setDepth(3).setTint(PAL.night3).setAlpha(0.6).setScale(1.15)); (this.shadow as any).tintFill = true;   // a dim single-colour silhouette behind the figure: the shape to fill
     this.figure = this.add(sc.add.image(cx, cy - 10, this.keys[3]).setDepth(5));
     this.nameLbl = this.label(cx, 150, '', 12, PAL.gray2); this.label(W - 58, 150, 'WHEEL', 9, PAL.gray1); this.label(W - 58, 470, 'drag up / down', 8, PAL.gray1);
     // right: the vertical wheel of the four poses, a window in the middle shows the current one
@@ -105,7 +105,7 @@ export class PoseMatch extends Micro {
       if (sn !== this.snapped) { this.snapped = sn; this.figure.setTexture(this.keys[sn]); sc.tweens.add({ targets: this.figure, scaleX: { from: 0.85, to: 1 }, scaleY: { from: 1.15, to: 1 }, duration: 120, ease: 'Back.Out' }); this.ctx.frame.flash(PAL.night3, 20); }
       const ok = sn === this.target && Math.abs(this.pos - sn) < 0.25;
       if (ok) { this.hold += dt; if (this.hold > 0.5) { this.matched++; this.pop(cx, 200, 'MATCH'); this.ctx.frame.setProgress(`${this.matched}/${this.need}`); if (this.matched >= this.need) { this.after(250, () => this.finish(this.scoreNow())); return; } nextT(); } } else this.hold = 0;
-      this.shadow.setTintFill(ok ? PAL.grass0 : PAL.night3).setAlpha(ok ? 0.75 : 0.6);
+      this.shadow.setTint(ok ? PAL.grass0 : PAL.night3).setAlpha(ok ? 0.75 : 0.6); (this.shadow as any).tintFill = true;
       this.g.clear(); this.backdrop(390, 410); this.g.fillStyle(PAL.earth0).fillRect(0, 392, W - 110, 4);   // the mat
       // the wheel: a strip with the four icons stacked, scrolled by pos; the middle window is the current pose
       const wx = W - 58, wy = cy, pitch = 58; this.g.fillStyle(PAL.gray0).fillRect(wx - 30, 170, 60, 300); this.g.fillStyle(PAL.ink).fillRect(wx - 30, 170, 60, 2).fillRect(wx - 30, 468, 60, 2);
