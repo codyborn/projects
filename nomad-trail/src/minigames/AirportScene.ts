@@ -2,24 +2,27 @@ import Phaser from 'phaser';
 import { PAL } from '../core/palette';
 import { MINIGAME_KEYS, type MinigameLaunch } from '../core/types';
 import { MinigameFrame, Meter, W, H, clamp, normalizeLaunch, panel, txt } from './_shared';
+import { genFork, genDoors } from './gateForks';
 
 /**
  * GATE DASH: the taxi died on the way to the airport; run to your gate. Temple-Run down a terminal corridor.
  * An instruction card (gate, the three controls, the fork rule) stays up until READY is tapped; the boarding clock starts then.
  * Swipe left/right (or tap the left/right third) to change lane, swipe up (or tap the middle) to jump. Arrows on desktop.
- * Every so often the corridor ends at a T-junction wall far ahead with two gate-range signs; it grows as you approach (~4 s
- * of reading time). Be in the left or right lane when you reach it and you TURN that way (a 0.6 s perspective sweep); the
+ * Every so often the corridor ends at a T-junction wall far ahead with two gate-range signs (always disjoint and complementary, exactly
+ * one holds your gate: see gateForks.ts); it holds at the horizon then approaches at a fixed pace (≥ 5 s of reading, text 12 → 16 px).
+ * Be in the left or right lane when you reach it and you TURN that way (a 0.9 s transition: the side opening wipes over the screen,
+ * the new corridor fades in, no obstacles for 1.5 s); the
  * middle lane runs into the wall (PICK A SIDE). A wrong side turns into a dead end: WRONG WAY, U-turn, 3 s lost, the fork repeats.
  * Five forks narrow the gate down (letters → letter → numbers → numbers → the door itself across the three lanes).
- * Payload: { gate?: string } like 'B56'. Boarding closes 45 s after READY. Score: 100 − 8 per wrong turn − 1 per collision (−4 each beyond two).
+ * Payload: { gate?: string } like 'B56'. Boarding closes 60 s after READY. Score: 100 − 8 per wrong turn − 1 per collision (−4 each beyond two).
  */
 type ObKind = 'traveller' | 'bag' | 'rope' | 'cart' | 'walkway';
 interface Ob { kind: ObKind; lane: number; z: number; hit?: boolean; used?: boolean; }
 interface Fork { z: number; hold: number; left: string; right: string; correct: number; doors?: string[]; resolved?: boolean; }
-const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 const HORIZON = 210, FLOOR = 560, VX = W / 2;
 const LANE_NEAR = 96, LANE_FAR = 12;
-const BOARDING_SEC = 45, FORK_HOLD = 1.6, FORK_GAP = 2.6, FIRST_FORK = 2.4, TURN_SEC = 0.6;
+const BOARDING_SEC = 60, FORK_HOLD = 2.0, FORK_APPROACH = 0.3, FORK_GAP = 2.0, FIRST_FORK = 2.0, TURN_SEC = 0.9, CLEAR_AFTER_TURN = 1.5;
+const BASE_SPEED = 0.375;   // corridor depth per second (25% slower than round 9)
 
 export class AirportScene extends Phaser.Scene {
   private frame!: MinigameFrame; private launch!: MinigameLaunch; private g!: Phaser.GameObjects.Graphics; private meter!: Meter;
@@ -28,7 +31,7 @@ export class AirportScene extends Phaser.Scene {
   private obstacles: Ob[] = []; private fork?: Fork; private stage = 0; private nextForkAt = FIRST_FORK; private nextObAt = 1.0;
   private wrong = 0; private collisions = 0; private penalty = 0; private stunned = 0; private iframes = 0; private ended = false; private uturn = 0;
   /** waiting = instruction card up; turning = the 90° sweep; deadEnd = the wall after a wrong turn (z), -1 when none */
-  waiting = true; private turning?: { dir: number; t: number; ok: boolean }; private deadEnd = -1; private ox = 0;
+  waiting = true; private turning?: { dir: number; t: number; ok: boolean; wall?: Fork; swapped?: boolean }; private deadEnd = -1; private ox = 0;
   private runner!: Phaser.GameObjects.Sprite; private signL!: Phaser.GameObjects.Text; private signR!: Phaser.GameObjects.Text; private signM!: Phaser.GameObjects.Text;
   private banner?: Phaser.GameObjects.Text; private runT = 0; private card: Phaser.GameObjects.GameObject[] = [];
   private sx = 0; private sy = 0; private swiped = false;
@@ -47,14 +50,14 @@ export class AirportScene extends Phaser.Scene {
   create() {
     this.frame = new MinigameFrame(this, this.launch, 'Gate dash'); this.frame.capSec = BOARDING_SEC + 6;
     this.cameras.main.setBackgroundColor(PAL.night2);
-    this.speed = 0.5 * this.frame.speed;
+    this.speed = BASE_SPEED * this.frame.speed;
     this.g = this.add.graphics().setDepth(3);
     this.buildRunner(); this.runner = this.add.sprite(VX, FLOOR - 6, 'gd_run', 0).setOrigin(0.5, 1).setDepth(10).setScale(3);
     this.laneX = this.laneScreenX(1, 0);
     this.frame.hud(); this.meter = new Meter(this, 40, 40, W - 80, 6, PAL.sun2);
     txt(this, W / 2, 62, `GATE ${this.gate}`, 22, PAL.sun3).setDepth(801);
     txt(this, W / 2, 80, 'boarding closes when the bar runs out', 8, PAL.gray1).setDepth(801);
-    this.signL = txt(this, 0, 0, '', 12, PAL.sun2).setDepth(20).setVisible(false); this.signR = txt(this, 0, 0, '', 12, PAL.sun2).setDepth(20).setVisible(false); this.signM = txt(this, 0, 0, '', 12, PAL.sun2).setDepth(20).setVisible(false);
+    this.signL = txt(this, 0, 0, '', 16, PAL.sun2).setDepth(20).setVisible(false); this.signR = txt(this, 0, 0, '', 16, PAL.sun2).setDepth(20).setVisible(false); this.signM = txt(this, 0, 0, '', 16, PAL.sun2).setDepth(20).setVisible(false);   // 16 px at the wall, scaled to 12 px far away
     this.frame.scoreNow = () => this.partialScore();
     this.frame.setProgress('fork 0/5'); this.meter.set(1);
     this.frame.intro('The taxi died on the highway. Read the card, then run.', () => { this.frame.pauseCap(); this.showCard(); }, { auto: true });
@@ -75,7 +78,7 @@ export class AirportScene extends Phaser.Scene {
     row(288, () => { ic.fillStyle(PAL.neon).fillTriangle(56, 270, 48, 282, 64, 282).fillRect(54, 282, 4, 16); }, 'SWIPE UP\njump bags and ropes');
     row(346, () => { ic.fillStyle(PAL.sun2).fillRect(40, 336, 14, 8).fillRect(58, 336, 14, 8); ic.fillStyle(PAL.gray2).fillRect(55, 344, 2, 14); ic.fillStyle(PAL.ink).fillRect(42, 338, 10, 4).fillRect(60, 338, 10, 4); }, 'AT A WALL: READ THE SIGNS\nleft or right lane = you turn\nmiddle = you hit the wall');
     add(txt(s, W / 2, 404, `Follow the ranges that contain ${this.gate}.\nA–C or D–F, then the letter, then the numbers.`, 9, PAL.gray2).setDepth(902));
-    add(txt(s, W / 2, 440, 'Boarding closes in 45 seconds of running.', 9, PAL.sun1).setDepth(902));
+    add(txt(s, W / 2, 440, `Boarding closes in ${BOARDING_SEC} seconds of running.`, 9, PAL.sun1).setDepth(902));
     const btn = s.add.rectangle(W / 2, 510, 200, 52, PAL.sun0).setDepth(902).setStrokeStyle(2, PAL.ink).setInteractive({ useHandCursor: true }); add(btn);
     add(txt(s, W / 2, 510, 'READY', 18, PAL.white).setDepth(903));
     s.tweens.add({ targets: btn, scaleX: 1.04, scaleY: 1.06, yoyo: true, repeat: -1, duration: 600 });
@@ -118,31 +121,21 @@ export class AirportScene extends Phaser.Scene {
 
   // ---------- forks ----------
   private makeFork(): Fork {
-    const L = this.gateLetter, N = this.gateNum; const li = LETTERS.indexOf(L); const side = Math.random() < 0.5 ? 0 : 2;
-    const put = (correctTxt: string, otherTxt: string): Fork => ({ z: 1, hold: FORK_HOLD, left: side === 0 ? correctTxt : otherTxt, right: side === 2 ? correctTxt : otherTxt, correct: side });
-    switch (this.stage) {
-      case 0: return put(li < 3 ? 'GATES A–C' : 'GATES D–F', li < 3 ? 'GATES D–F' : 'GATES A–C');
-      case 1: { const others = (li < 3 ? LETTERS.slice(0, 3) : LETTERS.slice(3)).filter(x => x !== L); return put(`GATES ${L}`, `GATES ${others.join(' · ')}`); }
-      case 2: return put(N <= 50 ? `${L}1–${L}50` : `${L}51–${L}99`, N <= 50 ? `${L}51–${L}99` : `${L}1–${L}50`);
-      case 3: { const lo = N <= 50 ? 1 : 51, hi = N <= 50 ? 50 : 99, mid = Math.floor((lo + hi) / 2); const inLow = N <= mid; return put(inLow ? `${L}${lo}–${L}${mid}` : `${L}${mid + 1}–${L}${hi}`, inLow ? `${L}${mid + 1}–${L}${hi}` : `${L}${lo}–${L}${mid}`); }
-      default: { // the doors: three gates across the lanes, one is yours
-        const lane = Phaser.Math.Between(0, 2); const doors: string[] = []; const step = Math.random() < 0.5 ? 1 : 2;
-        for (let i = 0; i < 3; i++) doors.push(`${L}${clamp(N + (i - lane) * step, 1, 99)}`); doors[lane] = this.gate;
-        return { z: 1, hold: FORK_HOLD, left: doors[0], right: doors[2], doors, correct: lane };
-      }
-    }
+    const L = this.gateLetter, N = this.gateNum;
+    if (this.stage < 4) { const f = genFork(this.stage as 0 | 1 | 2 | 3, L, N, Math.random); return { z: 1, hold: FORK_HOLD, left: f.left.label, right: f.right.label, correct: f.correct }; }
+    const d = genDoors(L, N, Math.random); return { z: 1, hold: FORK_HOLD, left: d.doors[0], right: d.doors[2], doors: d.doors, correct: d.correct };   // the doors: three gates across the lanes, one is yours
   }
   /** Reached the wall. Doors: the lane picks the gate. Otherwise the side lane turns (right or wrong), the middle lane hits the wall. */
   private reachFork(f: Fork) {
     f.resolved = true;
     if (f.doors) { if (this.lane === f.correct) this.forkPassed(); else this.wrongWay(false); return; }
     if (this.lane === 1) { this.wrongWay(false, 'PICK A SIDE'); return; }
-    const ok = this.lane === f.correct; this.turning = { dir: this.lane === 0 ? -1 : 1, t: 0, ok }; this.obstacles = []; this.fork = undefined;
+    const ok = this.lane === f.correct; this.turning = { dir: this.lane === 0 ? -1 : 1, t: 0, ok, wall: f }; this.obstacles = []; this.fork = undefined; this.runner.setFrame(0);
   }
   private forkPassed() {
     this.stage++; this.frame.setProgress(`fork ${Math.min(this.stage, 5)}/5`); this.frame.flash(PAL.neon, 40);
     if (this.stage >= 5) { this.boarding(); return; }
-    this.fork = undefined; this.nextForkAt = this.elapsed + FORK_GAP / Math.max(0.8, this.frame.speed);
+    this.fork = undefined; this.nextForkAt = this.elapsed + FORK_GAP;
   }
   private wrongWay(afterTurn: boolean, label = 'WRONG WAY') {
     this.wrong++; this.penalty += 3; this.uturn = 1.3; this.frame.shake(160, 0.006); this.frame.flash(PAL.red, 120); this.say(label, PAL.red);
@@ -164,11 +157,13 @@ export class AirportScene extends Phaser.Scene {
     const dt = Math.min(0.05, dtMs / 1000); this.elapsed += dt;
     const left = BOARDING_SEC - this.elapsed - this.penalty; this.meter.set(left / BOARDING_SEC, left < 8 ? PAL.red : PAL.sun2); this.frame.setTimer(`${Math.max(0, left).toFixed(1)}s`);
     if (left <= 0) { this.ended = true; this.say('BOARDING CLOSED', PAL.red); this.time.delayedCall(700, () => this.frame.finish(this.partialScore(), true)); return; }
-    // the 90° turn: the corridor sweeps sideways, the runner leans, then the new corridor is straight ahead
+    // the 90° turn (0.9 s): the runner holds still; first half = the side opening wipes across the screen, second half = the new corridor fades in
     if (this.turning) {
       const tr = this.turning; tr.t += dt / TURN_SEC; const p = clamp(tr.t, 0, 1); const sw = Math.sin(p * Math.PI);
-      this.ox = -tr.dir * sw * 150; this.runner.setAngle(-tr.dir * 14 * sw); this.dist += this.speed * 0.6 * dt;
-      if (p >= 1) { this.ox = 0; this.runner.setAngle(0); this.turning = undefined; this.lane = 1; if (tr.ok) this.forkPassed(); else this.deadEnd = 0.62; }
+      this.runner.setAngle(-tr.dir * 14 * sw); this.ox = p < 0.5 ? -tr.dir * (p / 0.5) * 40 : 0;
+      if (p >= 0.5 && !tr.swapped) { tr.swapped = true; tr.wall = undefined; this.lane = 1; this.laneX = this.laneScreenX(1, 0); this.runner.setPosition(this.laneX, FLOOR - 6); this.nextObAt = this.elapsed + CLEAR_AFTER_TURN + TURN_SEC / 2; }
+      if (p >= 0.5) this.dist += this.speed * 0.6 * dt;
+      if (p >= 1) { this.ox = 0; this.runner.setAngle(0); this.turning = undefined; if (tr.ok) this.forkPassed(); else this.deadEnd = 0.62; }
       this.draw(); return;
     }
     if (this.uturn > 0) { this.uturn -= dt; this.runner.setFlipX(true).setAlpha(0.7); this.draw(); return; } else { this.runner.setFlipX(false).setAlpha(1); }
@@ -183,11 +178,11 @@ export class AirportScene extends Phaser.Scene {
     if (!this.fork && this.elapsed >= this.nextObAt) {
       const kinds: ObKind[] = ['traveller', 'traveller', 'bag', 'bag', 'rope', 'cart', 'walkway']; const kind = Phaser.Utils.Array.GetRandom(kinds); const lane = Phaser.Math.Between(0, 2);
       if (!this.obstacles.some(o => o.z > 0.8)) this.obstacles.push({ kind, lane, z: 1 });
-      this.nextObAt = this.elapsed + clamp(1.15 / (ramp * this.frame.speed), 0.55, 1.4);
+      this.nextObAt = this.elapsed + clamp(1.3 / (ramp * this.frame.speed), 0.7, 1.6);
     }
     // advance
     for (const o of this.obstacles) o.z -= v * dt;
-    if (this.fork) { if (this.fork.hold > 0) this.fork.hold -= dt; else this.fork.z -= v * dt; }
+    if (this.fork) { if (this.fork.hold > 0) this.fork.hold -= dt; else this.fork.z -= FORK_APPROACH * dt; }   // fixed approach: 2 s hold + 3.3 s of travel = 5+ s of reading
     const airborne = this.jumpT > 0.2 && this.jumpT < 0.8;
     for (const o of this.obstacles) {
       if (o.z < 0.07 && o.z > -0.02 && o.lane === this.lane && !o.hit && !o.used) {
@@ -222,7 +217,7 @@ export class AirportScene extends Phaser.Scene {
     for (let i = 0; i < 5; i++) { const z = ((i / 5) + (this.dist * 0.7) % (1 / 5)) % 1; const y = this.screenY(z) - 90 * this.scaleAt(z); const s = this.scaleAt(z); const xl = vx - this.halfW(z) - 4; g.fillStyle(PAL.sky1, 0.5).fillRect(xl - 26 * s, y, 24 * s, 34 * s); g.fillStyle(PAL.sky1, 0.5).fillRect(vx + this.halfW(z) + 6, y, 24 * s, 34 * s); }
     // the junction wall (fork) or the dead-end wall
     this.signL.setVisible(false); this.signR.setVisible(false); this.signM.setVisible(false);
-    const f = this.fork;
+    const f = this.fork ?? this.turning?.wall;
     if (f && f.z > -0.02) this.drawWall(f);
     else if (this.deadEnd >= 0) this.drawDeadEnd(clamp(this.deadEnd, 0, 1));
     // obstacles far → near (nothing beyond a wall)
@@ -238,6 +233,19 @@ export class AirportScene extends Phaser.Scene {
       }
     }
     g.fillStyle(PAL.ink, 0.35).fillEllipse(this.laneX + this.ox, FLOOR - 4, 40, 8);
+    if (this.turning) this.drawTurn(this.turning);
+  }
+  /** The turn transition: the chosen side opening (a dark slot at the wall's edge) grows until it covers the screen, then the new corridor fades in. */
+  private drawTurn(tr: { dir: number; t: number; wall?: Fork }) {
+    const g = this.g; const p = clamp(tr.t, 0, 1);
+    if (p < 0.5) {
+      const q = Math.pow(p / 0.5, 1.6); const vx = VX + this.ox; const z = clamp(tr.wall?.z ?? 0, 0, 1); const s = Math.max(0.16, this.scaleAt(z)); const yF = this.screenY(z), yC = this.ceilY(z); const hw = this.halfW(z) + 2;
+      const slotL = tr.dir > 0 ? vx + hw - 6 * s : vx - hw, slotR = slotL + 6 * s, slotT = yC + (yF - yC) * 0.3;   // the opening at the wall's edge
+      const l = slotL + (0 - slotL) * q, r = slotR + (W - slotR) * q, t = slotT + (26 - slotT) * q, b = yF + (H - yF) * q;
+      g.fillStyle(PAL.night0).fillRect(l, t, r - l, b - t);
+      g.fillStyle(PAL.sky3, 0.35 * q).fillRect(l + (r - l) * 0.45, t + (b - t) * 0.3, (r - l) * 0.1, (b - t) * 0.02);   // a hint of the far lights down the new corridor
+      this.signL.setVisible(false); this.signR.setVisible(false); this.signM.setVisible(false);
+    } else { g.fillStyle(PAL.night0, 1 - (p - 0.5) / 0.5).fillRect(0, 26, W, H - 26); }
   }
   /** The T-junction: an end wall across the corridor at the fork's depth with two sign boards (or three gate doors). */
   private drawWall(f: Fork) {
@@ -245,25 +253,32 @@ export class AirportScene extends Phaser.Scene {
     g.fillStyle(PAL.night1).fillRect(vx - hw, yC, hw * 2, yF - yC); g.fillStyle(PAL.night3).fillRect(vx - hw, yF - 3 * s, hw * 2, 3 * s);   // the wall and its skirting
     // side openings: darker slots at the wall's edges hint that the corridor continues left and right
     g.fillStyle(PAL.night0).fillRect(vx - hw, yC + (yF - yC) * 0.3, 6 * s, (yF - yC) * 0.7); g.fillStyle(PAL.night0).fillRect(vx + hw - 6 * s, yC + (yF - yC) * 0.3, 6 * s, (yF - yC) * 0.7);
-    const sc = clamp(s * 1.05, 0.85, 1.05);   // signs stay legible even far away
+    const sc = clamp(0.75 + 0.25 * (1 - z), 0.75, 1);   // sign text: 12 px when the wall appears, 16 px at the wall
     if (f.doors) {
       f.doors.forEach((d, lane) => { const x = this.laneScreenX(lane, z); const w = 44 * s, h = 70 * s; g.fillStyle(PAL.ink).fillRect(x - w / 2 - 2, yF - h - 2, w + 4, h + 2); g.fillStyle(lane === f.correct ? PAL.sea1 : PAL.dusk0).fillRect(x - w / 2, yF - h, w, h); g.fillStyle(PAL.sun2).fillRect(x - w / 2, yF - h - 12 * s, w, 10 * s); void d; });
-      this.signL.setText(f.doors[0]).setPosition(this.laneScreenX(0, z), yF - 76 * s).setScale(sc).setColor('#0a0a12').setVisible(true); this.signM.setText(f.doors[1]).setPosition(this.laneScreenX(1, z), yF - 76 * s).setScale(sc).setColor('#0a0a12').setVisible(true); this.signR.setText(f.doors[2]).setPosition(this.laneScreenX(2, z), yF - 76 * s).setScale(sc).setColor('#0a0a12').setVisible(true);
-    } else {
-      const bw = Math.max(84, 92 * s), bh = Math.max(22, 26 * s); const by = Math.min(yC + (yF - yC) * 0.32 - bh / 2, yF - bh - 12); const gap = Math.max(hw * 0.5, bw / 2 + 4); const xl = vx - gap - bw / 2, xr = vx + gap - bw / 2;   // boards keep a readable size and never overlap
-      for (const [bx, arrowLeft] of [[xl, true], [xr, false]] as [number, boolean][]) {
-        g.fillStyle(PAL.ink).fillRect(bx - 2, by - 2, bw + 4, bh + 4); g.fillStyle(PAL.night0).fillRect(bx, by, bw, bh);
-        const ax = arrowLeft ? bx + 5 : bx + bw - 5; const dir = arrowLeft ? 1 : -1; g.fillStyle(PAL.sun2).fillTriangle(ax, by + bh / 2, ax + dir * 8, by + 4, ax + dir * 8, by + bh - 4);
+      if (z <= 0.4) {   // near: a label over each door
+        this.signL.setText(f.doors[0]).setPosition(this.laneScreenX(0, z), yF - 76 * s).setScale(sc).setColor('#0a0a12').setVisible(true); this.signM.setText(f.doors[1]).setPosition(this.laneScreenX(1, z), yF - 76 * s).setScale(sc).setColor('#0a0a12').setVisible(true); this.signR.setText(f.doors[2]).setPosition(this.laneScreenX(2, z), yF - 76 * s).setScale(sc).setColor('#0a0a12').setVisible(true);
+      } else {          // far: one board listing the three doors, so the text never overlaps
+        this.signM.setText(f.doors.join('   ')).setScale(sc).setColor('#f7cf6b'); const bw = this.signM.width * sc + 28, bh = 34; const bx = vx - bw / 2, by = Math.max(30, yC + (yF - yC) * 0.32 - bh / 2);
+        g.fillStyle(PAL.ink).fillRect(bx - 2, by - 2, bw + 4, bh + 4); g.fillStyle(PAL.night0).fillRect(bx, by, bw, bh); this.signM.setPosition(vx, by + bh / 2).setVisible(true);
       }
-      this.signL.setText(f.left).setPosition(xl + bw / 2 + 5, by + bh / 2).setScale(sc).setColor('#f7cf6b').setVisible(true); this.signR.setText(f.right).setPosition(xr + bw / 2 - 5, by + bh / 2).setScale(sc).setColor('#f7cf6b').setVisible(true);
+    } else {
+      this.signL.setText(f.left).setScale(sc); this.signR.setText(f.right).setScale(sc);
+      const bwL = this.signL.width * sc + 30, bwR = this.signR.width * sc + 30, bh = 34; const by = Math.max(30, Math.min(yC + (yF - yC) * 0.32 - bh / 2, yF - bh - 12));
+      const gap = Math.max(hw * 0.5, Math.max(bwL, bwR) / 2 + 4); const xl = vx - gap - bwL / 2, xr = vx + gap - bwR / 2;   // boards keep their readable size and never overlap (they may overhang the wall when it is far)
+      for (const [bx, bw, arrowLeft] of [[xl, bwL, true], [xr, bwR, false]] as [number, number, boolean][]) {
+        g.fillStyle(PAL.ink).fillRect(bx - 2, by - 2, bw + 4, bh + 4); g.fillStyle(PAL.night0).fillRect(bx, by, bw, bh);
+        const ax = arrowLeft ? bx + 6 : bx + bw - 6; const dir = arrowLeft ? 1 : -1; g.fillStyle(PAL.sun2).fillTriangle(ax, by + bh / 2, ax + dir * 10, by + 6, ax + dir * 10, by + bh - 6);
+      }
+      this.signL.setPosition(xl + bwL / 2 + 6, by + bh / 2).setColor('#f7cf6b').setVisible(true); this.signR.setPosition(xr + bwR / 2 - 6, by + bh / 2).setColor('#f7cf6b').setVisible(true);
     }
   }
   /** After a wrong turn: a blank end wall rushing up with a NO EXIT board. */
   private drawDeadEnd(z: number) {
     const g = this.g; const vx = VX + this.ox; const s = Math.max(0.16, this.scaleAt(z)); const yF = this.screenY(z), yC = this.ceilY(z); const hw = this.halfW(z) + 2;
     g.fillStyle(PAL.night1).fillRect(vx - hw, yC, hw * 2, yF - yC); g.fillStyle(PAL.red, 0.9).fillRect(vx - hw, yF - 8 * s, hw * 2, 4 * s);
-    const bw = Math.max(70, 100 * s), bh = Math.max(18, 26 * s), bx = vx - bw / 2, by = yC + (yF - yC) * 0.35; g.fillStyle(PAL.ink).fillRect(bx - 2, by - 2, bw + 4, bh + 4); g.fillStyle(PAL.red).fillRect(bx, by, bw, bh);
-    this.signM.setText('NO EXIT').setPosition(vx, by + bh / 2).setScale(clamp(s * 1.05, 0.6, 1.05)).setColor('#f4f1ea').setVisible(true);
+    const bw = Math.max(110, 120 * s), bh = 34, bx = vx - bw / 2, by = yC + (yF - yC) * 0.35; g.fillStyle(PAL.ink).fillRect(bx - 2, by - 2, bw + 4, bh + 4); g.fillStyle(PAL.red).fillRect(bx, by, bw, bh);
+    this.signM.setText('NO EXIT').setPosition(vx, by + bh / 2).setScale(clamp(0.75 + 0.25 * (1 - z), 0.75, 1)).setColor('#f4f1ea').setVisible(true);
   }
   private buildRunner() {
     const map: Record<string, number> = { h: PAL.earth3, k: PAL.ink, o: PAL.sun0, b: PAL.night3, s: PAL.sea1, w: PAL.white };

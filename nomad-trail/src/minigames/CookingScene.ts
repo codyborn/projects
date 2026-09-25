@@ -127,18 +127,20 @@ export class CookingScene extends Phaser.Scene {
     return { body: PAL.earth3, edge: PAL.earth2, inner: PAL.sun3, name: this.dish.ingredients[0] ?? '' };
   }
 
-  /** A chunky pixel chef's knife, tip at (x, y), blade pointing down, handle above. lean tilts the blade for a slicing grip. */
-  private drawKnife(g: Phaser.GameObjects.Graphics, x: number, y: number, lean = 0) {
-    const bladeH = 46, bladeW = 14; const bx = x - bladeW / 2 + lean;
-    g.fillStyle(PAL.ink).fillRect(bx - 2, y - bladeH - 2, bladeW + 4, bladeH + 2);                      // outline
-    g.fillStyle(PAL.gray2).fillRect(bx, y - bladeH, bladeW, bladeH - 6);                                // blade body
-    g.fillStyle(PAL.gray2).fillTriangle(bx, y - 6, bx + bladeW, y - 6, bx, y);                          // tip taper
-    g.fillStyle(PAL.white).fillRect(bx, y - bladeH, 4, bladeH - 8);                                     // cutting edge highlight
-    g.fillStyle(PAL.gray1).fillRect(bx + bladeW - 4, y - bladeH, 4, bladeH - 10);                       // spine shade
-    g.fillStyle(PAL.ink).fillRect(bx - 4, y - bladeH - 10, bladeW + 8, 10);                             // bolster
-    g.fillStyle(PAL.earth0).fillRect(bx - 2, y - bladeH - 44, bladeW + 4, 36);                          // handle
-    g.fillStyle(PAL.earth1).fillRect(bx, y - bladeH - 42, 4, 32);                                       // handle highlight
-    g.fillStyle(PAL.gray2).fillRect(bx + 4, y - bladeH - 36, 4, 4).fillRect(bx + 4, y - bladeH - 22, 4, 4);   // rivets
+  /** A chunky pixel chef's knife with the tip at (x, y). Down (default): blade points down, handle above (chopping).
+   *  up = true: blade points UP along the cut line and the handle sits below, under the finger (slicing). */
+  private drawKnife(g: Phaser.GameObjects.Graphics, x: number, y: number, up = false) {
+    const bladeH = 46, bladeW = 14; const bx = x - bladeW / 2;
+    const R = (rx: number, off: number, rw: number, rh: number) => g.fillRect(rx, up ? y - off - rh : y + off, rw, rh);   // off = top offset from the tip in the down orientation (negative = toward the handle)
+    g.fillStyle(PAL.ink); R(bx - 2, -bladeH - 2, bladeW + 4, bladeH + 2);                                  // outline
+    g.fillStyle(PAL.gray2); R(bx, -bladeH, bladeW, bladeH - 6);                                             // blade body
+    if (up) g.fillTriangle(bx, y + 6, bx + bladeW, y + 6, bx, y); else g.fillTriangle(bx, y - 6, bx + bladeW, y - 6, bx, y);   // tip taper
+    g.fillStyle(PAL.white); R(bx, -bladeH, 4, bladeH - 8);                                                  // cutting edge highlight
+    g.fillStyle(PAL.gray1); R(bx + bladeW - 4, -bladeH, 4, bladeH - 10);                                    // spine shade
+    g.fillStyle(PAL.ink); R(bx - 4, -bladeH - 10, bladeW + 8, 10);                                          // bolster
+    g.fillStyle(PAL.earth0); R(bx - 2, -bladeH - 44, bladeW + 4, 36);                                       // handle
+    g.fillStyle(PAL.earth1); R(bx, -bladeH - 42, 4, 32);                                                    // handle highlight
+    g.fillStyle(PAL.gray2); R(bx + 4, -bladeH - 36, 4, 4); R(bx + 4, -bladeH - 22, 4, 4);                   // rivets
   }
 
   // --- CHOP: tapping. Each tap is one cut at the next dotted line; the piece separates with a hop. Score = cuts done × rhythm evenness.
@@ -191,7 +193,7 @@ export class CookingScene extends Phaser.Scene {
         if (aligned) this.work.fillStyle(PAL.neon, 0.18).fillRect(lx - 8, y0 - 6, 16, sh + 12);
         for (let k = 0; k < 3; k++) this.work.fillStyle(k < strokes ? PAL.neon : PAL.gray0).fillRect(lx - 14 + k * 10, y1 + 12, 8, 4);                          // stroke pips
       }
-      knife.clear(); this.drawKnife(knife, fx, fy + 44, down ? 0 : 0);
+      knife.clear(); this.drawKnife(knife, fx, fy - 74, true);   // handle under the finger, blade pointing up along the line
       this.meter.set((slices + Math.min(1, strokes / 3)) / need);
     };
     const finishStroke = () => {

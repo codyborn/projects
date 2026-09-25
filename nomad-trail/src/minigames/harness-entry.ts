@@ -22,7 +22,7 @@ if (q.get('auto') === '1') {
     ...(['bands', 'boulder', 'ferrata', 'trailrun', 'hike', 'swim', 'yoga', 'surf', 'ski', 'bogus'] as const).map(a => ({ key: MINIGAME_KEYS.workout, energy: a === 'hike' ? 30 : 100, payload: { activity: a, city: 'Test', day: 7 } })),
     { key: MINIGAME_KEYS.workout, energy: 100, payload: { activity: 'trailrun', city: 'newyork', day: 5 } }, { key: MINIGAME_KEYS.workout, energy: 100, extraLives: 1, payload: { activity: 'bands', city: 'newyork', plan: ['cityrun'] } }, { key: MINIGAME_KEYS.workout, energy: 40, payload: { activity: 'bands', city: 'tokyo', plan: ['cityrun'] } },
     ...[0.95, 0.7, 0.4, 0.1].map(debugAccuracy => ({ key: MINIGAME_KEYS.cooking, energy: 100, payload: { dish: (dishesJson as any[]).find(d => d.id === 'ramen'), cityName: 'tokyo', debugAccuracy } })),
-    ...['pushup', 'plank', 'jumprope', 'curls', 'burpee', 'squat', 'kettlebell', 'sprint', 'stretch', 'boulderbeta', 'dyno', 'riverstones', 'swimbreath', 'balance', 'pose', 'runner', 'pace', 'cityrun'].map(id => ({ key: MINIGAME_KEYS.workout, energy: 100, payload: { activity: 'bands', city: 'Solo', plan: [id] } })),
+    ...['pushup', 'plank', 'jumprope', 'curls', 'burpee', 'squat', 'sprint', 'stretch', 'boulderbeta', 'dyno', 'riverstones', 'swimbreath', 'balance', 'pose', 'runner', 'pace', 'cityrun'].map(id => ({ key: MINIGAME_KEYS.workout, energy: 100, payload: { activity: 'bands', city: 'Solo', plan: [id] } })),
     ...(['bands', 'boulder', 'ferrata', 'trailrun', 'hike', 'swim', 'yoga'] as const).map(a => ({ key: MINIGAME_KEYS.workout, energy: 100, extraLives: 1, payload: { activity: a, city: 'Boots', day: 3 } })),
     { key: MINIGAME_KEYS.carryon, energy: 100, payload: { game: 'tetris', city: 'lisbon', cityName: 'Lisbon', seed: 11 } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { game: 'heli', city: 'bangkok', cityName: 'Bangkok', hazard: 'tuktuk', seed: 12 } }, { key: MINIGAME_KEYS.carryon, energy: 60, payload: { game: 'heli', city: 'dakhla', cityName: 'Dakhla', hazard: 'gust', seed: 13 } },
     ...[1, 2, 3].map(seed => ({ key: MINIGAME_KEYS.carryon, energy: 100, payload: { game: 'carryon', city: 'innsbruck', cityName: 'Innsbruck', hazard: (['rock', 'otter', 'snow'] as const)[seed - 1], seed, climate: 'alpine' } })),
@@ -107,6 +107,32 @@ if (q.get('auto') === '1') {
         for (let k = 0; k < 3; k++) { for (let i = 1; i <= 6; i++) { if (scene.cook !== c) break; c.move(x, h.y0 + (h.y1 - h.y0) * (k % 2 === 0 ? i / 6 : 1 - i / 6)); await sleep(16); } } if (scene.cook === c) c.up(); await sleep(200); }
       busy = false; };
     setInterval(drive, 50); document.title = 'KNIFE_UP';
+  });
+} else if (q.get('micro') || q.get('session')) {
+  // micro=burpee|runner&mode=good|random: one forced game, scripted through the micro's hint()/press()/release() hooks (good) or random pointer input.
+  // session=bands|hike: a whole seeded session with random input; every card is passed with frame.ready(). Reports games played, titles seen, onDone count.
+  MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
+  game.events.once('ready', () => {
+    const micro = q.get('micro'); const mode = q.get('mode') || (q.get('session') ? 'random' : 'good'); const activity = q.get('session') || (micro === 'runner' ? 'trailrun' : 'bands'); const t0 = performance.now(); let calls = 0; const titles = new Set<string>(); const games: string[] = [];
+    const launch: MinigameLaunch = { energy: 100, difficulty: 0.5, extraLives: Number(q.get('lives') || 0), payload: { activity, city: q.get('city') || 'bozeman', day: Number(q.get('day') || 3), plan: micro ? [micro] : undefined }, onDone: (res) => { calls++; out.textContent = JSON.stringify({ micro, mode, activity, res, games, titles: [...titles], scores: (scene as any).scores, secs: (performance.now() - t0) / 1000, calls, errors }); document.title = 'MICRO_DONE'; } };
+    game.scene.start(MINIGAME_KEYS.workout, launch); const scene: any = game.scene.getScene(MINIGAME_KEYS.workout);
+    const mk = (x: number, y: number, down: boolean) => { const p = game.input.activePointer; p.x = x; p.y = y; (p as any).worldX = x; (p as any).worldY = y; (p as any).isDown = down; return p; };
+    let holdUntil = -1, holding = false, lastId = '';
+    const drive = () => {
+      if (!scene.scene.isActive()) return; if (!scene.frame?.active) { if (Math.random() < 0.5) scene.frame?.ready?.(); return; }
+      const cur = scene.current; if (!cur) return; if (cur.id !== lastId) { lastId = cur.id; games.push(cur.id); } titles.add(scene.frame.title);
+      if (mode === 'random') { const x = 20 + Math.random() * 320, y = 100 + Math.random() * 400; if (Math.random() < 0.5) { scene.input.emit('pointerdown', mk(x, y, true)); setTimeout(() => scene.input.emit('pointerup', mk(x, y - (Math.random() < 0.3 ? 60 : 0), false)), 40 + Math.random() * 400); } return; }
+      if (cur.id === 'burpee') { const h = cur.hint(); if (holding) { if (cur.t >= holdUntil) { holding = false; cur.release(180, 300); } return; } if (h.done) return; const mv = h.move; const x = 180, y = 300;
+        if (mv === 'tap') { cur.press(x, y); cur.release(x, y); } else if (mv === 'up') { cur.press(x, y); cur.release(x, y - 60); } else if (mv === 'down') { cur.press(x, y); cur.release(x, y + 60); } else { cur.press(x, y); holding = true; holdUntil = cur.t + 0.75; }
+      }
+      if (cur.id === 'runner') { const h = cur.hint(); const o = h.next; if (!o) { if (h.ducking) cur.release(); return; }
+        const dist = o.x - 92;   // px until the obstacle reaches the runner's front
+        if (h.ducking) { if (o.high) return; if (dist < 70 && dist > 20) cur.release(); return; }   // stay ducked under branches; letting go jumps, so time it for the next rock
+        if (o.high) { if (dist < 140 && h.onGround) cur.press(); }                                    // hold early: the duck starts 150 ms after the press
+        else if (dist < 70 && dist > 20 && h.onGround) { cur.press(); cur.release(); }               // quick tap = jump the rock
+      }
+    };
+    if (q.get('fast') === '1') { game.loop.stop(); let t = performance.now(); setInterval(() => { for (let k = 0; k < 6; k++) { t += 16.67; drive(); game.loop.step(t); } }, 0); } else setInterval(drive, 16);
   });
 } else if (q.get('knead') === '1') {
   // knead check: a single knead step, real time; the driver taps and screenshots mid-step; title flips when the step completes

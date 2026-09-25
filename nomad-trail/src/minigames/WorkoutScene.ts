@@ -4,27 +4,28 @@ import { MINIGAME_KEYS, type ActivityId, type MinigameLaunch } from '../core/typ
 import { MinigameFrame, Meter, W, H, clamp, normalizeLaunch, panel, txt } from './_shared';
 import { genLedges, FERRATA, type Ledge } from './ferrataLevel';
 import { Athlete, type Micro, type MicroCtx } from './workout/micro';
-import { MICRO_REGISTRY, pickOne, seededRng, hashStr, ROUNDS, ROUND_SPEEDS } from './workout';
+import { MICRO_REGISTRY, META, pickSession, seededRng, hashStr, sessionLen } from './workout';
 
 export interface WorkoutPayload { activity: ActivityId; city: string; day?: number; seed?: number; /** dev/test: force these micro-game ids */ plan?: string[]; }
 const TITLES: Partial<Record<ActivityId, string>> = { bands: 'Hotel room workout', boulder: 'Bouldering', ferrata: 'Via ferrata', trailrun: 'Trail run', hike: 'Acclimatization hike', swim: 'Open water swim', yoga: 'Yoga', surf: 'Surf', ski: 'Ski day' };
 
 /**
- * Workout: ONE WarioWare-style fitness micro-game that matches the activity (hotel room, bouldering, trail run...),
- * picked per city+day, played for 3 escalating rounds (x1.0 → x1.3 → x1.6). Lives: 1 + extraLives (hiking boots);
- * a failed round costs a life and the session continues to the next round. Ferrata is the Zeke's Peak climb, unchanged.
+ * Workout: WarioWare-style fitness micro-games that match the activity. Hotel room (bands) and hike chain THREE different games from
+ * their pools, each played once at normal speed with a READY card between them; every other activity is a single game. Picked per
+ * city+day (seeded). The HUD title is the micro-game's own name (Push-ups, Plank, City Run…); the activity is the small subtitle.
+ * Session score = mean of the games. Lives: 1 + extraLives (hiking boots); a game scored under 50% costs a life. Ferrata is the climb.
  */
 export class WorkoutScene extends Phaser.Scene {
   private frame!: MinigameFrame; private launch!: MinigameLaunch; private activity: ActivityId = 'bands'; private city = '';
   private g!: Phaser.GameObjects.Graphics; private meter!: Meter; private ticks: Phaser.Time.TimerEvent[] = [];
   private lives = 0; private heartsG?: Phaser.GameObjects.Graphics;
   // session
-  private athlete!: Athlete; private current?: Micro; private scores: number[] = []; private microId = ''; private round = 0; private rng: () => number = Math.random; private countdown?: Phaser.GameObjects.Graphics; private cdTimer?: Phaser.Time.TimerEvent;
+  private athlete!: Athlete; private current?: Micro; private scores: number[] = []; private microIds: string[] = []; private idx = 0; private rng: () => number = Math.random; private countdown?: Phaser.GameObjects.Graphics; private cdTimer?: Phaser.Time.TimerEvent;
 
   constructor() { super(MINIGAME_KEYS.workout); }
   init(data: any) {
     this.launch = normalizeLaunch(data); const p = (this.launch.payload || {}) as Partial<WorkoutPayload>;
-    this.activity = (p.activity && TITLES[p.activity]) ? p.activity : 'bands'; this.city = p.city || ''; this.ticks = []; this.scores = []; this.round = 0; this.current = undefined;
+    this.activity = (p.activity && TITLES[p.activity]) ? p.activity : 'bands'; this.city = p.city || ''; this.ticks = []; this.scores = []; this.idx = 0; this.microIds = []; this.current = undefined;
     const seed = typeof p.seed === 'number' ? p.seed : typeof p.day === 'number' ? hashStr(`${p.city}|${p.day}`) : undefined;
     this.rng = seed !== undefined ? seededRng(seed) : Math.random;
   }
@@ -34,7 +35,7 @@ export class WorkoutScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(PAL.night1);
     this.g = this.add.graphics().setDepth(3);
     this.meter = new Meter(this, 40, 600, W - 80, 8);
-    if (this.city) txt(this, W / 2, 40, this.city.toUpperCase(), 9, PAL.gray1).setDepth(7);
+    txt(this, W / 2, 40, [TITLES[this.activity] || 'Workout', this.city].filter(Boolean).join('  ·  ').toUpperCase(), 9, PAL.gray1).setDepth(7);   // the activity is the subtitle; the HUD title is the game's own name
     this.frame.hud();
     this.lives = 1 + (this.launch.extraLives ?? 0); this.heartsG = this.add.graphics().setDepth(801); this.drawHearts();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.ticks.forEach(t => t.remove()); this.current?.destroy(); this.cdTimer?.remove(); });
@@ -42,47 +43,38 @@ export class WorkoutScene extends Phaser.Scene {
       this.frame.capSec = 1e7;   // no timeout: the climb ends at the flag (or the give-up hatch)
       this.heartsG.setVisible(false);
       const scoreNow: Record<string, () => number> = {}; (this as any)._scoreNow = scoreNow; this.frame.scoreNow = () => (scoreNow.ferrata ? scoreNow.ferrata() : 50);
-      this.frame.intro('The marble bounces on its own. HOLD the left or right side of the screen (or TILT the phone) to steer it onto the next ledge. Green ledges save your progress; a fall just drops you back to the last one. Reach the flag. Faster is better.', () => this.ferrata(), { height: 300 });
+      this.frame.intro('You bounce on your own. HOLD the left or right side of the screen (or TILT the phone) to steer it onto the next ledge. Green ledges save your progress; a fall just drops you back to the last one. Reach the flag. Faster is better.', () => this.ferrata(), { height: 300 });
       return;
     }
-    // ---- one micro-game, three escalating rounds
-    this.frame.capSec = 30; const forced = ((this.launch.payload || {}) as Partial<WorkoutPayload>).plan?.filter(id => MICRO_REGISTRY[id]);
-    this.microId = forced?.length ? forced[0] : pickOne(this.activity, this.rng, ((this.launch.payload || {}) as any).city); this.athlete = new Athlete(this, W / 2, 330); this.athlete.show(false);
+    // ---- the session: one game, or three different ones for the hotel room and the hike
+    const forced = ((this.launch.payload || {}) as Partial<WorkoutPayload>).plan?.filter(id => MICRO_REGISTRY[id]);
+    this.microIds = forced?.length ? forced : pickSession(this.activity, this.rng, ((this.launch.payload || {}) as any).city);
+    this.frame.capSec = this.microIds.length > 1 ? 36 : 30;
+    this.athlete = new Athlete(this, W / 2, 330); this.athlete.show(false);
     this.frame.scoreNow = () => this.sessionScore();
-    const meta = MICRO_REGISTRY[this.microId]();
-    this.frame.intro(`${meta.instr} ${ROUNDS} rounds. Each one faster.`, () => this.nextRound());
+    this.nextGame();
   }
   update(_t: number, dt: number) { this.frame.update(dt); }
 
-  private sessionScore() { const done = this.scores.length; if (!done) return 0; return (this.scores.reduce((a, b) => a + b, 0) / Math.max(done, ROUNDS)) * 100; }
+  private sessionScore() { const done = this.scores.length; if (!done) return 0; return (this.scores.reduce((a, b) => a + b, 0) / Math.max(done, this.microIds.length)) * 100; }
 
-  /** Card (the command word on round 1, ROUND 2 / FINAL after) → the micro-game at this round's speed with a countdown bar → result → next round. */
-  private nextRound() {
-    if (!this.frame.active) return;
-    if (this.round >= ROUNDS || this.lives <= 0) { this.finishSession(); return; }
-    const micro = MICRO_REGISTRY[this.microId](); const speed = ROUND_SPEEDS[Math.min(this.round, ROUND_SPEEDS.length - 1)]; const first = this.round === 0;
-    this.meter.set(this.round / ROUNDS, PAL.sun2); this.frame.setProgress(`ROUND ${this.round + 1}/${ROUNDS}  x${speed.toFixed(1)}`); this.frame.setTimer('');
-    // card
-    const card = this.add.container(0, 0).setDepth(700); const bg = this.add.rectangle(W / 2, H / 2, W, H, PAL.night0, 0.9); const p = panel(this, 20, H / 2 - 70, W - 40, 140, [PAL.sun0, PAL.sea1, PAL.dusk2][this.round % 3]);
-    const big = first ? micro.word : this.round === ROUNDS - 1 ? 'FINAL' : `ROUND ${this.round + 1}`;
-    const word = txt(this, W / 2, H / 2 - 18, big, first ? 40 : 30, PAL.white); const sub = txt(this, W / 2, H / 2 + 34, first ? micro.instr : `${micro.word}  x${speed.toFixed(1)} speed`, 10, PAL.night0); sub.setWordWrapWidth(W - 80).setAlign('center');
-    card.add([bg, p, word, sub]); word.setScale(0.4); this.tweens.add({ targets: word, scale: 1, duration: 220, ease: 'Back.Out' });
-    // the athlete demonstrates on the card; tap anywhere to start early. Card time does not count against the cap.
-    this.athlete.show(true).pose(0); this.athlete.sprite.setDepth(701).setPosition(W / 2, H / 2 - 120);   // the athlete demonstrates above the card
-    if (first) { const rb = this.add.rectangle(W / 2, H / 2 + 112, 160, 44, PAL.night0).setStrokeStyle(2, PAL.white).setInteractive({ useHandCursor: true }); const rt = txt(this, W / 2, H / 2 + 112, 'READY', 16, PAL.white); card.add([rb, rt]); rb.on('pointerdown', () => begin()); this.tweens.add({ targets: rb, scaleX: 1.04, scaleY: 1.08, yoyo: true, repeat: -1, duration: 600 }); }
-    else { const hint = txt(this, W / 2, H / 2 + 62, 'tap to skip', 8, PAL.night0).setAlpha(0.8); card.add(hint); }
-    this.frame.pauseCap();
-    let began = false; const begin = () => {
-      if (began) return; began = true; cardTimer.remove(); this.input.off('pointerdown', begin); this.input.keyboard?.off('keydown-SPACE', begin);
-      card.destroy(); this.frame.resumeCap(); if (!this.frame.active) return; this.current = micro; this.athlete.show(true).pose(0); this.athlete.sprite.setDepth(4).setPosition(W / 2, 330);
-      const flash = txt(this, W / 2, H / 2, 'GO', 30, PAL.neon).setDepth(750); this.tweens.add({ targets: flash, alpha: 0, scale: 1.8, duration: 260, onComplete: () => flash.destroy() });
-      startMicro();
+  /** READY card for the next game (its name as the title, the command word, the instruction, the athlete demonstrating) → the game
+   *  at normal speed with a countdown bar → result → the next card. Every card waits for READY (tap anywhere / SPACE also start). */
+  private nextGame() {
+    if (this.frame.finished) return;
+    if (this.idx >= this.microIds.length || this.lives <= 0) { this.finishSession(); return; }
+    const id = this.microIds[this.idx]; const micro = MICRO_REGISTRY[id](); const meta = META[id]; const first = this.idx === 0; const n = this.microIds.length;
+    this.frame.setTitle(meta.name); this.meter.set(this.idx / n, PAL.sun2); this.frame.setProgress(n > 1 ? `GAME ${this.idx + 1}/${n}` : ''); this.frame.setTimer('');
+    const extra = (s: Phaser.Scene, add: (o: Phaser.GameObjects.GameObject) => void) => {
+      const top = H / 2 - 170; const word = txt(s, W / 2, top + 150, micro.word, 40, PAL.white); add(word); word.setScale(0.4); s.tweens.add({ targets: word, scale: 1, duration: 220, ease: 'Back.Out' });
+      if (n > 1) add(txt(s, W / 2, top + 178, first ? `${n} games, each played once` : `game ${this.idx + 1} of ${n}`, 9, PAL.gray1));
+      this.athlete.show(true).pose(0); this.athlete.sprite.setDepth(905).setPosition(W / 2, top + 228); add({ destroy: () => { /* the athlete is reused */ } } as any);
     };
-    const cardTimer = first ? this.time.delayedCall(1e9, begin) : this.time.delayedCall(1000, begin);   // the first card waits for READY (or any tap); round cards auto-skip after 1 s
-    this.time.delayedCall(120, () => { this.input.once('pointerdown', begin); this.input.keyboard?.once('keydown-SPACE', begin); });   // ignore the tap that opened the card
-    const startMicro = () => {
-      const ctx: MicroCtx = { scene: this, frame: this.frame, speed, window: this.frame.window, hard: this.frame.hard, rng: this.rng, athlete: this.athlete };
-      const dur = micro.durationSec / speed * 1000; const t0 = this.time.now;   // later rounds are faster and shorter
+    const begin = () => {
+      if (this.frame.finished) return; this.current = micro; this.athlete.show(true).pose(0); this.athlete.sprite.setDepth(4).setPosition(W / 2, 330);
+      const flash = txt(this, W / 2, H / 2, 'GO', 30, PAL.neon).setDepth(750); this.tweens.add({ targets: flash, alpha: 0, scale: 1.8, duration: 260, onComplete: () => flash.destroy() });
+      const ctx: MicroCtx = { scene: this, frame: this.frame, speed: 1, window: this.frame.window, hard: this.frame.hard, rng: this.rng, athlete: this.athlete };
+      const dur = micro.durationSec * 1000; const t0 = this.time.now;
       this.countdown = this.add.graphics().setDepth(802);
       const tick = this.time.addEvent({ delay: 50, loop: true, callback: () => { const f = clamp(1 - (this.time.now - t0) / dur, 0, 1); this.countdown!.clear(); this.countdown!.fillStyle(PAL.ink).fillRect(0, 26, W, 6); this.countdown!.fillStyle(f > 0.3 ? PAL.neon : PAL.red).fillRect(0, 26, W * f, 6); } });
       this.ticks.push(tick);
@@ -92,9 +84,12 @@ export class WorkoutScene extends Phaser.Scene {
         this.scores.push(score01); const ok = score01 >= 0.5;
         if (ok) this.banner(score01 >= 0.9 ? 'PERFECT!' : 'NICE!', PAL.neon);
         else { this.banner('MISS', PAL.red); if (this.loseLife()) { this.time.delayedCall(700, () => this.finishSession(true)); return; } }
-        this.round++; this.time.delayedCall(650, () => this.nextRound());
+        this.idx++; this.time.delayedCall(650, () => this.nextGame());
       });
     };
+    const opts = { extra, height: 340, title: meta.name };
+    if (first) this.frame.intro(meta.instr, begin, opts); else this.frame.card(meta.instr, begin, opts);
+    this.time.delayedCall(150, () => { const go = () => this.frame.ready(); this.input.once('pointerdown', go); });   // tap anywhere also starts (after the tap that opened the card)
   }
   private banner(s: string, color: number) { const t = txt(this, W / 2, H / 2, s, 26, color).setDepth(750); this.tweens.add({ targets: t, scale: { from: 1.5, to: 1 }, duration: 200, ease: 'Back.Out' }); this.tweens.add({ targets: t, alpha: 0, duration: 250, delay: 380, onComplete: () => t.destroy() }); }
   private finishSession(outOfLives = false) { if (!this.frame.active) return; const s = this.sessionScore(); this.frame.finish(outOfLives ? Math.min(s, 45) : s, outOfLives); }
@@ -129,7 +124,7 @@ export class WorkoutScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { try { window.removeEventListener('deviceorientation', onTilt); } catch { /* noop */ } });
     // harness hooks: where the next ledge is, and a steer override
     let steerOverride = 0; (this as any).ferr = { hint: () => { const next = ledges[Math.min(ledges.length - 1, bestIdx + 1)]; return { targetX: next.x + next.w / 2, mx, my, vy, finished, falls, t, bestIdx }; }, steer: (d: number) => { steerOverride = d; } };
-    const cliff = this.add.graphics().setDepth(2); const marble = this.add.graphics().setDepth(6); const fx = this.add.graphics().setDepth(7); const hint = txt(this, W / 2, 560, 'hold LEFT / RIGHT (or tilt) to steer', 9, PAL.gray1).setDepth(8);
+    const cliff = this.add.graphics().setDepth(2); const marble = this.add.graphics().setDepth(5); const fx = this.add.graphics().setDepth(7); const fig = new Athlete(this, 0, 0); fig.sprite.setDepth(6).setOrigin(0.5, 1).setScale(0.5); let landedT = 0; const hint = txt(this, W / 2, 560, 'hold LEFT / RIGHT (or tilt) to steer', 9, PAL.gray1).setDepth(8);
     const heightFrac = () => clamp(-best / -flagY, 0, 1);
     const timeScore = (secs: number) => clamp(100 - Math.max(0, secs - 25) * (60 / 65), 40, 100);   // 100 at <= 25 s, 40 at 90 s
     ((this as any)._scoreNow as Record<string, () => number>).ferrata = () => clamp(heightFrac() * 60 - falls * 2, 0, 45);
@@ -146,7 +141,7 @@ export class WorkoutScene extends Phaser.Scene {
       vy += F.gravity * dt; prevY = my; my += vy * dt; mx += vx * dt;
       if (mx < F.wallPad + F.radius) { mx = F.wallPad + F.radius; vx = 0; } if (mx > W - F.wallPad - F.radius) { mx = W - F.wallPad - F.radius; vx = 0; }
       if (vy > 0) for (let i = 0; i < ledges.length; i++) { const l = ledges[i]; if (prevY + F.radius <= l.y + 1 && my + F.radius >= l.y && mx >= l.x - 3 && mx <= l.x + l.w + 3) {
-        my = l.y - F.radius; vy = -F.bounce; if (-l.y > best) best = -l.y; if (i > bestIdx) bestIdx = i;
+        my = l.y - F.radius; vy = -F.bounce; landedT = 0.14; if (-l.y > best) best = -l.y; if (i > bestIdx) bestIdx = i;
         if (l.kind === 'anchor' && i > anchorIdx) { anchorIdx = i; this.frame.flash(PAL.neon, 40); }
         if (i === ledges.length - 1) win(); break; } }
       // fell well below the last anchor: no life lost, back to the anchor and a few seconds gone
@@ -159,7 +154,10 @@ export class WorkoutScene extends Phaser.Scene {
         cliff.fillStyle(PAL.ink).fillRect(l.x - 1, sy - 1, l.w + 2, 8); cliff.fillStyle(col).fillRect(l.x, sy, l.w, 6);
         if (l.kind === 'anchor') { cliff.fillStyle(PAL.ink).fillCircle(l.x + l.w / 2, sy + 3, 3); cliff.fillStyle(i <= anchorIdx ? PAL.sun2 : PAL.gray2).fillCircle(l.x + l.w / 2, sy + 3, 2); } }
       { const sy = flagY - camY; if (sy > 0 && sy < H) { cliff.fillStyle(PAL.gray2).fillRect(top.x + top.w / 2 - 1, sy, 2, 40); cliff.fillStyle(PAL.red).fillTriangle(top.x + top.w / 2 + 1, sy, top.x + top.w / 2 + 22, sy + 7, top.x + top.w / 2 + 1, sy + 14); } }
-      marble.clear(); const sy = my - camY; marble.fillStyle(PAL.ink).fillCircle(mx, sy, F.radius + 1); marble.fillStyle(PAL.sun0).fillCircle(mx, sy, F.radius); marble.fillStyle(PAL.sun3).fillRect(mx - 3, sy - 5, 3, 2); marble.fillStyle(PAL.sun1).fillRect(mx - 4, sy + 2, 8, 2);
+      marble.clear(); const sy = my - camY; landedT = Math.max(0, landedT - dt);
+      // the climber: squats on landing (crouch frame, squashed), springs up with arms up while rising, tucks (crouch) while falling; leans with the steer
+      fig.pose(landedT > 0 ? 1 : vy < 0 ? 2 : 1); fig.sprite.setPosition(mx, sy + F.radius + 2).setScale(landedT > 0 ? 0.6 : 0.5, landedT > 0 ? 0.4 : 0.5).setAngle(clamp(vx / F.steer, -1, 1) * 8);
+      marble.fillStyle(PAL.ink, 0.3).fillEllipse(mx, sy + F.radius + 3, 22, 5);
       fx.clear(); if (gustT > 0) { fx.lineStyle(1, PAL.sky3, 0.8); for (let k = 0; k < 8; k++) { const yy = 40 + ((k * 73 + t * 400) % (H - 60)); const x0 = ((k * 131 + t * 500 * gustDir) % W + W) % W; fx.lineBetween(x0, yy, x0 + 26 * gustDir, yy); } }
       if (t > 3) hint.setAlpha(Math.max(0, 1 - (t - 3)));
       this.meter.set(heightFrac(), PAL.neon); this.frame.setProgress(`${Math.round(heightFrac() * 100)}%${falls ? `  ·  ${falls} fall${falls > 1 ? 's' : ''}` : ''}`); this.frame.setTimer(`${Math.floor(t)}s${gustT > 0 ? '  WIND' : ''}`);

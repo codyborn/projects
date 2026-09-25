@@ -42,24 +42,6 @@ export class JumpRope extends Micro {
   protected scoreNow() { return clamp(this.jumps / this.need - this.trips * 0.2, 0, 1); }
 }
 
-/** KETTLEBELL: a pendulum swings; swipe up exactly at the top of the front arc. Accelerates. */
-export class Kettlebell extends Micro {
-  readonly id = 'kettlebell'; readonly word = META.kettlebell.word; readonly instr = META.kettlebell.instr; readonly durationSec = META.kettlebell.durationSec;
-  private ph = 0; private swings = 0; private need = 5; private hits: number[] = []; private armed = true;
-  protected begin() {
-    const cx = W / 2, cy = 300; this.ctx.athlete.at(cx, cy + 40).pose(3).show(true); let omega = 2.4 * this.ctx.speed; const win = 0.35 * this.ctx.window + 0.12;
-    const swing = () => { if (!this.armed) return; this.armed = false; const d = Math.abs(((this.ph + Math.PI / 2) % (Math.PI * 2)) - Math.PI); // top of front arc when sin(ph) = 1
-      const err = Math.abs(Math.sin(this.ph) - 1); const ok = err < win * 0.6; this.hits.push(ok ? clamp(1 - err / (win * 0.6), 0.5, 1) : 0); void d;
-      if (ok) { this.pop(cx, 200, err < win * 0.2 ? 'PERFECT' : 'SWING'); this.ctx.athlete.pose(2); omega *= 1.1; } else { this.pop(cx, 200, 'OFF', PAL.red); this.ctx.frame.shake(100, 0.004); }
-      this.swings++; this.ctx.frame.setProgress(`${this.hits.filter(h => h > 0).length}/${this.need}`); this.after(300, () => { this.ctx.athlete.pose(3); this.armed = true; }); if (this.swings >= this.need) this.after(350, () => this.finish(this.scoreNow())); };
-    this.onSwipe(dir => { if (dir === 'up') swing(); }); this.key('keydown-SPACE', swing);
-    this.loop(dt => { this.ph += omega * dt; const a = Math.sin(this.ph) * 1.1; const bx = cx + Math.sin(a) * 110, by = cy + 10 - Math.cos(a) * 110 + 110;
-      this.g.clear(); this.backdrop(380, 400); this.g.lineStyle(3, PAL.gray2).lineBetween(cx, cy + 10, bx, by); this.g.fillStyle(PAL.ink).fillCircle(bx, by, 16); this.g.fillStyle(Math.sin(this.ph) > 1 - win * 0.6 ? PAL.neon : PAL.gray0).fillCircle(bx, by, 13);
-      this.g.lineStyle(2, PAL.sun2, 0.6).strokeCircle(cx + Math.sin(1.1) * 110, cy + 10 - Math.cos(1.1) * 110 + 110, 20); });
-  }
-  protected scoreNow() { return this.hits.length ? this.hits.reduce((a, b) => a + b, 0) / this.need : 0; }
-}
-
 /** DYNO: a climber swings on a hold; tap at the apex to catch the next one. 3 catches. */
 export class Dyno extends Micro {
   readonly id = 'dyno'; readonly word = META.dyno.word; readonly instr = META.dyno.instr; readonly durationSec = META.dyno.durationSec;

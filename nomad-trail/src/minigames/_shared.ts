@@ -55,7 +55,7 @@ export class Meter {
  * result card and a once-only onDone + scene.stop().
  */
 export class MinigameFrame {
-  private finished = false;
+  finished = false;
   private hudTitle?: Phaser.GameObjects.Text; private hudProg?: Phaser.GameObjects.Text; private hudTimer?: Phaser.GameObjects.Text;
   private introObjs: Phaser.GameObjects.GameObject[] = [];
   private wobbleT = 0;
@@ -98,7 +98,7 @@ export class MinigameFrame {
 
   /** Instruction card: title, instruction, optional extra content, and a READY button. Waits for the tap (SPACE/ENTER too); the play
    *  clock and cap start on READY. Games with their own full card pass { auto: true } to get the old 1 s READY flash instead. */
-  intro(instruction: string, cb: () => void, opts: { auto?: boolean; extra?: (s: Phaser.Scene, add: (o: Phaser.GameObjects.GameObject) => void) => void; height?: number } = {}) {
+  intro(instruction: string, cb: () => void, opts: { auto?: boolean; extra?: (s: Phaser.Scene, add: (o: Phaser.GameObjects.GameObject) => void) => void; height?: number; title?: string } = {}) {
     const s = this.scene; const add = (o: Phaser.GameObjects.GameObject) => { this.introObjs.push(o); return o; };
     const start = () => {
       if (this.active || this.finished) return;
@@ -116,18 +116,33 @@ export class MinigameFrame {
       s.tweens.add({ targets: t3, scale: { from: 1.3, to: 1 }, duration: 300, ease: 'Back.Out' });
       this.readyHandler = start; s.time.delayedCall(1000, start); return;
     }
+    this.buildCard(instruction, start, opts);
+  }
+  /** The READY card body shared by intro() and card(): panel, title, wrapped instruction, optional extra content, READY button (SPACE/ENTER too). */
+  private buildCard(instruction: string, start: () => void, opts: { extra?: (s: Phaser.Scene, add: (o: Phaser.GameObjects.GameObject) => void) => void; height?: number; title?: string }) {
+    const s = this.scene; const add = (o: Phaser.GameObjects.GameObject) => { this.introObjs.push(o); return o; };
+    if (!this.introObjs.some(o => (o as any).depth === 900)) add(s.add.rectangle(W / 2, H / 2, W, H, PAL.night0, 0.86).setDepth(900));
     const ph = opts.height ?? 340; const top = H / 2 - ph / 2;
     add(panel(s, 20, top, W - 40, ph, PAL.night2).setDepth(901));
-    add(txt(s, W / 2, top + 30, this.title.toUpperCase(), 18, PAL.sun2).setDepth(902));
+    add(txt(s, W / 2, top + 30, (opts.title ?? this.title).toUpperCase(), 18, PAL.sun2).setDepth(902));
     const t2 = add(txt(s, W / 2, top + 52, instruction, 11, PAL.gray2).setDepth(902)) as Phaser.GameObjects.Text; t2.setOrigin(0.5, 0).setWordWrapWidth(W - 72).setAlign('center');
     if (opts.extra) opts.extra(s, o => { (o as any).setDepth?.(902); add(o); });
     if (this.hard > 0.3) add(txt(s, W / 2, top + ph - 78, 'low energy: everything feels slower', 9, PAL.pink).setDepth(902));
     const btn = add(s.add.rectangle(W / 2, top + ph - 44, 180, 48, PAL.sun0).setDepth(902).setStrokeStyle(2, PAL.ink).setInteractive({ useHandCursor: true })) as Phaser.GameObjects.Rectangle;
     add(txt(s, W / 2, top + ph - 44, 'READY', 18, PAL.white).setDepth(903));
     s.tweens.add({ targets: btn, scaleX: 1.04, scaleY: 1.06, yoyo: true, repeat: -1, duration: 600 });
-    btn.on('pointerdown', start); const kb = s.input.keyboard; kb?.once('keydown-SPACE', start); kb?.once('keydown-ENTER', start);
-    this.readyHandler = start;
+    let fired = false; const go = () => { if (fired) return; fired = true; this.readyHandler = undefined; start(); };
+    btn.on('pointerdown', go); const kb = s.input.keyboard; kb?.once('keydown-SPACE', go); kb?.once('keydown-ENTER', go);
+    this.readyHandler = go;
   }
+  /** A READY card in the middle of play (between the games of a workout session): the play clock pauses and `active` drops to false
+   *  until READY, then the clock resumes and cb runs. Same look and harness hook (ready()) as intro(). */
+  card(instruction: string, cb: () => void, opts: { extra?: (s: Phaser.Scene, add: (o: Phaser.GameObjects.GameObject) => void) => void; height?: number; title?: string } = {}) {
+    if (this.finished) return; this.pauseCap(); this.active = false;
+    this.buildCard(instruction, () => { if (this.finished) return; this.introObjs.forEach(o => o.destroy()); this.introObjs = []; this.active = true; this.resumeCap(); cb(); }, opts);
+  }
+  /** Rename the game mid-run (a workout session shows each micro-game's own name). */
+  setTitle(t: string) { this.title = t; this.hudTitle?.setText(t.toUpperCase()); }
   /** Harness: press READY programmatically. */
   ready() { this.readyHandler?.(); }
   /** Games that draw their own card (Airport, Kite, CarryOn) call this when their READY/START is pressed: starts the play clock and cap. */
