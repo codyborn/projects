@@ -2,6 +2,7 @@
 import Phaser from 'phaser';
 import { PAL } from '../core/palette';
 import { makeCanvas, glyph } from './pixel';
+import { G7, G7W, G7H } from './font7';
 
 const G: Record<string, string[]> = {
 ' ':['00000','00000','00000','00000','00000','00000','00000'],
@@ -105,30 +106,60 @@ const G: Record<string, string[]> = {
 '\u2014':['00000','00000','00000','11111','00000','00000','00000'], // em dash
 '\u2019':['01000','01000','10000','00000','00000','00000','00000'], // ’
 '\u2026':['00000','00000','00000','00000','00000','00000','10101'], // …
+'\u2605':['00100','00100','11111','01110','01110','10001','00000'], // ★
+'\u00e9':['00010','00100','01110','10001','11111','10000','01110'], // é
 };
 export function __glyphs(): Record<string, string[]> { return G; }
-const EXTRA = '\u00b7\u2192\u2190\u2014\u2019\u2026';
+const EXTRA = '\u00b7\u2192\u2190\u2014\u2019\u2026\u2605\u00e9';
 export const FONT_CHARS = Array.from({ length: 95 }, (_, i) => String.fromCharCode(32 + i)).join('') + EXTRA;
 export const CW = 6, CH = 8; // cell size (5x7 glyph + 1px spacing)
 
-/** Build the 'pix' bitmap font (white glyphs, tint at use) plus 'pix2' (2x). Idempotent. */
+/** Cell sizes of the body font 'pix7' (7x11 glyph + 1px spacing). */
+export const CW7 = G7W + 1, CH7 = G7H + 1;
+
+/**
+ * Build the bitmap fonts (white glyphs, tint at use). Idempotent.
+ *  - 'pix'  : 5x7 in a 6x8 cell (chunky headings, passport stamps)   'pix2' = the same at 2x
+ *  - 'pix7' : 7x11 in an 8x12 cell (body text)
+ * RetroFont's `size` is the CELL WIDTH, so fontSize == cell width renders at exactly 1x; see pixFont().
+ */
 export function buildPixelFont(scene: Phaser.Scene) {
-  for (const [key, s] of [['pix', 1], ['pix2', 2]] as const) {
+  const fonts: [string, Record<string, string[]>, number, number, number][] = [
+    ['pix', G, CW, CH, 1], ['pix2', G, CW, CH, 2], ['pix7', G7, CW7, CH7, 1],
+  ];
+  for (const [key, table, cw, ch, s] of fonts) {
     if (scene.cache.bitmapFont.exists(key)) continue;
-    const perRow = 19, rows = 6;
-    const canvas = makeCanvas(CW * s * perRow, CH * s * rows, ctx => {
+    const perRow = 19, rows = Math.ceil(FONT_CHARS.length / perRow);
+    const canvas = makeCanvas(cw * s * perRow, ch * s * rows, ctx => {
       for (let i = 0; i < FONT_CHARS.length; i++) {
-        const ch = FONT_CHARS[i]; const pat = G[ch] || G['?'];
-        glyph(ctx, pat, (i % perRow) * CW * s, Math.floor(i / perRow) * CH * s, PAL.white, s);
+        const c = FONT_CHARS[i]; const pat = table[c] || table['?'];
+        glyph(ctx, pat, (i % perRow) * cw * s, Math.floor(i / perRow) * ch * s, PAL.white, s);
       }
     });
     const texKey = key + '_tex';
     if (scene.textures.exists(texKey)) scene.textures.remove(texKey);
     scene.textures.addCanvas(texKey, canvas);
-    const cfg = { image: texKey, width: CW * s, height: CH * s, chars: FONT_CHARS, charsPerRow: perRow, 'spacing.x': 0, 'spacing.y': 0, 'offset.x': 0, 'offset.y': 0, lineSpacing: 2 * s } as any;
+    const cfg = { image: texKey, width: cw * s, height: ch * s, chars: FONT_CHARS, charsPerRow: perRow, 'spacing.x': 0, 'spacing.y': 0, 'offset.x': 0, 'offset.y': 0, lineSpacing: 2 * s } as any;
     const data = Phaser.GameObjects.RetroFont.Parse(scene, cfg);
     scene.cache.bitmapFont.add(key, data);
   }
+}
+
+/**
+ * Snap a requested nominal px size to a bitmap font at an INTEGER scale, so glyph pixels stay even.
+ * (Fractional scales are what made the old text look chewed: 1.33x turned some 1px strokes into 2px.)
+ *   <= 11  'pix7' x1  (12px lines, 8px advance)    body text, buttons, HUD
+ *   12-13  'pix'  x2  (16px lines, 12px advance)   chunky sub-headings, route rows
+ *   14-19  'pix7' x2  (24px lines)                 headings
+ *   20-31  'pix7' x3  (36px lines)                 title, gate numbers
+ *   >= 32  'pix7' x4
+ */
+export function pixFont(size: number): { key: string; fontSize: number } {
+  if (size <= 11) return { key: 'pix7', fontSize: CW7 };
+  if (size <= 13) return { key: 'pix', fontSize: CW * 2 };
+  if (size <= 19) return { key: 'pix7', fontSize: CW7 * 2 };
+  if (size <= 31) return { key: 'pix7', fontSize: CW7 * 3 };
+  return { key: 'pix7', fontSize: CW7 * 4 };
 }
 /** Convenience: bitmap text with palette tint. size 1 -> 'pix' (8px line), 2 -> 'pix2' (16px). */
 export function ptext(scene: Phaser.Scene, x: number, y: number, text: string, color: number = PAL.white, size: 1 | 2 = 1) {

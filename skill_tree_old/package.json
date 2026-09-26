@@ -1,0 +1,21 @@
+{
+  "name": "skill_tree",
+  "version": "1.0.0",
+  "description": "A video game-style skill tree visualizer built with vanilla JavaScript and Cytoscape.js. Create, visualize, and track progress through interactive skill trees.",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.58.0"
+  }
+}

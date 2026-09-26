@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="description" content="Interactive skill tree visualizer - Create, share, and track progress through game-style skill trees">
+    <meta name="author" content="Cody Born">
+    <meta name="theme-color" content="#4f46e5">
+    <title>Skill Tree Visualizer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body role="application" aria-label="Skill Tree Visualizer Application">
+    <!-- Header -->
+    <header class="app-header" role="banner">
+        <div class="header-left">
+            <h1>🎮 Skill Tree Visualizer</h1>
+        </div>
+        <div class="header-center">
+            <!-- Progress bar removed - now shown per-node in detail panel -->
+        </div>
+        <div class="header-right">
+            <button id="themeToggle" class="icon-button" title="Toggle Dark Mode" aria-label="Toggle dark mode">
+                <span class="theme-icon" aria-hidden="true">🌙</span>
+            </button>
+            <button id="helpButton" class="icon-button" title="Help" aria-label="Show help">
+                <span aria-hidden="true">❓</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <!-- Toolbar -->
+        <div class="toolbar" role="toolbar" aria-label="Main toolbar">
+            <div class="toolbar-group" role="group" aria-label="File operations">
+                <button id="importBtn" class="toolbar-button" aria-label="Import tree from file">
+                    <span class="button-icon" aria-hidden="true">📥</span>
+                    Import
+                </button>
+            </div>
+            <div class="toolbar-group" role="group" aria-label="Sharing and AI">
+                <button id="generateLLMBtn" class="toolbar-button" aria-label="Generate tree with AI">
+                    <span class="button-icon" aria-hidden="true">🤖</span>
+                    Generate with AI
+                </button>
+                <button id="permalinkBtn" class="toolbar-button" aria-label="Copy shareable link">
+                    <span class="button-icon" aria-hidden="true">🔗</span>
+                    Copy Link
+                </button>
+                <button id="importURLBtn" class="toolbar-button" aria-label="Import from URL">
+                    <span class="button-icon" aria-hidden="true">🌐</span>
+                    Import from URL
+                </button>
+            </div>
+        </div>
+
+        <!-- Cytoscape Container -->
+        <div id="cy" class="cytoscape-container" role="img" aria-label="Skill tree visualization"></div>
+
+        <!-- Context Menu -->
+        <div id="contextMenu" class="context-menu hidden">
+            <!-- Node-specific actions (hidden when right-clicking canvas) -->
+            <div class="context-menu-item" data-action="add-child">
+                <span class="menu-icon">➕</span>
+                Add Child Node
+            </div>
+            <div class="context-menu-item" data-action="edit">
+                <span class="menu-icon">✏️</span>
+                Edit Node
+            </div>
+            <div class="context-menu-item" data-action="toggle-complete">
+                <span class="menu-icon">✓</span>
+                Toggle Complete
+            </div>
+            <div class="context-menu-divider"></div>
+            <div class="context-menu-item" data-action="export-subtree">
+                <span class="menu-icon">📦</span>
+                Export Subtree
+            </div>
+            <div class="context-menu-divider"></div>
+            <div class="context-menu-item context-menu-item-danger" data-action="delete">
+                <span class="menu-icon">🗑️</span>
+                Delete Node
+            </div>
+
+            <!-- Canvas-specific actions (shown when right-clicking canvas) -->
+            <div class="context-menu-divider canvas-only"></div>
+            <div class="context-menu-item canvas-only" data-action="new-tree">
+                <span class="menu-icon">🆕</span>
+                New Tree
+            </div>
+            <div class="context-menu-item canvas-only" data-action="export-tree">
+                <span class="menu-icon">📤</span>
+                Export Tree
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Panel (Side Panel) -->
+    <div id="detailPanel" class="detail-panel hidden">
+        <div class="detail-header">
+            <h2>Node Details</h2>
+            <button id="closePanelBtn" class="close-button">×</button>
+        </div>
+        <div class="detail-content">
+            <div class="detail-field">
+                <label>Icon & Color</label>
+                <button id="iconPickerBtn" class="icon-picker-button">
+                    <span id="nodeIconDisplay" class="node-icon-display">🎮</span>
+                    <span>Change Icon</span>
+                </button>
+            </div>
+            <div class="detail-field">
+                <label for="nodeLabel">Name</label>
+                <input type="text" id="nodeLabel" class="detail-input">
+            </div>
+            <div class="detail-field">
+                <label for="nodeDescription">Description (Markdown supported)</label>
+                <textarea id="nodeDescription" class="detail-textarea" rows="6"></textarea>
+            </div>
+            <div class="detail-field">
+                <label for="nodeWeight">Weight</label>
+                <input type="number" id="nodeWeight" class="detail-input" min="1" max="100" step="1" value="1">
+            </div>
+            <div class="detail-field">
+                <label>Prerequisites</label>
+                <div id="prerequisitesList" class="prerequisites-list"></div>
+            </div>
+            <div class="detail-field">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="nodeCompleted">
+                    <span>Mark as Completed</span>
+                </label>
+            </div>
+            <div class="detail-field">
+                <label>Subtree Progress</label>
+                <div class="node-progress-container">
+                    <div class="node-progress-bar">
+                        <div class="node-progress-fill" id="nodeProgressFill"></div>
+                    </div>
+                    <span class="node-progress-text" id="nodeProgressText">0% (0/0)</span>
+                </div>
+                <small class="field-hint">Weighted completion of this node and all children</small>
+            </div>
+            <div class="detail-preview" id="descriptionPreview"></div>
+        </div>
+        <div class="detail-footer">
+            <button id="addChildPanelBtn" class="button-secondary">➕ Add Child Node</button>
+            <button id="closePanelBtn2" class="button-secondary">Close</button>
+        </div>
+    </div>
+
+    <!-- Modal Container -->
+    <div id="modalOverlay" class="modal-overlay hidden">
+        <div class="modal" id="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">Modal Title</h2>
+                <button id="closeModalBtn" class="close-button">×</button>
+            </div>
+            <div class="modal-content" id="modalContent">
+                <!-- Dynamic content -->
+            </div>
+            <div class="modal-footer" id="modalFooter">
+                <!-- Dynamic buttons -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Icon Picker Modal -->
+    <div id="iconPickerModal" class="modal-overlay hidden">
+        <div class="modal icon-picker-modal" id="iconPicker">
+            <div class="modal-header">
+                <h2>Choose Icon & Color</h2>
+                <button id="closeIconPickerBtn" class="close-button">×</button>
+            </div>
+            <div class="modal-content">
+                <div class="icon-picker-tabs">
+                    <button class="icon-tab active" data-tab="emoji">Emoji</button>
+                    <button class="icon-tab" data-tab="custom">Custom Image</button>
+                </div>
+
+                <div id="emojiTab" class="icon-tab-content active">
+                    <div class="color-picker-section">
+                        <label>Node Color</label>
+                        <div class="color-swatches">
+                            <button class="color-swatch" data-color="#ef4444" style="background: #ef4444"></button>
+                            <button class="color-swatch" data-color="#f97316" style="background: #f97316"></button>
+                            <button class="color-swatch" data-color="#f59e0b" style="background: #f59e0b"></button>
+                            <button class="color-swatch" data-color="#84cc16" style="background: #84cc16"></button>
+                            <button class="color-swatch" data-color="#10b981" style="background: #10b981"></button>
+                            <button class="color-swatch" data-color="#06b6d4" style="background: #06b6d4"></button>
+                            <button class="color-swatch" data-color="#3b82f6" style="background: #3b82f6"></button>
+                            <button class="color-swatch" data-color="#6366f1" style="background: #6366f1"></button>
+                            <button class="color-swatch" data-color="#8b5cf6" style="background: #8b5cf6"></button>
+                            <button class="color-swatch" data-color="#a855f7" style="background: #a855f7"></button>
+                            <button class="color-swatch" data-color="#ec4899" style="background: #ec4899"></button>
+                            <button class="color-swatch" data-color="#64748b" style="background: #64748b"></button>
+                        </div>
+                        <input type="color" id="customColorPicker" class="custom-color-input">
+                    </div>
+                    <div class="emoji-picker-section">
+                        <label>Choose Icon</label>
+                        <button id="removeIconBtn" class="remove-icon-btn">❌ Remove Icon</button>
+                        <div class="emoji-grid" id="emojiGrid">
+                            <!-- Combat & Weapons -->
+                            <button class="emoji-btn" data-emoji="⚔️">⚔️</button>
+                            <button class="emoji-btn" data-emoji="🗡️">🗡️</button>
+                            <button class="emoji-btn" data-emoji="🏹">🏹</button>
+                            <button class="emoji-btn" data-emoji="🛡️">🛡️</button>
+                            <button class="emoji-btn" data-emoji="🔫">🔫</button>
+                            <button class="emoji-btn" data-emoji="🪓">🪓</button>
+                            <button class="emoji-btn" data-emoji="🔨">🔨</button>
+                            <button class="emoji-btn" data-emoji="⚒️">⚒️</button>
+
+                            <!-- Magic & Elements -->
+                            <button class="emoji-btn" data-emoji="🔥">🔥</button>
+                            <button class="emoji-btn" data-emoji="❄️">❄️</button>
+                            <button class="emoji-btn" data-emoji="⚡">⚡</button>
+                            <button class="emoji-btn" data-emoji="💧">💧</button>
+                            <button class="emoji-btn" data-emoji="🌪️">🌪️</button>
+                            <button class="emoji-btn" data-emoji="🌊">🌊</button>
+                            <button class="emoji-btn" data-emoji="🔮">🔮</button>
+                            <button class="emoji-btn" data-emoji="✨">✨</button>
+
+                            <!-- Celestial -->
+                            <button class="emoji-btn" data-emoji="☀️">☀️</button>
+                            <button class="emoji-btn" data-emoji="🌙">🌙</button>
+                            <button class="emoji-btn" data-emoji="⭐">⭐</button>
+                            <button class="emoji-btn" data-emoji="🌟">🌟</button>
+                            <button class="emoji-btn" data-emoji="💫">💫</button>
+                            <button class="emoji-btn" data-emoji="🌈">🌈</button>
+                            <button class="emoji-btn" data-emoji="☄️">☄️</button>
+
+                            <!-- Achievements -->
+                            <button class="emoji-btn" data-emoji="🏆">🏆</button>
+                            <button class="emoji-btn" data-emoji="🏅">🏅</button>
+                            <button class="emoji-btn" data-emoji="🎖️">🎖️</button>
+                            <button class="emoji-btn" data-emoji="👑">👑</button>
+                            <button class="emoji-btn" data-emoji="💎">💎</button>
+                            <button class="emoji-btn" data-emoji="💰">💰</button>
+                            <button class="emoji-btn" data-emoji="🔑">🔑</button>
+
+                            <!-- Skills & Abilities -->
+                            <button class="emoji-btn" data-emoji="💪">💪</button>
+                            <button class="emoji-btn" data-emoji="🧠">🧠</button>
+                            <button class="emoji-btn" data-emoji="👁️">👁️</button>
+                            <button class="emoji-btn" data-emoji="👊">👊</button>
+                            <button class="emoji-btn" data-emoji="✊">✊</button>
+                            <button class="emoji-btn" data-emoji="🤜">🤜</button>
+                            <button class="emoji-btn" data-emoji="🦾">🦾</button>
+
+                            <!-- Hearts & Life -->
+                            <button class="emoji-btn" data-emoji="❤️">❤️</button>
+                            <button class="emoji-btn" data-emoji="💚">💚</button>
+                            <button class="emoji-btn" data-emoji="💙">💙</button>
+                            <button class="emoji-btn" data-emoji="💜">💜</button>
+                            <button class="emoji-btn" data-emoji="🧡">🧡</button>
+                            <button class="emoji-btn" data-emoji="💛">💛</button>
+                            <button class="emoji-btn" data-emoji="🖤">🖤</button>
+
+                            <!-- Gaming -->
+                            <button class="emoji-btn" data-emoji="🎮">🎮</button>
+                            <button class="emoji-btn" data-emoji="🎯">🎯</button>
+                            <button class="emoji-btn" data-emoji="🎲">🎲</button>
+                            <button class="emoji-btn" data-emoji="🃏">🃏</button>
+                            <button class="emoji-btn" data-emoji="🎰">🎰</button>
+
+                            <!-- Tech & Science -->
+                            <button class="emoji-btn" data-emoji="💻">💻</button>
+                            <button class="emoji-btn" data-emoji="⚙️">⚙️</button>
+                            <button class="emoji-btn" data-emoji="🔧">🔧</button>
+                            <button class="emoji-btn" data-emoji="🔬">🔬</button>
+                            <button class="emoji-btn" data-emoji="🧪">🧪</button>
+                            <button class="emoji-btn" data-emoji="🚀">🚀</button>
+                            <button class="emoji-btn" data-emoji="🛸">🛸</button>
+
+                            <!-- Learning -->
+                            <button class="emoji-btn" data-emoji="📚">📚</button>
+                            <button class="emoji-btn" data-emoji="📖">📖</button>
+                            <button class="emoji-btn" data-emoji="📝">📝</button>
+                            <button class="emoji-btn" data-emoji="🎓">🎓</button>
+                            <button class="emoji-btn" data-emoji="🧑‍🎓">🧑‍🎓</button>
+
+                            <!-- Misc -->
+                            <button class="emoji-btn" data-emoji="🎨">🎨</button>
+                            <button class="emoji-btn" data-emoji="🎭">🎭</button>
+                            <button class="emoji-btn" data-emoji="🎪">🎪</button>
+                            <button class="emoji-btn" data-emoji="🎸">🎸</button>
+                            <button class="emoji-btn" data-emoji="🎺">🎺</button>
+                            <button class="emoji-btn" data-emoji="🎵">🎵</button>
+                            <button class="emoji-btn" data-emoji="🎶">🎶</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="customTab" class="icon-tab-content">
+                    <div class="custom-image-section">
+                        <label for="customImageURL">Image URL</label>
+                        <input type="text" id="customImageURL" class="detail-input" placeholder="https://...">
+                        <div class="custom-image-preview" id="customImagePreview"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="saveIconBtn" class="button-primary">Apply</button>
+                <button id="cancelIconBtn" class="button-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file input -->
+    <input type="file" id="fileInput" accept=".json" style="display: none;">
+
+    <!-- Library Scripts -->
+    <script src="lib/cytoscape.min.js"></script>
+    <script src="lib/dagre.min.js"></script>
+    <script src="lib/cytoscape-dagre.js"></script>
+    <script src="lib/lz-string.min.js"></script>
+    <script src="lib/marked.min.js"></script>
+    <script src="lib/purify.min.js"></script>
+
+    <!-- Application Scripts -->
+    <script src="js/themes.js"></script>
+    <script src="js/node-renderer.js"></script>
+    <script src="js/skill-tree.js"></script>
+    <script src="js/data-manager.js"></script>
+    <script src="js/permalink.js"></script>
+    <script src="js/llm-prompt.js"></script>
+    <script src="js/icon-picker.js"></script>
+    <script src="js/ui-controls.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
