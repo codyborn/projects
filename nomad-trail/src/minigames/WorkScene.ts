@@ -30,7 +30,10 @@ export class WorkScene extends Phaser.Scene {
     this.buildPage(); this.frame.hud();
     const pay = Number(this.launch.payload?.pay) || 0;
     const days = Number(this.launch.payload?.days) || 0;
-    this.frame.intro('A puzzle before Monday standup. It sets the rate for the whole week.' + (pay ? ` Base pay $${pay} a day${days ? ` for ${days} day${days > 1 ? 's' : ''}` : ''}. Solve it clean: +$100 a day. Use the hint: +$25. Wrong twice: -$75 a day.` : ''), () => { /* the page is already up under the card */ }, { height: 270 });
+    this.frame.intro('The team needs your help with this one.', () => { /* the page is already up under the card */ }, { height: 330, extra: (s, add) => {
+      const top = H / 2 - 165; const lines = [pay ? `Base pay $${pay} a day${days ? ` for ${days} day${days > 1 ? 's' : ''}` : ''}` : '', 'Solve it clean: +$100 a day', 'Need the hint: +$25 a day', 'Wrong twice: -$75 a day'].filter(Boolean);
+      lines.forEach((ln, i) => add(txt(s, W / 2, top + 100 + i * 20, ln, 10, i === 0 ? PAL.white : i === 3 ? PAL.pink : PAL.neon, { align: 'center' }).setOrigin(0.5)));
+    } });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.hintObjs = []; this.choiceBtns = []; });
   }
   update(_t: number, dt: number) { this.frame.update(dt); }
@@ -132,7 +135,7 @@ export class WorkScene extends Phaser.Scene {
     objs.push(panel(this, 24, top, W - 48, ph, PAL.earth3, PAL.sun3, PAL.earth1).setDepth(41));
     const head = txt(this, W / 2, top + 28, solved ? 'SOLVED' : 'NOT TODAY', 18, solved ? PAL.grass0 : PAL.red, { align: 'center' }).setOrigin(0.5).setDepth(42); objs.push(head);
     this.tweens.add({ targets: head, scale: { from: 1.5, to: 1 }, duration: 260, ease: 'Back.Out' });
-    objs.push(txt(this, W / 2, top + 52, solved ? `${score} picarats${this.hinted ? ' · hint used' : this.wrong ? ' · second try' : ' · first try'}` : 'the answer was waiting for you', 9, PAL.earth1, { align: 'center' }).setOrigin(0.5).setDepth(42));
+    objs.push(txt(this, W / 2, top + 52, solved ? (this.hinted ? 'solved with the hint' : this.wrong ? 'solved on the second try' : 'solved first try') : 'the answer was waiting for you', 9, PAL.earth1, { align: 'center' }).setOrigin(0.5).setDepth(42));
     if (!solved) { const pz = this.puzzle; objs.push(txt(this, W / 2, top + 72, `Answer: ${pz.kind === 'number' ? pz.answer : (pz.choices ?? [])[pz.answer] ?? ''}`, 10, PAL.dusk1, { align: 'center', wrap: W - 80 }).setOrigin(0.5).setDepth(42)); }
     const tap = txt(this, W / 2, top + ph - 22, 'tap to continue', 9, PAL.earth1, { align: 'center' }).setOrigin(0.5).setDepth(42); objs.push(tap);
     this.tweens.add({ targets: tap, alpha: 0.3, yoyo: true, repeat: -1, duration: 600 });
