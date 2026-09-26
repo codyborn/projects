@@ -71,7 +71,7 @@ export class MinigameFrame {
   private tapListenerInstalled = false;
   active = false;
   /** Hard cap on play time (seconds, after the READY card). Every game auto-finishes at the cap with scoreNow(). Default keeps
-   *  total wall-clock (1 s intro + play + 1.5 s result) under 40 s. Games may override before intro(): Carry-On uses 60. */
+   *  total play under 40 s (the result card then holds until CONTINUE). Games may override before intro(): Carry-On uses 60. */
   capSec = 36;
   /** Current score 0..100 if the game were to end right now; games set this so the cap can finish them fairly. */
   scoreNow: () => number = () => 50;
@@ -143,8 +143,8 @@ export class MinigameFrame {
   }
   /** Rename the game mid-run (a workout session shows each micro-game's own name). */
   setTitle(t: string) { this.title = t; this.hudTitle?.setText(t.toUpperCase()); }
-  /** Harness: press READY programmatically. */
-  ready() { this.readyHandler?.(); }
+  /** Harness: press READY programmatically (or CONTINUE when a result card is the only thing up). */
+  ready() { if (this.readyHandler) this.readyHandler(); else this.continueHandler?.(); }
   /** Games that draw their own card (Airport, Kite, CarryOn) call this when their READY/START is pressed: starts the play clock and cap. */
   beginPlay() { if (this.readyHandler) { this.readyHandler(); return; } if (this.active || this.finished) return; this.introObjs.forEach(o => o.destroy()); this.introObjs = []; this.active = true; this.playStart = this.scene.time.now; this.capTimer = this.scene.time.delayedCall(this.capSec * 1000, () => { if (!this.finished) this.finish(this.scoreNow()); }); }
   private readyHandler?: () => void;
@@ -189,8 +189,34 @@ export class MinigameFrame {
     if (kb) { kb.on('keydown-SPACE', () => fire()); kb.on('keydown-ENTER', () => fire()); }
   }
 
-  /** Show result card for 1.5s then onDone once and stop the scene. */
-  finish(score: number, forceFail = false) {
+  /** Result card: label + score, held until CONTINUE (a 200×48 button, also SPACE/ENTER); onContinue fires once. Returns the card's objects.
+   *  opts.y centres the panel (cooking puts it low so the big dish reveal stays visible above it); opts.keep lifts scene objects above the overlay. */
+  private resultCard(label: string, color: number, lines: string[], onContinue: () => void, opts: { y?: number; keep?: Phaser.GameObjects.GameObject[] } = {}) {
+    const s = this.scene; const y = opts.y ?? H / 2; const objs: Phaser.GameObjects.GameObject[] = [];
+    objs.push(s.add.rectangle(W / 2, H / 2, W, H, PAL.night0, 0.75).setDepth(950));
+    objs.push(panel(s, 40, y - 92, W - 80, 196, PAL.night2).setDepth(951));
+    const l = txt(s, W / 2, y - 58, label, 24, color).setDepth(952); objs.push(l);
+    lines.forEach((ln, i) => objs.push(txt(s, W / 2, y - 22 + i * 18, ln, i === 0 ? 14 : 10, i === 0 ? PAL.white : PAL.gray2).setDepth(952)));
+    const btn = s.add.rectangle(W / 2, y + 60, 200, 48, PAL.sun0).setDepth(952).setStrokeStyle(2, PAL.ink).setInteractive({ useHandCursor: true }); objs.push(btn);
+    objs.push(txt(s, W / 2, y + 60, 'CONTINUE', 16, PAL.white).setDepth(953));
+    s.tweens.add({ targets: l, scale: { from: 1.6, to: 1 }, duration: 250, ease: 'Back.Out' }); s.tweens.add({ targets: btn, scaleX: 1.03, scaleY: 1.06, yoyo: true, repeat: -1, duration: 700 });
+    opts.keep?.forEach(o => (o as any).setDepth?.(954));
+    let fired = false; const go = () => { if (fired) return; fired = true; this.continueHandler = undefined; kb?.off('keydown-SPACE', go); kb?.off('keydown-ENTER', go); onContinue(); };
+    btn.on('pointerdown', go); const kb = s.input.keyboard; s.time.delayedCall(150, () => { if (!fired) { kb?.once('keydown-SPACE', go); kb?.once('keydown-ENTER', go); } });   // ignore the key that ended the game
+    this.continueHandler = go; return objs;
+  }
+  private continueHandler?: () => void;
+  /** Harness: press CONTINUE on the result card. */
+  proceed() { this.continueHandler?.(); }
+
+  /** A result card between the games of a session: the play clock pauses and `active` drops until CONTINUE, then cb runs (the next READY card). */
+  interlude(label: string, color: number, lines: string[], cb: () => void) {
+    if (this.finished) return; this.pauseCap(); this.active = false;
+    const objs = this.resultCard(label, color, lines, () => { objs.forEach(o => o.destroy()); if (this.finished) return; this.active = true; this.resumeCap(); cb(); });
+  }
+
+  /** Show the result card (label + score) and hold it until CONTINUE; onDone fires once, then the scene stops. Never auto-advances. */
+  finish(score: number, forceFail = false, opts: { y?: number; keep?: Phaser.GameObjects.GameObject[] } = {}) {
     if (this.finished) return; this.finished = true; this.active = false; this.capTimer?.remove();
     score = Math.round(clamp(Number.isFinite(score) ? score : 0, 0, 100));
     const failed = forceFail || score < 50, perfect = !failed && score >= 95;
@@ -198,14 +224,9 @@ export class MinigameFrame {
     const color = perfect ? PAL.sun2 : failed ? PAL.red : PAL.neon;
     const s = this.scene;
     s.cameras.main.setRotation(0).setZoom(1);
-    s.add.rectangle(W / 2, H / 2, W, H, PAL.night0, 0.75).setDepth(950);
-    panel(s, 40, H / 2 - 60, W - 80, 120, PAL.night2).setDepth(951);
-    const l = txt(s, W / 2, H / 2 - 22, label, 24, color).setDepth(952);
-    txt(s, W / 2, H / 2 + 20, `SCORE ${score}`, 14, PAL.white).setDepth(952);
-    s.tweens.add({ targets: l, scale: { from: 1.6, to: 1 }, duration: 250, ease: 'Back.Out' });
     if (perfect) this.shake(150, 0.003);
     const result: MinigameResult = { score, perfect, failed };
-    s.time.delayedCall(1500, () => { try { this.launch.onDone(result); } finally { s.scene.stop(); } });
+    this.resultCard(label, color, [`SCORE ${score}`, 'take your time'], () => { try { this.launch.onDone(result); } finally { s.scene.stop(); } }, opts);
   }
 }
 

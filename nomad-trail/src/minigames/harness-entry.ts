@@ -10,6 +10,8 @@ import { drawDish, DISH_ART_IDS, renderDishCanvas, DISH_TEX_W, DISH_TEX_H } from
 const game = new Phaser.Game({ type: Phaser.CANVAS, parent: 'game', width: GAME_W, height: GAME_H, pixelArt: true, backgroundColor: PAL.night0,
   physics: { default: 'arcade', arcade: { gravity: { x: 0, y: 900 } } }, scene: [] });
 (window as any).__game = game; const q = new URLSearchParams(location.search); if (q.get('hitboxes') === '1') (window as any).__hitboxes = true;
+// result cards hold until CONTINUE: the harness presses it for every scene (holdResult=1 keeps it up for screenshots)
+if (q.get('holdResult') !== '1') setInterval(() => { for (const sc of game.scene.getScenes(true)) { const f = (sc as any).frame; if (f?.finished && f.continueHandler) f.proceed?.(); } }, 200);
 const out = document.getElementById('results')!; const prog = (m: string) => { (window as any).__progress = m; document.getElementById('progress')!.textContent = m; };
 const errors: string[] = []; window.addEventListener('error', e => errors.push(String(e.message) + ' @ ' + String((e as any).error?.stack || '').split('\n').slice(1, 4).join(' | '))); window.addEventListener('unhandledrejection', e => errors.push('rej:' + String((e as any).reason)));
 
@@ -29,7 +31,7 @@ if (q.get('auto') === '1') {
     { key: MINIGAME_KEYS.carryon, energy: 100 }, { key: MINIGAME_KEYS.carryon, energy: 40, payload: { ...DEFAULT_LEVEL, hazard: 'gust' } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { ...DEFAULT_LEVEL, hazard: 'rock' } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { ...DEFAULT_LEVEL, hazard: 'wave' } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { ...DEFAULT_LEVEL, hazard: 'otter' } }, { key: MINIGAME_KEYS.carryon, energy: 100, payload: { ...DEFAULT_LEVEL, hazard: 'ice' } },
     { key: MINIGAME_KEYS.kite, energy: 100 }, { key: MINIGAME_KEYS.airport, energy: 100 }, { key: MINIGAME_KEYS.airport, energy: 30 }, { key: MINIGAME_KEYS.laundry, energy: 100 },
   ];
-  const only = q.get('only'); const limit = Number(q.get('limit') || 0); let runsSel = only ? runs.filter(r => r.key === only) : runs; if (limit) runsSel = runsSel.slice(0, limit); runs.length = 0; runs.push(...runsSel);
+  const only = q.get('only'); const limit = Number(q.get('limit') || 0); let runsSel = only ? runs.filter(r => r.key === only) : [...runs];   // a copy: the list is emptied and refilled below if (limit) runsSel = runsSel.slice(0, limit); runs.length = 0; runs.push(...runsSel);
   const results: any[] = []; let i = 0; let driver: number | undefined;
   const mkPointer = (x: number, y: number, down: boolean) => { const p = game.input.activePointer; p.x = x; p.y = y; (p as any).worldX = x; (p as any).worldY = y; (p as any).isDown = down; return p; };
   const next = () => {
@@ -70,7 +72,7 @@ if (q.get('auto') === '1') {
   MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
   game.events.once('ready', () => { const t0 = performance.now(); let calls = 0;
     const launch: MinigameLaunch = { energy: 100, difficulty: 0.5, extraLives: Number(q.get('lives') || 0), payload: { activity: q.get('activity') || 'bands', city: 'Realtime', day: Number(q.get('day') || 3), plan: q.get('plan') ? [q.get('plan')!] : undefined }, onDone: () => { calls++; out.textContent = JSON.stringify({ seconds: (performance.now() - t0) / 1000, calls, errors }); document.title = 'RT_DONE'; } };
-    game.scene.start(MINIGAME_KEYS.workout, launch); });
+    game.scene.start(MINIGAME_KEYS.workout, launch); const scene: any = game.scene.getScene(MINIGAME_KEYS.workout); setInterval(() => { if (scene.scene.isActive() && !scene.frame?.active) scene.frame?.ready?.(); }, 400); });   // no gameplay input: only READY / CONTINUE
 } else if (q.get('cook')) {
   // real-time cooking reveal check: start ramen with a forced per-step accuracy; the driver (puppeteer) calls scene.endStep() to run the steps
   MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
@@ -84,7 +86,7 @@ if (q.get('auto') === '1') {
     game.scene.start(MINIGAME_KEYS.airport, launch); const scene: any = game.scene.getScene(MINIGAME_KEYS.airport);
     // the scripted player reads scene.hint() once per virtual frame and presses arrow keys (real key events through Phaser's keyboard plugin)
     const key = (kc: number) => { window.dispatchEvent(new KeyboardEvent('keydown', { keyCode: kc, which: kc } as any)); window.dispatchEvent(new KeyboardEvent('keyup', { keyCode: kc, which: kc } as any)); };
-    const steer = () => { if (!scene.scene.isActive() || !scene.frame?.active) return; if (scene.waiting) { scene.startRun(); return; } const hnt = scene.hint(); if (hnt.lane < scene.lane) key(37); else if (hnt.lane > scene.lane) key(39); else if (hnt.jump) key(38); };
+    const steer = () => { if (!scene.scene.isActive() || !scene.frame?.active) { if (q.get('holdResult') !== '1') scene.frame?.proceed?.(); return; } if (scene.waiting) { scene.startRun(); return; } const hnt = scene.hint(); if (hnt.lane < scene.lane) key(37); else if (hnt.lane > scene.lane) key(39); else if (hnt.jump) key(38); };
     if (mode === 'perfect' && q.get('fast') === '1') { game.loop.stop(); let t = performance.now(); setInterval(() => { for (let k = 0; k < 6; k++) { t += 16.67; steer(); game.loop.step(t); } }, 0); }
     else if (mode === 'perfect') setInterval(steer, 16);
     else if (mode === 'rt' && !q.get('hold')) setTimeout(() => { if (scene.waiting) scene.startRun(); }, 1500);   // no gameplay input: only READY is tapped (hold=1 keeps the card up for screenshots)
@@ -119,7 +121,7 @@ if (q.get('auto') === '1') {
     const mk = (x: number, y: number, down: boolean) => { const p = game.input.activePointer; p.x = x; p.y = y; (p as any).worldX = x; (p as any).worldY = y; (p as any).isDown = down; return p; };
     let holdUntil = -1, holding = false, lastId = '';
     const drive = () => {
-      if (!scene.scene.isActive()) return; if (!scene.frame?.active) { if (Math.random() < 0.5) scene.frame?.ready?.(); return; }
+      if (!scene.scene.isActive()) return; if (!scene.frame?.active) { if (Math.random() < 0.5 && !(q.get('holdResult') === '1' && scene.frame?.continueHandler)) scene.frame?.ready?.(); return; }
       const cur = scene.current; if (!cur) return; if (cur.id !== lastId) { lastId = cur.id; games.push(cur.id); } titles.add(scene.frame.title);
       if (mode === 'random') { const x = 20 + Math.random() * 320, y = 100 + Math.random() * 400; if (Math.random() < 0.5) { scene.input.emit('pointerdown', mk(x, y, true)); setTimeout(() => scene.input.emit('pointerup', mk(x, y - (Math.random() < 0.3 ? 60 : 0), false)), 40 + Math.random() * 400); } return; }
       if (cur.id === 'burpee') { const h = cur.hint(); if (holding) { if (cur.t >= holdUntil) { holding = false; cur.release(180, 300); } return; } if (h.done) return; const mv = h.move; const x = 180, y = 300;
@@ -164,7 +166,7 @@ if (q.get('auto') === '1') {
     const mode = q.get('kite')!; const t0 = performance.now(); let calls = 0;
     const launch: MinigameLaunch = { energy: 100, difficulty: 0.5, payload: { city: 'laventana', cityName: 'La Ventana' }, onDone: (res) => { calls++; out.textContent = JSON.stringify({ mode, res, secs: (performance.now() - t0) / 1000, clean: (scene as any).clean, wipeouts: (scene as any).wipeouts, air: (scene as any).airTotal, calls, errors }); document.title = 'KITE_DONE'; } };
     game.scene.start(MINIGAME_KEYS.kite, launch); const scene: any = game.scene.getScene(MINIGAME_KEYS.kite);
-    const ride = () => { if (!scene.scene.isActive() || !scene.frame?.active) return; if (scene.waiting) { scene.startRun(); return; } const hnt = scene.hint(); if (hnt.recovering) return; if (hnt.airborne) { /* press to drop only when the fast drop touches down on the swell (not a trough) */ if (!scene.held && hnt.dropLand > 0.3) scene.press(hnt.x); else if (scene.held && hnt.dropLand < -0.2) scene.held = false; return; } if (!scene.held) scene.press(hnt.x); else { scene.fingerX = hnt.x; if (hnt.speed > 0.85 && hnt.crest) scene.letGo(); } };
+    const ride = () => { if (!scene.scene.isActive() || !scene.frame?.active) { if (q.get('holdResult') !== '1') scene.frame?.proceed?.(); return; } if (scene.waiting) { scene.startRun(); return; } const hnt = scene.hint(); if (hnt.recovering) return; if (hnt.airborne) { /* press to drop only when the fast drop touches down on the swell (not a trough) */ if (!scene.held && hnt.dropLand > 0.3) scene.press(hnt.x); else if (scene.held && hnt.dropLand < -0.2) scene.held = false; return; } if (!scene.held) scene.press(hnt.x); else { scene.fingerX = hnt.x; if (hnt.speed > 0.85 && hnt.crest) scene.letGo(); } };
     if (mode === 'perfect' && q.get('fast') === '1') { game.loop.stop(); let t = performance.now(); setInterval(() => { for (let k = 0; k < 6; k++) { t += 16.67; ride(); game.loop.step(t); } }, 0); }
     else if (mode === 'perfect') setInterval(ride, 16);
     else if (mode === 'rt' && !q.get('hold')) setTimeout(() => { if (scene.waiting) scene.startRun(); }, 1500);

@@ -58,7 +58,7 @@ export class CarryOnScene extends Phaser.Scene {
       setHearts: (n, max) => this.drawHearts(n, max), setStatus: (t) => this.statusT.setText(t), flash: (c, ms) => this.frame.flash(c, ms), shake: (ms, k) => this.frame.shake(ms, k), sfx: (n) => { try { Audio.playSfx(n as any); } catch { /* audio not unlocked yet */ } },
     };
     this.cart.init(ctx, (r) => { if (!this.frame.active) return; this.frame.finish(r.score, !!r.failed); });
-    this.frame.capSec = this.cart.capSec > 0 ? this.cart.capSec : 24 * 3600; this.frame.scoreNow = () => this.cart?.scoreNow() ?? 0;   // capSec 0 = the cartridge decides when it ends (Pack-Tris)
+    this.frame.capSec = this.cart.capSec > 0 ? this.cart.capSec : 24 * 3600; this.frame.scoreNow = () => this.cart?.scoreNow() ?? 0;
     // screen mask so games never draw over the bezel
     const maskShape = this.make.graphics({}); maskShape.fillStyle(0xffffff).fillRect(SCREEN.x, SCREEN.y, SCREEN.width, SCREEN.height);
     const mask = maskShape.createGeometryMask(); this.children.list.forEach(o => { const d = (o as any).depth; if (typeof d === 'number' && d >= 2 && d < 20 && (o as any).setMask) (o as any).setMask(mask); });
@@ -115,6 +115,7 @@ export class CarryOnScene extends Phaser.Scene {
   }
   private drawHearts(n: number, max: number) { const g = this.heartsG; g.clear(); for (let i = 0; i < max; i++) { const x = W / 2 - 20 + i * 14, y = 44; g.fillStyle(i < n ? PAL.red : PAL.night1).fillRect(x - 5, y - 3, 4, 3).fillRect(x + 1, y - 3, 4, 3).fillRect(x - 6, y, 12, 3).fillRect(x - 4, y + 3, 8, 2).fillRect(x - 2, y + 5, 4, 2); } }
   private onPadPress(k: PadKey) {
+    if ((k === 'start' || k === 'a') && (this.frame as any).continueHandler) { (this.frame as any).continueHandler(); return; }   // result card: START / A = CONTINUE
     if ((k === 'start' || k === 'a') && !this.started && this.titleCard) { this.beginPlay(); return; }
     if (k === 'start' && this.started && this.frame.active) { this.paused = !this.paused; if (this.paused) { this.frame.pauseCap(); this.pauseT = txt(this, SCREEN.centerX, SCREEN.centerY, 'PAUSED', 24, PAL.white).setDepth(930); (this as any)._pauseBg = this.add.rectangle(SCREEN.centerX, SCREEN.centerY, SCREEN.width, SCREEN.height, PAL.ink, 0.6).setDepth(929); } else { this.frame.resumeCap(); this.pauseT?.destroy(); (this as any)._pauseBg?.destroy(); } }
     if (k === 'a' || k === 'b') { try { Audio.playSfx('blip'); } catch { /* */ } }

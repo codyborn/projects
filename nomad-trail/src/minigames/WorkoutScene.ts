@@ -81,10 +81,11 @@ export class WorkoutScene extends Phaser.Scene {
       this.cdTimer = this.time.delayedCall(dur, () => { if (this.current === micro) micro.timeUp(); });
       micro.start(ctx, (score01) => {
         tick.remove(); this.cdTimer?.remove(); this.countdown?.destroy(); this.current = undefined; this.athlete.show(false); this.athlete.sprite.setAngle(0).setScale(1);
-        this.scores.push(score01); const ok = score01 >= 0.5;
-        if (ok) this.banner(score01 >= 0.9 ? 'PERFECT!' : 'NICE!', PAL.neon);
-        else { this.banner('MISS', PAL.red); if (this.loseLife()) { this.time.delayedCall(700, () => this.finishSession(true)); return; } }
-        this.idx++; this.time.delayedCall(650, () => this.nextGame());
+        this.scores.push(score01); const ok = score01 >= 0.5; const label = ok ? (score01 >= 0.9 ? 'PERFECT!' : 'NICE!') : 'MISS'; const color = ok ? PAL.neon : PAL.red;
+        if (!ok && this.loseLife()) { this.time.delayedCall(700, () => this.finishSession(true)); return; }
+        this.idx++; if (this.idx >= this.microIds.length) { this.banner(label, color); this.time.delayedCall(650, () => this.finishSession()); return; }   // the last game's result rides on the session card
+        // between games: the game's own result card, held until CONTINUE, then the next game's READY card
+        this.frame.interlude(label, color, [`${meta.name.toUpperCase()}  ${Math.round(score01 * 100)}%`, `game ${this.idx} of ${n} done`], () => this.nextGame());
       });
     };
     const opts = { extra, height: 340, title: meta.name };
