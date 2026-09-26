@@ -11,6 +11,7 @@ import citiesJson from './data/cities.json';
 import dishesJson from './data/dishes.json';
 import eventsJson from './data/events.json';
 import itemsJson from './data/items.json';
+import puzzlesJson from './data/puzzles.json';
 
 export function installDebug(game: Phaser.Game) {
   const w = window as any;
@@ -52,7 +53,7 @@ export function installDebug(game: Phaser.Game) {
   };
   // review hub data (tools/review.mjs)
   (api as any).review = {
-    cities: citiesJson, dishes: dishesJson, events: eventsJson, items: itemsJson,
+    cities: citiesJson, dishes: dishesJson, events: eventsJson, items: itemsJson, puzzles: puzzlesJson,
     workoutMeta: WORKOUT_META, workoutPools: WORKOUT_POOLS, denseCities: Array.from(DENSE_CITIES), consoleGames: CONSOLE_GAME_IDS,
     dishPng: (id: string) => renderDishCanvas(id).toDataURL('image/png'),
   };
