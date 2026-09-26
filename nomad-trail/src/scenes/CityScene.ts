@@ -29,7 +29,7 @@ export class CityScene extends Phaser.Scene {
     this.hud = new Hud(this); this.hud.refresh(run);
     this.time.delayedCall(0, () => this.refreshButtons());
     new Panel(this, 12, 244, 336, 118, { fill: PAL.night1, border: PAL.night3 }); this.logLbl = txt(this, 20, 250, '', 8, PAL.gray2, { wrap: 320 }); this.refreshLog();
-    ACTIONS.forEach((act, i) => { const b = new Button(this, 96 + (i % 2) * 168, 392 + Math.floor(i / 2) * 56, act.label, () => this.act(act.a), { w: 160, h: 48, size: 11, icon: act.icon, fill: act.a === 'moveon' ? PAL.sea0 : PAL.night2 }); this.btns.push(b); });
+    ACTIONS.forEach((act, i) => { const b = new Button(this, 96 + (i % 2) * 168, 392 + Math.floor(i / 2) * 56, act.label, () => this.act(act.a), { w: 160, h: 48, size: 12, icon: act.icon, fill: act.a === 'moveon' ? PAL.sea0 : PAL.night2 }); this.btns.push(b); });
     txt(this, 180, 620, '1 action = 1 day · work week = Mon-Fri', 8, PAL.gray0).setOrigin(0.5);
     this.refreshWorkBtn(run.day);
     if (data.arrived) this.arrivalCard();
@@ -105,7 +105,7 @@ export class CityScene extends Phaser.Scene {
   /** Dim actions the engine would refuse right now (probe on a copy; the tap still explains why). */
   private refreshButtons() {
     const run = getRun(this);
-    ACTIONS.forEach((act, i) => { if (act.a === 'map' || act.a === 'moveon') return; const probe = Sim.cityAction(JSON.parse(JSON.stringify(run)), act.a as CityAction); const refused = !!(probe as any).error; this.btns[i]?.setAlpha(refused ? 0.55 : 1); });
+    ACTIONS.forEach((act, i) => { if (act.a === 'map' || act.a === 'moveon') return; const probe = Sim.cityAction(JSON.parse(JSON.stringify(run)), act.a as CityAction); const refused = !!(probe as any).error; this.btns[i]?.setAlpha(refused ? 0.55 : 1); if (act.a === 'cook') this.btns[i]?.setLabel(Sim.dullKnives(run) ? 'COOK · DULL KNIFE' : 'COOK'); });
   }
   private after(a: CityAction) {
     const run = getRun(this); this.hud.refresh(run); this.refreshLog();

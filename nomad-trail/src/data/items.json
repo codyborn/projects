@@ -1,676 +1,695 @@
 [
- {
-  "id": "laptopkit",
-  "name": "Laptop + Desk Kit",
-  "label": "Laptop kit",
-  "weightLb": 4.0,
-  "w": 3,
-  "h": 2,
-  "tags": [
-   "essential",
-   "work"
-  ],
-  "desc": "The whole job, plus the stand and keyboard that keep the neck honest.",
-  "real": true,
-  "color": 11844036,
-  "benefits": [
-   "The job travels with you",
-   "Work days pay"
-  ]
- },
- {
-  "id": "tablet",
-  "name": "Tablet",
-  "label": "Tablet",
-  "weightLb": 1.0,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "work",
-   "luxury"
-  ],
-  "desc": "Second monitor, e-reader, journal, cinema.",
-  "real": true,
-  "color": 3817291,
-  "benefits": [
-   "+2 mood on rest days",
-   "A second screen for work"
-  ]
- },
- {
-  "id": "watch",
-  "name": "GPS Watch",
-  "label": "GPS watch",
-  "weightLb": 0.3,
-  "w": 1,
-  "h": 1,
-  "tags": [
-   "essential"
-  ],
-  "desc": "Counts every step, judges every rest day.",
-  "real": true,
-  "color": 3030374,
-  "benefits": [
-   "Counts every step",
-   "+1 health from training"
-  ]
- },
- {
-  "id": "dronekit",
-  "name": "Drone Kit",
-  "label": "Drone kit",
-  "weightLb": 4.0,
-  "w": 3,
-  "h": 2,
-  "tags": [
-   "camera",
-   "luxury"
-  ],
-  "desc": "The camera the year gets remembered by, its controller, and the spare batteries.",
-  "real": true,
-  "color": 7238788,
-  "benefits": [
-   "+4 mood in hero cities",
-   "4 lb, 6 cells"
-  ]
- },
- {
-  "id": "clothes1",
-  "name": "Clothes",
-  "label": "1 week worth",
-  "weightLb": 4.5,
-  "w": 3,
-  "h": 3,
-  "tags": [
-   "clothing"
-  ],
-  "desc": "Seven days of looking like a person. Add another week if laundry is not your thing.",
-  "real": true,
-  "color": 4889558,
-  "benefits": [
-   "7 days of clean clothes"
-  ],
-  "clothesDays": 7
- },
- {
-  "id": "clothes2",
-  "name": "Clothes",
-  "label": "1 week worth",
-  "weightLb": 4.5,
-  "w": 3,
-  "h": 3,
-  "tags": [
-   "clothing"
-  ],
-  "desc": "Seven days of looking like a person. Add another week if laundry is not your thing.",
-  "real": true,
-  "color": 3519401,
-  "benefits": [
-   "7 days of clean clothes"
-  ],
-  "clothesDays": 7
- },
- {
-  "id": "clothes3",
-  "name": "Clothes",
-  "label": "1 week worth",
-  "weightLb": 4.5,
-  "w": 3,
-  "h": 3,
-  "tags": [
-   "clothing"
-  ],
-  "desc": "Seven days of looking like a person. Add another week if laundry is not your thing.",
-  "real": false,
-  "color": 15900236,
-  "benefits": [
-   "7 days of clean clothes"
-  ],
-  "clothesDays": 7
- },
- {
-  "id": "clothes4",
-  "name": "Clothes",
-  "label": "1 week worth",
-  "weightLb": 4.5,
-  "w": 3,
-  "h": 3,
-  "tags": [
-   "clothing"
-  ],
-  "desc": "Seven days of looking like a person. Add another week if laundry is not your thing.",
-  "real": false,
-  "color": 12862842,
-  "benefits": [
-   "7 days of clean clothes"
-  ],
-  "clothesDays": 7
- },
- {
-  "id": "shell",
-  "name": "Rain Shell",
-  "label": "Rain shell",
-  "weightLb": 0.9,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "rain",
-   "clothing"
-  ],
-  "desc": "Lighter than an umbrella and it never inverts.",
-  "real": true,
-  "color": 15230525,
-  "benefits": [
-   "Rain days cost no energy",
-   "Counts as clothing"
-  ]
- },
- {
-  "id": "downjacket",
-  "name": "Down Jacket",
-  "label": "Down jacket",
-  "weightLb": 1.0,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "cold",
-   "clothing"
-  ],
-  "desc": "Stuffs into its own pocket. Saves October in the Alps.",
-  "real": false,
-  "color": 15900236,
-  "benefits": [
-   "Warm in cold cities",
-   "Skiing unlocked"
-  ]
- },
- {
-  "id": "hikingboots",
-  "name": "Hiking Boots",
-  "label": "Hiking boots",
-  "weightLb": 3.0,
-  "w": 3,
-  "h": 2,
-  "tags": [
-   "hike",
-   "cold"
-  ],
-  "desc": "Ankles for the Himalaya. Dead weight everywhere else.",
-  "real": false,
-  "color": 7031346,
-  "benefits": [
-   "+1 life in outdoor workouts",
-   "Warm in cold cities",
-   "3 lb"
-  ]
- },
- {
-  "id": "swimkit",
-  "name": "Swim Kit",
-  "label": "Swim kit",
-  "weightLb": 0.6,
-  "w": 2,
-  "h": 1,
-  "tags": [
-   "swim"
-  ],
-  "desc": "Trunks, towel, goggles. Every coast, and the hotel pool you did not know about.",
-  "real": true,
-  "color": 3519401,
-  "benefits": [
-   "Swim workouts unlocked",
-   "Every coast, every pool"
-  ]
- },
- {
-  "id": "sunkit",
-  "name": "Hat + Sunglasses",
-  "label": "Sun kit",
-  "weightLb": 0.5,
-  "w": 2,
-  "h": 1,
-  "tags": [
-   "clothing"
-  ],
-  "desc": "A brimmed hat and armless sunglasses. Dignity optional.",
-  "real": true,
-  "color": 14727562,
-  "benefits": [
-   "No sunburn events",
-   "Counts as clothing"
-  ]
- },
- {
-  "id": "protein",
-  "name": "Protein Powder",
-  "label": "Protein",
-  "weightLb": 2.5,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "health"
-  ],
-  "desc": "Casein, greens, collagen, electrolytes. All the powders, one tub of resolve.",
-  "real": true,
-  "color": 16052714,
-  "benefits": [
-   "Slow health regen every day",
-   "Counts as health gear"
-  ]
- },
- {
-  "id": "supplements",
-  "name": "Supplements",
-  "label": "Supplements",
-  "weightLb": 1.5,
-  "w": 2,
-  "h": 1,
-  "tags": [
-   "health"
-  ],
-  "desc": "The pills that keep the body the same across eleven diets.",
-  "real": true,
-  "color": 16240491,
-  "benefits": [
-   "Slow health regen every day",
-   "Fewer sick days"
-  ]
- },
- {
-  "id": "skincare",
-  "name": "Skincare",
-  "label": "Skincare",
-  "weightLb": 1.0,
-  "w": 2,
-  "h": 1,
-  "tags": [
-   "health"
-  ],
-  "desc": "The routine that survives a hostel sink.",
-  "real": true,
-  "color": 9425908,
-  "benefits": [
-   "Slow health regen every day",
-   "Sun does less damage"
-  ]
- },
- {
-  "id": "toiletries",
-  "name": "Toiletries",
-  "label": "Toiletries",
-  "weightLb": 1.2,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "essential"
-  ],
-  "desc": "Toothbrush, trimmer, the things hotels pretend to provide.",
-  "real": true,
-  "color": 11844036,
-  "benefits": [
-   "Essential",
-   "Hotels pretend to provide these"
-  ]
- },
- {
-  "id": "sleepkit",
-  "name": "Sleep Kit",
-  "label": "Sleep kit",
-  "weightLb": 1.5,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "sleep",
-   "health"
-  ],
-  "desc": "Mask, earplugs, a compressed pillow, a sun lamp for the mornings the sun forgets.",
-  "real": true,
-  "color": 9124474,
-  "benefits": [
-   "Jet lag passes faster",
-   "Loud neighbours do less damage",
-   "Counts as health gear"
-  ]
- },
- {
-  "id": "firstaid",
-  "name": "First Aid Kit",
-  "label": "First aid",
-  "weightLb": 0.8,
-  "w": 2,
-  "h": 1,
-  "tags": [
-   "firstaid"
-  ],
-  "desc": "Bandages, antiseptic, blister pads. Clean the cut. Every time.",
-  "real": false,
-  "color": 14040124,
-  "benefits": [
-   "Cuts don't get infected",
-   "Otter-safe",
-   "Urchin-safe"
-  ]
- },
- {
-  "id": "medkit",
-  "name": "Medicine Kit",
-  "label": "Medicine",
-  "weightLb": 0.6,
-  "w": 2,
-  "h": 1,
-  "tags": [
-   "meds",
-   "health"
-  ],
-  "desc": "Antibiotics, probiotics, altitude pills. Prescribed before leaving; the road does not care about your plans.",
-  "real": false,
-  "color": 16052714,
-  "benefits": [
-   "Food poisoning is milder",
-   "Altitude is survivable",
-   "Counts as health gear"
-  ]
- },
- {
-  "id": "mosquitokit",
-  "name": "Mosquito Kit",
-  "label": "Mosquito kit",
-  "weightLb": 0.6,
-  "w": 2,
-  "h": 1,
-  "tags": [
-   "repellent"
-  ],
-  "desc": "Repellent and a travel net. The south of France has questions.",
-  "real": false,
-  "color": 5212747,
-  "benefits": [
-   "Mosquito swarms do nothing",
-   "Sleep on the Riviera"
-  ]
- },
- {
-  "id": "airmonitor",
-  "name": "Air Quality Monitor",
-  "label": "Air monitor",
-  "weightLb": 1.0,
-  "w": 2,
-  "h": 1,
-  "tags": [
-   "health"
-  ],
-  "desc": "Reads CO2, particulates and radon. Old buildings in old mountains have secrets.",
-  "real": true,
-  "color": 4124872,
-  "benefits": [
-   "Radon can't hurt you",
-   "Sleep better in old buildings",
-   "Counts as health gear"
-  ]
- },
- {
-  "id": "coffeekit",
-  "name": "Coffee Kit",
-  "label": "Coffee kit",
-  "weightLb": 2.0,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "coffee"
-  ],
-  "desc": "Hand grinder, folding dripper, gooseneck kettle. Good coffee no matter what.",
-  "real": true,
-  "color": 11041102,
-  "benefits": [
-   "+15 energy every morning",
-   "The coffee cinematic"
-  ]
- },
- {
-  "id": "adventure",
-  "name": "Adventure Gear",
-  "label": "Adventure",
-  "weightLb": 4.0,
-  "w": 3,
-  "h": 2,
-  "tags": [
-   "hike",
-   "water",
-   "light",
-   "knife"
-  ],
-  "desc": "Water bladder with the filter plumbed in, ice cleats, gloves, a headlamp, the knife from Patagonia.",
-  "real": true,
-  "color": 9225323,
-  "benefits": [
-   "+6 mood exploring outdoorsy cities",
-   "Easier outdoor workouts",
-   "Filtered water, a headlamp, a knife"
-  ]
- },
- {
-  "id": "climbkit",
-  "name": "Climbing Kit",
-  "label": "Climbing kit",
-  "weightLb": 2.5,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "climb",
-   "fitness"
-  ],
-  "desc": "Shoes and chalk for the gym, a harness and lanyard for the ferrata.",
-  "real": true,
-  "color": 15230525,
-  "benefits": [
-   "Bouldering and ferrata unlocked",
-   "Counts as fitness gear"
-  ]
- },
- {
-  "id": "fitnesskit",
-  "name": "Fitness Kit",
-  "label": "Fitness kit",
-  "weightLb": 1.5,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "fitness"
-  ],
-  "desc": "Bands and a collapsible foam roller. Hotel rooms become gyms.",
-  "real": true,
-  "color": 4124872,
-  "benefits": [
-   "Hotel-room workouts unlocked",
-   "Slower daily wear"
-  ]
- },
- {
-  "id": "yogamat",
-  "name": "Yoga Mat",
-  "label": "Yoga mat",
-  "weightLb": 2.0,
-  "w": 1,
-  "h": 5,
-  "tags": [
-   "fitness"
-  ],
-  "desc": "Thin as a tortilla. Better than a carpet.",
-  "real": false,
-  "color": 12862842,
-  "benefits": [
-   "Yoga unlocked",
-   "Slower daily wear",
-   "5 cells tall"
-  ]
- },
- {
-  "id": "kitegear",
-  "name": "Kite Gear",
-  "label": "Kite gear",
-  "weightLb": 12.0,
-  "w": 4,
-  "h": 3,
-  "tags": [
-   "kite",
-   "luxury"
-  ],
-  "desc": "Twelve pounds. Turns every wind day into the best day of the month.",
-  "real": false,
-  "color": 4889558,
-  "benefits": [
-   "Wind days become the best days",
-   "Kite workouts unlocked",
-   "+12 lb"
-  ]
- },
- {
-  "id": "switch",
-  "name": "Handheld Console",
-  "label": "Console",
-  "weightLb": 0.9,
-  "w": 2,
-  "h": 1,
-  "tags": [
-   "switch",
-   "luxury"
-  ],
-  "desc": "The game within the game. Rest days get a level per city.",
-  "real": false,
-  "color": 14040124,
-  "benefits": [
-   "Carry-On: a level per city on rest days",
-   "Gold stamps"
-  ]
- },
- {
-  "id": "ereader",
-  "name": "E-Reader",
-  "label": "E-reader",
-  "weightLb": 0.4,
-  "w": 2,
-  "h": 1,
-  "tags": [
-   "luxury"
-  ],
-  "desc": "A thousand books and one cable you will lose.",
-  "real": false,
-  "color": 3817291,
-  "benefits": [
-   "+2 mood on travel days",
-   "A thousand books, 0.4 lb"
-  ]
- },
- {
-  "id": "packingcubes",
-  "name": "Packing Cubes",
-  "label": "Cubes",
-  "weightLb": 0.8,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "organizer"
-  ],
-  "desc": "Nothing gets left behind when everything has a place.",
-  "real": false,
-  "color": 10479576,
-  "benefits": [
-   "Nothing gets left behind",
-   "Forgot-something events stop"
-  ]
- },
- {
-  "id": "hostgifts",
-  "name": "Host Gifts",
-  "label": "Host gifts",
-  "weightLb": 2.0,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "luxury"
-  ],
-  "desc": "Small, local, edible. Reviews get warmer.",
-  "real": false,
-  "color": 16740264,
-  "benefits": [
-   "Hosts like you more",
-   "+3 mood on arrival"
-  ]
- },
- {
-  "id": "umbrella",
-  "name": "Umbrella",
-  "label": "Umbrella",
-  "weightLb": 0.8,
-  "w": 1,
-  "h": 3,
-  "tags": [
-   "rain"
-  ],
-  "desc": "Inverts in Patagonia. Fine in Lisbon.",
-  "real": false,
-  "color": 3030374,
-  "benefits": [
-   "Rain days cost no energy",
-   "Inverts in Patagonia"
-  ]
- },
- {
-  "id": "travelkettle",
-  "name": "Travel Kettle",
-  "label": "Kettle",
-  "weightLb": 1.1,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "kettle",
-   "trap"
-  ],
-  "desc": "Tea in every room, ninety seconds to a boil. Folds flat.",
-  "real": true,
-  "color": 14040124,
-  "benefits": [
-   "Tea in every room",
-   "+1 mood at night"
-  ]
- },
- {
-  "id": "jeans2",
-  "name": "Second Pair Of Jeans",
-  "label": "Jeans #2",
-  "weightLb": 2.0,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "clothing",
-   "trap"
-  ],
-  "desc": "You will not wear these. You know you will not wear these.",
-  "real": false,
-  "color": 2845872,
-  "benefits": [
-   "1 more day of clothes",
-   "2 lb"
-  ],
-  "clothesDays": 1
- },
- {
-  "id": "books",
-  "name": "Books",
-  "label": "Books",
-  "weightLb": 5.0,
-  "w": 2,
-  "h": 2,
-  "tags": [
-   "luxury",
-   "trap"
-  ],
-  "desc": "Five paperbacks. The e-reader exists. You know it exists.",
-  "real": false,
-  "color": 11041102,
-  "benefits": [
-   "Something to read",
-   "5 lb"
-  ]
- }
+  {
+    "id": "laptopkit",
+    "name": "Laptop + Desk Kit",
+    "label": "Laptop kit",
+    "weightLb": 4.0,
+    "w": 3,
+    "h": 2,
+    "tags": [
+      "essential",
+      "work"
+    ],
+    "desc": "The whole job, plus the stand and keyboard that keep the neck honest.",
+    "real": true,
+    "color": 11844036,
+    "benefits": [
+      "The job travels with you",
+      "Work days pay"
+    ]
+  },
+  {
+    "id": "tablet",
+    "name": "Tablet",
+    "label": "Tablet",
+    "weightLb": 1.0,
+    "w": 2,
+    "h": 2,
+    "tags": [
+      "work",
+      "luxury"
+    ],
+    "desc": "Second monitor, e-reader, journal, cinema.",
+    "real": true,
+    "color": 3817291,
+    "benefits": [
+      "+2 mood on rest days",
+      "A second screen for work"
+    ]
+  },
+  {
+    "id": "watch",
+    "name": "GPS Watch",
+    "label": "GPS watch",
+    "weightLb": 0.3,
+    "w": 1,
+    "h": 1,
+    "tags": [
+      "essential"
+    ],
+    "desc": "Counts every step, judges every rest day.",
+    "real": true,
+    "color": 3030374,
+    "benefits": [
+      "Counts every step",
+      "+1 health from training"
+    ]
+  },
+  {
+    "id": "dronekit",
+    "name": "Drone Kit",
+    "label": "Drone kit",
+    "weightLb": 4.0,
+    "w": 3,
+    "h": 2,
+    "tags": [
+      "camera",
+      "luxury"
+    ],
+    "desc": "The camera the year gets remembered by, its controller, and the spare batteries.",
+    "real": true,
+    "color": 7238788,
+    "benefits": [
+      "+4 mood in hero cities",
+      "4 lb, 6 cells"
+    ]
+  },
+  {
+    "id": "clothes1",
+    "name": "Clothes",
+    "label": "1 week worth",
+    "weightLb": 4.5,
+    "w": 3,
+    "h": 3,
+    "tags": [
+      "clothing"
+    ],
+    "desc": "Seven days of looking like a person. Add another week if laundry is not your thing.",
+    "real": true,
+    "color": 4889558,
+    "benefits": [
+      "7 days of clean clothes"
+    ],
+    "clothesDays": 7
+  },
+  {
+    "id": "clothes2",
+    "name": "Clothes",
+    "label": "1 week worth",
+    "weightLb": 4.5,
+    "w": 3,
+    "h": 3,
+    "tags": [
+      "clothing"
+    ],
+    "desc": "Seven days of looking like a person. Add another week if laundry is not your thing.",
+    "real": true,
+    "color": 3519401,
+    "benefits": [
+      "7 days of clean clothes"
+    ],
+    "clothesDays": 7
+  },
+  {
+    "id": "clothes3",
+    "name": "Clothes",
+    "label": "1 week worth",
+    "weightLb": 4.5,
+    "w": 3,
+    "h": 3,
+    "tags": [
+      "clothing"
+    ],
+    "desc": "Seven days of looking like a person. Add another week if laundry is not your thing.",
+    "real": false,
+    "color": 15900236,
+    "benefits": [
+      "7 days of clean clothes"
+    ],
+    "clothesDays": 7
+  },
+  {
+    "id": "clothes4",
+    "name": "Clothes",
+    "label": "1 week worth",
+    "weightLb": 4.5,
+    "w": 3,
+    "h": 3,
+    "tags": [
+      "clothing"
+    ],
+    "desc": "Seven days of looking like a person. Add another week if laundry is not your thing.",
+    "real": false,
+    "color": 12862842,
+    "benefits": [
+      "7 days of clean clothes"
+    ],
+    "clothesDays": 7
+  },
+  {
+    "id": "shell",
+    "name": "Rain Shell",
+    "label": "Rain shell",
+    "weightLb": 0.9,
+    "w": 2,
+    "h": 2,
+    "tags": [
+      "rain",
+      "clothing"
+    ],
+    "desc": "Lighter than an umbrella and it never inverts.",
+    "real": true,
+    "color": 15230525,
+    "benefits": [
+      "Rain days cost no energy",
+      "Counts as clothing"
+    ]
+  },
+  {
+    "id": "downjacket",
+    "name": "Down Jacket",
+    "label": "Down jacket",
+    "weightLb": 1.0,
+    "w": 2,
+    "h": 2,
+    "tags": [
+      "cold",
+      "clothing"
+    ],
+    "desc": "Stuffs into its own pocket. Saves October in the Alps.",
+    "real": false,
+    "color": 15900236,
+    "benefits": [
+      "Warm in cold cities",
+      "Skiing unlocked"
+    ]
+  },
+  {
+    "id": "hikingboots",
+    "name": "Hiking Boots",
+    "label": "Hiking boots",
+    "weightLb": 3.0,
+    "w": 3,
+    "h": 2,
+    "tags": [
+      "hike",
+      "cold"
+    ],
+    "desc": "Ankles for the Himalaya. Dead weight everywhere else.",
+    "real": false,
+    "color": 7031346,
+    "benefits": [
+      "+1 life in outdoor workouts",
+      "Warm in cold cities",
+      "3 lb"
+    ]
+  },
+  {
+    "id": "swimkit",
+    "name": "Swim Kit",
+    "label": "Swim kit",
+    "weightLb": 0.6,
+    "w": 2,
+    "h": 1,
+    "tags": [
+      "swim"
+    ],
+    "desc": "Trunks, towel, goggles. Every coast, and the hotel pool you did not know about.",
+    "real": true,
+    "color": 3519401,
+    "benefits": [
+      "Swim workouts unlocked",
+      "Every coast, every pool"
+    ]
+  },
+  {
+    "id": "sunkit",
+    "name": "Hat + Sunglasses",
+    "label": "Sun kit",
+    "weightLb": 0.5,
+    "w": 2,
+    "h": 1,
+    "tags": [
+      "clothing"
+    ],
+    "desc": "A brimmed hat and armless sunglasses. Dignity optional.",
+    "real": true,
+    "color": 14727562,
+    "benefits": [
+      "No sunburn events",
+      "Counts as clothing"
+    ]
+  },
+  {
+    "id": "protein",
+    "name": "Protein Powder",
+    "label": "Protein",
+    "weightLb": 2.5,
+    "w": 2,
+    "h": 2,
+    "tags": [
+      "health"
+    ],
+    "desc": "Casein, greens, collagen, electrolytes. All the powders, one tub of resolve.",
+    "real": true,
+    "color": 16052714,
+    "benefits": [
+      "Slow health regen every day",
+      "Counts as health gear"
+    ]
+  },
+  {
+    "id": "supplements",
+    "name": "Supplements",
+    "label": "Supplements",
+    "weightLb": 1.5,
+    "w": 2,
+    "h": 1,
+    "tags": [
+      "health"
+    ],
+    "desc": "The pills that keep the body the same across eleven diets.",
+    "real": true,
+    "color": 16240491,
+    "benefits": [
+      "Slow health regen every day",
+      "Fewer sick days"
+    ]
+  },
+  {
+    "id": "skincare",
+    "name": "Skincare",
+    "label": "Skincare",
+    "weightLb": 1.0,
+    "w": 2,
+    "h": 1,
+    "tags": [
+      "health"
+    ],
+    "desc": "The routine that survives a hostel sink.",
+    "real": true,
+    "color": 9425908,
+    "benefits": [
+      "Slow health regen every day",
+      "Sun does less damage"
+    ]
+  },
+  {
+    "id": "toiletries",
+    "name": "Toiletries",
+    "label": "Toiletries",
+    "weightLb": 1.2,
+    "w": 2,
+    "h": 2,
+    "tags": [
+      "essential"
+    ],
+    "desc": "Toothbrush, trimmer, the things hotels pretend to provide.",
+    "real": true,
+    "color": 11844036,
+    "benefits": [
+      "Essential",
+      "Hotels pretend to provide these"
+    ]
+  },
+  {
+    "id": "sleepkit",
+    "name": "Sleep Kit",
+    "label": "Sleep kit",
+    "weightLb": 1.5,
+    "w": 2,
+    "h": 2,
+    "tags": [
+      "sleep",
+      "health"
+    ],
+    "desc": "Mask, earplugs, a compressed pillow, a sun lamp for the mornings the sun forgets.",
+    "real": true,
+    "color": 9124474,
+    "benefits": [
+      "Jet lag passes faster",
+      "Loud neighbours do less damage",
+      "Counts as health gear"
+    ]
+  },
+  {
+    "id": "firstaid",
+    "name": "First Aid Kit",
+    "label": "First aid",
+    "weightLb": 0.8,
+    "w": 2,
+    "h": 1,
+    "tags": [
+      "firstaid"
+    ],
+    "desc": "Bandages, antiseptic, blister pads. Clean the cut. Every time.",
+    "real": false,
+    "color": 14040124,
+    "benefits": [
+      "Cuts don't get infected",
+      "Otter-safe",
+      "Urchin-safe"
+    ]
+  },
+  {
+    "id": "medkit",
+    "name": "Medicine Kit",
+    "label": "Medicine",
+    "weightLb": 0.6,
+    "w": 2,
+    "h": 1,
+    "tags": [
+      "meds",
+      "health"
+    ],
+    "desc": "Antibiotics, probiotics, altitude pills. Prescribed before leaving; the road does not care about your plans.",
+    "real": false,
+    "color": 16052714,
+    "benefits": [
+      "Food poisoning is milder",
+      "Altitude is survivable",
+      "Counts as health gear"
+    ]
+  },
+  {
+    "id": "mosquitokit",
+    "name": "Mosquito Kit",
+    "label": "Mosquito kit",
+    "weightLb": 0.6,
+    "w": 2,
+    "h": 1,
+    "tags": [
+      "repellent"
+    ],
+    "desc": "Repellent and a travel net. The south of France has questions.",
+    "real": false,
+    "color": 5212747,
+    "benefits": [
+      "Mosquito swarms do nothing",
+      "Sleep on the Riviera"
+    ]
+  },
+  {
+    "id": "airmonitor",
+    "name": "Air Quality Monitor",
+    "label": "Air monitor",
+    "weightLb": 1.0,
+    "w": 2,
+    "h": 1,
+    "tags": [
+      "health"
+    ],
+    "desc": "Reads CO2, particulates and radon. Old buildings in old mountains have secrets.",
+    "real": true,
+    "color": 4124872,
+    "benefits": [
+      "Radon can't hurt you",
+      "Sleep better in old buildings",
+      "Counts as health gear"
+    ]
+  },
+  {
+    "id": "coffeekit",
+    "name": "Coffee Kit",
+    "label": "Coffee kit",
+    "weightLb": 2.0,
+    "w": 2,
+    "h": 2,
+    "tags": [
+      "coffee"
+    ],
+    "desc": "Hand grinder, folding dripper, gooseneck kettle. Good coffee no matter what.",
+    "real": true,
+    "color": 11041102,
+    "benefits": [
+      "+15 energy every morning",
+      "The coffee cinematic"
+    ]
+  },
+  {
+    "id": "adventure",
+    "name": "Adventure Gear",
+    "label": "Adventure",
+    "weightLb": 4.0,
+    "w": 3,
+    "h": 2,
+    "tags": [
+      "hike",
+      "water",
+      "light",
+      "knife"
+    ],
+    "desc": "Water bladder with the filter plumbed in, ice cleats, gloves, a headlamp, the knife from Patagonia.",
+    "real": true,
+    "color": 9225323,
+    "benefits": [
+      "+6 mood exploring outdoorsy cities",
+      "Easier outdoor workouts",
+      "Filtered water, a headlamp, a knife"
+    ]
+  },
+  {
+    "id": "climbkit",
+    "name": "Climbing Kit",
+    "label": "Climbing kit",
+    "weightLb": 2.5,
+    "w": 2,
+    "h": 2,
+    "tags": [
+      "climb",
+      "fitness"
+    ],
+    "desc": "Shoes and chalk for the gym, a harness and lanyard for the ferrata.",
+    "real": true,
+    "color": 15230525,
+    "benefits": [
+      "Bouldering and ferrata unlocked",
+      "Counts as fitness gear"
+    ]
+  },
+  {
+    "id": "fitnesskit",
+    "name": "Fitness Kit",
+    "label": "Fitness kit",
+    "weightLb": 1.5,
+    "w": 2,
+    "h": 2,
+    "tags": [
+      "fitness"
+    ],
+    "desc": "Bands and a collapsible foam roller. Hotel rooms become gyms.",
+    "real": true,
+    "color": 4124872,
+    "benefits": [
+      "Hotel-room workouts unlocked",
+      "Slower daily wear"
+    ]
+  },
+  {
+    "id": "yogamat",
+    "name": "Yoga Mat",
+    "label": "Yoga mat",
+    "weightLb": 2.0,
+    "w": 1,
+    "h": 5,
+    "tags": [
+      "fitness"
+    ],
+    "desc": "Thin as a tortilla. Better than a carpet.",
+    "real": false,
+    "color": 12862842,
+    "benefits": [
+      "Yoga unlocked",
+      "Slower daily wear",
+      "5 cells tall"
+    ]
+  },
+  {
+    "id": "kitegear",
+    "name": "Kite Gear",
+    "label": "Kite gear",
+    "weightLb": 12.0,
+    "w": 4,
+    "h": 3,
+    "tags": [
+      "kite",
+      "luxury"
+    ],
+    "desc": "Twelve pounds. Turns every wind day into the best day of the month.",
+    "real": false,
+    "color": 4889558,
+    "benefits": [
+      "Wind days become the best days",
+      "Kite workouts unlocked",
+      "+12 lb"
+    ]
+  },
+  {
+    "id": "switch",
+    "name": "Handheld Console",
+    "label": "Console",
+    "weightLb": 0.9,
+    "w": 2,
+    "h": 1,
+    "tags": [
+      "switch",
+      "luxury"
+    ],
+    "desc": "The game within the game. Rest days get a level per city.",
+    "real": false,
+    "color": 14040124,
+    "benefits": [
+      "Carry-On: a level per city on rest days",
+      "Gold stamps"
+    ]
+  },
+  {
+    "id": "ereader",
+    "name": "E-Reader",
+    "label": "E-reader",
+    "weightLb": 0.4,
+    "w": 2,
+    "h": 1,
+    "tags": [
+      "luxury"
+    ],
+    "desc": "A thousand books and one cable you will lose.",
+    "real": false,
+    "color": 3817291,
+    "benefits": [
+      "+2 mood on travel days",
+      "A thousand books, 0.4 lb"
+    ]
+  },
+  {
+    "id": "packingcubes",
+    "name": "Packing Cubes",
+    "label": "Cubes",
+    "weightLb": 0.8,
+    "w": 2,
+    "h": 2,
+    "tags": [
+      "organizer"
+    ],
+    "desc": "Nothing gets left behind when everything has a place.",
+    "real": false,
+    "color": 10479576,
+    "benefits": [
+      "Nothing gets left behind",
+      "Forgot-something events stop"
+    ]
+  },
+  {
+    "id": "laundrykit",
+    "name": "Laundry Kit",
+    "label": "Sheets + bag",
+    "weightLb": 0.5,
+    "w": 2,
+    "h": 1,
+    "tags": [
+      "laundry"
+    ],
+    "desc": "Detergent sheets and a mesh laundry bag. Sink wash at night, dry by morning. The launderette stops eating whole days.",
+    "real": true,
+    "color": 9231587,
+    "benefits": [
+      "Laundry costs no day",
+      "Shorter sort, fewer socks lost",
+      "0.5 lb"
+    ]
+  },
+  {
+    "id": "hostgifts",
+    "name": "Host Gifts",
+    "label": "Host gifts",
+    "weightLb": 2.0,
+    "w": 2,
+    "h": 2,
+    "tags": [
+      "luxury"
+    ],
+    "desc": "Small, local, edible. Reviews get warmer.",
+    "real": false,
+    "color": 16740264,
+    "benefits": [
+      "Hosts like you more",
+      "+3 mood on arrival"
+    ]
+  },
+  {
+    "id": "umbrella",
+    "name": "Umbrella",
+    "label": "Umbrella",
+    "weightLb": 0.8,
+    "w": 1,
+    "h": 3,
+    "tags": [
+      "rain"
+    ],
+    "desc": "Inverts in Patagonia. Fine in Lisbon.",
+    "real": false,
+    "color": 3030374,
+    "benefits": [
+      "Rain days cost no energy",
+      "Inverts in Patagonia"
+    ]
+  },
+  {
+    "id": "travelkettle",
+    "name": "Travel Kettle",
+    "label": "Kettle",
+    "weightLb": 1.1,
+    "w": 2,
+    "h": 2,
+    "tags": [
+      "kettle",
+      "trap"
+    ],
+    "desc": "Tea in every room, ninety seconds to a boil. Folds flat.",
+    "real": true,
+    "color": 14040124,
+    "benefits": [
+      "Tea in every room",
+      "+1 mood at night"
+    ]
+  },
+  {
+    "id": "jeans2",
+    "name": "Second Pair Of Jeans",
+    "label": "Jeans #2",
+    "weightLb": 2.0,
+    "w": 2,
+    "h": 2,
+    "tags": [
+      "clothing",
+      "trap"
+    ],
+    "desc": "You will not wear these. You know you will not wear these.",
+    "real": false,
+    "color": 2845872,
+    "benefits": [
+      "1 more day of clothes",
+      "2 lb"
+    ],
+    "clothesDays": 1
+  },
+  {
+    "id": "books",
+    "name": "Books",
+    "label": "Books",
+    "weightLb": 5.0,
+    "w": 2,
+    "h": 2,
+    "tags": [
+      "luxury",
+      "trap"
+    ],
+    "desc": "Five paperbacks. The e-reader exists. You know it exists.",
+    "real": false,
+    "color": 11041102,
+    "benefits": [
+      "Something to read",
+      "5 lb"
+    ]
+  }
 ]

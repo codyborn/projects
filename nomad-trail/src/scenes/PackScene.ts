@@ -72,7 +72,7 @@ export class PackScene extends Phaser.Scene {
     txt(this, 12, 10, 'PACK YOUR LIFE', 10, PAL.white);
     txt(this, 12, 26, 'one suitcase. choose well.', 8, PAL.gray1);
     new Button(this, 214, 26, 'SURPRISE', () => this.surprise(), { w: 76, h: 40, fill: PAL.dusk1, size: 8 });
-    new Button(this, 306, 26, 'DEPART', () => this.depart(), { w: 96, h: 40, fill: PAL.sun0, size: 11 });
+    new Button(this, 306, 26, 'DEPART', () => this.depart(), { w: 96, h: 40, fill: PAL.sun0, size: 12 });
     // suitcase
     const w = this.cols * CELL, h = this.rows * CELL; const gg = this.add.graphics();
     gg.fillStyle(PAL.ink, 1); gg.fillRect(GRID_X + 3, GRID_Y + 4, w, h); gg.fillStyle(PAL.night1, 1); gg.fillRect(GRID_X, GRID_Y, w, h);
@@ -105,7 +105,7 @@ export class PackScene extends Phaser.Scene {
     (left as any).setText?.('^'); (right as any).setText?.('v');
     this.catLabel = txt(this, 180, y + 4, CATS[0], 10, PAL.sun2, { align: 'center' }).setOrigin(0.5, 0);
     this.dots = CATS.map((_, i) => this.add.rectangle(180 - (CATS.length - 1) * 5 + i * 10, y + 20, 5, 3, i === 0 ? PAL.sun2 : PAL.night3).setOrigin(0.5, 0));
-    txt(this, 180, TRAY_Y + TRAY_H - 10, 'swipe up / down: category · left / right: browse', 8, PAL.gray0, { align: 'center' }).setOrigin(0.5, 1).setDepth(5);
+    txt(this, 180, TRAY_Y + TRAY_H - 10, 'swipe up / down: category  ·  left / right: browse', 8, PAL.gray0, { align: 'center', wrap: 340 }).setOrigin(0.5, 1).setDepth(5);
   }
   /** Category change: the old page slides a little and fades inside the tray band, the new one slides in from the other side. No clipping needed. */
   private setCat(i: number, animate = true) {

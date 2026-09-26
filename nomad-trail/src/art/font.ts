@@ -150,14 +150,14 @@ export function buildPixelFont(scene: Phaser.Scene) {
  * (Fractional scales are what made the old text look chewed: 1.33x turned some 1px strokes into 2px.)
  *   <= 11  'pix7' x1  (12px lines, 8px advance)    body text, buttons, HUD
  *   12-13  'pix'  x2  (16px lines, 12px advance)   chunky sub-headings, route rows
- *   14-19  'pix7' x2  (24px lines)                 headings
- *   20-31  'pix7' x3  (36px lines)                 title, gate numbers
+ *   14-23  'pix7' x2  (24px lines)                 headings, arrival city name, gate
+ *   24-31  'pix7' x3  (36px lines)                 title, PAUSED
  *   >= 32  'pix7' x4
  */
 export function pixFont(size: number): { key: string; fontSize: number } {
   if (size <= 11) return { key: 'pix7', fontSize: CW7 };
   if (size <= 13) return { key: 'pix', fontSize: CW * 2 };
-  if (size <= 19) return { key: 'pix7', fontSize: CW7 * 2 };
+  if (size <= 23) return { key: 'pix7', fontSize: CW7 * 2 };
   if (size <= 31) return { key: 'pix7', fontSize: CW7 * 3 };
   return { key: 'pix7', fontSize: CW7 * 4 };
 }

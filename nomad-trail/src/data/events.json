@@ -1,579 +1,596 @@
 [
- {
-  "id": "otter",
-  "title": "The otter",
-  "text": "Day {day}, {city}. Harajuku, dusk. A man on Takeshita-dori has a sea otter on his shoulder, the way other people have a scarf. It looks at you. Specifically at you. He nods. You pet the otter. It was worth it. Three days later the nick on your finger is hot and the fever arrives at 3 am. The hospital is very clean and very confused.",
-  "when": "action",
-  "baseChance": 0.35,
-  "effects": {
-   "health": -34,
-   "days": 4,
-   "mood": -6,
-   "sick": 3,
-   "unlockAchievement": "otter"
+  {
+    "id": "otter",
+    "title": "The otter",
+    "text": "Day {day}, {city}. Harajuku, dusk. A man on Takeshita-dori has a sea otter on his shoulder, the way other people have a scarf. It looks at you. Specifically at you. He nods. You pet the otter. It was worth it. Three days later the nick on your finger is hot and the fever arrives at 3 am. The hospital is very clean and very confused.",
+    "when": "action",
+    "baseChance": 0.35,
+    "effects": {
+      "health": -34,
+      "days": 4,
+      "mood": -6,
+      "sick": 3,
+      "unlockAchievement": "otter"
+    },
+    "requiresCity": "tokyo",
+    "mitigatedBy": [
+      "firstaid"
+    ],
+    "mitigatedText": "Day {day}, {city}. Harajuku, dusk. A man on Takeshita-dori has a sea otter on his shoulder, the way other people have a scarf. It looks at you. Specifically at you. He nods. You pet the otter. It was worth it. That night you clean the nick on your finger, and when it goes hot two days later the antibiotics are already in the bag. You keep your week.",
+    "mitigatedEffects": {
+      "health": -8,
+      "mood": 8,
+      "unlockAchievement": "otter_lived"
+    }
   },
-  "requiresCity": "tokyo",
-  "mitigatedBy": [
-   "firstaid"
-  ],
-  "mitigatedText": "Day {day}, {city}. Harajuku, dusk. A man on Takeshita-dori has a sea otter on his shoulder, the way other people have a scarf. It looks at you. Specifically at you. He nods. You pet the otter. It was worth it. That night you clean the nick on your finger, and when it goes hot two days later the antibiotics are already in the bag. You keep your week.",
-  "mitigatedEffects": {
-   "health": -8,
-   "mood": 8,
-   "unlockAchievement": "otter_lived"
-  }
- },
- {
-  "id": "backinjury",
-  "title": "Something gives",
-  "text": "Lifting the bag onto the train rack, something in your lower back makes a sound you did not know it could make. For the next ten days, existence is suffering.",
-  "when": "leg",
-  "baseChance": 0.45,
-  "effects": {
-   "backInjury": 10,
-   "energy": -30,
-   "mood": -15,
-   "unlockAchievement": "back"
+  {
+    "id": "backinjury",
+    "title": "Something gives",
+    "text": "Lifting the bag onto the train rack, something in your lower back makes a sound you did not know it could make. For the next ten days, existence is suffering.",
+    "when": "leg",
+    "baseChance": 0.45,
+    "effects": {
+      "backInjury": 10,
+      "energy": -30,
+      "mood": -15,
+      "unlockAchievement": "back"
+    },
+    "requiresOverweight": true
   },
-  "requiresOverweight": true
- },
- {
-  "id": "wheel",
-  "title": "Baggage carousel, one wheel short",
-  "text": "Your suitcase comes around the carousel on three wheels and a stump. The airline offers a form. The form does nothing.",
-  "when": "flight",
-  "baseChance": 0.05,
-  "effects": {
-   "wheelBroken": true,
-   "mood": -8,
-   "energy": -5
-  }
- },
- {
-  "id": "delayed",
-  "title": "Delayed baggage",
-  "text": "Everyone else's bag comes out. Yours is, according to the app, still in the departure city, having a nice time. The laptop is on your shoulder; everything else is somewhere else for a while. No clean clothes, no kitchen, no gym until it shows up.",
-  "when": "flight",
-  "baseChance": 0.1,
-  "effects": {
-   "bagLocked": 3,
-   "mood": -10
-  }
- },
- {
-  "id": "kettle",
-  "title": "The kettle",
-  "text": "The collapsible travel kettle boils, then does not stop, then detonates. Second-degree burns across the wrist. The hotel has a kettle. It always had a kettle.",
-  "when": "day",
-  "baseChance": 0.02,
-  "effects": {
-   "health": -21,
-   "mood": -10,
-   "energy": -10,
-   "sick": 4,
-   "loseItemTag": "kettle",
-   "unlockAchievement": "kettle"
+  {
+    "id": "wheel",
+    "title": "Baggage carousel, one wheel short",
+    "text": "Your suitcase comes around the carousel on three wheels and a stump. The airline offers a form. The form does nothing.",
+    "when": "flight",
+    "baseChance": 0.05,
+    "effects": {
+      "wheelBroken": true,
+      "mood": -8,
+      "energy": -5
+    }
   },
-  "requiresTag": "kettle"
- },
- {
-  "id": "foodpoisoning",
-  "title": "Food poisoning",
-  "text": "Day {day}, {city}. What rhymes with hiarrhea and is coming out of you right now? You spend two days learning the bathroom tile pattern by heart.",
-  "when": "action",
-  "baseChance": 0.135,
-  "effects": {
-   "health": -15,
-   "energy": -20,
-   "mood": -8,
-   "days": 2,
-   "sick": 2
+  {
+    "id": "delayed",
+    "title": "Delayed baggage",
+    "text": "Everyone else's bag comes out. Yours is, according to the app, still in the departure city, having a nice time. The laptop is on your shoulder; everything else is somewhere else for a while. No clean clothes, no kitchen, no gym until it shows up.",
+    "when": "flight",
+    "baseChance": 0.1,
+    "effects": {
+      "bagLocked": 3,
+      "mood": -10
+    }
   },
-  "mitigatedBy": [
-   "meds"
-  ],
-  "mitigatedText": "Day {day}, {city}. That lukewarm salmon mayo bowl was a mistake. The probiotics fight back. One rough night, not two days.",
-  "mitigatedEffects": {
-   "health": -7,
-   "energy": -10,
-   "mood": -4
-  }
- },
- {
-  "id": "airbnbcancel",
-  "title": "Cancelled on arrival",
-  "text": "You land in {city}. The host has cancelled 'due to unforeseen circumstances', which is to say a better booking. It is 6 pm, everything you own is on your back, and the only hotel with a room is across town. You get there. You do not enjoy getting there.",
-  "when": "arrive",
-  "baseChance": 0.08,
-  "effects": {
-   "energy": -20,
-   "mood": -12
-  }
- },
- {
-  "id": "forgot",
-  "title": "Left behind",
-  "text": "Two hours out of {city} you realize your {item} is still in the room. The host 'will take a look'. The host does not take a look.",
-  "when": "leave",
-  "baseChance": 0.18,
-  "effects": {
-   "loseRandomItem": true,
-   "mood": -8
+  {
+    "id": "kettle",
+    "title": "The kettle",
+    "text": "The collapsible travel kettle boils, then does not stop, then detonates. Second-degree burns across the wrist. The hotel has a kettle. It always had a kettle.",
+    "when": "day",
+    "baseChance": 0.02,
+    "effects": {
+      "health": -21,
+      "mood": -10,
+      "energy": -10,
+      "sick": 4,
+      "loseItemTag": "kettle",
+      "unlockAchievement": "kettle"
+    },
+    "requiresTag": "kettle"
   },
-  "mitigatedBy": [
-   "organizer"
-  ],
-  "mitigatedText": "You do the packing-cube count before you leave {city}. Everything has a place; everything is in its place.",
-  "mitigatedEffects": {
-   "mood": 2
-  }
- },
- {
-  "id": "mosquito",
-  "title": "The swarm",
-  "text": "Sunset in {city}. The mosquitoes arrive like a scene from Jumanji. You wake up with a constellation on each ankle and the sleep of a hunted animal.",
-  "when": "day",
-  "baseChance": 0.07,
-  "effects": {
-   "energy": -12,
-   "mood": -8,
-   "health": -3
+  {
+    "id": "foodpoisoning",
+    "title": "Food poisoning",
+    "text": "Day {day}, {city}. What rhymes with hiarrhea and is coming out of you right now? You spend two days learning the bathroom tile pattern by heart.",
+    "when": "action",
+    "baseChance": 0.135,
+    "effects": {
+      "health": -15,
+      "energy": -20,
+      "mood": -8,
+      "days": 2,
+      "sick": 2
+    },
+    "mitigatedBy": [
+      "meds"
+    ],
+    "mitigatedText": "Day {day}, {city}. That lukewarm salmon mayo bowl was a mistake. The probiotics fight back. One rough night, not two days.",
+    "mitigatedEffects": {
+      "health": -7,
+      "energy": -10,
+      "mood": -4
+    }
   },
-  "requiresClimate": [
-   "hot"
-  ],
-  "mitigatedBy": [
-   "repellent"
-  ],
-  "mitigatedText": "Sunset in {city}. The mosquitoes arrive. The net goes up and the repellent goes on. You sleep like a baby.",
-  "mitigatedEffects": {
-   "mood": 1
-  }
- },
- {
-  "id": "altitude",
-  "title": "Thin air",
-  "text": "Above 3,500 m on the circuit out of {city} the headache starts behind the eyes and the appetite leaves. Slowly, slowly: the only rule up here.",
-  "when": "action",
-  "baseChance": 0.7,
-  "effects": {
-   "health": -13,
-   "energy": -25,
-   "mood": -5
+  {
+    "id": "airbnbcancel",
+    "title": "Cancelled on arrival",
+    "text": "You land in {city}. The host has cancelled 'due to unforeseen circumstances', which is to say a better booking. It is 6 pm, everything you own is on your back, and the only hotel with a room is across town. You get there. You do not enjoy getting there.",
+    "when": "arrive",
+    "baseChance": 0.08,
+    "effects": {
+      "energy": -20,
+      "mood": -12
+    }
   },
-  "requiresCity": "kathmandu",
-  "mitigatedBy": [
-   "meds",
-   "water",
-   "health"
-  ],
-  "mitigatedText": "Above 3,500 m on the circuit out of {city}. Altitude pills tingle in your fingers, electrolytes in the bottle, a rest day in the plan. The headache stays a rumour.",
-  "mitigatedEffects": {
-   "energy": -12
-  }
- },
- {
-  "id": "jetlag",
-  "title": "Jet lag",
-  "text": "Six or more time zones in one leg. For three days you are awake at 4 am and asleep in meetings. The body keeps its own calendar.",
-  "when": "leg",
-  "baseChance": 0.8,
-  "effects": {
-   "energy": -25,
-   "mood": -5
+  {
+    "id": "forgot",
+    "title": "Left behind",
+    "text": "Two hours out of {city} you realize your {item} is still in the room. The host 'will take a look'. The host does not take a look.",
+    "when": "leave",
+    "baseChance": 0.18,
+    "effects": {
+      "loseRandomItem": true,
+      "mood": -8
+    },
+    "mitigatedBy": [
+      "organizer"
+    ],
+    "mitigatedText": "You do the packing-cube count before you leave {city}. Everything has a place; everything is in its place.",
+    "mitigatedEffects": {
+      "mood": 2
+    }
   },
-  "mitigatedBy": [
-   "sleep"
-  ],
-  "mitigatedText": "Six or more time zones in one leg. Sleep mask down, earplugs in, sun lamp on at 7. The body grumbles and gets in line.",
-  "mitigatedEffects": {
-   "energy": -10
-  }
- },
- {
-  "id": "windday",
-  "title": "Wind day",
-  "text": "The wind arrives at 2 pm like a train timetable. Everyone in {city} disappears to the water.",
-  "when": "day",
-  "baseChance": 0.08,
-  "effects": {
-   "mood": -6
+  {
+    "id": "mosquito",
+    "title": "The swarm",
+    "text": "Sunset in {city}. The mosquitoes arrive like a scene from Jumanji. You wake up with a constellation on each ankle and the sleep of a hunted animal.",
+    "when": "day",
+    "baseChance": 0.07,
+    "effects": {
+      "energy": -12,
+      "mood": -8,
+      "health": -3
+    },
+    "requiresClimate": [
+      "hot"
+    ],
+    "mitigatedBy": [
+      "repellent"
+    ],
+    "mitigatedText": "Sunset in {city}. The mosquitoes arrive. The net goes up and the repellent goes on. You sleep like a baby.",
+    "mitigatedEffects": {
+      "mood": 1
+    }
   },
-  "requiresClimate": [
-   "hot",
-   "cold"
-  ],
-  "mitigatedBy": [
-   "kite"
-  ],
-  "mitigatedText": "The wind arrives at 2 pm like a train timetable. You rig up. Best day of the month.",
-  "mitigatedEffects": {
-   "mood": 15,
-   "energy": -12,
-   "unlockAchievement": "kite"
+  {
+    "id": "altitude",
+    "title": "Thin air",
+    "text": "Above 3,500 m on the circuit out of {city} the headache starts behind the eyes and the appetite leaves. Slowly, slowly: the only rule up here.",
+    "when": "action",
+    "baseChance": 0.7,
+    "effects": {
+      "health": -13,
+      "energy": -25,
+      "mood": -5
+    },
+    "requiresCity": "kathmandu",
+    "mitigatedBy": [
+      "meds",
+      "water",
+      "health"
+    ],
+    "mitigatedText": "Above 3,500 m on the circuit out of {city}. Altitude pills tingle in your fingers, electrolytes in the bottle, a rest day in the plan. The headache stays a rumour.",
+    "mitigatedEffects": {
+      "energy": -12
+    }
   },
-  "requiresActivity": [
-   "kite",
-   "surf"
-  ]
- },
- {
-  "id": "lostphone",
-  "title": "Lost phone",
-  "text": "Somewhere between the bar and the walk back in {city}, your phone stops being yours. The plan you wrote for this exact moment is, of course, on the phone.",
-  "when": "action",
-  "baseChance": 0.02,
-  "effects": {
-   "mood": -20,
-   "energy": -10,
-   "days": 1
+  {
+    "id": "jetlag",
+    "title": "Jet lag",
+    "text": "Six or more time zones in one leg. For three days you are awake at 4 am and asleep in meetings. The body keeps its own calendar.",
+    "when": "leg",
+    "baseChance": 0.8,
+    "effects": {
+      "energy": -25,
+      "mood": -5
+    },
+    "mitigatedBy": [
+      "sleep"
+    ],
+    "mitigatedText": "Six or more time zones in one leg. Sleep mask down, earplugs in, sun lamp on at 7. The body grumbles and gets in line.",
+    "mitigatedEffects": {
+      "energy": -10
+    }
   },
-  "mitigatedBy": [
-   "essential"
-  ],
-  "mitigatedText": "Somewhere in {city} your phone stops being yours. The old phone comes out of the backpack and logs you back into everything. A bad evening instead of a bad week.",
-  "mitigatedEffects": {
-   "mood": -6
-  }
- },
- {
-  "id": "overweight",
-  "title": "Check-in scale",
-  "text": "The airline scale reads a number and the agent reads it back to you like a diagnosis. Fifty pounds is fifty pounds.",
-  "when": "flight",
-  "baseChance": 0.6,
-  "effects": {
-   "mood": -5,
-   "days": 1
+  {
+    "id": "windday",
+    "title": "Wind day",
+    "text": "The wind arrives at 2 pm like a train timetable. Everyone in {city} disappears to the water.",
+    "when": "day",
+    "baseChance": 0.08,
+    "effects": {
+      "mood": -6
+    },
+    "requiresClimate": [
+      "hot",
+      "cold"
+    ],
+    "mitigatedBy": [
+      "kite"
+    ],
+    "mitigatedText": "The wind arrives at 2 pm like a train timetable. You rig up. Best day of the month.",
+    "mitigatedEffects": {
+      "mood": 15,
+      "energy": -12,
+      "unlockAchievement": "kite"
+    },
+    "requiresActivity": [
+      "kite",
+      "surf"
+    ]
   },
-  "requiresOverweight": true
- },
- {
-  "id": "seaurchin",
-  "title": "Sea urchin",
-  "text": "A reef, a wave, a foot in the wrong place. Seven spines and a limp for the rest of the week.",
-  "when": "action",
-  "baseChance": 0.1,
-  "effects": {
-   "health": -7,
-   "mood": -6
+  {
+    "id": "lostphone",
+    "title": "Lost phone",
+    "text": "Somewhere between the bar and the walk back in {city}, your phone stops being yours. The plan you wrote for this exact moment is, of course, on the phone.",
+    "when": "action",
+    "baseChance": 0.02,
+    "effects": {
+      "mood": -20,
+      "energy": -10,
+      "days": 1
+    },
+    "mitigatedBy": [
+      "essential"
+    ],
+    "mitigatedText": "Somewhere in {city} your phone stops being yours. The old phone comes out of the backpack and logs you back into everything. A bad evening instead of a bad week.",
+    "mitigatedEffects": {
+      "mood": -6
+    }
   },
-  "requiresCity": "roatan",
-  "mitigatedBy": [
-   "firstaid"
-  ],
-  "mitigatedText": "A reef, a wave, a foot in the wrong place. Tweezers, antiseptic, done before dinner.",
-  "mitigatedEffects": {
-   "health": -2
-  }
- },
- {
-  "id": "rockfall",
-  "title": "Rockfall",
-  "text": "On the ferrata above {city} a stone the size of a fist comes down the gully. The helmet earns its rental fee.",
-  "when": "action",
-  "baseChance": 0.06,
-  "effects": {
-   "health": -8,
-   "mood": 5
+  {
+    "id": "overweight",
+    "title": "Check-in scale",
+    "text": "The airline scale reads a number and the agent reads it back to you like a diagnosis. Fifty pounds is fifty pounds.",
+    "when": "flight",
+    "baseChance": 0.6,
+    "effects": {
+      "mood": -5,
+      "days": 1
+    },
+    "requiresOverweight": true
   },
-  "requiresCity": "innsbruck"
- },
- {
-  "id": "oktoberfest",
-  "title": "Oktoberfest",
-  "text": "Opening weekend. A tent, a Mass, another Mass, a brass band that will not stop. You lose a day and gain a story.",
-  "when": "day",
-  "baseChance": 0.5,
-  "effects": {
-   "mood": 18,
-   "energy": -25,
-   "health": -4,
-   "days": 1
+  {
+    "id": "seaurchin",
+    "title": "Sea urchin",
+    "text": "A reef, a wave, a foot in the wrong place. Seven spines and a limp for the rest of the week.",
+    "when": "action",
+    "baseChance": 0.1,
+    "effects": {
+      "health": -7,
+      "mood": -6
+    },
+    "requiresCity": "roatan",
+    "mitigatedBy": [
+      "firstaid"
+    ],
+    "mitigatedText": "A reef, a wave, a foot in the wrong place. Tweezers, antiseptic, done before dinner.",
+    "mitigatedEffects": {
+      "health": -2
+    }
   },
-  "requiresCity": "munich"
- },
- {
-  "id": "rain",
-  "title": "It rains",
-  "text": "It rains in {city}. Not dramatically. Continuously. Everything you own is slightly damp.",
-  "when": "day",
-  "baseChance": 0.05,
-  "effects": {
-   "mood": -6,
-   "energy": -4
+  {
+    "id": "rockfall",
+    "title": "Rockfall",
+    "text": "On the ferrata above {city} a stone the size of a fist comes down the gully. The helmet earns its rental fee.",
+    "when": "action",
+    "baseChance": 0.06,
+    "effects": {
+      "health": -8,
+      "mood": 5
+    },
+    "requiresCity": "innsbruck"
   },
-  "requiresClimate": [
-   "rainy",
-   "temperate"
-  ],
-  "mitigatedBy": [
-   "rain"
-  ],
-  "mitigatedText": "It rains in {city}. The shell goes on. You are the only dry person at the bus stop.",
-  "mitigatedEffects": {
-   "mood": 1
-  }
- },
- {
-  "id": "sunburn",
-  "title": "Sunburn",
-  "text": "You forgot the sunscreen for exactly one afternoon. Your shoulders will remember it for a week.",
-  "when": "day",
-  "baseChance": 0.05,
-  "effects": {
-   "health": -3,
-   "mood": -4,
-   "energy": -4
+  {
+    "id": "oktoberfest",
+    "title": "Oktoberfest",
+    "text": "Opening weekend. A tent, a Mass, another Mass, a brass band that will not stop. You lose a day and gain a story.",
+    "when": "day",
+    "baseChance": 0.5,
+    "effects": {
+      "mood": 18,
+      "energy": -25,
+      "health": -4,
+      "days": 1
+    },
+    "requiresCity": "munich"
   },
-  "requiresClimate": [
-   "hot"
-  ],
-  "mitigatedBy": [
-   "health"
-  ],
-  "mitigatedText": "SPF 30 in the morning, SPF 32 at noon. The sun tries; the routine wins.",
-  "mitigatedEffects": {}
- },
- {
-  "id": "sleepless",
-  "title": "The upstairs neighbour",
-  "text": "The apartment above yours in {city} is either a nightclub or a family of tap dancers. 3 am, 4 am, 5 am.",
-  "when": "day",
-  "baseChance": 0.04,
-  "effects": {
-   "energy": -15,
-   "mood": -6
+  {
+    "id": "rain",
+    "title": "It rains",
+    "text": "It rains in {city}. Not dramatically. Continuously. Everything you own is slightly damp.",
+    "when": "day",
+    "baseChance": 0.05,
+    "effects": {
+      "mood": -6,
+      "energy": -4
+    },
+    "requiresClimate": [
+      "rainy",
+      "temperate"
+    ],
+    "mitigatedBy": [
+      "rain"
+    ],
+    "mitigatedText": "It rains in {city}. The shell goes on. You are the only dry person at the bus stop.",
+    "mitigatedEffects": {
+      "mood": 1
+    }
   },
-  "mitigatedBy": [
-   "sleep"
-  ],
-  "mitigatedText": "The apartment above yours is a nightclub. Earplugs in. You hear nothing until the alarm.",
-  "mitigatedEffects": {
-   "energy": -3
-  }
- },
- {
-  "id": "wildlife",
-  "title": "Wildlife",
-  "text": "A moose, or a stag, or something with more legs than expected, stands in the trail outside {city} and does not move. Neither do you. Best minute of the month.",
-  "when": "action",
-  "baseChance": 0.1,
-  "effects": {
-   "mood": 12
+  {
+    "id": "sunburn",
+    "title": "Sunburn",
+    "text": "You forgot the sunscreen for exactly one afternoon. Your shoulders will remember it for a week.",
+    "when": "day",
+    "baseChance": 0.05,
+    "effects": {
+      "health": -3,
+      "mood": -4,
+      "energy": -4
+    },
+    "requiresClimate": [
+      "hot"
+    ],
+    "mitigatedBy": [
+      "health"
+    ],
+    "mitigatedText": "SPF 30 in the morning, SPF 32 at noon. The sun tries; the routine wins.",
+    "mitigatedEffects": {}
   },
-  "requiresClimate": [
-   "cold",
-   "alpine",
-   "temperate"
-  ],
-  "requiresOutdoorsy": true
- },
- {
-  "id": "goodday",
-  "title": "A good day",
-  "text": "Day {day}, {city}. Nothing goes wrong. The coffee is right, the light is right, the work gets done by two and the city is still out there at three. This is why.",
-  "when": "day",
-  "baseChance": 0.04,
-  "effects": {
-   "mood": 10,
-   "energy": 5
-  }
- },
- {
-  "id": "nowifi",
-  "title": "No wifi",
-  "text": "The listing said wifi. The listing meant a router, unplugged, in a drawer. You hotspot the phone and pray to the tower on the hill.",
-  "when": "arrive",
-  "baseChance": 0.06,
-  "effects": {
-   "mood": -8,
-   "energy": -5
-  }
- },
- {
-  "id": "laundrylost",
-  "title": "The laundromat",
-  "text": "The laundromat in {city} returns everything except one sock and your favourite t-shirt. Neither is ever seen again.",
-  "when": "action",
-  "baseChance": 0.05,
-  "effects": {
-   "mood": -4
-  }
- },
- {
-  "id": "hostgift",
-  "title": "The host",
-  "text": "Your host in {city} leaves bread, cheese and a handwritten map of the neighbourhood. The map is wrong and the cheese is perfect.",
-  "when": "arrive",
-  "baseChance": 0.1,
-  "effects": {
-   "mood": 8
+  {
+    "id": "sleepless",
+    "title": "The upstairs neighbour",
+    "text": "The apartment above yours in {city} is either a nightclub or a family of tap dancers. 3 am, 4 am, 5 am.",
+    "when": "day",
+    "baseChance": 0.04,
+    "effects": {
+      "energy": -15,
+      "mood": -6
+    },
+    "mitigatedBy": [
+      "sleep"
+    ],
+    "mitigatedText": "The apartment above yours is a nightclub. Earplugs in. You hear nothing until the alarm.",
+    "mitigatedEffects": {
+      "energy": -3
+    }
   },
-  "requiresTag": "luxury"
- },
- {
-  "id": "surprisemeetup",
-  "title": "Someone you know",
-  "text": "A friend from two cities ago is, by coincidence, in {city} this week. Dinner turns into a weekend.",
-  "when": "day",
-  "baseChance": 0.02,
-  "effects": {
-   "mood": 15,
-   "energy": -8
-  }
- },
- {
-  "id": "flightdelay",
-  "title": "Delayed",
-  "text": "The flight to {city} boards, sits, deboards, and then leaves four hours late. You learn the gate area's every outlet.",
-  "when": "flight",
-  "baseChance": 0.1,
-  "effects": {
-   "energy": -10,
-   "mood": -5
-  }
- },
- {
-  "id": "upgrade",
-  "title": "Upgraded",
-  "text": "At the gate the agent looks at you, looks at the screen, and hands you a new boarding pass. Row two. You do not ask why.",
-  "when": "flight",
-  "baseChance": 0.03,
-  "effects": {
-   "energy": 15,
-   "mood": 10
-  }
- },
- {
-  "id": "trainview",
-  "title": "The window seat",
-  "text": "The train to {city} runs along a lake, then a valley, then a lake again. You get nothing done and regret none of it.",
-  "when": "leg",
-  "baseChance": 0.1,
-  "effects": {
-   "mood": 8
+  {
+    "id": "wildlife",
+    "title": "Wildlife",
+    "text": "A moose, or a stag, or something with more legs than expected, stands in the trail outside {city} and does not move. Neither do you. Best minute of the month.",
+    "when": "action",
+    "baseChance": 0.1,
+    "effects": {
+      "mood": 12
+    },
+    "requiresClimate": [
+      "cold",
+      "alpine",
+      "temperate"
+    ],
+    "requiresOutdoorsy": true
   },
-  "requiresTransport": [
-   "train"
-  ]
- },
- {
-  "id": "lostcharger",
-  "title": "One cable short",
-  "text": "The watch cable is in the last hotel. The watch dies on day three and you become a person who does not know their current step count.",
-  "when": "leave",
-  "baseChance": 0.05,
-  "effects": {
-   "loseItemTag": "essential",
-   "mood": -6
+  {
+    "id": "goodday",
+    "title": "A good day",
+    "text": "Day {day}, {city}. Nothing goes wrong. The coffee is right, the light is right, the work gets done by two and the city is still out there at three. This is why.",
+    "when": "day",
+    "baseChance": 0.04,
+    "effects": {
+      "mood": 10,
+      "energy": 5
+    }
   },
-  "mitigatedBy": [
-   "organizer"
-  ],
-  "mitigatedText": "Every cable has a pouch and every pouch has a place. You leave {city} with all of them.",
-  "mitigatedEffects": {}
- },
- {
-  "id": "gymday",
-  "title": "A real gym",
-  "text": "{city} has a real gym, with real weights, and a day pass costs less than a coffee. Arm day, finally.",
-  "when": "action",
-  "baseChance": 0.1,
-  "effects": {
-   "health": 6,
-   "mood": 6,
-   "energy": -8
+  {
+    "id": "nowifi",
+    "title": "No wifi",
+    "text": "The listing said wifi. The listing meant a router, unplugged, in a drawer. You hotspot the phone and pray to the tower on the hill.",
+    "when": "arrive",
+    "baseChance": 0.06,
+    "effects": {
+      "mood": -8,
+      "energy": -5
+    }
   },
-  "requiresTag": "fitness"
- },
- {
-  "id": "coffeeshop",
-  "title": "The cafe",
-  "text": "You find the cafe in {city}. Not a cafe: THE cafe. You will structure the rest of the stay around it.",
-  "when": "action",
-  "baseChance": 0.08,
-  "effects": {
-   "mood": 8,
-   "energy": 5
-  }
- },
- {
-  "id": "dirtyclothes",
-  "title": "Running low",
-  "text": "Everything in the bag has been worn twice. You rotate the least offensive shirt to the front and hope for a laundromat.",
-  "when": "day",
-  "baseChance": 0.0,
-  "effects": {
-   "mood": -4
-  }
- },
- {
-  "id": "radonmonitor",
-  "title": "The monitor",
-  "text": "The air monitor blinks red in {city}. Radon: the granite under the town has been quietly exhaling for ten thousand years. You open a window. Problem solved.",
-  "when": "day",
-  "baseChance": 0.0,
-  "effects": {
-   "mood": 2
-  }
- },
- {
-  "id": "radonheadache",
-  "title": "The headache",
-  "text": "You have had a headache since you arrived in {city}. Old building, shut windows, and you do not know why.",
-  "when": "day",
-  "baseChance": 0.0,
-  "effects": {
-   "mood": -4
-  }
- },
- {
-  "id": "broke",
-  "title": "The card declines",
-  "text": "The card declines in {city}. You try it again. It declines again, but slower, as if to make a point.",
-  "when": "day",
-  "baseChance": 0.0,
-  "effects": {
-   "mood": -5
-  }
- },
- {
-  "id": "gooddaymountain",
-  "title": "A good day",
-  "text": "Day {day}, {city}. Nothing goes wrong. The coffee is right, the light is right, the work gets done by two and the mountain is still there at three. This is why.",
-  "when": "day",
-  "baseChance": 0.03,
-  "effects": {
-   "mood": 10,
-   "energy": 5
+  {
+    "id": "laundrylost",
+    "title": "The laundromat",
+    "text": "The laundromat in {city} returns everything except one sock and your favourite t-shirt. Neither is ever seen again.",
+    "when": "action",
+    "baseChance": 0.05,
+    "effects": {
+      "mood": -4
+    }
   },
-  "requiresOutdoorsy": true
- },
- {
-  "id": "gooddaycoast",
-  "title": "A good day",
-  "text": "Day {day}, {city}. Nothing goes wrong. The coffee is right, the light is right, the work gets done by two and the water is warm at three. This is why.",
-  "when": "day",
-  "baseChance": 0.03,
-  "effects": {
-   "mood": 10,
-   "energy": 5
+  {
+    "id": "hostgift",
+    "title": "The host",
+    "text": "Your host in {city} leaves bread, cheese and a handwritten map of the neighbourhood. The map is wrong and the cheese is perfect.",
+    "when": "arrive",
+    "baseChance": 0.1,
+    "effects": {
+      "mood": 8
+    },
+    "requiresTag": "luxury"
   },
-  "requiresActivity": [
-   "swim",
-   "surf",
-   "kite"
-  ]
- },
- {
-  "id": "taxibreakdown",
-  "title": "The taxi dies",
-  "text": "Twenty minutes from the terminal the taxi coughs, rolls onto the shoulder and goes quiet. Out of gas, or out of will. You pay, you grab the suitcase, you run.",
-  "when": "flight",
-  "baseChance": 0.05,
-  "effects": {
-   "energy": -6
+  {
+    "id": "surprisemeetup",
+    "title": "Someone you know",
+    "text": "A friend from two cities ago is, by coincidence, in {city} this week. Dinner turns into a weekend.",
+    "when": "day",
+    "baseChance": 0.02,
+    "effects": {
+      "mood": 15,
+      "energy": -8
+    }
+  },
+  {
+    "id": "flightdelay",
+    "title": "Delayed",
+    "text": "The flight to {city} boards, sits, deboards, and then leaves four hours late. You learn the gate area's every outlet.",
+    "when": "flight",
+    "baseChance": 0.1,
+    "effects": {
+      "energy": -10,
+      "mood": -5
+    }
+  },
+  {
+    "id": "upgrade",
+    "title": "Upgraded",
+    "text": "At the gate the agent looks at you, looks at the screen, and hands you a new boarding pass. Row two. You do not ask why.",
+    "when": "flight",
+    "baseChance": 0.03,
+    "effects": {
+      "energy": 15,
+      "mood": 10
+    }
+  },
+  {
+    "id": "trainview",
+    "title": "The window seat",
+    "text": "The train to {city} runs along a lake, then a valley, then a lake again. You get nothing done and regret none of it.",
+    "when": "leg",
+    "baseChance": 0.1,
+    "effects": {
+      "mood": 8
+    },
+    "requiresTransport": [
+      "train"
+    ]
+  },
+  {
+    "id": "lostcharger",
+    "title": "One cable short",
+    "text": "The watch cable is in the last hotel. The watch dies on day three and you become a person who does not know their current step count.",
+    "when": "leave",
+    "baseChance": 0.05,
+    "effects": {
+      "loseItemTag": "essential",
+      "mood": -6
+    },
+    "mitigatedBy": [
+      "organizer"
+    ],
+    "mitigatedText": "Every cable has a pouch and every pouch has a place. You leave {city} with all of them.",
+    "mitigatedEffects": {}
+  },
+  {
+    "id": "gymday",
+    "title": "A real gym",
+    "text": "{city} has a real gym, with real weights, and a day pass costs less than a coffee. Arm day, finally.",
+    "when": "action",
+    "baseChance": 0.1,
+    "effects": {
+      "health": 6,
+      "mood": 6,
+      "energy": -8
+    },
+    "requiresTag": "fitness"
+  },
+  {
+    "id": "coffeeshop",
+    "title": "The cafe",
+    "text": "You find the cafe in {city}. Not a cafe: THE cafe. You will structure the rest of the stay around it.",
+    "when": "action",
+    "baseChance": 0.08,
+    "effects": {
+      "mood": 8,
+      "energy": 5
+    }
+  },
+  {
+    "id": "dirtyclothes",
+    "title": "Running low",
+    "text": "Everything in the bag has been worn twice. You rotate the least offensive shirt to the front and hope for a laundromat.",
+    "when": "day",
+    "baseChance": 0.0,
+    "effects": {
+      "mood": -4
+    }
+  },
+  {
+    "id": "radonmonitor",
+    "title": "The monitor",
+    "text": "The air monitor blinks red in {city}. Radon: the granite under the town has been quietly exhaling for ten thousand years. You open a window. Problem solved.",
+    "when": "day",
+    "baseChance": 0.0,
+    "effects": {
+      "mood": 2
+    }
+  },
+  {
+    "id": "radonheadache",
+    "title": "The headache",
+    "text": "You have had a headache since you arrived in {city}. Old building, shut windows, and you do not know why.",
+    "when": "day",
+    "baseChance": 0.0,
+    "effects": {
+      "mood": -4
+    }
+  },
+  {
+    "id": "broke",
+    "title": "The card declines",
+    "text": "The card declines in {city}. You try it again. It declines again, but slower, as if to make a point.",
+    "when": "day",
+    "baseChance": 0.0,
+    "effects": {
+      "mood": -5
+    }
+  },
+  {
+    "id": "gooddaymountain",
+    "title": "A good day",
+    "text": "Day {day}, {city}. Nothing goes wrong. The coffee is right, the light is right, the work gets done by two and the mountain is still there at three. This is why.",
+    "when": "day",
+    "baseChance": 0.03,
+    "effects": {
+      "mood": 10,
+      "energy": 5
+    },
+    "requiresOutdoorsy": true
+  },
+  {
+    "id": "gooddaycoast",
+    "title": "A good day",
+    "text": "Day {day}, {city}. Nothing goes wrong. The coffee is right, the light is right, the work gets done by two and the water is warm at three. This is why.",
+    "when": "day",
+    "baseChance": 0.03,
+    "effects": {
+      "mood": 10,
+      "energy": 5
+    },
+    "requiresActivity": [
+      "swim",
+      "surf",
+      "kite"
+    ]
+  },
+  {
+    "id": "taxibreakdown",
+    "title": "The taxi dies",
+    "text": "Twenty minutes from the terminal the taxi coughs, rolls onto the shoulder and goes quiet. Out of gas, or out of will. You pay, you grab the suitcase, you run.",
+    "when": "flight",
+    "baseChance": 0.05,
+    "effects": {
+      "energy": -6
+    }
+  },
+  {
+    "id": "dullknives",
+    "title": "The Airbnb knife",
+    "when": "arrive",
+    "baseChance": 0,
+    "text": "{city}. The listing said 'fully equipped kitchen'. The kitchen has one knife, and it has never met a whetstone. Tomatoes will be bruised, not sliced. Every cut here needs to be more precise than you would like.",
+    "effects": {
+      "mood": -2
+    },
+    "mitigatedBy": [
+      "knife"
+    ],
+    "mitigatedText": "{city}. The listing said 'fully equipped kitchen'. The kitchen has one knife, and it has never met a whetstone. You unroll your own. Crisis averted, tomatoes saved.",
+    "mitigatedEffects": {
+      "mood": 1
+    }
   }
- }
 ]

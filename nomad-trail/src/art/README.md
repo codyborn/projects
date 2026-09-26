@@ -3,7 +3,7 @@
 Call `generateAllArt(scene)` once in BootScene (from `src/art`). Idempotent. Then:
 
 ## Fonts
-- BitmapFont keys `pix` (6x8 cell, 5x7 glyph) and `pix2` (2x). `ptext(scene,x,y,text,color,size 1|2)` returns a tinted BitmapText. `wrap(text, maxChars)`. Char `~` renders a coffee cup.
+- BitmapFonts: `pix7` (8x12 cell, 7x11 glyph, `src/art/font7.ts`) is the body font; `pix` (6x8 cell, 5x7 glyph) and `pix2` (2x) are the chunky display font. RetroFont `size` is the cell WIDTH, so `txt()` snaps every requested size to an integer scale via `pixFont()` (<=11 pix7 x1, 12-13 pix x2, 14-23 pix7 x2, 24-31 pix7 x3). Fractional scales look chewed; never pass a raw fontSize. `ptext(scene,x,y,text,color,size 1|2)` returns a tinted 5x7 BitmapText at 1x/2x (passport, coffee).
 
 ## Sprites (texture keys)
 - Nomad sheets `nomad_<variant>` variants: base, suitcase, brokenwheel, limp, shell, shell_suitcase. 24x32. Anims `nomad_<variant>_idle`, `nomad_<variant>_walk`.

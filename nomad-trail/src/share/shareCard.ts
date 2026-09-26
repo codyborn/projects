@@ -9,11 +9,14 @@ import { drawStampGlyph } from '../art/sprites';
 
 // 5x7 glyphs reused from font.ts would create a Phaser dependency; keep a compact text drawer here.
 import { FONT_CHARS } from '../art/font';
+import { G7 } from '../art/font7';
 const GLYPHS: Record<string, string[]> = (() => { const m: Record<string, string[]> = {}; return m; })();
 function text(ctx: Ctx, s: string, x: number, y: number, c: number, scale = 1, font?: Record<string, string[]>) {
-  const f = font || GLYPHS; let cx = x;
-  for (const ch of s.toUpperCase()) { const pat = f[ch] || f['?'] || ['11111', '10001', '10001', '10001', '11111', '00000', '00000']; glyph(ctx, pat, cx, y, c, scale); cx += 6 * scale; }
+  const f = font || GLYPHS; let cx = x; const adv = (f === G7 ? 8 : 6) * scale;
+  for (const ch of s.toUpperCase()) { const pat = f[ch] || f[ch.normalize('NFD')[0]] || f['?'] || ['11111', '10001', '10001', '10001', '11111', '00000', '00000']; glyph(ctx, pat, cx, y, c, scale); cx += adv; }
 }
+/** Body text: the 7x11 'pix7' glyphs at 1x (9px caps, 8px advance, 12px line). */
+function body(ctx: Ctx, s: string, x: number, y: number, c: number) { text(ctx, s, x, y, c, 1, G7); }
 export function setShareFont(f: Record<string, string[]>) { Object.assign(GLYPHS, f); }
 import STRINGS from '../data/strings.json';
 const ENDING_TEXT: Record<string, string> = STRINGS.share;
@@ -40,7 +43,7 @@ export async function renderShareCard(state: RunState, cities: City[], settings?
     ditherGradient(ctx, 0, 0, W, H, [PAL.night0, PAL.night1, PAL.dusk0, PAL.night1]);
     const r = rng(state.seed || 1); for (let i = 0; i < 120; i++) P(ctx, r.int(0, W - 1), r.int(0, H - 1), r.chance(0.3) ? PAL.white : PAL.gray1);
     text(ctx, 'THE NOMAD TRAIL', 24, 18, PAL.sun3, 2);
-    text(ctx, state.ending?.kind === 'win' ? STRINGS.share.circumnavigated : STRINGS.share.didNotMakeIt, 24, 36, state.ending?.kind === 'win' ? PAL.neon : PAL.pink, 1);
+    body(ctx, state.ending?.kind === 'win' ? STRINGS.share.circumnavigated : STRINGS.share.didNotMakeIt, 24, 36, state.ending?.kind === 'win' ? PAL.neon : PAL.pink);
     // globe
     const cur = cities.find(c => c.id === state.cityId); const rot = cur ? -cur.lon : 0;
     renderGlobe(ctx, W / 2, 128, 74, cities, state.visited, state.cityId, state.route.length ? state.route : state.visited, { rotation: rot });
@@ -51,19 +54,19 @@ export async function renderShareCard(state: RunState, cities: City[], settings?
       for (let a = 0; a < 24; a++) { const ang = a / 24 * Math.PI * 2; P(ctx, x + 14 + Math.cos(ang) * 13, y + 14 + Math.sin(ang) * 13, col); } drawStampGlyph(ctx, c.stampIcon, x + 14, y + 14, col); });
     // stats
     const lines = [`DAY ${state.day} / 365`, `HEALTH ${Math.max(0, Math.round(state.health))}   MOOD ${Math.max(0, Math.round(state.mood))}`, typeof (state as any).money === 'number' ? `${state.visited.length} CITIES   $${Math.max(0, Math.round((state as any).money)).toLocaleString('en-US')} LEFT` : `${state.visited.length} CITIES   ${Object.values(state.stamps).filter(s => s === 'gold').length} GOLD STAMPS`, `${state.lostItems.length} ITEMS LOST   ${state.coffeeMornings} COFFEES`];
-    lines.forEach((l, i) => text(ctx, l, 24, 266 + i * 11, PAL.gray2, 1));
-    text(ctx, ENDING_TEXT[state.ending?.kind || 'quit'] || '', 24, 314, state.ending?.kind === 'win' ? PAL.sun2 : PAL.red, 1);
-    // the reason, two lines max, then score
-    wrapLines(causeOf(state), 37, 2).forEach((l, i) => text(ctx, l, 24, 326 + i * 10, PAL.white, 1));
-    text(ctx, `SCORE ${state.ending?.score ?? 0}`, 24, 350, PAL.white, 1);
-    if (settings?.bestScore) text(ctx, `BEST ${settings.bestScore}`, 110, 350, PAL.gray1, 1);
+    lines.forEach((l, i) => body(ctx, l, 24, 266 + i * 12, PAL.gray2));
+    body(ctx, ENDING_TEXT[state.ending?.kind || 'quit'] || '', 24, 316, state.ending?.kind === 'win' ? PAL.sun2 : PAL.red);
+    // the reason, three lines max (27 cols in the wider font), then score
+    wrapLines(causeOf(state), 27, 3).forEach((l, i) => body(ctx, l, 24, 330 + i * 12, PAL.white));
+    body(ctx, `SCORE ${state.ending?.score ?? 0}`, 24, 368, PAL.white);
+    if (settings?.bestScore) body(ctx, `BEST ${settings.bestScore}`, 120, 368, PAL.gray1);
     // continents: the second goal
     { const visited = new Set(state.visited.map(id => cities.find(c => c.id === id)).filter((c): c is City => !!c).map(c => CONTINENT_OF[c.region] as string));
       const all: [string, string][] = [['North America', 'N.AM'], ['South America', 'S.AM'], ['Europe', 'EUR'], ['Africa', 'AFR'], ['Asia', 'ASIA']];
-      let x = 24; all.forEach(([name, short]) => { const lit = visited.has(name); R(ctx, x, 367, 4, 4, lit ? PAL.neon : PAL.gray0); text(ctx, short, x + 6, 366, lit ? PAL.neon : PAL.gray0, 1); x += 6 + short.length * 6 + 6; }); }
+      let x = 24; all.forEach(([name, short]) => { const lit = visited.has(name); R(ctx, x, 387, 4, 4, lit ? PAL.neon : PAL.gray0); body(ctx, short, x + 6, 384, lit ? PAL.neon : PAL.gray0); x += 6 + short.length * 8 + 6; }); }
     // QR + url
     { const qr = QRCode.create('https://cit.earth/trail', { errorCorrectionLevel: 'L' }); const n = qr.modules.size, m = 2, pad = 3, box = n * m + pad * 2; const qx = W - 16 - box, qy = 392; R(ctx, qx, qy, box, box, PAL.white); for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (qr.modules.get(y, x)) R(ctx, qx + pad + x * m, qy + pad + y * m, m, m, PAL.ink); }
-    text(ctx, 'PLAY AT', 24, 398, PAL.gray1, 1); text(ctx, 'CIT.EARTH/TRAIL', 24, 408, PAL.neon, 1); text(ctx, STRINGS.share.tagline1, 24, 424, PAL.gray1, 1); text(ctx, STRINGS.share.tagline2, 24, 434, PAL.gray1, 1);
+    body(ctx, 'PLAY AT', 24, 404, PAL.gray1); body(ctx, 'CIT.EARTH/TRAIL', 24, 416, PAL.neon); body(ctx, STRINGS.share.tagline1, 24, 434, PAL.gray1); body(ctx, STRINGS.share.tagline2, 24, 446, PAL.gray1);
   });
   const big = document.createElement('canvas'); big.width = W * 4; big.height = H * 4; const bc = big.getContext('2d')!; bc.imageSmoothingEnabled = false; bc.drawImage(small, 0, 0, big.width, big.height);
   return big;

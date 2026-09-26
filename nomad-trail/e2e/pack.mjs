@@ -9,7 +9,7 @@ const swipe = async (x0, y0, x1, y1) => { await pg.touchscreen.touchStart(x0, y0
 const st = () => pg.evaluate(() => { const sc = window.__nomad.game.scene.getScene('Pack'); return { placed: sc.placed.length, cat: sc.cat, visible: sc.pages.map(p => p.visible) }; });
 await pg.goto('http://localhost:4173/trail/', { waitUntil: 'networkidle0' }); await pg.waitForFunction(() => window.__nomad?.ready); await sleep(600);
 await pg.evaluate(() => window.__nomad.newRun('orangecounty', 'east')); await sleep(800);
-let s0 = await st(); if (s0.placed !== 0) fails.push('expected empty grid');
+let s0 = await st(); if (s0.placed === 0) fails.push('expected pre-placed essentials');
 // 1. tap the first card (Essentials page, card at x 12..172, y 374..624)
 await tap(92, 480); let s1 = await st(); if (s1.placed !== 1) fails.push(`tap card -> placed ${s1.placed}`);
 await pg.screenshot({ path: 'e2e/layout/pack-after-tap.png' });

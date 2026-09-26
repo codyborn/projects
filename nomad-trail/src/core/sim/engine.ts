@@ -67,6 +67,8 @@ export const bundles = () => ITEMS;
 export const totalWeight = (s: RunState) => round1(bagWeight(s.items, 'checked'));
 /** A specific bundle, reachable right now (not in a delayed bag). */
 export const hasItem = (s: RunState, id: string) => accessibleItems(s).some(p => p.id === id);
+/** True while this city's Airbnb kitchen has the dull knife and you have none of your own (flag set on arrival, per city). */
+export const dullKnives = (s: RunState) => hasFlag(s, 'dullknives_' + s.cityId) && !hasTag(s, 'knife');   // your own knife (once the suitcase is here) fixes it
 export const isOutdoorsy = (s: RunState) => !!CITY[s.cityId]?.outdoorsy;
 const km = (a: City, b: City) => { const r = Math.PI / 180; return 6371 * Math.acos(Math.min(1, Math.sin(a.lat * r) * Math.sin(b.lat * r) + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.cos((a.lon - b.lon) * r))); };
 /** Fare for a leg, USD: base + per-km, by transport. The trek is a one-off permits-and-guide fee. */
@@ -182,6 +184,12 @@ export function travelTo(state: RunState, cityId: string): StepResult {
   const arriveCtx = { ...ctx, lodgingCancel: lodging?.cancelChance ?? 0 };
   const cancelled = rollEvents(s, 'arrive', arriveCtx, rngFor(s, 2), 1, e => e.id === 'airbnbcancel');
   events.push(...cancelled, ...rollEvents(s, 'arrive', arriveCtx, rngFor(s, 7), cancelled.length ? 1 : 2, e => e.id !== 'airbnbcancel' && !(cancelled.length && LODGING_DEPENDENT.has(e.id))));
+  // Airbnb kitchens: about a third come with one knife that has never been sharpened. Known on arrival; every cooking step in this city
+  // needs more precision until you move on. The adventure bundle's knife cancels it.
+  if (lodging?.id === 'airbnb' && !cancelled.length && rngFor(s, 13).chance(0.3)) {
+    if (hasTag(s, 'knife')) events.push(forceEvent(s, 'dullknives', rng, true));
+    else { setFlag(s, 'dullknives_' + cityId, true); events.push(forceEvent(s, 'dullknives', rng)); }
+  }
   const conts = continentsVisited(s);
   if (conts.length === CONTINENTS_ALL.length && !s.achievements.includes('fivecontinents')) { s.achievements.push('fivecontinents'); s.log.push({ day: s.day, city: cityId, text: STR.log.fiveContinents }); }
   if (leg.city.altitude && leg.city.altitude >= 3500 && !events.some(e => e.id === 'altitude')) { /* altitude event already weighted; nothing */ }
@@ -255,7 +263,7 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       if (locked) return { state, events: [], error: 'The clothes are in the suitcase. The suitcase is somewhere else.' };
       // the day is spent either way; how many clean days you get back depends on how the sorting goes (applyMinigameResult)
       s.workStreak = 0; checkEnding(s);
-      return { state: s, events: [], minigame: { key: MINIGAME_KEYS.laundry, payload: { city: city.id }, difficulty: diff } }; }
+      return { state: s, events: [], minigame: { key: MINIGAME_KEYS.laundry, payload: { city: city.id, kit: hasTag(s, 'laundry') }, difficulty: diff } }; }
     case 'train': {
       if (locked) return { state, events: [], error: 'The gear is in the suitcase. The suitcase is somewhere else.' };
       if (s.backInjuryDays > 0) return { state, events: [], error: 'Your back says no. Not today.' };
@@ -272,8 +280,8 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       if (locked) return { state, events: [], error: 'No kitchen kit, no clean anything. The suitcase is somewhere else.' };
       s.workStreak = 0;
       const dish = DISH[city.dishes[(s.stayDays + s.route.length) % city.dishes.length]] ?? DISH[city.dishes[0]];
-      s.pendingDish = dish.id;
-      return { state: s, events: [], minigame: { key: MINIGAME_KEYS.cooking, payload: { dish, city: city.id }, difficulty: diff } }; }
+      s.pendingDish = dish.id; const dull = dullKnives(s);
+      return { state: s, events: [], minigame: { key: MINIGAME_KEYS.cooking, payload: { dish, city: city.id, dullKnives: dull }, difficulty: clamp(diff + (dull ? 0.15 : 0), 0.5, 1.6) } }; }
     case 'checkroom': setFlag(s, 'roomchecked', true); s.energy = clamp(s.energy - 2, 0, energyCap(s)); s.log.push({ day: s.day, city: s.cityId, text: STR.log.checkRoom }); return { state: s, events: [] };
     case 'moveon': {
       if (s.stayDays < city.minStay) return { state, events: [], error: `Stay at least ${city.minStay} days in ${city.name}.` };
@@ -305,12 +313,14 @@ export function applyMinigameResult(state: RunState, key: string, result: Miniga
       break; }
     case MINIGAME_KEYS.laundry: {
       // a good sort buys extra clean days (folded, sorted, nothing lost); a bad one gives back less and turns things pink
-      events = tickDay(s, rng); s.energy = clamp(s.energy - 4, 0, energyCap(s));
+      // the laundry kit (detergent sheets + bag) turns the launderette day into an evening: no day passes, the day's action is still open
+      const kit = hasTag(s, 'laundry');
+      if (kit) s.energy = clamp(s.energy - 2, 0, energyCap(s)); else { events = tickDay(s, rng); s.energy = clamp(s.energy - 4, 0, energyCap(s)); }
       const bonus = result.perfect ? 3 : score >= 0.8 ? 2 : score >= 0.6 ? 1 : 0;
       const back = result.failed ? Math.ceil(s.maxClothes * 0.5) : Math.round(s.maxClothes * (0.6 + 0.4 * score)) + bonus;
       s.cleanClothes = clamp(back, 1, s.maxClothes + 3);
-      if (result.failed) { unlock(s, 'pinkshirts'); s.mood = clamp(s.mood - 3, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.laundryBad, { days: s.cleanClothes }) }); }
-      else { if (result.perfect) s.mood = clamp(s.mood + 3, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: tpl(bonus ? STR.log.laundryGreat : STR.log.laundryOk, { days: s.cleanClothes }) }); }
+      if (result.failed) { unlock(s, 'pinkshirts'); s.mood = clamp(s.mood - 3, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: tpl(kit ? STR.log.laundryKitBad : STR.log.laundryBad, { days: s.cleanClothes }) }); }
+      else { if (result.perfect) s.mood = clamp(s.mood + 3, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: tpl(kit ? STR.log.laundryKit : bonus ? STR.log.laundryGreat : STR.log.laundryOk, { days: s.cleanClothes }) }); }
       break; }
     case MINIGAME_KEYS.kite: { s.mood = clamp(s.mood + 5 + Math.round(score * 15), 0, 100); s.energy = clamp(s.energy - 12, 0, energyCap(s)); if (result.perfect) unlock(s, 'kitemaster'); break; }
     case MINIGAME_KEYS.airport: {
@@ -381,7 +391,7 @@ export function pendingChoices(s: RunState): { id: string; title: string; text: 
 
 export const Sim = {
   GRID, TOTAL_DAYS, HOME_CITY, HOME_MIN_CONTINENTS, HOME_PROGRESS_DEG, CONTINENTS_ALL, START_MONEY, OVERDRAFT, WORK_PAY, CITIES, CITY, ITEM, DISH, LEVEL_BY_CITY,
-  createRun, validatePack, setPack, bagWeight, weightRatio, totalWeight, coffeePacked, bundles, hasTag, hasFlag, hasItem, isOutdoorsy,
+  createRun, validatePack, setPack, bagWeight, weightRatio, totalWeight, coffeePacked, bundles, hasTag, hasFlag, hasItem, dullKnives, isOutdoorsy,
   shelfPack, buildPack, randomPack, idsWeight, weekdayOf, isWeekend, nextWorkdays, fareFor, directionUndecided, setDirection,
   availableLegs, travelTo, cityAction, applyMinigameResult, resolveChoice, pendingChoices, checkEnding, score, progress, homeUnlocked, homeRequirements, continentsVisited, endingCause, monthOf,
   visibleAchievements, energyCap, accessibleItems,

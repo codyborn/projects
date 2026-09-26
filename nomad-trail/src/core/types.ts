@@ -4,7 +4,7 @@ export const GAME_W = 360, GAME_H = 640;
 // ---------- Content data (src/data/*.json) ----------
 export type Bag = 'checked' | 'backpack';
 export type ItemTag = 'essential' | 'work' | 'clothing' | 'health' | 'fitness' | 'sleep' | 'coffee' | 'rain' | 'cold' | 'swim' | 'kite' | 'climb' | 'firstaid' |
-  'meds' | 'repellent' | 'switch' | 'kettle' | 'camera' | 'organizer' | 'luxury' | 'trap' | 'water' | 'light' | 'knife' | 'hike';
+  'meds' | 'repellent' | 'switch' | 'kettle' | 'camera' | 'organizer' | 'luxury' | 'trap' | 'water' | 'light' | 'knife' | 'hike' | 'laundry';
 export interface Item {
   id: string; name: string; label: string;            // label: short (<= 16 chars) for the grid
   weightLb: number; w: number; h: number;             // grid footprint in cells (checked grid 8x10, backpack 5x6)

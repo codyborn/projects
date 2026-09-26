@@ -31,9 +31,9 @@ export class EndScene extends Phaser.Scene {
       txt(this, 180, 200, `SCORE ${end.score}`, 16, PAL.sun2).setOrigin(0.5);
     }
     const cv = canvas;
-    new Button(this, 96, 574, 'SHARE', async () => { if (!cv) return toast(this, 'card not ready', PAL.red); const r = await shareOrDownload(cv); if (r === 'failed') toast(this, 'could not export', PAL.red); }, { w: 160, h: 44, fill: PAL.sea1, size: 11 });
-    new Button(this, 264, 574, 'PASSPORT', () => { if (this.scene.get('Passport')) this.scene.start('Passport', { back: 'End' }); }, { w: 160, h: 44, fill: PAL.dusk0, size: 11, disabled: !this.scene.get('Passport') });
-    new Button(this, 180, 618, 'NEW RUN', () => { Sim.clearSave(); this.scene.start('Title'); }, { w: 336, h: 44, fill: PAL.sun0, size: 11 });
+    new Button(this, 96, 574, 'SHARE', async () => { if (!cv) return toast(this, 'card not ready', PAL.red); const r = await shareOrDownload(cv); if (r === 'failed') toast(this, 'could not export', PAL.red); }, { w: 160, h: 44, fill: PAL.sea1, size: 12 });
+    new Button(this, 264, 574, 'PASSPORT', () => { if (this.scene.get('Passport')) this.scene.start('Passport', { back: 'End' }); }, { w: 160, h: 44, fill: PAL.dusk0, size: 12, disabled: !this.scene.get('Passport') });
+    new Button(this, 180, 618, 'NEW RUN', () => { Sim.clearSave(); this.scene.start('Title'); }, { w: 336, h: 44, fill: PAL.sun0, size: 12 });
   }
 }
 export default EndScene;

@@ -18,7 +18,9 @@ const STEP_TEXT: Record<DishStep['kind'], string> = {
 
 /** Cooking-Mama style: a dish is a sequence of micro-tasks. Score = mean accuracy. */
 export class CookingScene extends Phaser.Scene {
-  private frame!: MinigameFrame; private launch!: MinigameLaunch; private dish!: Dish; private cityLabel = '';
+  private frame!: MinigameFrame; private launch!: MinigameLaunch; private dish!: Dish; private cityLabel = ''; private dull = false;
+  /** timing / target multiplier; the Airbnb's dull knife (payload.dullKnives) tightens every step by 30% */
+  private win() { return this.frame.window * (this.dull ? 0.7 : 1); }
   private stepIdx = 0; private accuracies: number[] = [];
   private work!: Phaser.GameObjects.Graphics; private plateImg!: Phaser.GameObjects.Image; private layersTotal = 0; private stepText!: Phaser.GameObjects.Text; private hint!: Phaser.GameObjects.Text;
   private meter!: Meter; private cleanup: (() => void)[] = []; private stepTimer?: Phaser.Time.TimerEvent;
@@ -26,7 +28,7 @@ export class CookingScene extends Phaser.Scene {
 
   constructor() { super(MINIGAME_KEYS.cooking); }
   init(data: any) {
-    this.launch = normalizeLaunch(data); const p = this.launch.payload || {};
+    this.launch = normalizeLaunch(data); const p = this.launch.payload || {}; this.dull = !!p.dullKnives;
     const raw: Dish = (p.steps ? p : p.dish && p.dish.steps ? p.dish : DEFAULT_DISH) as Dish;
     this.dish = { ...raw, steps: raw.steps.slice(0, 5) };            // at most 5 steps so a dish fits the play cap
     // city tie: payload.cityName (pretty) > payload.city (id) > dish.city (id)
@@ -51,7 +53,7 @@ export class CookingScene extends Phaser.Scene {
     this.meter = new Meter(this, 40, 590, W - 80, 8);
     this.frame.hud(); this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.motion.stop());
     this.frame.scoreNow = () => { const done = this.accuracies; return done.length ? (done.reduce((a, b) => a + b, 0) / done.length) * 100 * (0.6 + 0.4 * done.length / this.dish.steps.length) : 40; };
-    this.frame.intro(`${this.dish.steps.length} steps. Each one shows what to do.`, () => { this.readyAt = this.time.now; if (this.dish.steps.some(st => st.kind === 'shake')) this.motion.request(); this.nextStep(); }, { height: 400, extra: (s, add) => {
+    this.frame.intro(`${this.dish.steps.length} steps. Each one shows what to do.` + (this.dull ? ' DULL KNIFE: every step needs more precision.' : ''), () => { this.readyAt = this.time.now; if (this.dish.steps.some(st => st.kind === 'shake')) this.motion.request(); this.nextStep(); }, { height: 400, extra: (s, add) => {
       const top = H / 2 - 200;
       add(txt(s, W / 2, top + 108, this.dish.ingredients.join(' · '), 9, PAL.gray2));
       add(s.add.image(W / 2, top + 186, drawDish(s, this.dish.id, undefined, this.dish.art)).setScale(1.8));
@@ -242,7 +244,7 @@ export class CookingScene extends Phaser.Scene {
 
   // --- FLIP: tap at the top of the toss.
   private stepFlip(st: DishStep) {
-    let t = 0, hits = 0, tries = 0; const need = st.count; const win = 0.14 * this.frame.window + 0.05; const spd = 1.4 * this.frame.speed;
+    let t = 0, hits = 0, tries = 0; const need = st.count; const win = 0.14 * this.win() + 0.05; const spd = 1.4 * this.frame.speed;
     const tick = this.time.addEvent({ delay: 16, loop: true, callback: () => {
       t += 0.016 * spd; const ph = (Math.sin(t * Math.PI - Math.PI / 2) + 1) / 2; // 0 in pan, 1 at peak
       this.work.clear(); this.work.fillStyle(PAL.gray0).fillEllipse(W / 2, 500, 150, 30); this.work.fillStyle(PAL.ink).fillRect(W / 2 + 70, 494, 70, 8);
@@ -271,7 +273,7 @@ export class CookingScene extends Phaser.Scene {
 
   // --- POUR: hold to fill, release inside the band.
   private stepPour(_st: DishStep) {
-    let fill = 0, holding = false, done = false; const bandW = 0.16 * this.frame.window + 0.05; const bandC = 0.72; const rate = 0.55 * this.frame.speed;
+    let fill = 0, holding = false, done = false; const bandW = 0.16 * this.win() + 0.05; const bandC = 0.72; const rate = 0.55 * this.frame.speed;
     const tick = this.time.addEvent({ delay: 16, loop: true, callback: () => { if (holding) fill = Math.min(1.05, fill + 0.016 * rate);
       this.work.clear(); this.work.fillStyle(PAL.gray2).fillRect(W / 2 - 40, 380, 80, 130); this.work.fillStyle(PAL.night1).fillRect(W / 2 - 36, 384, 72, 122);
       this.work.fillStyle(PAL.neon, 0.35).fillRect(W / 2 - 36, 506 - (bandC + bandW / 2) * 122, 72, bandW * 122);
@@ -309,7 +311,7 @@ export class CookingScene extends Phaser.Scene {
 
   // --- GRILL: hold to sear; the golden band drifts; release inside it. Past the band = burnt.
   private stepGrill(_st: DishStep) {
-    let heat = 0, holding = false, done = false, t = 0; const bandW = 0.14 * this.frame.window + 0.05; const rate = 0.42 * this.frame.speed;
+    let heat = 0, holding = false, done = false, t = 0; const bandW = 0.14 * this.win() + 0.05; const rate = 0.42 * this.frame.speed;
     const tick = this.time.addEvent({ delay: 16, loop: true, callback: () => { t += 0.016; if (holding) heat = Math.min(1.05, heat + 0.016 * rate); const bandC = 0.62 + Math.sin(t * 1.3) * 0.12;
       this.work.clear(); this.work.fillStyle(PAL.ink).fillRect(40, 400, W - 80, 110); for (let i = 0; i < 6; i++) this.work.fillStyle(PAL.gray0).fillRect(44, 404 + i * 18, W - 88, 6);
       const col = heat < 0.35 ? PAL.dusk3 : heat < 0.8 ? PAL.earth2 : heat <= 1 ? PAL.earth0 : PAL.ink; this.work.fillStyle(col).fillRoundedRect(W / 2 - 50, 430, 100, 50, 6); if (heat > 0.35) { this.work.fillStyle(PAL.ink, 0.5); for (let i = 0; i < 3; i++) this.work.fillRect(W / 2 - 40, 440 + i * 14, 80, 3); }
@@ -350,7 +352,7 @@ export class CookingScene extends Phaser.Scene {
 
   // --- SIMMER: the needle drifts down; tap to add heat; stay in the green, never boil over.
   private stepSimmer(st: DishStep) {
-    let temp = 0.5, inBand = 0, total = 0, over = 0; const dur = 5 + st.count * 0.4; const lo = 0.45, hi = 0.7 + 0.05 * this.frame.window; const drift = 0.11 * this.frame.speed;
+    let temp = 0.5, inBand = 0, total = 0, over = 0; const dur = 5 + st.count * 0.4; const lo = 0.45, hi = 0.7 + 0.05 * this.win(); const drift = 0.11 * this.frame.speed;
     const tick = this.time.addEvent({ delay: 16, loop: true, callback: () => { total += 0.016; temp = Math.max(0, temp - drift * 0.016); if (temp >= lo && temp <= hi) inBand += 0.016; if (temp > 0.9) over += 0.016;
       this.work.clear(); this.work.fillStyle(PAL.gray0).fillRoundedRect(W / 2 - 70, 400, 140, 60, 8); this.work.fillStyle(temp > 0.9 ? PAL.sun3 : PAL.sun1).fillRoundedRect(W / 2 - 64, 404, 128, 50, 6); const bub = Math.floor(temp * 8); for (let i = 0; i < bub; i++) this.work.fillStyle(PAL.sun3, 0.8).fillCircle(W / 2 - 50 + (i * 37) % 100, 415 + ((i * 53) % 30), 3 + (i % 2)); if (temp > 0.9) this.work.fillStyle(PAL.sun3).fillRect(W / 2 - 70, 392, 140, 10);
       this.work.fillStyle(PAL.sun0, temp).fillTriangle(W / 2 - 30, 500, W / 2 + 30, 500, W / 2, 470); this.meter.set(temp, temp > 0.9 ? PAL.red : PAL.neon, [lo, hi]); this.meter.marker(0.9, PAL.red); this.frame.setTimer(`${Math.max(0, dur - total).toFixed(0)}s`);
@@ -385,7 +387,7 @@ export class CookingScene extends Phaser.Scene {
 
   // --- FOLD: drag along a dotted path A -> bend -> B, N times.
   private stepFold(st: DishStep) {
-    const need = st.count; let folds = 0, wp = 0, tracing = false; const pts = [{ x: 70, y: 500 }, { x: W / 2, y: 410 }, { x: W - 70, y: 500 }]; const R = 34 * this.frame.window + 14;
+    const need = st.count; let folds = 0, wp = 0, tracing = false; const pts = [{ x: 70, y: 500 }, { x: W / 2, y: 410 }, { x: W - 70, y: 500 }]; const R = 34 * this.win() + 14;
     const draw = (px?: number, py?: number) => { this.work.clear(); this.work.fillStyle(PAL.earth3).fillEllipse(W / 2, 470, 200, 90); this.work.fillStyle(PAL.sun3).fillEllipse(W / 2, 470, 180, 76); if (folds > 0) { this.work.fillStyle(PAL.earth3).fillTriangle(W / 2 - 90, 470, W / 2 + 90, 470, W / 2, 430 - folds * 6); }
       this.work.fillStyle(PAL.gray2, 0.9); for (let i = 0; i < pts.length - 1; i++) for (let k = 0; k < 8; k++) { const t = k / 8; this.work.fillCircle(pts[i].x + (pts[i + 1].x - pts[i].x) * t, pts[i].y + (pts[i + 1].y - pts[i].y) * t, 2); }
       pts.forEach((q, i) => { this.work.fillStyle(i < wp ? PAL.neon : i === wp ? PAL.sun2 : PAL.gray1).fillCircle(q.x, q.y, i === wp ? 9 : 6); }); if (px !== undefined) { this.work.fillStyle(PAL.white).fillCircle(px, py!, 5); } this.meter.set(folds / need); };
@@ -402,7 +404,7 @@ export class CookingScene extends Phaser.Scene {
   // --- PLATE: drag garnishes onto their marked spots.
   private stepPlate(st: DishStep) {
     const n = clamp(st.count, 2, 3); const cols = [PAL.grass2, PAL.red, PAL.sun2]; const targets = Array.from({ length: n }, (_, i) => ({ x: W / 2 - (n - 1) * 34 + i * 68, y: 445 })); const items = Array.from({ length: n }, (_, i) => ({ x: 60 + i * ((W - 120) / Math.max(1, n - 1)), y: 560, placed: false, drag: false }));
-    if (n === 1) items[0].x = W / 2; let placed = 0; const R = 26 * this.frame.window + 10;
+    if (n === 1) items[0].x = W / 2; let placed = 0; const R = 26 * this.win() + 10;
     const draw = () => { this.work.clear(); this.work.fillStyle(PAL.ink).fillEllipse(W / 2, 450, 240, 90); this.work.fillStyle(PAL.white).fillEllipse(W / 2, 448, 234, 84); this.work.fillStyle(PAL.gray2).fillEllipse(W / 2, 448, 180, 60);
       targets.forEach((t, i) => { if (!items[i].placed) { this.work.lineStyle(2, PAL.gray1, 0.9); this.work.strokeCircle(t.x, t.y, 14); } }); items.forEach((it, i) => { this.work.fillStyle(PAL.ink).fillCircle(it.x, it.y, 13); this.work.fillStyle(cols[i]).fillCircle(it.x, it.y, 11); this.work.fillStyle(PAL.sun3, 0.6).fillCircle(it.x - 4, it.y - 4, 3); }); this.meter.set(placed / n); };
     draw();
@@ -416,7 +418,7 @@ export class CookingScene extends Phaser.Scene {
 
   // --- SKEWER: pieces slide across; tap as each one crosses the skewer line.
   private stepSkewer(st: DishStep) {
-    const need = st.count; const cols = [PAL.sun0, PAL.grass2, PAL.red, PAL.sun2, PAL.earth2]; const pieces = Array.from({ length: need }, (_, i) => ({ x: -30 - i * 70, hit: false, gone: false })); let hits = 0, tries = 0; const spd = 120 * this.frame.speed; const zone = 16 * this.frame.window + 8; const sx = W / 2;
+    const need = st.count; const cols = [PAL.sun0, PAL.grass2, PAL.red, PAL.sun2, PAL.earth2]; const pieces = Array.from({ length: need }, (_, i) => ({ x: -30 - i * 70, hit: false, gone: false })); let hits = 0, tries = 0; const spd = 120 * this.frame.speed; const zone = 16 * this.win() + 8; const sx = W / 2;
     const tick = this.time.addEvent({ delay: 16, loop: true, callback: () => { this.work.clear(); this.work.fillStyle(PAL.gray0).fillRect(0, 430, W, 60); this.work.fillStyle(PAL.earth1).fillRect(sx - 3, 380, 6, 160); this.work.fillStyle(PAL.earth0).fillRect(sx - 5, 372, 10, 8); this.work.fillStyle(PAL.neon, 0.25).fillRect(sx - zone, 430, zone * 2, 60);
       let allGone = true; pieces.forEach((pc, i) => { if (pc.gone || pc.hit) return; allGone = false; pc.x += spd * 0.016; if (pc.x > W + 30) { pc.gone = true; return; } this.work.fillStyle(PAL.ink).fillRect(pc.x - 15, 445, 30, 30); this.work.fillStyle(cols[i % cols.length]).fillRect(pc.x - 13, 447, 26, 26); });
       let k = 0; pieces.forEach((pc, i) => { if (!pc.hit) return; const y = 410 - k * 22; this.work.fillStyle(PAL.ink).fillRect(sx - 13, y - 11, 26, 22); this.work.fillStyle(cols[i % cols.length]).fillRect(sx - 11, y - 9, 22, 18); this.work.fillStyle(PAL.sun3, 0.5).fillRect(sx - 8, y - 6, 5, 3); k++; });

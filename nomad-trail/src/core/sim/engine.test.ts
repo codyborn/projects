@@ -248,6 +248,33 @@ describe('city loop, minigames, endings', () => {
     s = { ...s, cleanClothes: 0 }; const r = Sim.cityAction(s, 'laundry'); expect(r.minigame?.key).toBe('Laundry'); expect(r.state.cleanClothes).toBe(0);   // clothes come back through the result, scaled by how well you sorted
     const done = Sim.applyMinigameResult(r.state, 'Laundry', { score: 90, perfect: false, failed: false }).state; expect(done.cleanClothes).toBeGreaterThanOrEqual(done.maxClothes);
   });
+  it('laundry kit: the sort still happens but no day passes, and the log says so', () => {
+    let s = hop(packed(withExtras('laundrykit'))); s = { ...s, day: 5, cleanClothes: 0 };
+    const r = Sim.cityAction(s, 'laundry'); expect(r.minigame?.key).toBe('Laundry'); expect(r.minigame?.payload.kit).toBe(true);
+    const done = Sim.applyMinigameResult(r.state, 'Laundry', { score: 90, perfect: false, failed: false }).state;
+    expect(done.day).toBe(s.day); expect(done.cleanClothes).toBeGreaterThanOrEqual(done.maxClothes); expect(done.log[done.log.length - 1].text).toMatch(/still yours/);
+    const plain = hop(packed()); const r2 = Sim.cityAction({ ...plain, day: 5, cleanClothes: 0 }, 'laundry'); expect(r2.minigame?.payload.kit).toBe(false);
+    expect(Sim.applyMinigameResult(r2.state, 'Laundry', { score: 90, perfect: false, failed: false }).state.day).toBe(6);
+  });
+  it('dull knives: flagged on arrival at some Airbnbs, cook gets tighter windows, the adventure knife cancels it', () => {
+    const base = packed(); let flagged: any, mitigated = 0, dull = 0;
+    for (let seed = 1; seed < 80; seed++) {
+      const s = { ...hop({ ...base, seed }), seed, phase: 'route' as const }; const dest = Sim.availableLegs(s).find(l => CITY[l.to].lodgings[0]?.id === 'airbnb'); if (!dest) continue;
+      const r = Sim.travelTo(s, dest.to); const ev = r.events.find(e => e.id === 'dullknives'); if (!ev) continue;
+      if (ev.mitigated) mitigated++; else { dull++; flagged = r.state; }
+    }
+    expect(dull).toBeGreaterThan(5); expect(mitigated).toBe(0);
+    expect(Sim.dullKnives(flagged)).toBe(true); const c = Sim.cityAction({ ...flagged, energy: 90 }, 'cook'); expect(c.minigame?.payload.dullKnives).toBe(true);
+    const clean = Sim.cityAction({ ...flagged, energy: 90, achievements: flagged.achievements.filter((a: string) => !a.startsWith('_dullknives')) }, 'cook'); expect(c.minigame!.difficulty).toBeGreaterThan(clean.minigame!.difficulty); expect(clean.minigame?.payload.dullKnives).toBe(false);
+    // the adventure bundle carries a knife: the event still tells the story, but nothing is flagged
+    const knife = packed(withExtras('adventure')); let seen = 0;
+    for (let seed = 1; seed < 80; seed++) {
+      const s = { ...hop({ ...knife, seed }), seed, phase: 'route' as const }; const dest = Sim.availableLegs(s).find(l => CITY[l.to].lodgings[0]?.id === 'airbnb'); if (!dest) continue;
+      const r = Sim.travelTo(s, dest.to); const ev = r.events.find(e => e.id === 'dullknives'); if (!ev || r.state.bagLockedDays > 0) continue; seen++;   // knife in a delayed suitcase = no knife
+      expect(ev.mitigated).toBe(true); expect(Sim.dullKnives(r.state)).toBe(false);
+    }
+    expect(seen).toBeGreaterThan(3);
+  });
   it('cook picks a dish from the current city, remembers it, and scores exactly that dish', () => {
     let s = hop(packed(withExtras('fitnesskit')));
     const c = Sim.cityAction(s, 'cook'); expect(c.minigame?.key).toBe('Cooking');
