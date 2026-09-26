@@ -62,7 +62,7 @@ export class Athlete {
     ];
     this.sprite = scene.add.image(x, y, this.poses[0]).setDepth(5);
   }
-  pose(i: 0 | 1 | 2 | 3) { this.sprite.setTexture(this.poses[i]); return this; }
+  pose(i: 0 | 1 | 2 | 3) { if (this.sprite.scene && this.sprite.active) this.sprite.setTexture(this.poses[i]); return this; }   // no-op once the sprite is destroyed (scene shutdown)
   at(x: number, y: number) { this.sprite.setPosition(x, y); return this; }
   show(v: boolean) { this.sprite.setVisible(v); return this; }
   bump() { this.scene.tweens.add({ targets: this.sprite, scaleY: 0.9, yoyo: true, duration: 80 }); }
