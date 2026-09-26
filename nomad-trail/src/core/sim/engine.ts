@@ -318,7 +318,7 @@ export function applyMinigameResult(state: RunState, key: string, result: Miniga
       if (kit) s.energy = clamp(s.energy - 2, 0, energyCap(s)); else { events = tickDay(s, rng); s.energy = clamp(s.energy - 4, 0, energyCap(s)); }
       const bonus = result.perfect ? 3 : score >= 0.8 ? 2 : score >= 0.6 ? 1 : 0;
       const back = result.failed ? Math.ceil(s.maxClothes * 0.5) : Math.round(s.maxClothes * (0.6 + 0.4 * score)) + bonus;
-      s.cleanClothes = clamp(back, 1, s.maxClothes + 3);
+      s.cleanClothes = s.maxClothes ? clamp(back, 1, s.maxClothes + 3) : (result.failed ? 0 : 1);   // no clothes packed: you wash what you are wearing, clean for one day
       if (result.failed) { unlock(s, 'pinkshirts'); s.mood = clamp(s.mood - 3, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: tpl(kit ? STR.log.laundryKitBad : STR.log.laundryBad, { days: s.cleanClothes }) }); }
       else { if (result.perfect) s.mood = clamp(s.mood + 3, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: tpl(kit ? STR.log.laundryKit : bonus ? STR.log.laundryGreat : STR.log.laundryOk, { days: s.cleanClothes }) }); }
       break; }

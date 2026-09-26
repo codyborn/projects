@@ -248,6 +248,15 @@ describe('city loop, minigames, endings', () => {
     s = { ...s, cleanClothes: 0 }; const r = Sim.cityAction(s, 'laundry'); expect(r.minigame?.key).toBe('Laundry'); expect(r.state.cleanClothes).toBe(0);   // clothes come back through the result, scaled by how well you sorted
     const done = Sim.applyMinigameResult(r.state, 'Laundry', { score: 90, perfect: false, failed: false }).state; expect(done.cleanClothes).toBeGreaterThanOrEqual(done.maxClothes);
   });
+  it('no clothes packed: allowed, one outfit, dirty from day two, laundry only buys a day', () => {
+    const s0 = packed(shelfPack(['laptopkit', 'toiletries'])!); expect(s0.maxClothes).toBe(0); expect(s0.cleanClothes).toBe(0);
+    let s = hop(s0); s = { ...s, day: 5, mood: 80 };
+    const a = Sim.cityAction(s, 'explore').state; expect(a.dirtyDays).toBe(1); expect(a.mood).toBeLessThan(s.mood + 7);   // explore is +7 mood; dirt eats into it
+    const b = Sim.cityAction(a, 'rest').state; expect(b.dirtyDays).toBe(2); expect(b.mood).toBeLessThan(a.mood + 2);
+    const r = Sim.cityAction(b, 'laundry'); const done = Sim.applyMinigameResult(r.state, 'Laundry', { score: 100, perfect: true, failed: false }).state;
+    expect(done.cleanClothes).toBe(1); expect(Sim.cityAction(done, 'rest').state.dirtyDays).toBe(0); expect(Sim.cityAction(Sim.cityAction(done, 'rest').state, 'rest').state.dirtyDays).toBe(1);
+    expect(packed(withExtras()).maxClothes).toBe(10);   // one week of clothes still means 10 days, unchanged
+  });
   it('laundry kit: the sort still happens but no day passes, and the log says so', () => {
     let s = hop(packed(withExtras('laundrykit'))); s = { ...s, day: 5, cleanClothes: 0 };
     const r = Sim.cityAction(s, 'laundry'); expect(r.minigame?.key).toBe('Laundry'); expect(r.minigame?.payload.kit).toBe(true);

@@ -61,7 +61,7 @@ export class PackScene extends Phaser.Scene {
   private wBar!: Phaser.GameObjects.Graphics; private wLabel!: Label; private hints!: Label;
   private trayAll!: Phaser.GameObjects.Container; private pages: Phaser.GameObjects.Container[] = []; private pageW: number[] = []; private scroll: number[] = [];
   private cat = 0; private catLabel!: Label; private dots: Phaser.GameObjects.Rectangle[] = [];
-  private warnedNoLaptop = false; private animating = false;
+  private warnedNoLaptop = false; private warnedNoClothes = false; private animating = false;
   constructor() { super(PackScene.KEY); }
 
   create() {
@@ -256,6 +256,8 @@ export class PackScene extends Phaser.Scene {
     if (!packed.length) { toast(this, 'You need at least a toothbrush.', PAL.red); return; }
     const hasWork = this.placed.some(p => (Data.item(p.id)?.tags ?? []).some(t => t === 'work' || t === 'essential'));
     if (!hasWork && !this.warnedNoLaptop) { this.warnedNoLaptop = true; toast(this, 'No laptop. No income. Tap DEPART again to go anyway.', PAL.sun1, 2200); return; }
+    const hasClothes = this.placed.some(p => (Data.item(p.id)?.clothesDays ?? 0) > 0);
+    if (!hasClothes && !this.warnedNoClothes) { this.warnedNoClothes = true; toast(this, 'No clothes. One outfit, dirty every day, mood sinks. Tap DEPART again to go anyway.', PAL.sun1, 2400); return; }
     const res = Sim.setPack(run, packed);
     if (!res.ok) { res.errors.forEach(e => toast(this, e, PAL.red)); this.cameras.main.shake(120, 0.006); return; }
     putRun(this, run); this.cameras.main.fadeOut(250, 0, 0, 0); this.time.delayedCall(260, () => this.scene.start('Route'));

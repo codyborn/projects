@@ -84,7 +84,9 @@ export function loseItem(s: RunState, idx: number): string {
   recomputeClothes(s); return ITEM[p.id]?.name ?? p.id;
 }
 export function recomputeClothes(s: RunState) {
-  const max = 3 + s.items.reduce((a, p) => a + (ITEM[p.id]?.clothesDays ?? 0), 0);
+  // the outfit you wear plus spares only exist if you packed clothes at all; nothing packed = one outfit, dirty from day two
+  const packedDays = s.items.reduce((a, p) => a + (ITEM[p.id]?.clothesDays ?? 0), 0);
+  const max = packedDays ? 3 + packedDays : 0;
   s.maxClothes = max; s.cleanClothes = Math.min(s.cleanClothes, max);
 }
 export const energyCap = (s: RunState) => (s.backInjuryDays > 0 ? 50 : 100);
