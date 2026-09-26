@@ -34,12 +34,12 @@ export function installPlayLink(game: Phaser.Game): boolean {
       case 'Workout': { const activity = q.get('activity') || (city.activities[0] ?? 'bands'); const plan = q.get('plan'); const extraLives = Number(q.get('lives') || 0);
         game.scene.start('Workout', { ...base, extraLives, payload: { activity, city: city.id, day: Number(q.get('day') || 3), ...(plan ? { plan: [plan] } : {}) }, onDone: done(`${plan || activity} · ${city.name}`) }); break; }
       case 'Cooking': { const dish = DISHES.find(d => d.id === q.get('dish')) || DISHES.find(d => city.dishes.includes(d.id)) || DISHES[0];
-        game.scene.start('Cooking', { ...base, payload: { ...dish, cityName: city.name }, onDone: done(dish.name) }); break; }
+        game.scene.start('Cooking', { ...base, payload: { ...dish, cityName: city.name, dullKnives: q.get('dull') === '1' }, onDone: done(dish.name) }); break; }
       case 'CarryOn': { const gm = q.get('game') || 'carryon'; const lvl = LEVELS.find(l => l.city === city.id) || LEVELS.find(l => l.city === 'generic');
         game.scene.start('CarryOn', { ...base, payload: { game: gm, level: lvl ? { ...lvl, city: city.name, hazard: city.hazard } : undefined, city: city.id, cityName: city.name, hazard: city.hazard, climate: city.climate, seed: Number(q.get('seed') || 7) }, onDone: done(`${gm} · ${city.name}`) }); break; }
       case 'Kite': game.scene.start('Kite', { ...base, payload: { city: city.id }, onDone: done(`kite · ${city.name}`) }); break;
       case 'Airport': game.scene.start('Airport', { ...base, payload: { gate: q.get('gate') || 'B56' }, onDone: done('gate dash') }); break;
-      case 'Laundry': game.scene.start('Laundry', { ...base, onDone: done('laundry') }); break;
+      case 'Laundry': game.scene.start('Laundry', { ...base, payload: { kit: q.get('kit') === '1' }, onDone: done('laundry') }); break;
       case 'Otter': game.scene.start('Otter', { onDone: () => done('the otter')() }); break;
       case 'Coffee': game.scene.start('Coffee', { cityId: city.id, day: Number(q.get('day') || 12), climate: city.climate, region: city.region, onDone: () => done(`coffee · ${city.name}`)() }); break;
       default: return false;

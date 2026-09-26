@@ -150,7 +150,7 @@
     "id": "shell",
     "name": "Rain Shell",
     "label": "Rain shell",
-    "weightLb": 0.9,
+    "weightLb": 0.4,
     "w": 2,
     "h": 2,
     "tags": [
@@ -162,7 +162,8 @@
     "color": 15230525,
     "benefits": [
       "Rain days cost no energy",
-      "Counts as clothing"
+      "Counts as clothing",
+      "0.4 lb, packs to a fist"
     ]
   },
   {
