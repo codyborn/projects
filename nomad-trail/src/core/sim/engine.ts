@@ -293,40 +293,67 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
   return { state: s, events };
 }
 
+/** What a mini-game result confers, before the day tick: the same numbers applyMinigameResult writes and the result card shows. */
+export interface MinigameRewards { health: number; mood: number; energy: number; days: number; clothes?: number; notes: string[]; }
+export function minigameRewards(s: RunState, key: string, result: MinigameResult): MinigameRewards {
+  const raw = Number.isFinite(result.score) ? result.score : 0; const score = clamp(result.failed ? 0 : (raw > 1 ? raw / 100 : raw), 0, 1); const city = CITY[s.cityId];
+  const r: MinigameRewards = { health: 0, mood: 0, energy: 0, days: 0, notes: [] };
+  switch (key) {
+    case MINIGAME_KEYS.workout: r.energy = -10; r.health = 2 + Math.round(score * 5); r.mood = 3 + Math.round(score * 6); r.days = 1; break;
+    case MINIGAME_KEYS.cooking: { const dish = (s.pendingDish && DISH[s.pendingDish]) || DISH[city.dishes[0]]; r.health = Math.round(dish.health * score); r.mood = Math.round(dish.mood * score) - (result.failed ? 4 : 0); r.energy = -5; r.days = 1; if (result.failed) r.notes.push('1 in 4 chance of food poisoning'); break; }
+    case MINIGAME_KEYS.carryon: r.mood = 8 + Math.round(score * 12); if (result.perfect || score >= 0.99) r.notes.push('gold stamp'); break;
+    case MINIGAME_KEYS.laundry: {
+      const kit = hasTag(s, 'laundry'); r.energy = kit ? -2 : -4; r.days = kit ? 0 : 1;
+      const bonus = result.perfect ? 3 : score >= 0.8 ? 2 : score >= 0.6 ? 1 : 0;
+      const back = result.failed ? Math.ceil(s.maxClothes * 0.5) : Math.round(s.maxClothes * (0.6 + 0.4 * score)) + bonus;
+      r.clothes = s.maxClothes ? clamp(back, 1, s.maxClothes + 3) : (result.failed ? 0 : 1);   // no clothes packed: you wash what you are wearing, clean for one day
+      r.mood = result.failed ? -3 : result.perfect ? 3 : 0; if (result.failed) r.notes.push('everything is pink now'); if (kit) r.notes.push('laundry kit: no day lost'); break; }
+    case MINIGAME_KEYS.kite: r.mood = 5 + Math.round(score * 15); r.energy = -12; break;
+    case MINIGAME_KEYS.airport: if (result.failed) { r.days = 1; r.energy = -15; r.mood = -10; r.notes.push('missed the flight'); } else { r.mood = 6; r.energy = -6; r.notes.push('made the flight'); } break;
+  }
+  return r;
+}
+/** Result-card lines for a mini-game outcome, e.g. ["+5 health · +7 mood · -5 energy", "a day passes"]. */
+export function previewMinigame(s: RunState, key: string, result: MinigameResult): string[] {
+  const r = minigameRewards(s, key, result); const sg = (n: number) => (n > 0 ? `+${n}` : `${n}`);
+  const stats = [r.health ? `${sg(r.health)} health` : '', r.mood ? `${sg(r.mood)} mood` : '', r.energy ? `${sg(r.energy)} energy` : ''].filter(Boolean);
+  const extra = [r.clothes !== undefined ? `${r.clothes} clean days` : '', r.days ? (key === MINIGAME_KEYS.airport ? 'a day lost' : 'a day passes') : '', ...r.notes].filter(Boolean);
+  const out: string[] = []; if (stats.length) out.push(stats.join(' · ')); if (extra.length) out.push(extra.join(' · ')); return out;
+}
+
 export function applyMinigameResult(state: RunState, key: string, result: MinigameResult): StepResult {
-  const s = clone(state); const rng = rngFor(s, 5); let events: ResolvedEvent[] = []; const raw = Number.isFinite(result.score) ? result.score : 0; const score = clamp(result.failed ? 0 : (raw > 1 ? raw / 100 : raw), 0, 1); /* score is 0..100 */ const city = CITY[s.cityId];
+  const s = clone(state); const rng = rngFor(s, 5); let events: ResolvedEvent[] = []; const raw = Number.isFinite(result.score) ? result.score : 0; const score = clamp(result.failed ? 0 : (raw > 1 ? raw / 100 : raw), 0, 1); /* score is 0..100 */ const city = CITY[s.cityId]; const rw = minigameRewards(s, key, result);
   switch (key) {
     case MINIGAME_KEYS.workout: {
-      events = tickDay(s, rng); s.energy = clamp(s.energy - 10, 0, energyCap(s)); s.health = clamp(s.health + 2 + Math.round(score * 5), 0, 100); s.mood = clamp(s.mood + 3 + Math.round(score * 6), 0, 100);
+      events = tickDay(s, rng); s.energy = clamp(s.energy + rw.energy, 0, energyCap(s)); s.health = clamp(s.health + rw.health, 0, 100); s.mood = clamp(s.mood + rw.mood, 0, 100);
       if (result.perfect) unlock(s, 'ironbody'); s.log.push({ day: s.day, city: s.cityId, text: result.failed ? 'Training, badly. Still counts.' : `Training in ${city.name}. ${result.perfect ? 'Flawless.' : 'Good enough.'}` }); break; }
     case MINIGAME_KEYS.cooking: {
       events = tickDay(s, rng); const dish = (s.pendingDish && DISH[s.pendingDish]) || DISH[city.dishes[0]]; s.pendingDish = undefined;
-      s.health = clamp(s.health + Math.round(dish.health * score), 0, 100); s.mood = clamp(s.mood + Math.round(dish.mood * score), 0, 100); s.energy = clamp(s.energy - 5, 0, energyCap(s));
-      if (result.perfect) unlock(s, 'chef'); if (result.failed) s.mood = clamp(s.mood - 4, 0, 100);
+      s.health = clamp(s.health + rw.health, 0, 100); s.mood = clamp(s.mood + rw.mood, 0, 100); s.energy = clamp(s.energy + rw.energy, 0, energyCap(s));
+      if (result.perfect) unlock(s, 'chef');
       s.log.push({ day: s.day, city: s.cityId, text: result.failed ? `You attempt ${dish.name}. The kitchen survives.` : `You cook ${dish.name}. ${result.perfect ? 'Better than the restaurant.' : 'Nobody complains.'}` });
       // cooked very badly: the dish fights back (25% food poisoning on a failed dish; the medicine kit still softens it)
       if (result.failed && rng.chance(0.25)) { const fp = EVENT['foodpoisoning']; const mit = !!fp?.mitigatedBy?.some(t => hasTag(s, t)); events.push(forceEvent(s, 'foodpoisoning', rng, mit)); }
       break; }
     case MINIGAME_KEYS.carryon: {
-      s.mood = clamp(s.mood + 8 + Math.round(score * 12), 0, 100);
+      s.mood = clamp(s.mood + rw.mood, 0, 100);
       if (result.perfect || score >= 0.99) { s.stamps[s.cityId] = 'gold'; unlock(s, 'gold_' + s.cityId); s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.carryonGold, { city: city.name }) }); }
       break; }
     case MINIGAME_KEYS.laundry: {
       // a good sort buys extra clean days (folded, sorted, nothing lost); a bad one gives back less and turns things pink
       // the laundry kit (detergent sheets + bag) turns the launderette day into an evening: no day passes, the day's action is still open
-      const kit = hasTag(s, 'laundry');
-      if (kit) s.energy = clamp(s.energy - 2, 0, energyCap(s)); else { events = tickDay(s, rng); s.energy = clamp(s.energy - 4, 0, energyCap(s)); }
-      const bonus = result.perfect ? 3 : score >= 0.8 ? 2 : score >= 0.6 ? 1 : 0;
-      const back = result.failed ? Math.ceil(s.maxClothes * 0.5) : Math.round(s.maxClothes * (0.6 + 0.4 * score)) + bonus;
-      s.cleanClothes = s.maxClothes ? clamp(back, 1, s.maxClothes + 3) : (result.failed ? 0 : 1);   // no clothes packed: you wash what you are wearing, clean for one day
-      if (result.failed) { unlock(s, 'pinkshirts'); s.mood = clamp(s.mood - 3, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: tpl(kit ? STR.log.laundryKitBad : STR.log.laundryBad, { days: s.cleanClothes }) }); }
-      else { if (result.perfect) s.mood = clamp(s.mood + 3, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: tpl(kit ? STR.log.laundryKit : bonus ? STR.log.laundryGreat : STR.log.laundryOk, { days: s.cleanClothes }) }); }
+      const kit = hasTag(s, 'laundry'); const bonus = result.perfect ? 3 : score >= 0.8 ? 2 : score >= 0.6 ? 1 : 0;
+      if (!kit) events = tickDay(s, rng); s.energy = clamp(s.energy + rw.energy, 0, energyCap(s));
+      s.cleanClothes = rw.clothes ?? s.cleanClothes; s.mood = clamp(s.mood + rw.mood, 0, 100);
+      if (result.failed) { unlock(s, 'pinkshirts'); s.log.push({ day: s.day, city: s.cityId, text: tpl(kit ? STR.log.laundryKitBad : STR.log.laundryBad, { days: s.cleanClothes }) }); }
+      else { s.log.push({ day: s.day, city: s.cityId, text: tpl(kit ? STR.log.laundryKit : bonus ? STR.log.laundryGreat : STR.log.laundryOk, { days: s.cleanClothes }) }); }
       break; }
-    case MINIGAME_KEYS.kite: { s.mood = clamp(s.mood + 5 + Math.round(score * 15), 0, 100); s.energy = clamp(s.energy - 12, 0, energyCap(s)); if (result.perfect) unlock(s, 'kitemaster'); break; }
+    case MINIGAME_KEYS.kite: { s.mood = clamp(s.mood + rw.mood, 0, 100); s.energy = clamp(s.energy + rw.energy, 0, energyCap(s)); if (result.perfect) unlock(s, 'kitemaster'); break; }
     case MINIGAME_KEYS.airport: {
       const gate = s.pendingGate ?? '?'; s.pendingGate = undefined;
-      if (result.failed) { s.day += 1; s.energy = clamp(s.energy - 15, 0, energyCap(s)); s.mood = clamp(s.mood - 10, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.gateMissed, { gate }) }); }
-      else { s.mood = clamp(s.mood + 6, 0, 100); s.energy = clamp(s.energy - 6, 0, energyCap(s)); if (result.perfect) unlock(s, 'gatedash'); s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.gateMade, { gate }) }); }
+      s.energy = clamp(s.energy + rw.energy, 0, energyCap(s)); s.mood = clamp(s.mood + rw.mood, 0, 100);
+      if (result.failed) { s.day += 1; s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.gateMissed, { gate }) }); }
+      else { if (result.perfect) unlock(s, 'gatedash'); s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.gateMade, { gate }) }); }
       break; }
   }
   checkEnding(s);
@@ -391,7 +418,7 @@ export function pendingChoices(s: RunState): { id: string; title: string; text: 
 
 export const Sim = {
   GRID, TOTAL_DAYS, HOME_CITY, HOME_MIN_CONTINENTS, HOME_PROGRESS_DEG, CONTINENTS_ALL, START_MONEY, OVERDRAFT, WORK_PAY, CITIES, CITY, ITEM, DISH, LEVEL_BY_CITY,
-  createRun, validatePack, setPack, bagWeight, weightRatio, totalWeight, coffeePacked, bundles, hasTag, hasFlag, hasItem, dullKnives, isOutdoorsy,
+  createRun, validatePack, setPack, bagWeight, weightRatio, totalWeight, coffeePacked, bundles, hasTag, hasFlag, hasItem, dullKnives, minigameRewards, previewMinigame, isOutdoorsy,
   shelfPack, buildPack, randomPack, idsWeight, weekdayOf, isWeekend, nextWorkdays, fareFor, directionUndecided, setDirection,
   availableLegs, travelTo, cityAction, applyMinigameResult, resolveChoice, pendingChoices, checkEnding, score, progress, homeUnlocked, homeRequirements, continentsVisited, endingCause, monthOf,
   visibleAchievements, energyCap, accessibleItems,

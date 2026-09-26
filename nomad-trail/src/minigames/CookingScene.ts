@@ -84,10 +84,10 @@ export class CookingScene extends Phaser.Scene {
       for (let i = 0; i < 14; i++) { const a = (i / 14) * Math.PI * 2; const sp = this.add.rectangle(cx + Math.cos(a) * 90, cy + Math.sin(a) * 50, 5, 5, i % 2 ? PAL.sun3 : PAL.white).setDepth(9).setAlpha(0); this.tweens.add({ targets: sp, alpha: { from: 1, to: 0 }, scale: { from: 1.6, to: 0.3 }, x: cx + Math.cos(a) * 150, y: cy + Math.sin(a) * 90, duration: 800, delay: 150 + i * 50, onComplete: () => sp.destroy() }); } }
     if (grade === 'burnt' || grade === 'bad') for (let i = 0; i < 4; i++) { const wisp = this.add.graphics().setDepth(9); wisp.fillStyle(grade === 'burnt' ? PAL.gray0 : PAL.grass1, 0.9); for (let k = 0; k < 5; k++) wisp.fillRect(cx - 40 + i * 26 + ((k + i) % 2) * 4, cy - 70 - k * 9, 4, 6); wisp.setAlpha(0); this.tweens.add({ targets: wisp, alpha: { from: 0.9, to: 0 }, y: -36, duration: 1500, delay: i * 140, onComplete: () => wisp.destroy() }); }
     else if (grade === 'good') for (let i = 0; i < 3; i++) { const wisp = this.add.graphics().setDepth(9); wisp.fillStyle(PAL.gray2, 0.9); for (let k = 0; k < 4; k++) wisp.fillRect(cx - 24 + i * 24 + ((k + i) % 2) * 3, cy - 74 - k * 8, 3, 5); wisp.setAlpha(0); this.tweens.add({ targets: wisp, alpha: { from: 0.9, to: 0 }, y: -28, duration: 1300, delay: i * 150, onComplete: () => wisp.destroy() }); }
-    const t = txt(this, cx, cy + 108, label, 14, color).setDepth(9).setAlpha(0); this.tweens.add({ targets: t, alpha: 1, y: cy + 100, duration: 300, delay: 350 });
-    const pctTxt = txt(this, cx, cy + 124, `${Math.round(pct)} / 100`, 9, PAL.gray2).setDepth(9);
+    const t = txt(this, cx, cy + 142, label, 14, color).setDepth(9).setAlpha(0); this.tweens.add({ targets: t, alpha: 1, y: cy + 134, duration: 300, delay: 350 });   // below the plate (plate is ~218 px tall at 3.4x)
+    const pctTxt = txt(this, cx, cy + 158, `${Math.round(pct)} / 100`, 9, PAL.gray2).setDepth(9);
     // after the reveal animation the result card comes up LOW, with the big dish, its grade and the score kept above the overlay; it holds until CONTINUE
-    this.time.delayedCall(1500, () => { this.frame.resumeCap(); this.frame.finish(pct, false, { y: 470, keep: [this.plateImg, t, pctTxt] }); });
+    this.time.delayedCall(1500, () => { this.frame.resumeCap(); this.frame.finish(pct, false, { y: 512, keep: [this.plateImg, t, pctTxt] }); });
   }
 
   private endStep(acc: number) {

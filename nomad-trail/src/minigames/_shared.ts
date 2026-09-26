@@ -14,6 +14,7 @@ export function normalizeLaunch(data: any): MinigameLaunch {
     payload: d.payload,
     extraLives: typeof d.extraLives === 'number' ? Math.max(0, Math.floor(d.extraLives)) : 0,
     onDone: typeof d.onDone === 'function' ? d.onDone : () => {},
+    preview: typeof d.preview === 'function' ? d.preview : undefined,
   };
 }
 
@@ -226,7 +227,8 @@ export class MinigameFrame {
     s.cameras.main.setRotation(0).setZoom(1);
     if (perfect) this.shake(150, 0.003);
     const result: MinigameResult = { score, perfect, failed };
-    this.resultCard(label, color, [`SCORE ${score}`, 'take your time'], () => { try { this.launch.onDone(result); } finally { s.scene.stop(); } }, opts);
+    let lines: string[] = []; try { lines = this.launch.preview?.(result) ?? []; } catch { lines = []; }   // what the run gets out of this: +5 health, a day passes ...
+    this.resultCard(label, color, [`SCORE ${score}`, ...lines.slice(0, 2)], () => { try { this.launch.onDone(result); } finally { s.scene.stop(); } }, opts);
   }
 }
 

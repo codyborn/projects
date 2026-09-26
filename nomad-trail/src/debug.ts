@@ -39,8 +39,9 @@ export function installDebug(game: Phaser.Game) {
     dismissEvents: () => { const ev: any = game.scene.getScene('Event'); if (ev && (game.scene.isActive('Event') || game.scene.isPaused('Event'))) { ev.autoResolve ? ev.autoResolve() : game.scene.stop('Event'); } },
     lastResult: null as MinigameResult | null,
     minigame: (key: string, payload?: any) => { go(key, { energy: 80, difficulty: 0.4, payload, onDone: (r: MinigameResult) => { api.lastResult = r; lastMinigameDone = null; } }); return key; },
+    /** finish the active mini-game with a score and press CONTINUE on its result card */
     finishMinigame: (score = 70) => {
-      for (const k of Object.values(MINIGAME_KEYS)) { const sc: any = game.scene.getScene(k); if (sc && game.scene.isActive(k)) { if (sc.frame?.finish) sc.frame.finish(score); else if (sc.finish) sc.finish(score); else game.scene.stop(k); return k; } }
+      for (const k of Object.values(MINIGAME_KEYS)) { const sc: any = game.scene.getScene(k); if (sc && game.scene.isActive(k)) { if (sc.frame?.finish) { sc.frame.finish(score); sc.frame.proceed?.(); } else if (sc.finish) sc.finish(score); else game.scene.stop(k); return k; } }
       const c: any = game.scene.getScene('Coffee'); if (c && game.scene.isActive('Coffee')) { c.skip?.() ?? game.scene.stop('Coffee'); return 'Coffee'; }
       return null;
     },

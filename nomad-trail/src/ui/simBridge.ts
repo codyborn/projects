@@ -11,6 +11,8 @@ export interface SimApi {
   createRun(seed: number, startCity: string, direction: 'east' | 'west'): RunState;
   /** this city's Airbnb came with the dull knife (cooking is tighter here) */
   dullKnives(state: RunState): boolean;
+  /** result-card lines for a mini-game outcome ("+5 health · +7 mood", "a day passes") */
+  previewMinigame(state: RunState, key: string, result: MinigameResult): string[];
   setPack(state: RunState, packed: PackedItem[]): { ok: boolean; errors: string[]; weights: { checked: number; backpack?: number } };
   availableLegs(state: RunState): Leg[];
   travelTo(state: RunState, cityId: string): { state: RunState; events: string[]; minigame?: { key: string; payload?: any; difficulty: number } };
@@ -42,6 +44,7 @@ export const Sim: SimApi = {
   gridSpecs: E.GRID,
   createRun: (seed, start, dir) => E.createRun(seed, start, dir),
   dullKnives: (state) => E.dullKnives(state),
+  previewMinigame: (state, key, result) => E.previewMinigame(state, key, result),
   setPack: (state, packed) => { const r = E.setPack(state, packed); if (r.ok && r.state) Object.assign(state, r.state); return { ok: r.ok, errors: r.errors, weights: r.weights }; },
   availableLegs: (state) => E.availableLegs(state),
   travelTo: (state, cityId) => { const r = E.travelTo(state, cityId); if (r.error) console.warn('travelTo:', r.error); return { state: r.state, events: r.events.map((e: any) => e.id), minigame: r.minigame }; },
