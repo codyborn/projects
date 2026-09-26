@@ -1,5 +1,5 @@
 // The handheld console shell (scene key stays 'CarryOn' for the engine). Draws the bezel, screen, D-pad, A/B, START/SELECT,
-// boots a cartridge from src/minigames/console/games (carryon | tetris | heli), and owns the frame, hearts, pause and result.
+// boots a cartridge from src/minigames/console/games (carryon | tetris; Drone Run became the standalone Drone side game), and owns the frame, hearts, pause and result.
 import Phaser from 'phaser';
 import { PAL } from '../core/palette';
 import { MINIGAME_KEYS, type ArcadeLevel, type Hazard, type MinigameLaunch } from '../core/types';
@@ -44,7 +44,7 @@ export class CarryOnScene extends Phaser.Scene {
   }
 
   create() {
-    const names: Record<ConsoleGameId, string> = { carryon: 'Carry-On', tetris: 'Pack-Tris', heli: 'Drone Run' };
+    const names: Record<ConsoleGameId, string> = { carryon: 'Carry-On', tetris: 'Pack-Tris' };
     this.frame = new MinigameFrame(this, this.launch, names[this.gameId]);
     this.cameras.main.setBackgroundColor(PAL.ink);
     this.drawBezel();

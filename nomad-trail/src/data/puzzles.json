@@ -1,0 +1,544 @@
+[
+ {
+  "id": "constant-product",
+  "title": "The pool that never empties",
+  "prompt": "A pool holds 100 ETH and 200,000 USDC under x*y=k. A trader buys 10 ETH. Ignoring fees, how much USDC do they pay?",
+  "kind": "choice",
+  "choices": [
+   "25,000",
+   "22,222",
+   "20,000",
+   "18,182"
+  ],
+  "answer": 1,
+  "hint": "k must stay the same after the trade. Solve for the USDC balance when 90 ETH are left.",
+  "explain": "k = 20,000,000. With 90 ETH left, USDC must be 222,222. The trader paid 22,222. Big trades on small pools get expensive fast.",
+  "art": "pool"
+ },
+ {
+  "id": "price-impact",
+  "title": "Average is not spot",
+  "prompt": "A pool holds 50 ETH and 100,000 USDC, so ETH is quoted at 2,000. A trader buys 5 ETH in one swap, no fees. What average price per ETH did they pay, in USDC?",
+  "kind": "number",
+  "answer": 2222,
+  "hint": "Find the USDC balance after the trade using x*y=k, then divide what they paid by 5.",
+  "explain": "k = 5,000,000. With 45 ETH left the pool needs 111,111 USDC, so the trader paid 11,111 for 5 ETH: 2,222 each. That gap to spot is price impact.",
+  "art": "pool"
+ },
+ {
+  "id": "fee-tier",
+  "title": "Pick the tier",
+  "prompt": "An LP wants to provide USDC/USDT liquidity in Uniswap v3. Which fee tier will attract the volume?",
+  "kind": "choice",
+  "choices": [
+   "0.3%",
+   "0.05%",
+   "0.01%",
+   "1%"
+  ],
+  "answer": 2,
+  "hint": "Two dollar-pegged tokens barely move against each other. What would a trader pay for that?",
+  "explain": "Stable pairs live in the 0.01% tier. Anything higher and traders route around you. Volatile pairs justify 0.3% or 1%.",
+  "art": "chart"
+ },
+ {
+  "id": "tick-count",
+  "title": "Ticks to double",
+  "prompt": "In v3 each tick moves price by 0.01%: price at tick i is 1.0001^i. Roughly how many ticks lie between a price and double that price?",
+  "kind": "choice",
+  "choices": [
+   "6,931",
+   "693",
+   "69,315",
+   "10,000"
+  ],
+  "answer": 0,
+  "hint": "You need 1.0001^n = 2. Take logarithms: n = ln 2 / ln 1.0001.",
+  "explain": "ln 2 is 0.6931 and ln 1.0001 is about 0.0001, so about 6,931 ticks. A price doubling is a long walk in tick space.",
+  "art": "chart"
+ },
+ {
+  "id": "impermanent-loss",
+  "title": "The LP who did nothing",
+  "prompt": "You LP ETH/USDC across the full range. ETH doubles. Compared with simply holding the same starting tokens, how far behind is the LP position, before fees?",
+  "kind": "choice",
+  "choices": [
+   "25%",
+   "5.7%",
+   "0%",
+   "2.0%"
+  ],
+  "answer": 1,
+  "hint": "The LP value grows with the square root of the price ratio. Compare 2 x sqrt(2) with 1 + 2.",
+  "explain": "LP value is proportional to 2 x sqrt(2) = 2.83, holding is worth 3. That is 5.7% behind: impermanent loss. Fees have to beat it.",
+  "art": "chart"
+ },
+ {
+  "id": "gas-transfer",
+  "title": "The cheapest transaction",
+  "prompt": "How much gas does a plain ETH transfer with no data cost on Ethereum?",
+  "kind": "number",
+  "answer": 21000,
+  "hint": "It is the constant every gas estimator starts from.",
+  "explain": "21,000 gas. Every contract call costs at least that plus whatever the code does.",
+  "art": "chain"
+ },
+ {
+  "id": "thirty-blocks",
+  "title": "Watching the chain",
+  "prompt": "Standup starts at 09:00 and you promise to watch mainnet for exactly 30 blocks. Blocks arrive every 12 seconds. When can you stop?",
+  "kind": "choice",
+  "choices": [
+   "09:12",
+   "09:03",
+   "09:06",
+   "09:30"
+  ],
+  "answer": 2,
+  "hint": "Multiply blocks by seconds, then convert to minutes.",
+  "explain": "30 x 12 seconds = 360 seconds = 6 minutes. 09:06. Ethereum is boringly regular since the merge.",
+  "art": "chain"
+ },
+ {
+  "id": "confirmed-not-final",
+  "title": "Confirmed, or is it",
+  "prompt": "Your deploy shows 'confirmed' at the newest block. A colleague says the transaction could still vanish. Who is right?",
+  "kind": "choice",
+  "choices": [
+   "Neither: confirmations do not exist post-merge",
+   "Both: it depends on the gas price",
+   "You: confirmed is confirmed",
+   "Your colleague: a reorg can drop recent blocks until finality"
+  ],
+  "answer": 3,
+  "hint": "Think about what happens when two validators propose competing blocks.",
+  "explain": "Recent blocks can be reorganised until the chain finalises them, about two epochs (13 minutes) later. 'Confirmed' means included, not final.",
+  "art": "chain"
+ },
+ {
+  "id": "min-out",
+  "title": "Minimum out",
+  "prompt": "You swap 10,000 USDC, quoted 5 ETH, with slippage tolerance 0.5%. What is the minimum ETH out you will accept, in thousandths of an ETH?",
+  "kind": "number",
+  "answer": 4975,
+  "hint": "Take 0.5% off the quote, then express it in milli-ETH.",
+  "explain": "5 ETH x 0.995 = 4.975 ETH, so 4,975 milli-ETH. If the pool moves more than that before inclusion, the swap reverts instead of overpaying.",
+  "art": "pool"
+ },
+ {
+  "id": "sandwich",
+  "title": "Three transactions",
+  "prompt": "In one block, in order: address A buys ETH, then your ETH buy, then address A sells ETH. What just happened to you?",
+  "kind": "choice",
+  "choices": [
+   "A sandwich attack: A pushed the price up, you bought high, A sold into you",
+   "An airdrop",
+   "A flash loan",
+   "A coincidence"
+  ],
+  "answer": 0,
+  "hint": "Look at who profits from your trade executing at a worse price.",
+  "explain": "Classic sandwich. A front-ran your buy and back-ran it. Tight slippage limits and private order flow are the defences.",
+  "art": "chain"
+ },
+ {
+  "id": "merkle-depth",
+  "title": "Proof length",
+  "prompt": "An airdrop claim contract stores 1,048,576 eligible addresses as leaves of a balanced Merkle tree. How many hashes does one claim proof contain?",
+  "kind": "number",
+  "answer": 20,
+  "hint": "1,048,576 is a power of two. The proof has one sibling hash per level.",
+  "explain": "1,048,576 = 2^20, so the tree has 20 levels and each proof carries 20 sibling hashes. A million claims, 640 bytes of proof each.",
+  "art": "chain"
+ },
+ {
+  "id": "hex-sum",
+  "title": "Dead beef",
+  "prompt": "0xdead + 0xbeef = ?",
+  "kind": "choice",
+  "choices": [
+   "0x1abcd",
+   "0x19d9c",
+   "0xdeadbeef",
+   "0x1d9dc"
+  ],
+  "answer": 1,
+  "hint": "Convert both to decimal, add, convert back. Or add hex column by column with carries.",
+  "explain": "57,005 + 48,879 = 105,884 = 0x19d9c. Engineers who read calldata for fun do this in their heads. Nobody else needs to.",
+  "art": "code"
+ },
+ {
+  "id": "timelock",
+  "title": "Two days",
+  "prompt": "A Uniswap governance proposal passes. Voting ends Friday at 15:00 and the Timelock delay is 2 days. When is the earliest it can execute?",
+  "kind": "choice",
+  "choices": [
+   "Saturday 15:00",
+   "Sunday 15:00",
+   "Friday 15:00",
+   "Monday 09:00"
+  ],
+  "answer": 1,
+  "hint": "The delay is measured from when the proposal is queued, not from the next working day.",
+  "explain": "Sunday 15:00. The timelock exists so everyone can see what is coming. It does not care about weekends.",
+  "art": "whiteboard"
+ },
+ {
+  "id": "quorum",
+  "title": "The quorum",
+  "prompt": "UNI has a total supply of 1,000,000,000 tokens and proposals need 4% of supply voting in favour to reach quorum. How many million UNI is that?",
+  "kind": "number",
+  "answer": 40,
+  "hint": "Four percent of a billion.",
+  "explain": "40 million UNI. Proposals fail for lack of quorum more often than for opposition.",
+  "art": "whiteboard"
+ },
+ {
+  "id": "off-by-one",
+  "title": "The loop",
+  "prompt": "Code review: for (uint i = 0; i <= holders.length; i++) { pay(holders[i]); }  What is wrong?",
+  "kind": "choice",
+  "choices": [
+   "i should start at 1",
+   "holders should be memory",
+   "The <= reads one past the end of the array and reverts",
+   "Nothing, ship it"
+  ],
+  "answer": 2,
+  "hint": "Arrays with length n have indices 0 to n minus 1.",
+  "explain": "Off by one. holders[holders.length] is out of bounds and Solidity reverts the whole payout. The oldest bug there is.",
+  "art": "code"
+ },
+ {
+  "id": "reentrancy",
+  "title": "Send, then update",
+  "prompt": "A contract sends ETH to the caller and only afterwards sets their balance to zero. What is the classic risk?",
+  "kind": "choice",
+  "choices": [
+   "Nothing, it is idiomatic",
+   "Integer overflow",
+   "Reentrancy: the receiver calls back in and withdraws again before the balance is zeroed",
+   "Gas griefing"
+  ],
+  "answer": 2,
+  "hint": "What can a contract do when it receives ETH?",
+  "explain": "Reentrancy, as in The DAO. The receiving contract's fallback calls withdraw again while the balance still reads full.",
+  "art": "code"
+ },
+ {
+  "id": "cei",
+  "title": "The right order",
+  "prompt": "Which order of operations does the checks-effects-interactions pattern prescribe inside a function?",
+  "kind": "choice",
+  "choices": [
+   "Checks, interactions, effects",
+   "Checks, effects, interactions",
+   "Effects, checks, interactions",
+   "Interactions, checks, effects"
+  ],
+  "answer": 1,
+  "hint": "Do all your own bookkeeping before you talk to any other contract.",
+  "explain": "Validate inputs, update your own state, and only then call out. External calls last, so a callback finds your state already settled.",
+  "art": "code"
+ },
+ {
+  "id": "flash-accounting",
+  "title": "Settle at the end",
+  "prompt": "In Uniswap v4 a single contract holds every pool and tracks token deltas during a transaction, requiring only the net amounts to be paid at the end. What is this pattern called?",
+  "kind": "choice",
+  "choices": [
+   "Optimistic settlement",
+   "Lazy minting",
+   "Flash loans",
+   "Flash accounting"
+  ],
+  "answer": 3,
+  "hint": "It uses transient storage that only lives for one transaction.",
+  "explain": "Flash accounting. Multi-hop swaps move tokens once instead of at every hop, which is most of v4's gas savings.",
+  "art": "pool"
+ },
+ {
+  "id": "hooks",
+  "title": "Before and after",
+  "prompt": "What v4 feature lets a pool run custom code before and after swaps, liquidity changes and donations?",
+  "kind": "choice",
+  "choices": [
+   "Hooks",
+   "Adapters",
+   "Plugins",
+   "Middleware"
+  ],
+  "answer": 0,
+  "hint": "The pool's address encodes which callbacks it wants.",
+  "explain": "Hooks. Dynamic fees, limit orders, TWAMM, KYC pools: all hooks attached to otherwise standard pools.",
+  "art": "pool"
+ },
+ {
+  "id": "permit2",
+  "title": "Approve once",
+  "prompt": "Which Uniswap contract lets a user approve a token once and then authorise many apps to spend it with signatures instead of new approval transactions?",
+  "kind": "choice",
+  "choices": [
+   "Permit2",
+   "TokenList",
+   "Multicall",
+   "Universal Router"
+  ],
+  "answer": 0,
+  "hint": "The name says what it does, and it is the second attempt at it.",
+  "explain": "Permit2. It brings permit-style signatures to every ERC-20, including the ones that never implemented EIP-2612.",
+  "art": "code"
+ },
+ {
+  "id": "tick-spacing",
+  "title": "Spacing",
+  "prompt": "In Uniswap v3 the 0.3% fee tier has a fixed tick spacing. What is it?",
+  "kind": "number",
+  "answer": 60,
+  "hint": "0.05% uses 10, 1% uses 200. The middle tier sits between them.",
+  "explain": "60. Positions in that tier can only start and end on ticks divisible by 60, which keeps swaps cheap.",
+  "art": "chart"
+ },
+ {
+  "id": "fee-in-eth",
+  "title": "The receipt",
+  "prompt": "Gas price 20 gwei, the transaction used 100,000 gas. What did it cost, in thousandths of an ETH?",
+  "kind": "number",
+  "answer": 2,
+  "hint": "1 gwei is a billionth of an ETH. Multiply, then convert.",
+  "explain": "20 gwei x 100,000 = 2,000,000 gwei = 0.002 ETH, so 2 thousandths. Cheap day.",
+  "art": "chain"
+ },
+ {
+  "id": "eip1559",
+  "title": "What you actually pay",
+  "prompt": "Base fee is 30 gwei. You set a max priority fee of 2 gwei and a max fee of 50 gwei. What do you pay per gas?",
+  "kind": "choice",
+  "choices": [
+   "30 gwei",
+   "32 gwei",
+   "50 gwei",
+   "52 gwei"
+  ],
+  "answer": 1,
+  "hint": "You pay base fee plus tip, as long as that is under your max.",
+  "explain": "Base 30 plus tip 2 = 32 gwei. The unused 18 gwei of headroom is refunded. The 30 is burned, the 2 goes to the validator.",
+  "art": "chain"
+ },
+ {
+  "id": "pairing",
+  "title": "Who pairs with Ana",
+  "prompt": "Ana always pairs with whoever reviewed her last PR. Ben never reviews on Mondays. Cai reviewed Ana's last PR on Friday. It is Monday. Who pairs with Ana?",
+  "kind": "choice",
+  "choices": [
+   "Ben",
+   "Ana works alone on Mondays",
+   "Cai",
+   "Nobody"
+  ],
+  "answer": 2,
+  "hint": "Only one fact decides the pairing. The others are noise.",
+  "explain": "Cai. Ben's Monday habit is irrelevant, which is the point of the puzzle. Standups are full of irrelevant facts.",
+  "art": "whiteboard"
+ },
+ {
+  "id": "binary-digits",
+  "title": "PR four thousand",
+  "prompt": "Pull request #4096 merges. The release bot prints PR numbers in binary. How many digits does it print?",
+  "kind": "number",
+  "answer": 13,
+  "hint": "4096 is a power of two. How many zeros follow the 1?",
+  "explain": "4096 = 2^12 = 1 followed by twelve zeros: 13 digits. The bot's author regrets the joke.",
+  "art": "code"
+ },
+ {
+  "id": "approve-race",
+  "title": "The allowance race",
+  "prompt": "A user lowers a spender's ERC-20 allowance from 100 to 50 in a single approve transaction. Why might the spender end up with 150?",
+  "kind": "choice",
+  "choices": [
+   "They cannot",
+   "Rounding",
+   "The spender front-runs: spends the 100, then the new 50 lands",
+   "Allowances are additive"
+  ],
+  "answer": 2,
+  "hint": "Think about what the spender can do while the approve is waiting in the mempool.",
+  "explain": "Front-running. The spender sees the approve pending, spends the old 100, then spends the new 50. Use increase and decrease allowance, or Permit2.",
+  "art": "code"
+ },
+ {
+  "id": "twap",
+  "title": "The stubborn oracle",
+  "prompt": "Which price is the hardest for an attacker to manipulate within a single block?",
+  "kind": "choice",
+  "choices": [
+   "The price on a centralised exchange API",
+   "The pool's current spot price",
+   "A 30-minute time-weighted average price",
+   "The last trade price"
+  ],
+  "answer": 2,
+  "hint": "Moving an average requires holding the price there for a long time, and that costs.",
+  "explain": "The TWAP. To move a 30-minute average by 10% you must hold the spot price 10% off for 30 minutes, and every arbitrageur gets paid to stop you.",
+  "art": "chart"
+ },
+ {
+  "id": "integer-division",
+  "title": "Seven tokens, three LPs",
+  "prompt": "A contract splits 7 tokens equally among 3 LPs using Solidity integer math. What happens?",
+  "kind": "choice",
+  "choices": [
+   "It reverts",
+   "Each gets 2 and 1 token stays in the contract",
+   "Each gets 3 and the contract mints 2",
+   "Each gets 2.33"
+  ],
+  "answer": 1,
+  "hint": "Solidity has no decimals. Division rounds toward zero.",
+  "explain": "7 / 3 = 2 with remainder 1. Each LP gets 2 and the leftover token is stuck unless the code handles dust. Most audits find at least one of these.",
+  "art": "code"
+ },
+ {
+  "id": "concentrated",
+  "title": "Two LPs, one price",
+  "prompt": "ETH trades at 2,000. LP A provides 1,000 to 4,000, LP B provides 1,900 to 2,100 with the same capital. While the price sits at 2,000, who earns more fees?",
+  "kind": "choice",
+  "choices": [
+   "A: wider is safer",
+   "Equal",
+   "B: the same capital is concentrated where the trades happen",
+   "Neither, fees only accrue on withdrawal"
+  ],
+  "answer": 2,
+  "hint": "Fees are shared by liquidity active at the current tick, not by capital deposited.",
+  "explain": "B, by a lot. Concentrated liquidity means B's capital is many times denser at 2,000. The price leaving B's range is the catch.",
+  "art": "chart"
+ },
+ {
+  "id": "out-of-range",
+  "title": "Left behind",
+  "prompt": "An LP provides ETH/USDC between 1,900 and 2,100. ETH rallies to 2,300. What does the position now hold?",
+  "kind": "choice",
+  "choices": [
+   "Only USDC",
+   "Only ETH",
+   "Nothing, it was liquidated",
+   "Half and half"
+  ],
+  "answer": 0,
+  "hint": "As price rises through the range, traders buy the position's ETH.",
+  "explain": "Only USDC. The position sold its ETH on the way up and now earns nothing until the price comes back. Ranges need tending.",
+  "art": "chart"
+ },
+ {
+  "id": "unichain-blocks",
+  "title": "Faster blocks",
+  "prompt": "Unichain produces a block every second. How many Unichain blocks land during one 12-second Ethereum block?",
+  "kind": "number",
+  "answer": 12,
+  "hint": "Divide the slow chain's block time by the fast chain's.",
+  "explain": "12. Faster blocks mean faster confirmation for swaps, and more blocks for a sandwich bot to think about.",
+  "art": "chain"
+ },
+ {
+  "id": "hook-flags",
+  "title": "Permission bits",
+  "prompt": "A v4 hook's permissions are encoded in the low bits of its address. A hook has the flags at bits 0, 2 and 3 set. What is that flag value in decimal?",
+  "kind": "number",
+  "answer": 13,
+  "hint": "Bit n is worth 2 to the power n. Add them up.",
+  "explain": "1 + 4 + 8 = 13. Hook developers mine addresses until the low bits match the callbacks they implement.",
+  "art": "code"
+ },
+ {
+  "id": "standup-time",
+  "title": "Standup in Bangkok",
+  "prompt": "Standup is 09:00 in New York, which is on daylight time (UTC-4). You are in Bangkok (UTC+7). When is standup for you?",
+  "kind": "choice",
+  "choices": [
+   "22:00",
+   "20:00",
+   "21:00",
+   "18:00"
+  ],
+  "answer": 1,
+  "hint": "Convert New York to UTC first, then add Bangkok's offset.",
+  "explain": "09:00 EDT = 13:00 UTC = 20:00 in Bangkok. Dinner standup. The nomad's daily arithmetic.",
+  "art": "whiteboard"
+ },
+ {
+  "id": "keccak",
+  "title": "Hash size",
+  "prompt": "How many bytes long is a keccak256 hash?",
+  "kind": "number",
+  "answer": 32,
+  "hint": "256 bits.",
+  "explain": "32 bytes, 64 hex characters. Every storage slot, address derivation and Merkle leaf leans on it.",
+  "art": "code"
+ },
+ {
+  "id": "sqrt-price",
+  "title": "The square root",
+  "prompt": "Uniswap v3 stores price as sqrt(price) scaled by 2^96. If the stored value represents sqrt(price) = 2, what is the price?",
+  "kind": "choice",
+  "choices": [
+   "16",
+   "2",
+   "2^96",
+   "4"
+  ],
+  "answer": 3,
+  "hint": "Undo the square root.",
+  "explain": "4. Storing the square root makes the liquidity math linear. It also makes every off-by-2^96 bug spectacular.",
+  "art": "chart"
+ },
+ {
+  "id": "midnight-ci",
+  "title": "Passes at home, fails in CI",
+  "prompt": "A test passes on your laptop and fails in CI, but only when CI runs around 00:00 UTC. What is the likely bug?",
+  "kind": "choice",
+  "choices": [
+   "Out of memory",
+   "Flaky network",
+   "A date or timezone boundary: 'today' differs between the two machines",
+   "Wrong branch checked out"
+  ],
+  "answer": 2,
+  "hint": "What changes about the world at exactly midnight UTC?",
+  "explain": "A day-boundary bug. Your laptop is in a different timezone, so 'today' differs from CI's around midnight. Mock the clock.",
+  "art": "code"
+ },
+ {
+  "id": "l2-gas",
+  "title": "Whose gas",
+  "prompt": "You bridge 1 ETH to an L2 and swap it there. Which chain's gas do you pay for the swap?",
+  "kind": "choice",
+  "choices": [
+   "Neither, swaps on L2 are free",
+   "The L2",
+   "Both, split evenly",
+   "Ethereum mainnet"
+  ],
+  "answer": 1,
+  "hint": "The swap executes where the pool lives.",
+  "explain": "The L2's. The L2 then pays mainnet to post the data, which is why L2 fees rise when mainnet is busy.",
+  "art": "chain"
+ },
+ {
+  "id": "dutch-auction",
+  "title": "Falling price",
+  "prompt": "In UniswapX an order starts at a price good for the swapper and decays over time until a filler accepts it. What kind of auction is that?",
+  "kind": "choice",
+  "choices": [
+   "English",
+   "Dutch",
+   "Vickrey",
+   "Sealed bid"
+  ],
+  "answer": 1,
+  "hint": "Named after the flower markets that price downwards.",
+  "explain": "A Dutch auction. Fillers compete to accept as soon as the price is profitable for them, which is what gets the swapper a good price.",
+  "art": "pool"
+ }
+]

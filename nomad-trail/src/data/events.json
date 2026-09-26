@@ -592,5 +592,63 @@
     "mitigatedEffects": {
       "mood": 1
     }
+  },
+  {
+    "id": "cockroach",
+    "title": "The chocolate",
+    "when": "day",
+    "baseChance": 0.05,
+    "requiresCities": [
+      "dakhla",
+      "casablanca",
+      "kathmandu",
+      "bangkok",
+      "chiangmai",
+      "lapaz",
+      "laventana",
+      "roatan",
+      "iguazu",
+      "buenosaires"
+    ],
+    "text": "{city}. A bar of chocolate from the corner shop, eaten in bed with a film. By morning your stomach has opinions. You go to throw the wrapper away and stop: the inside of the packaging is dotted with tiny brown capsules, stuck in neat rows. Cockroach eggs. You check the sell-by date. There isn't one.",
+    "effects": {
+      "health": -10,
+      "energy": -12,
+      "mood": -8,
+      "sick": 2,
+      "unlockAchievement": "cockroach"
+    },
+    "mitigatedBy": [
+      "meds"
+    ],
+    "mitigatedText": "{city}. A bar of chocolate from the corner shop, eaten in bed with a film. By morning your stomach has opinions, and by afternoon, with the probiotics from the medicine kit, it has fewer. You go to throw the wrapper away and stop: the inside of the packaging is dotted with tiny brown capsules in neat rows. Cockroach eggs. You do not finish the film.",
+    "mitigatedEffects": {
+      "health": -4,
+      "energy": -6,
+      "mood": -6,
+      "sick": 1,
+      "unlockAchievement": "cockroach"
+    }
+  },
+  {
+    "id": "dronefine",
+    "title": "The drone and the law",
+    "when": "action",
+    "baseChance": 0,
+    "text": "{city}. Two police officers watch the drone land. One of them has been filming you filming. Drones are not legal here, they explain, kindly, while writing. The fine comes out of the travel fund. The footage was good, though.",
+    "effects": {
+      "mood": -6,
+      "unlockAchievement": "dronefine"
+    }
+  },
+  {
+    "id": "dronepermit",
+    "title": "The permit you did not have",
+    "when": "action",
+    "baseChance": 0,
+    "text": "{city}. A ranger appears from nowhere, the way rangers do. Flying here needs a permit, and the permit needs a form, and the form needs three weeks. The fine needs only your card. The footage stays on the card too.",
+    "effects": {
+      "mood": -3
+    }
   }
 ]

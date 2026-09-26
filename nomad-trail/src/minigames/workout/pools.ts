@@ -16,7 +16,7 @@ export const META: Record<string, MicroMeta> = {
   swimbreath:  { name: 'Swim Breathing', word: 'STROKE!',  instr: "Tap LEFT, RIGHT, LEFT... When the bubble appears, DON'T tap: breathe.", durationSec: 8 },
   balance:     { name: 'Balance Board', word: 'STEADY!',   instr: 'Hold LEFT or RIGHT to lean against the gusts. Stay centred.', durationSec: 7 },
   pose:        { name: 'Yoga',          word: 'YOGA!',     instr: 'Scroll the wheel on the right to the pose the shadow shows: Downward Dog, Cobra, Warrior II or Plank. Hold it half a second.', durationSec: 8 },
-  cityrun:     { name: 'City Run',      word: 'CROSS!',    instr: 'Tap to run forward a lane. Tap the sides to sidestep. Swipe DOWN to step back. Do not get hit.', durationSec: 9 },
+  cityrun:     { name: 'City Run',      word: 'DODGE!',    instr: 'Five lanes. D-PAD LEFT / RIGHT to change lane, UP to jump bags and cones, DOWN to duck under signs. Swipes work too. A blinking ! shows where the next hazard comes from.', durationSec: 25 },
   runner:      { name: 'Trail Run',     word: 'RUN!',      instr: 'TAP to jump the rocks. Press and HOLD to duck under the branches; let go and you jump.', durationSec: 8 },
   pace:        { name: 'Pace',          word: 'PACE!',     instr: 'Hold to walk. Keep the marker in the green band. Too fast and you get dizzy.', durationSec: 8 },
 };

@@ -33,7 +33,20 @@
     "laundryOk": "Laundry day. The glamorous part. {days} days of clean clothes.",
     "laundryBad": "Laundry day. Everything is slightly pink now and half of it is still damp. {days} days of clean-ish clothes.",
     "laundryKit": "Sink wash with the detergent sheets, everything strung across the shower rail by 9 pm. {days} days of clean clothes and the day is still yours.",
-    "laundryKitBad": "Sink wash, rushed. Something red went in with the whites. {days} days of clean-ish clothes, and at least it only took an evening."
+    "laundryKitBad": "Sink wash, rushed. Something red went in with the whites. {days} days of clean-ish clothes, and at least it only took an evening.",
+    "workWeek": "{days} days at the laptop, +${money}. {flavor}",
+    "workPerfect": "The puzzle before standup cracked in one go; the fix shipped by lunch and the bonus followed.",
+    "workOk": "The puzzle took a hint. The week was fine.",
+    "workBad": "The puzzle beat you and the incident review ate the week. Pay docked.",
+    "droneFlight": "Drone afternoon over {city}. Level {level}: {outcome}",
+    "droneWin": "every shot in the bag.",
+    "droneOk": "most of the shots.",
+    "droneCrash": "the drone met something solid.",
+    "droneFine": "Fined ${fine} for flying in {city}.",
+    "consoleEvening": "An evening with the handheld in {city}. {outcome}",
+    "consoleGold": "Cleared it. Gold stamp.",
+    "consoleOk": "Almost.",
+    "workStopped": "You close the laptop mid-week. There is nothing left to type with."
   },
   "endings": {
     "hospital": "Day {day}. {city}. A hospital bed with a view of a parking lot. The trail ends here; the story does not.",

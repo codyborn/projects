@@ -1,6 +1,6 @@
 import type { RunState, PackedItem, Bag, ItemTag, CityAction, Ending, Leg, City, EventChoice, Continent } from '../types';
 import { MINIGAME_KEYS, CONTINENT_OF, type MinigameResult } from '../types';
-import { ITEM, ITEMS, CITY, CITIES, EVENT, DISH, LEVEL_BY_CITY } from './data';
+import { ITEM, ITEMS, CITY, CITIES, EVENT, DISH, LEVEL_BY_CITY, PUZZLES } from './data';
 import { makeRng, hash32, type Rng } from './rng';
 import STRINGS from '../../data/strings.json';
 export const STR = STRINGS as typeof STRINGS;
@@ -200,7 +200,7 @@ export function travelTo(state: RunState, cityId: string): StepResult {
 }
 
 // ---------- City days ----------
-function tickDay(s: RunState, rng: Rng, opts: { rest?: boolean } = {}): ResolvedEvent[] {
+function tickDay(s: RunState, rng: Rng, opts: { rest?: boolean; work?: boolean } = {}): ResolvedEvent[] {
   const city = CITY[s.cityId]; const lodging = city.lodgings[0]; const out: ResolvedEvent[] = [];
   s.day += 1; s.stayDays += 1;
   s.money -= city.costPerDay ?? DEFAULT_COST_PER_DAY;
@@ -216,7 +216,7 @@ function tickDay(s: RunState, rng: Rng, opts: { rest?: boolean } = {}): Resolved
   s.energy += 5 + (lodging?.energyPerDay ?? 0) + (opts.rest ? 0 : 0);
   s.mood += (lodging?.moodPerDay ?? 0) - 1;
   // slow wear: the year itself is the opponent. Routine (training, cooking, supplements) pushes back.
-  s.health -= 0.09 + s.day * 0.0017 + (s.energy < 40 ? 0.35 : 0) + (hasTag(s, 'fitness') ? 0 : 0.2);
+  s.health -= 0.09 + s.day * 0.0017 + (s.energy < 40 ? (opts.work ? 0.15 : 0.35) : 0) + (hasTag(s, 'fitness') ? 0 : 0.2);   /* a laptop week indoors wears less than a tired day out */
   if (coffeePacked(s)) { s.energy += 15; s.mood += 2; s.coffeeMornings += 1; }
   if (s.sickDays > 0) { s.sickDays -= 1; s.health -= 4; s.energy -= 5; }
   if (s.backInjuryDays > 0) s.backInjuryDays -= 1;
@@ -243,9 +243,24 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
   switch (action) {
     case 'work': {
       if (isWeekend(s.day)) return { state, events: [], error: 'It is the weekend. Nobody is paying.' };
-      s.workStreak += 1; const n = s.workStreak; events = tickDay(s, rng);
-      s.energy = clamp(s.energy - WORK_ENERGY(n), 0, energyCap(s)); s.mood = clamp(s.mood - WORK_MOOD(n), 0, 100); s.money += WORK_PAY;
-      s.log.push({ day: s.day, city: s.cityId, text: n >= 5 ? `Day ${n} in a row at the laptop, +$${WORK_PAY}. The kitchen table has a dent the shape of your elbows.` : `${DAILY.work} +$${WORK_PAY}.` }); break; }
+      // the work week is a puzzle before standup (Professor Layton, Uniswap flavour); the result scales the whole week's pay (applyMinigameResult)
+      const seen = new Set(s.puzzlesSeen ?? []); let pool = PUZZLES.filter(pz => !seen.has(pz.id)); if (!pool.length) { pool = PUZZLES; s.puzzlesSeen = []; }
+      const puzzle = pool[hash32(s.seed, s.day, 41) % pool.length]; s.puzzlesSeen = [...(s.puzzlesSeen ?? []), puzzle.id];
+      return { state: s, events: [], minigame: { key: MINIGAME_KEYS.work, payload: { puzzle, pay: WORK_PAY, day: s.day, days: workDaysAhead(s.day) }, difficulty: 0.5 } }; }
+    case 'drone': {
+      if (!hasItem(s, 'dronekit')) return { state, events: [], error: 'No drone in the bag.' };
+      if (locked) return { state, events: [], error: 'The drone is in the suitcase. The suitcase is somewhere else.' };
+      if (s.energy < 15) return { state, events: [], error: 'Too tired to fly. Rest first.' };
+      if (hasFlag(s, 'drone_' + s.day)) return { state, events: [], error: 'The battery is charging. Tomorrow.' };
+      setFlag(s, 'drone_' + s.day, true); const flights = s.droneFlights ?? 0; const level = Math.min(3, 1 + Math.floor(flights / 2));
+      return { state: s, events: [], minigame: { key: MINIGAME_KEYS.drone, payload: { city, cityName: city.name, seed: hash32(s.seed, s.day, flights, 55), level }, difficulty: clamp(0.3 + 0.2 * level, 0, 1) } }; }
+    case 'console': {
+      if (!hasTag(s, 'switch')) return { state, events: [], error: 'No console in the bag.' };
+      if (hasFlag(s, 'console_' + s.day)) return { state, events: [], error: 'One evening of that is enough. Tomorrow.' };
+      const lvl = LEVEL_BY_CITY[s.cityId] ?? (LEVEL_BY_CITY['generic'] ? { ...LEVEL_BY_CITY['generic'], city: city.name, hazard: city.hazard } : undefined);
+      if (!lvl) return { state, events: [], error: 'No cartridge for this city.' };
+      setFlag(s, 'console_' + s.day, true); const games = ['carryon', 'tetris'] as const; const ci = Math.max(0, CITIES.findIndex(c => c.id === s.cityId)); const game = games[hash32(s.seed, s.day, ci, 77) % games.length];
+      return { state: s, events: [], minigame: { key: MINIGAME_KEYS.carryon, payload: { game, level: lvl, city: city.id, cityName: city.name, hazard: city.hazard, climate: city.climate, seed: hash32(s.seed, ci, s.day, 99) }, difficulty: diff } }; }
     case 'explore': {
       s.workStreak = 0; events = tickDay(s, rng);
       const bonus = outdoors && geared; s.energy = clamp(s.energy - (bonus ? 9 : 12), 0, energyCap(s)); s.mood = clamp(s.mood + 7 + (bonus ? 6 : 0), 0, 100);
@@ -254,10 +269,6 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       events.push(...rollEvents(s, 'action', ctx, rngFor(s, 4), 1)); break; }
     case 'rest': {
       s.workStreak = 0; events = tickDay(s, rng, { rest: true }); s.energy = clamp(s.energy + 28, 0, energyCap(s)); s.mood = clamp(s.mood + 2, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: DAILY.rest });
-      // The handheld console: on a rest day it offers Carry-On, a platformer level for this city (a hand-built one where it exists,
-      // the generic layout with this city's hazard elsewhere). Once per city, and not again once the stamp is gold.
-      const lvl = LEVEL_BY_CITY[s.cityId] ?? (LEVEL_BY_CITY['generic'] ? { ...LEVEL_BY_CITY['generic'], city: city.name, hazard: city.hazard } : undefined);
-      if (hasTag(s, 'switch') && lvl && s.stamps[s.cityId] !== 'gold' && !hasFlag(s, 'carryon_' + s.cityId)) { setFlag(s, 'carryon_' + s.cityId, true); checkEnding(s); const games = ['carryon', 'tetris', 'heli'] as const; const ci = Math.max(0, CITIES.findIndex(c => c.id === s.cityId)); const game = games[hash32(s.seed, s.day, ci, 77) % games.length]; return { state: s, events, minigame: { key: MINIGAME_KEYS.carryon, payload: { game, level: lvl, city: city.id, cityName: city.name, hazard: city.hazard, climate: city.climate, seed: hash32(s.seed, ci, 99) }, difficulty: diff } }; }
       break; }
     case 'laundry': {
       if (locked) return { state, events: [], error: 'The clothes are in the suitcase. The suitcase is somewhere else.' };
@@ -294,14 +305,20 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
 }
 
 /** What a mini-game result confers, before the day tick: the same numbers applyMinigameResult writes and the result card shows. */
-export interface MinigameRewards { health: number; mood: number; energy: number; days: number; clothes?: number; notes: string[]; }
+export interface MinigameRewards { health: number; mood: number; energy: number; money: number; days: number; clothes?: number; notes: string[]; }
 export function minigameRewards(s: RunState, key: string, result: MinigameResult): MinigameRewards {
   const raw = Number.isFinite(result.score) ? result.score : 0; const score = clamp(result.failed ? 0 : (raw > 1 ? raw / 100 : raw), 0, 1); const city = CITY[s.cityId];
-  const r: MinigameRewards = { health: 0, mood: 0, energy: 0, days: 0, notes: [] };
+  const r: MinigameRewards = { health: 0, mood: 0, energy: 0, money: 0, days: 0, notes: [] };
   switch (key) {
     case MINIGAME_KEYS.workout: r.energy = -10; r.health = 2 + Math.round(score * 5); r.mood = 3 + Math.round(score * 6); r.days = 1; break;
     case MINIGAME_KEYS.cooking: { const dish = (s.pendingDish && DISH[s.pendingDish]) || DISH[city.dishes[0]]; r.health = Math.round(dish.health * score); r.mood = Math.round(dish.mood * score) - (result.failed ? 4 : 0); r.energy = -5; r.days = 1; if (result.failed) r.notes.push('1 in 4 chance of food poisoning'); break; }
-    case MINIGAME_KEYS.carryon: r.mood = 8 + Math.round(score * 12); if (result.perfect || score >= 0.99) r.notes.push('gold stamp'); break;
+    case MINIGAME_KEYS.carryon: r.mood = 3 + Math.round(score * 7); r.energy = -3; if (result.perfect || score >= 0.99) r.notes.push('gold stamp'); r.notes.push('an evening, no day lost'); break;
+    case MINIGAME_KEYS.drone: { r.mood = result.failed ? 1 : 4 + Math.round(score * 10); r.energy = -6; r.notes.push('an afternoon, no day lost'); const rule = city.droneRule ?? 'ok'; if (rule !== 'ok') r.notes.push(rule === 'banned' ? 'drones are illegal here: fines' : 'permit country: fines possible'); break; }
+    case MINIGAME_KEYS.work: {
+      const days = workDaysAhead(s.day); const perDay = WORK_PAY + (result.perfect ? 100 : result.failed ? -75 : 25);
+      r.money = days * perDay; r.days = days; r.mood = result.perfect ? 3 : result.failed ? -3 : 0;
+      let en = 0; for (let i = 1; i <= days; i++) en += WORK_ENERGY(s.workStreak + i); r.energy = -Math.round(en);
+      r.notes.push(result.perfect ? 'bonus: shipped it' : result.failed ? 'pay docked' : 'a hint cost the bonus'); break; }
     case MINIGAME_KEYS.laundry: {
       const kit = hasTag(s, 'laundry'); r.energy = kit ? -2 : -4; r.days = kit ? 0 : 1;
       const bonus = result.perfect ? 3 : score >= 0.8 ? 2 : score >= 0.6 ? 1 : 0;
@@ -316,10 +333,15 @@ export function minigameRewards(s: RunState, key: string, result: MinigameResult
 /** Result-card lines for a mini-game outcome, e.g. ["+5 health · +7 mood · -5 energy", "a day passes"]. */
 export function previewMinigame(s: RunState, key: string, result: MinigameResult): string[] {
   const r = minigameRewards(s, key, result); const sg = (n: number) => (n > 0 ? `+${n}` : `${n}`);
-  const stats = [r.health ? `${sg(r.health)} health` : '', r.mood ? `${sg(r.mood)} mood` : '', r.energy ? `${sg(r.energy)} energy` : ''].filter(Boolean);
-  const extra = [r.clothes !== undefined ? `${r.clothes} clean days` : '', r.days ? (key === MINIGAME_KEYS.airport ? 'a day lost' : 'a day passes') : '', ...r.notes].filter(Boolean);
+  const stats = [r.money ? `${r.money > 0 ? '+' : '-'}$${Math.abs(r.money).toLocaleString('en-US')}` : '', r.health ? `${sg(r.health)} health` : '', r.mood ? `${sg(r.mood)} mood` : '', r.energy ? `${sg(r.energy)} energy` : ''].filter(Boolean);
+  const extra = [r.clothes !== undefined ? `${r.clothes} clean days` : '', r.days ? (key === MINIGAME_KEYS.airport ? 'a day lost' : r.days > 1 ? `${r.days} days pass` : 'a day passes') : '', ...r.notes].filter(Boolean);
   const out: string[] = []; if (stats.length) out.push(stats.join(' · ')); if (extra.length) out.push(extra.join(' · ')); return out;
 }
+
+/** How many days a WORK WEEK tap covers from `day`: today through Friday, at most 5. */
+export function workDaysAhead(day: number): number { let n = 0; while (n < 5 && !isWeekend(day + n)) n++; return Math.max(1, n); }
+/** Drone fines by country rule: chance and amount. */
+export const DRONE_FINE = { banned: { chance: 0.35, fine: 400 }, permit: { chance: 0.12, fine: 150 }, ok: { chance: 0, fine: 0 } } as const;
 
 export function applyMinigameResult(state: RunState, key: string, result: MinigameResult): StepResult {
   const s = clone(state); const rng = rngFor(s, 5); let events: ResolvedEvent[] = []; const raw = Number.isFinite(result.score) ? result.score : 0; const score = clamp(result.failed ? 0 : (raw > 1 ? raw / 100 : raw), 0, 1); /* score is 0..100 */ const city = CITY[s.cityId]; const rw = minigameRewards(s, key, result);
@@ -336,7 +358,8 @@ export function applyMinigameResult(state: RunState, key: string, result: Miniga
       if (result.failed && rng.chance(0.25)) { const fp = EVENT['foodpoisoning']; const mit = !!fp?.mitigatedBy?.some(t => hasTag(s, t)); events.push(forceEvent(s, 'foodpoisoning', rng, mit)); }
       break; }
     case MINIGAME_KEYS.carryon: {
-      s.mood = clamp(s.mood + rw.mood, 0, 100);
+      s.mood = clamp(s.mood + rw.mood, 0, 100); s.energy = clamp(s.energy + rw.energy, 0, energyCap(s));
+      s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.consoleEvening, { city: city.name, outcome: result.perfect || score >= 0.99 ? STR.log.consoleGold : STR.log.consoleOk }) });
       if (result.perfect || score >= 0.99) { s.stamps[s.cityId] = 'gold'; unlock(s, 'gold_' + s.cityId); s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.carryonGold, { city: city.name }) }); }
       break; }
     case MINIGAME_KEYS.laundry: {
@@ -347,6 +370,21 @@ export function applyMinigameResult(state: RunState, key: string, result: Miniga
       s.cleanClothes = rw.clothes ?? s.cleanClothes; s.mood = clamp(s.mood + rw.mood, 0, 100);
       if (result.failed) { unlock(s, 'pinkshirts'); s.log.push({ day: s.day, city: s.cityId, text: tpl(kit ? STR.log.laundryKitBad : STR.log.laundryBad, { days: s.cleanClothes }) }); }
       else { s.log.push({ day: s.day, city: s.cityId, text: tpl(kit ? STR.log.laundryKit : bonus ? STR.log.laundryGreat : STR.log.laundryOk, { days: s.cleanClothes }) }); }
+      break; }
+    case MINIGAME_KEYS.drone: {
+      s.droneFlights = (s.droneFlights ?? 0) + 1; const level = Math.min(3, 1 + Math.floor((s.droneFlights - 1) / 2));
+      s.mood = clamp(s.mood + rw.mood, 0, 100); s.energy = clamp(s.energy + rw.energy, 0, energyCap(s));
+      if (result.perfect) unlock(s, 'dronepilot');
+      s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.droneFlight, { city: city.name, level, outcome: result.failed ? STR.log.droneCrash : result.perfect ? STR.log.droneWin : STR.log.droneOk }) });
+      /* the law: banned countries fine you often, permit countries sometimes; the fine leaves the travel fund */
+      const rule = DRONE_FINE[city.droneRule ?? 'ok']; if (rule.chance && rng.chance(rule.chance)) { s.money -= rule.fine; s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.droneFine, { fine: rule.fine, city: city.name }) }); events.push(forceEvent(s, city.droneRule === 'banned' ? 'dronefine' : 'dronepermit', rng)); }
+      break; }
+    case MINIGAME_KEYS.work: {
+      /* the week: today through Friday (at most 5 days), each day drains by the streak; the puzzle result set the day rate */
+      const days = rw.days; const perDay = Math.round(rw.money / days); let earned = 0;
+      for (let i = 0; i < days; i++) { if (checkEnding(s)) break; if (i > 0 && (s.energy < 30 || s.mood < 15)) { s.log.push({ day: s.day, city: s.cityId, text: STR.log.workStopped }); break; }   /* running on fumes: the week ends early */ s.workStreak += 1; const n = s.workStreak; events.push(...tickDay(s, rng, { work: true })); s.energy = clamp(s.energy - WORK_ENERGY(n), 0, energyCap(s)); s.mood = clamp(s.mood - WORK_MOOD(n), 0, 100); s.money += perDay; earned += perDay; }
+      s.mood = clamp(s.mood + rw.mood, 0, 100);
+      s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.workWeek, { days: Math.round(earned / perDay), money: earned.toLocaleString('en-US'), flavor: result.perfect ? STR.log.workPerfect : result.failed ? STR.log.workBad : STR.log.workOk }) });
       break; }
     case MINIGAME_KEYS.kite: { s.mood = clamp(s.mood + rw.mood, 0, 100); s.energy = clamp(s.energy + rw.energy, 0, energyCap(s)); if (result.perfect) unlock(s, 'kitemaster'); break; }
     case MINIGAME_KEYS.airport: {
@@ -418,7 +456,7 @@ export function pendingChoices(s: RunState): { id: string; title: string; text: 
 
 export const Sim = {
   GRID, TOTAL_DAYS, HOME_CITY, HOME_MIN_CONTINENTS, HOME_PROGRESS_DEG, CONTINENTS_ALL, START_MONEY, OVERDRAFT, WORK_PAY, CITIES, CITY, ITEM, DISH, LEVEL_BY_CITY,
-  createRun, validatePack, setPack, bagWeight, weightRatio, totalWeight, coffeePacked, bundles, hasTag, hasFlag, hasItem, dullKnives, minigameRewards, previewMinigame, isOutdoorsy,
+  createRun, validatePack, setPack, bagWeight, weightRatio, totalWeight, coffeePacked, bundles, hasTag, hasFlag, hasItem, dullKnives, minigameRewards, previewMinigame, workDaysAhead, isOutdoorsy,
   shelfPack, buildPack, randomPack, idsWeight, weekdayOf, isWeekend, nextWorkdays, fareFor, directionUndecided, setDirection,
   availableLegs, travelTo, cityAction, applyMinigameResult, resolveChoice, pendingChoices, checkEnding, score, progress, homeUnlocked, homeRequirements, continentsVisited, endingCause, monthOf,
   visibleAchievements, energyCap, accessibleItems,

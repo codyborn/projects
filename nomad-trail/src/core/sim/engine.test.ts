@@ -16,6 +16,8 @@ const basic = (): PackedItem[] => [P('laptopkit', 'checked', 0, 0), P('clothes1'
 const withExtras = (...ids: string[]): PackedItem[] => shelfPack(['laptopkit', 'clothes1', ...ids])!;
 function packed(items = basic()): RunState { const s = Sim.createRun(42, undefined, 'east'); const v = Sim.setPack(s, items); expect(v.ok, v.errors.join(';')).toBe(true); return Sim.setDirection(v.state!, 'east'); }  // direction fixed here; inference is covered in route.test.ts
 const HEAVY = ['kitegear', 'dronekit', 'books', 'hikingboots', 'adventure', 'protein', 'clothes1', 'clothes2', 'hostgifts', 'laptopkit', 'coffeekit'];
+/** WORK WEEK: the engine hands back the puzzle; apply it with a score (1 = solved: +100/day, 0.6..0.94 = hinted: +25/day, <0.5 = wrong: -75/day) to run the week. Default 0.8. */
+function workWeek(s: RunState, score = 0.8): RunState { const r = Sim.cityAction(s, 'work'); if (r.error) throw new Error(r.error); return Sim.applyMinigameResult(r.state, 'Work', { score, perfect: score >= 0.95, failed: score < 0.5 }).state; }
 /** Travel along the first offered leg, resolving any pending choice. */
 function hop(s: RunState, pick = 0): RunState { const legs = Sim.availableLegs({ ...s, phase: 'route' }); let r = Sim.travelTo({ ...s, phase: 'route' }, legs[Math.min(pick, legs.length - 1)].to).state; if (r.pendingEvent) r = Sim.resolveChoice(r, r.pendingEvent, 0).state; return r; }
 
@@ -213,14 +215,14 @@ describe('events', () => {
     expect(Sim.hasTag({ ...s, bagLockedDays: 2 }, 'clothing')).toBe(false); expect(Sim.hasTag({ ...s, bagLockedDays: 2 }, 'essential')).toBe(true);
     const locked = { ...s, bagLockedDays: 2, phase: 'city' as const, cityId: 'lisbon', day: 5, energy: 80, cleanClothes: 7 };
     expect(Sim.cityAction(locked, 'cook').error).toMatch(/suitcase/); expect(Sim.cityAction(locked, 'train').error).toMatch(/suitcase/); expect(Sim.cityAction(locked, 'laundry').error).toMatch(/suitcase/);
-    const w = Sim.cityAction(locked, 'work'); expect(w.error).toBeUndefined(); expect(w.state.money).toBe(locked.money - CITY.lisbon.costPerDay! + WORK_PAY); expect(w.state.cleanClothes).toBe(7); expect(w.state.energy).toBeLessThan(locked.energy - 8);
+    const w = workWeek({ ...locked, day: 9 }); expect(w.money).toBe(locked.money - CITY.lisbon.costPerDay! + WORK_PAY + 25); expect(w.cleanClothes).toBe(7); expect(w.energy).toBeLessThan(locked.energy - 8);   // day 9 is a Friday: a one-day week
     const after = Sim.cityAction({ ...locked, bagLockedDays: 1 }, 'rest').state; expect(after.bagLockedDays).toBe(0); expect(after.log.some(l => /suitcase arrives/.test(l.text))).toBe(true);
   });
   it('the kettle can only explode if you packed it, then it is gone', () => {
     const noKettle = packed(); expect(eventChance(EVENT.kettle, { ...noKettle, cityId: 'lisbon' }, {}).chance).toBe(0);
     const withKettle = packed(withExtras('travelkettle')); expect(eventChance(EVENT.kettle, { ...withKettle, cityId: 'lisbon' }, {}).chance).toBeGreaterThan(0);
     let s: RunState = { ...withKettle, phase: 'city', cityId: 'lisbon' }, boom = false;
-    for (let i = 0; i < 400 && !boom && s.phase === 'city'; i++) { const r = Sim.cityAction(s, i % 2 ? 'rest' : 'work'); s = r.state; if (s.pendingEvent) s = Sim.resolveChoice(s, s.pendingEvent, 0).state; boom = r.events.some(e => e.id === 'kettle'); s.health = 100; s.energy = 80; s.mood = 80; s.day = Math.min(s.day, 200); }
+    for (let i = 0; i < 400 && !boom && s.phase === 'city'; i++) { let r = Sim.cityAction(s, i % 2 ? 'rest' : 'work'); if (r.minigame) r = Sim.applyMinigameResult(r.state, r.minigame.key, { score: 80, perfect: false, failed: false }); s = r.state; if (s.pendingEvent) s = Sim.resolveChoice(s, s.pendingEvent, 0).state; boom = r.events.some(e => e.id === 'kettle'); s.health = 100; s.energy = 80; s.mood = 80; s.day = Math.min(s.day, 200); }
     expect(boom).toBe(true); expect(s.items.some(p => p.id === 'travelkettle')).toBe(false); expect(s.lostItems).toContain('travelkettle');
   });
   it('mitigations: packing cubes stop forgotten items; the mosquito kit tames the swarm', () => {
@@ -244,9 +246,31 @@ describe('city loop, minigames, endings', () => {
   it('actions cost days, laundry resets clothes, min stay gates moving on', () => {
     let s = hop(packed()); s = { ...s, day: 5 };   // day 5 is a Monday
     expect(Sim.cityAction(s, 'moveon').error).toMatch(/at least/);
-    const d0 = s.day; s = Sim.cityAction(s, 'work').state; expect(s.day).toBe(d0 + 1); expect(s.workStreak).toBe(1);
+    const d0 = s.day; const wk = Sim.cityAction(s, 'work'); expect(wk.minigame?.key).toBe('Work'); expect(wk.minigame?.payload.days).toBe(5); s = workWeek(s); expect(s.day).toBe(d0 + 5); expect(s.workStreak).toBe(5);
     s = { ...s, cleanClothes: 0 }; const r = Sim.cityAction(s, 'laundry'); expect(r.minigame?.key).toBe('Laundry'); expect(r.state.cleanClothes).toBe(0);   // clothes come back through the result, scaled by how well you sorted
     const done = Sim.applyMinigameResult(r.state, 'Laundry', { score: 90, perfect: false, failed: false }).state; expect(done.cleanClothes).toBeGreaterThanOrEqual(done.maxClothes);
+  });
+  it('drone: needs the kit, costs no day, levels rise with flights, fines in banned countries', () => {
+    const noKit = hop(packed()); expect(Sim.cityAction(noKit, 'drone').error).toMatch(/drone/i);
+    let s = { ...hop(packed(withExtras('dronekit'))), cityId: 'dakhla', energy: 80 }; const d0 = s.day;
+    const r = Sim.cityAction(s, 'drone'); expect(r.minigame?.key).toBe('Drone'); expect(r.minigame?.payload.level).toBe(1); expect(r.minigame?.payload.city.id).toBe('dakhla');
+    expect(Sim.cityAction(r.state, 'drone').error).toMatch(/charging/);
+    let fined = 0, flights = 0; let st = r.state;
+    for (let seed = 1; seed <= 60; seed++) { const a = Sim.applyMinigameResult({ ...st, seed }, 'Drone', { score: 90, perfect: false, failed: false }); flights++; if (a.events.some(e => e.id === 'dronefine')) { fined++; expect(a.state.money).toBe(st.money - 400); } expect(a.state.day).toBe(d0); expect(a.state.mood).toBeGreaterThan(st.mood - 7); }
+    expect(fined).toBeGreaterThan(8); expect(fined).toBeLessThan(40);   // Morocco: 35% per flight
+    const two = Sim.applyMinigameResult(st, 'Drone', { score: 90, perfect: false, failed: false }).state; const three = Sim.applyMinigameResult(two, 'Drone', { score: 90, perfect: false, failed: false }).state;
+    expect(Sim.cityAction({ ...three, day: three.day + 1 }, 'drone').minigame?.payload.level).toBe(2);
+    const usa = Sim.applyMinigameResult({ ...st, cityId: 'boulder' }, 'Drone', { score: 90, perfect: false, failed: false }); expect(usa.events.some(e => e.id === 'dronefine' || e.id === 'dronepermit')).toBe(false);
+  });
+  it('console: a button, not a rest-day surprise; once a day, no day passes, gold stamp on a perfect run', () => {
+    const noSwitch = hop(packed()); expect(Sim.cityAction(noSwitch, 'console').error).toMatch(/console/i);
+    const s = hop(packed(withExtras('switch'))); const r = Sim.cityAction(s, 'console'); expect(r.minigame?.key).toBe('CarryOn'); expect(['carryon', 'tetris']).toContain(r.minigame?.payload.game);
+    expect(Sim.cityAction(r.state, 'console').error).toMatch(/Tomorrow/);
+    const gold = Sim.applyMinigameResult(r.state, 'CarryOn', { score: 100, perfect: true, failed: false }).state; expect(gold.day).toBe(s.day); expect(gold.stamps[s.cityId]).toBe('gold');
+    expect(Sim.cityAction({ ...s, phase: 'city' }, 'rest').minigame).toBeUndefined();
+  });
+  it('the chocolate only bites in the listed cities', () => {
+    const s = packed(); expect(eventChance(EVENT.cockroach, { ...s, cityId: 'dakhla' }, {}).chance).toBeGreaterThan(0); expect(eventChance(EVENT.cockroach, { ...s, cityId: 'munich' }, {}).chance).toBe(0);
   });
   it('no clothes packed: allowed, one outfit, dirty from day two, laundry only buys a day', () => {
     const s0 = packed(shelfPack(['laptopkit', 'toiletries'])!); expect(s0.maxClothes).toBe(0); expect(s0.cleanClothes).toBe(0);
@@ -293,14 +317,15 @@ describe('city loop, minigames, endings', () => {
     // every offer over a long stay is local
     for (let i = 0; i < 12; i++) { const r = Sim.cityAction(s, 'cook'); expect(CITY[s.cityId].dishes).toContain(r.minigame!.payload.dish.id); s = Sim.applyMinigameResult(r.state, 'Cooking', { score: 0.5, perfect: false, failed: false }).state; if (s.pendingEvent) s = Sim.resolveChoice(s, s.pendingEvent, 0).state; if (s.phase !== 'city') break; }
   });
-  it('train hands off to a workout; rest offers Carry-On only with the console', () => {
+  it('train hands off to a workout; the console is its own action', () => {
     let s = hop(packed(withExtras('fitnesskit')));
     s = { ...s, cityId: 'miami', energy: 80 };
     const t = Sim.cityAction(s, 'train'); expect(t.minigame?.key).toBe('Workout'); expect(t.state.day).toBe(s.day);
     const after = Sim.applyMinigameResult(t.state, 'Workout', { score: 1, perfect: true, failed: false }).state; expect(after.day).toBe(s.day + 1); expect(after.achievements).toContain('ironbody');
     expect(Sim.cityAction(s, 'rest').minigame).toBeUndefined();
     const withSwitch = { ...s, items: [...s.items, P('switch', 'checked', 0, 8)] };
-    const rr = Sim.cityAction(withSwitch, 'rest'); expect(rr.minigame?.key).toBe('CarryOn'); expect(rr.minigame?.payload.level.city).toBe('miami');
+    expect(Sim.cityAction(withSwitch, 'rest').minigame).toBeUndefined();   // the console is a button now, not a rest-day surprise
+    const rr = Sim.cityAction(withSwitch, 'console'); expect(rr.minigame?.key).toBe('CarryOn'); expect(rr.minigame?.payload.level.city).toBe('miami');
     const gold = Sim.applyMinigameResult(rr.state, 'CarryOn', { score: 1, perfect: true, failed: false }).state; expect(gold.stamps.miami).toBe('gold');
     expect(Sim.cityAction({ ...s, energy: 10 }, 'train').error).toMatch(/tired/); expect(Sim.cityAction({ ...s, backInjuryDays: 3 }, 'train').error).toMatch(/back/);
   });
@@ -339,17 +364,19 @@ describe('round 3: money, weekends, streaks, weight, outdoors, radon', () => {
     expect(Sim.nextWorkdays({ ...inCity(), day: 2 } as RunState, 5)).toEqual([2, 5, 6, 7, 8]);
   });
   it('work pays on weekdays, drains exponentially with the streak, and any other day resets it', () => {
-    let s = inCity(); const m0 = s.money;
-    s = Sim.cityAction(s, 'work').state; expect(s.money).toBe(m0 - CITY.lisbon.costPerDay! + WORK_PAY); expect(s.workStreak).toBe(1);
-    const e1 = s.energy; s = Sim.cityAction(s, 'work').state; const drop2 = e1 - s.energy; s = Sim.cityAction(s, 'work').state; const e3 = s.energy;
-    expect(s.workStreak).toBe(3); expect(WORK_ENERGY(3)).toBeGreaterThan(WORK_ENERGY(1)); expect(WORK_ENERGY(20)).toBe(40);
-    void drop2; void e3;
+    let s = { ...inCity(), day: 9 }; const m0 = s.money;   // Friday: the week is one day
+    s = workWeek(s); expect(s.money).toBe(m0 - CITY.lisbon.costPerDay! + WORK_PAY + 25); expect(s.workStreak).toBe(1);
+    expect(WORK_ENERGY(3)).toBeGreaterThan(WORK_ENERGY(1)); expect(WORK_ENERGY(20)).toBe(40);
     s = Sim.cityAction(s, 'explore').state; expect(s.workStreak).toBe(0);
-    // five straight days cost more than five days with a break in the middle
-    const straight = [5, 6, 7, 8, 9].reduce((st, d) => Sim.cityAction({ ...st, day: d }, 'work').state, { ...inCity(), energy: 100 } as RunState);
-    const broken = [5, 6, 7].reduce((st, d) => Sim.cityAction({ ...st, day: d }, 'work').state, { ...inCity(), energy: 100 } as RunState);
-    const brokenRested = Sim.cityAction({ ...broken, day: 8 }, 'rest').state; const brokenAgain = Sim.cityAction({ ...brokenRested, day: 9 }, 'work').state;
-    expect(straight.workStreak).toBe(5); expect(brokenAgain.workStreak).toBe(1);
+    // a full Monday week: five days, streak 5, and it drains more than five fresh days would
+    const straight = workWeek({ ...inCity(), day: 5, energy: 100 } as RunState); expect(straight.workStreak).toBe(5); expect(straight.day).toBe(10);
+    expect(100 - straight.energy).toBeGreaterThan(5 * WORK_ENERGY(1) - 30);   // tickDay gives some back; the streak curve still shows
+    const brokenAgain = workWeek(Sim.cityAction({ ...straight, day: 15 }, 'rest').state); expect(brokenAgain.workStreak).toBeGreaterThanOrEqual(1);
+    // the puzzle sets the rate: perfect pays a bonus, a failed puzzle docks pay
+    const base = { ...inCity(), day: 9 }; const good = workWeek(base, 1), meh = workWeek(base, 0.6), bad = workWeek(base, 0);
+    expect(good.money - base.money).toBe(WORK_PAY + 100 - CITY.lisbon.costPerDay!); expect(meh.money - base.money).toBe(WORK_PAY + 25 - CITY.lisbon.costPerDay!); expect(bad.money - base.money).toBe(WORK_PAY - 75 - CITY.lisbon.costPerDay!);
+    // puzzles do not repeat within a run until the bank is exhausted
+    const seen = new Set<string>(); let st: RunState = { ...inCity(), day: 5 }; for (let i = 0; i < 20; i++) { const r = Sim.cityAction({ ...st, day: 5 + 7 * i }, 'work'); const id = r.minigame!.payload.puzzle.id; expect(seen.has(id)).toBe(false); seen.add(id); st = r.state; }
   });
   it('every day and every leg cost money; the card declines below zero and the run ends past the overdraft', () => {
     const s = inCity(); const r = Sim.cityAction(s, 'rest'); expect(r.state.money).toBe(s.money - CITY.lisbon.costPerDay!);

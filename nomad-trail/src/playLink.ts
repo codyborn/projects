@@ -1,15 +1,18 @@
 // Quick play from a URL, for reviewing on a phone: /trail/?play=Workout&plan=pushup&city=lisbon
-// Scenes: Workout (activity, plan, city, day, lives), Cooking (dish, city), CarryOn (game, city, seed), Kite (city), Airport (gate),
+// Scenes: Workout (activity, plan, city, day, lives), Cooking (dish, city), CarryOn (game, city, seed), Drone (city, level, seed), Kite (city), Airport (gate),
 // Laundry, Otter, Coffee (city). Ends on a small card with REPLAY and BACK TO REVIEW.
 import Phaser from 'phaser';
-import type { MinigameResult, City, Dish } from './core/types';
+import type { MinigameResult, City, Dish, Puzzle } from './core/types';
 import { PAL } from './core/palette';
 import citiesJson from './data/cities.json';
 import dishesJson from './data/dishes.json';
 import levelsJson from './data/arcade_levels.json';
+import puzzlesJson from './data/puzzles.json';
+import { puzzleById } from './minigames/work/sample';
 import { Button } from './ui/Button';
 import { txt, rect } from './ui/theme';
 
+const PUZZLES = puzzlesJson as unknown as Puzzle[];
 const CITIES = citiesJson as unknown as City[]; const DISHES = dishesJson as unknown as Dish[]; const LEVELS = levelsJson as unknown as any[];
 export class PlayEndScene extends Phaser.Scene {
   constructor() { super('PlayEnd'); }
@@ -39,7 +42,9 @@ export function installPlayLink(game: Phaser.Game): boolean {
         game.scene.start('CarryOn', { ...base, payload: { game: gm, level: lvl ? { ...lvl, city: city.name, hazard: city.hazard } : undefined, city: city.id, cityName: city.name, hazard: city.hazard, climate: city.climate, seed: Number(q.get('seed') || 7) }, onDone: done(`${gm} · ${city.name}`) }); break; }
       case 'Kite': game.scene.start('Kite', { ...base, payload: { city: city.id }, onDone: done(`kite · ${city.name}`) }); break;
       case 'Airport': game.scene.start('Airport', { ...base, payload: { gate: q.get('gate') || 'B56' }, onDone: done('gate dash') }); break;
+      case 'Drone': game.scene.start('Drone', { ...base, payload: { city, cityName: city.name, seed: Number(q.get('seed') || 7), level: Number(q.get('level') || 1) }, onDone: done(`drone · ${city.name}`) }); break;
       case 'Laundry': game.scene.start('Laundry', { ...base, payload: { kit: q.get('kit') === '1' }, onDone: done('laundry') }); break;
+      case 'Work': { const pz = puzzleById(PUZZLES, q.get('puzzle')); game.scene.start('Work', { ...base, payload: { puzzle: pz, pay: Number(q.get('pay') || 450), day: Number(q.get('day') || 3) }, onDone: done(`puzzle · ${pz.title}`) }); break; }
       case 'Otter': game.scene.start('Otter', { onDone: () => done('the otter')() }); break;
       case 'Coffee': game.scene.start('Coffee', { cityId: city.id, day: Number(q.get('day') || 12), climate: city.climate, region: city.region, onDone: () => done(`coffee · ${city.name}`)() }); break;
       default: return false;

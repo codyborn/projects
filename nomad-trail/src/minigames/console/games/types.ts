@@ -3,7 +3,7 @@ import type Phaser from 'phaser';
 import type { ArcadeLevel, Hazard } from '../../../core/types';
 import type { Pad } from '../input';
 
-export type ConsoleGameId = 'carryon' | 'tetris' | 'heli';
+export type ConsoleGameId = 'carryon' | 'tetris';
 
 export interface ConsoleResult { score: number; perfect?: boolean; failed?: boolean; }
 

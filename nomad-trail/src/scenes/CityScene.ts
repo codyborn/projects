@@ -7,6 +7,7 @@ import { Hud } from '../ui/hud';
 import { toast } from '../ui/Toast';
 import { Sim, Data, getRun, putRun } from '../ui/simBridge';
 import { launchOnTop } from '../ui/overlay';
+import { buildIcons } from '../art/icons';
 const ACTIONS: { a: CityAction | 'map'; label: string; icon: string; tip: string }[] = [
   { a: 'work', label: 'WORK WEEK', icon: '💻', tip: 'a remote day' }, { a: 'explore', label: 'EXPLORE', icon: '🧭', tip: 'mood up, mild risk' },
   { a: 'train', label: 'WORK OUT', icon: '🏋', tip: 'stay fit' }, { a: 'cook', label: 'COOK', icon: '🍳', tip: 'local dish' },
@@ -14,7 +15,7 @@ const ACTIONS: { a: CityAction | 'map'; label: string; icon: string; tip: string
   { a: 'map', label: 'MAP', icon: '🌍', tip: 'where you are' }, { a: 'moveon', label: 'MOVE ON', icon: '✈', tip: 'pick the next city' } ];
 /** City: arrival card, HUD, day actions, log. Launches mini-games, Coffee, Event as overlays and pauses itself. */
 export class CityScene extends Phaser.Scene {
-  static KEY = 'City'; private hud!: Hud; private logLbl!: Label; private busy = false; private lastDay = -1; private btns: Button[] = [];
+  static KEY = 'City'; private hud!: Hud; private logLbl!: Label; private busy = false; private lastDay = -1; private btns: Button[] = []; private btnActs: (CityAction | 'map')[] = [];
   constructor() { super(CityScene.KEY); }
   create(data: { arrived?: boolean } = {}) {
     this.busy = false; this.btns = []; this.cameras.main.fadeIn(200);
@@ -26,11 +27,23 @@ export class CityScene extends Phaser.Scene {
     if (!drew) this.fallbackVista(run.cityId, city?.climate ?? 'temperate');
     { const name = (city?.name ?? run.cityId).toUpperCase(); const plateW = Math.min(300, Math.max(150, 20 + name.length * 13)); const plate = this.add.graphics().setDepth(2); plate.fillStyle(PAL.night0, 0.82); plate.fillRect(6, 90, plateW, 40); plate.fillStyle(PAL.sun1, 1); plate.fillRect(6, 90, 3, 40); }
     txt(this, 14, 96, (city?.name ?? run.cityId).toUpperCase(), 16, PAL.white).setDepth(3); txt(this, 14, 116, `${city?.country ?? ''} · stay day ${run.stayDays + 1}${Sim.dullKnives(run) ? ' · dull knife' : ''}`, 8, PAL.gray2).setDepth(3);
+    try { buildIcons(this); } catch { /* icons are optional */ }
     this.hud = new Hud(this); this.hud.refresh(run);
     this.time.delayedCall(0, () => this.refreshButtons());
     new Panel(this, 12, 244, 336, 118, { fill: PAL.night1, border: PAL.night3 }); this.logLbl = txt(this, 20, 250, '', 8, PAL.gray2, { wrap: 320 }); this.refreshLog();
-    ACTIONS.forEach((act, i) => { const b = new Button(this, 96 + (i % 2) * 168, 392 + Math.floor(i / 2) * 56, act.label, () => this.act(act.a), { w: 160, h: 48, size: 12, icon: act.icon, fill: act.a === 'moveon' ? PAL.sea0 : PAL.night2 }); this.btns.push(b); });
-    txt(this, 180, 620, '1 action = 1 day · work week = Mon-Fri', 8, PAL.gray0).setOrigin(0.5);
+    // slot 6 (where MAP lives) belongs to the side games when they are packed: the drone, the handheld, or both at half width
+    const hasDrone = Sim.hasItem(run, 'dronekit'), hasSwitch = Sim.hasTag(run, 'switch'); this.btnActs = [];
+    ACTIONS.forEach((act, i) => {
+      const x = 96 + (i % 2) * 168, y = 392 + Math.floor(i / 2) * 56;
+      if (act.a === 'map' && (hasDrone || hasSwitch)) {
+        const side: { a: CityAction; label: string; key: string }[] = []; if (hasDrone) side.push({ a: 'drone', label: 'DRONE', key: 'ico_drone' }); if (hasSwitch) side.push({ a: 'console', label: 'PLAY', key: 'ico_switch' });
+        if (side.length === 2) side.forEach((sd, k) => { this.btns.push(new Button(this, x - 41 + k * 82, y, '', () => this.act(sd.a), { w: 78, h: 48, size: 12, iconKey: sd.key, icon: this.textures.exists(sd.key) ? undefined : (sd.a === 'drone' ? 'DRN' : 'PLAY'), fill: PAL.night2 })); this.btnActs.push(sd.a); });
+        else { const sd = side[0]; this.btns.push(new Button(this, x, y, sd.label, () => this.act(sd.a), { w: 160, h: 48, size: 12, iconKey: sd.key, fill: PAL.night2 })); this.btnActs.push(sd.a); }
+        return;
+      }
+      this.btns.push(new Button(this, x, y, act.label, () => this.act(act.a), { w: 160, h: 48, size: 12, icon: act.icon, iconKey: act.a === 'map' ? 'ico_map' : undefined, fill: act.a === 'moveon' ? PAL.sea0 : PAL.night2 })); this.btnActs.push(act.a);
+    });
+    txt(this, 180, 620, '1 action = 1 day · work = puzzle, then Mon-Fri', 8, PAL.gray0).setOrigin(0.5);
     this.refreshWorkBtn(run.day);
     if (data.arrived) this.arrivalCard();
   }
@@ -70,15 +83,7 @@ export class CityScene extends Phaser.Scene {
     if (this.busy) return; this.busy = true; this.btns.forEach(b => b.setDisabled(true));
     const run = getRun(this);
     if (a === 'work' && Sim.isWeekend(run.day)) { toast(this, 'No work on weekends. Explore, cook, rest.', PAL.sun1, 1400); this.busy = false; this.btns.forEach(b => b.setDisabled(false)); this.refreshWorkBtn(run.day); return; }
-    let res = Sim.cityAction(run, a);
-    if (a === 'work') { // work week: Mon to Fri from today; stop at the weekend, an event, a mini-game, an ending, or when the engine refuses
-      let days = res.state.day !== run.day ? 1 : 0; const money0 = (run as any).money ?? 0;
-      for (let i = 1; i < 5 && days > 0 && !res.events.length && !res.minigame && !Sim.checkEnding(res.state) && !Sim.isWeekend(res.state.day); i++) { const before = res.state.day; res = Sim.cityAction(res.state, a); if (res.state.day === before) break; days++; }
-      // collapse the identical 'work day' log lines into one
-      { const lg = res.state.log; let n = 0; while (n < 5 && lg.length - 1 - n >= 0 && lg[lg.length - 1 - n].text === lg[lg.length - 1].text) n++; if (n > 1) { const last = lg[lg.length - 1]; lg.splice(lg.length - n, n, { day: last.day, city: last.city, text: `A work week. ${n} days of meetings at odd hours, the laptop on a kitchen table.` }); } }
-      const earned = Math.round(((res.state as any).money ?? 0) - money0);
-      if (days > 0) toast(this, earned > 0 ? `+$${earned.toLocaleString('en-US')} · ${days} day${days > 1 ? 's' : ''}` : `${days} work day${days > 1 ? 's' : ''}`, PAL.neon, 1300);
-    }
+    const res = Sim.cityAction(run, a);
     if (res.error) {   // the engine refused (too tired, back injury, delayed suitcase, weekend): say so instead of silently doing nothing
       toast(this, res.error, PAL.sun1, 1800); this.cameras.main.shake(80, 0.004); this.busy = false; this.btns.forEach(b => b.setDisabled(false)); this.refreshButtons(); return;
     }
@@ -88,7 +93,7 @@ export class CityScene extends Phaser.Scene {
     // order: the morning (coffee) first, then whatever the day brought, then the mini-game the action asked for
     if (res.state.day !== this.lastDay && res.state.stayDays === 1 && Sim.coffeePacked(res.state) && this.scene.get('Coffee') && a !== 'moveon') { const c = Data.city(res.state.cityId); queue.push(() => this.overlay('Coffee', { cityId: res.state.cityId, day: res.state.day, climate: c?.climate, region: c?.region })); }
     for (const id of res.events) queue.push(() => this.overlay('Event', { eventId: id }));
-    if (res.minigame) { if (res.minigame.key === 'CarryOn') queue.push(() => new Promise<void>(r => { toast(this, `Rest day. The console comes out. Clear the game for a gold ${Data.city(res.state.cityId)?.name ?? ''} stamp.`, PAL.neon, 1600); this.time.delayedCall(1500, () => r()); })); queue.push(() => this.minigame(res.minigame!)); }
+    if (res.minigame) queue.push(() => this.minigame(res.minigame!));
     this.lastDay = res.state.day;
     (async () => { for (const q of queue) await q(); this.after(a); })();
   }
@@ -105,7 +110,7 @@ export class CityScene extends Phaser.Scene {
   /** Dim actions the engine would refuse right now (probe on a copy; the tap still explains why). */
   private refreshButtons() {
     const run = getRun(this);
-    ACTIONS.forEach((act, i) => { if (act.a === 'map' || act.a === 'moveon') return; const probe = Sim.cityAction(JSON.parse(JSON.stringify(run)), act.a as CityAction); const refused = !!(probe as any).error; this.btns[i]?.setAlpha(refused ? 0.55 : 1); });
+    this.btnActs.forEach((a, i) => { if (a === 'map' || a === 'moveon') return; const probe = Sim.cityAction(JSON.parse(JSON.stringify(run)), a); const refused = !!(probe as any).error; this.btns[i]?.setAlpha(refused ? 0.55 : 1); });
   }
   private after(a: CityAction) {
     const run = getRun(this); this.hud.refresh(run); this.refreshLog();

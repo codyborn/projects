@@ -43,6 +43,7 @@ export function eventChance(ev: GameEvent, s: RunState, ctx: RollCtx): { chance:
   const city = CITY[s.cityId];
   if (ONCE.has(ev.id) && hasFlag(s, 'ev_' + ev.id)) return { chance: 0, mitigated: false };
   if (ev.requiresCity && ev.requiresCity !== s.cityId) return { chance: 0, mitigated: false };
+  if (ev.requiresCities && !ev.requiresCities.includes(s.cityId)) return { chance: 0, mitigated: false };
   if (ev.requiresClimate && !ev.requiresClimate.includes(city.climate)) return { chance: 0, mitigated: false };
   if (ev.requiresOutdoorsy && !city.outdoorsy) return { chance: 0, mitigated: false };                      // no mountain talk in Tokyo
   if (ev.requiresActivity && !ev.requiresActivity.some(a => city.activities.includes(a))) return { chance: 0, mitigated: false };

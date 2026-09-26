@@ -3,7 +3,7 @@ import { META, MICRO_IDS, POOLS, DENSE_CITIES, pickSession, pickOne, seededRng, 
 describe('workout micro-game pools', () => {
   it('every pool entry has metadata; every micro has a name, a command word, an instruction and a 4 to 9 s duration', () => {
     for (const [act, ids] of Object.entries(POOLS)) for (const id of ids!) expect(META[id], `${act}:${id}`).toBeDefined();
-    for (const id of MICRO_IDS) { const m = META[id]; expect(m.name.length).toBeGreaterThan(2); expect(m.word.endsWith('!')).toBe(true); expect(m.instr.length).toBeGreaterThan(10); expect(m.durationSec).toBeGreaterThanOrEqual(4); expect(m.durationSec).toBeLessThanOrEqual(9); }
+    for (const id of MICRO_IDS) { const m = META[id]; expect(m.name.length).toBeGreaterThan(2); expect(m.word.endsWith('!')).toBe(true); expect(m.instr.length).toBeGreaterThan(10); expect(m.durationSec).toBeGreaterThanOrEqual(4); expect(m.durationSec).toBeLessThanOrEqual(id === 'cityrun' ? 25 : 9); }   // City Run is always a single game: a 25 s run
     expect(MICRO_IDS.length).toBeGreaterThanOrEqual(15); expect(META.kettlebell).toBeUndefined(); expect(MICRO_IDS.includes('kettlebell')).toBe(false);
   });
   it('hotel room and hike sessions chain THREE different games; every other activity is one game; unknown activities use the hotel room', () => {
@@ -19,7 +19,7 @@ describe('workout micro-game pools', () => {
     expect(POOLS.swim).toEqual(['swimbreath']); for (const a of ['yoga', 'surf', 'ski'] as const) expect(POOLS[a]).toEqual(['balance', 'pose']);
   });
   it('dense cities turn a run into City Run (Frogger); other cities keep the trail runner; the pick is seeded', () => {
-    expect(META.cityrun.word).toBe('CROSS!'); expect(META.cityrun.name).toBe('City Run'); expect(DENSE_CITIES.has('newyork')).toBe(true);
+    expect(META.cityrun.word).toBe('DODGE!'); expect(META.cityrun.name).toBe('City Run'); expect(DENSE_CITIES.has('newyork')).toBe(true);
     let city = 0, elsewhere = 0; for (let s = 1; s <= 40; s++) { if (pickOne('trailrun', seededRng(s), 'newyork') === 'cityrun') city++; if (pickOne('trailrun', seededRng(s), 'boulder') === 'cityrun') elsewhere++; }
     expect(city).toBeGreaterThan(24); expect(elsewhere).toBe(0);
     expect(pickOne('bands', seededRng(3), 'tokyo')).toBe(pickOne('bands', seededRng(3), 'tokyo'));

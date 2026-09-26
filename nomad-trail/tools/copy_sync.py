@@ -21,6 +21,8 @@ SPECS = [
   'What pops up on the trail. `text` is what you read without the mitigating gear, `mitigatedText` with it (only one is ever shown). Placeholders: {city} {day} {item}.'),
  ('Cities', 'cities.json', 'id', [('name', 'name', False), ('country', 'country', False), ('blurb', 'blurb', False)],
   'The arrival card. Blurbs describe the place, never an in-game event.'),
+ ('Puzzles', 'puzzles.json', 'id', [('title', 'title', False), ('prompt', 'prompt', False), ('choices', 'choices', True), ('hint', 'hint', False), ('explain', 'explain', False)],
+  'Work-week puzzles (Professor Layton style, Uniswap engineering). Keep choices as 4 lines; the answer index lives in the JSON.'),
  ('Bundles', 'items.json', 'id', [('name', 'name', False), ('label', 'label', False), ('desc', 'desc', False), ('benefits', 'benefits', True)],
   'Packing cards. `name` is the card title, `label` the tile text (short), `benefits` the lines shown on the card (separate with ` | `).'),
  ('Dishes', 'dishes.json', 'id', [('name', 'name', False), ('ingredients', 'ingredients', True)],
@@ -39,7 +41,7 @@ def export():
             for nk, jk, is_list in fields:
                 if jk in row and row[jk] not in (None, ''): out.append(f'- {nk}: {enc(row[jk])}')
             # event choices
-            for i, ch in enumerate(row.get('choices') or [], 1):
+            for i, ch in enumerate([c for c in (row.get('choices') or []) if isinstance(c, dict)], 1):
                 out.append(f'- choice{i}.label: {enc(ch.get("label", ""))}'); out.append(f'- choice{i}.text: {enc(ch.get("text", ""))}')
             out.append('')
     st = J('strings.json'); out += ['## Strings', '', st.get('_readme', ''), '']

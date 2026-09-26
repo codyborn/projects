@@ -53,16 +53,16 @@ export function playRun(seed: number, style: PackStyle, opts: { start?: string; 
       let action: CityAction;
       if (s.stayDays >= target) action = smart && s.stayDays === Math.ceil(target) && !Sim.hasFlag(s, 'roomchecked') && !Sim.hasTag(s, 'organizer') ? 'checkroom' : 'moveon';
       else if (s.cleanClothes <= (smart ? 1 : 0)) action = 'laundry';
-      else if (s.energy < (smart ? 45 : 30)) action = 'rest';
+      else if (s.energy < (smart ? 45 : 45)) action = 'rest';   /* a work week drains hard, so even the first-timer rests earlier now */
       else if (smart && s.health < 70 && s.energy >= 30) action = rng.chance(0.5) ? 'cook' : 'train';
-      else if (smart && s.money < 1500 && !Sim.isWeekend(s.day)) action = 'work';                  // the learned player keeps the balance healthy
+      else if (smart && s.money < 1500 && !Sim.isWeekend(s.day) && s.energy >= 50) action = 'work';   // the learned player keeps the balance healthy (a week needs energy)
       else if (smart && s.workStreak >= 3) action = rng.pick(['explore', 'train', 'cook', 'rest']);   // and takes the break the streak is asking for
       // it is a job: on a weekday most people open the laptop (first-timers ~60% of weekdays, learned players ~70%, less when the streak is long)
-      else if (!Sim.isWeekend(s.day) && rng.chance((smart ? 0.7 : 0.6) - Math.min(0.3, s.workStreak * 0.08))) action = 'work';
-      else action = rng.pick(smart ? ['explore', 'train', 'cook', 'rest'] : ['explore', 'explore', 'rest', 'train', 'cook']);
+      else if (!Sim.isWeekend(s.day) && s.energy >= (smart ? 50 : 50) && rng.chance((smart ? 0.4 : 0.3) - Math.min(0.25, s.workStreak * 0.04))) action = 'work';   /* WORK WEEK is a week per tap: fewer taps */
+      else action = rng.pick(smart ? ['explore', 'train', 'cook', 'rest', 'drone', 'console'] : ['explore', 'rest', 'rest', 'train', 'cook', 'drone']);   /* drone / console cost no day; refused without the kit. Work is a week per tap now, so the first-timer's free days lean to rest, not a second explore */
       if (action === 'work' && Sim.isWeekend(s.day)) action = rng.pick(['explore', 'rest', 'cook']);  // nobody works weekends
       let r = Sim.cityAction(s, action);
-      if (r.error) { r = Sim.cityAction(s, action === 'moveon' ? 'rest' : action === 'train' || action === 'cook' || action === 'laundry' ? 'rest' : Sim.isWeekend(s.day) ? 'rest' : 'work'); }
+      if (r.error) { r = Sim.cityAction(s, action === 'moveon' ? 'rest' : action === 'train' || action === 'cook' || action === 'laundry' || action === 'drone' || action === 'console' ? 'rest' : Sim.isWeekend(s.day) ? 'rest' : 'work'); }
       if (r.error) r = Sim.cityAction(s, 'rest');
       r.events.forEach(e => (events[e.id] = (events[e.id] ?? 0) + 1)); s = r.state;
       if (r.minigame) { const rr = Sim.applyMinigameResult(s, r.minigame.key, mg()); rr.events.forEach(e => (events[e.id] = (events[e.id] ?? 0) + 1)); s = rr.state; }

@@ -27,7 +27,7 @@ export interface City {
   radon?: 0 | 1 | 2 | 3;                              // realistic radon exposure (granite/alpine regions); daily health drain unless an air monitor is packed
   outdoorsy?: boolean;                                // adventure gear pays off here
   costPerDay?: number;                                // lodging + food, USD
-  dishes: string[]; activities: ActivityId[]; hazard: Hazard; lodgings: Lodging[];
+  dishes: string[]; activities: ActivityId[]; hazard: Hazard; lodgings: Lodging[]; droneRule?: DroneRule;
   eventWeights: Record<string, number>;               // eventId -> multiplier
   legs: Leg[]; blurb: string; stampIcon: string;      // stampIcon: key for a tiny procedural glyph
 }
@@ -35,7 +35,7 @@ export type ActivityId = 'kite' | 'boulder' | 'ferrata' | 'trailrun' | 'swim' | 
 export interface GameEvent {
   id: string; title: string; text: string;            // text may use {city}, {day}, {item}
   when: 'leg' | 'arrive' | 'day' | 'leave' | 'flight' | 'action';
-  baseChance: number; requiresTag?: ItemTag; requiresCity?: string; requiresClimate?: City['climate'][]; requiresOverweight?: boolean;
+  baseChance: number; requiresTag?: ItemTag; requiresCity?: string; requiresCities?: string[]; requiresClimate?: City['climate'][]; requiresOverweight?: boolean;
   requiresOutdoorsy?: boolean; requiresActivity?: ActivityId[]; requiresTransport?: Transport[];   // setting gates: mountains, water sports, train legs
   mitigatedBy?: ItemTag[]; mitigatedText?: string;
   choices?: EventChoice[];                            // if absent, effects apply directly
@@ -62,17 +62,25 @@ export interface RunState {
   achievements: string[]; log: LogLine[]; workStreak: number; coffeeMornings: number;
   phase: 'pack' | 'route' | 'city' | 'travel' | 'ended'; ending?: Ending;
   stayDays: number; pendingEvent?: string;
+  puzzlesSeen?: string[]; droneFlights?: number;   /* work-week puzzles already shown this run; drone flights so far (sets the level) */
   pendingDish?: string; pendingGate?: string; dirtyDays?: number;   // consecutive days in dirty clothes (mood drain grows)              // gate for the airport dash after a taxi breakdown                              // dish id chosen when Cook was tapped; the mini-game and the result must use the same one
 }
 export interface LogLine { day: number; city: string; text: string; }
 export type Ending = { kind: 'win' | 'hospital' | 'flewhome' | 'outofdays' | 'broke' | 'quit'; text: string; score: number; cause?: string; };  // cause: the one-line reason shown on the share card
-export type CityAction = 'work' | 'explore' | 'train' | 'cook' | 'rest' | 'laundry' | 'checkroom' | 'moveon';
+export type CityAction = 'work' | 'explore' | 'train' | 'cook' | 'rest' | 'laundry' | 'checkroom' | 'moveon' | 'drone' | 'console';   // drone: fly the drone kit (side game); console: the handheld's cartridges
 
 // ---------- Mini-game contract ----------
 // Every mini-game is a Phaser scene started with MinigameLaunch and MUST call launch.onDone(result) exactly once, then stop itself.
 export interface MinigameLaunch { energy: number; difficulty: number; payload?: any; extraLives?: number; onDone: (r: MinigameResult) => void; preview?: (r: MinigameResult) => string[]; }   // preview: result-card lines for what this outcome confers (+5 health ...)  // extraLives: hiking boots etc.
 export interface MinigameResult { score: number; perfect: boolean; failed: boolean; }
-export const MINIGAME_KEYS = { cooking: 'Cooking', workout: 'Workout', carryon: 'CarryOn', kite: 'Kite', airport: 'Airport', laundry: 'Laundry' } as const;
+export const MINIGAME_KEYS = { cooking: 'Cooking', workout: 'Workout', carryon: 'CarryOn', kite: 'Kite', airport: 'Airport', laundry: 'Laundry', drone: 'Drone', work: 'Work' } as const;
+/** Drone rules per country: 'ok' fly freely, 'permit' a fine is possible, 'banned' a fine is likely. Set on City.droneRule. */
+export type DroneRule = 'ok' | 'permit' | 'banned';
+/** A work-day puzzle (Professor Layton style, themed to a software engineer at Uniswap). kind 'choice': tap one of `choices`; kind 'number': type a number. `answer` is the index (choice) or the value (number). */
+export interface Puzzle { id: string; title: string; prompt: string; kind: 'choice' | 'number'; choices?: string[]; answer: number; hint: string; explain: string; art?: string; }
+/** Payload contracts for the two new mini-games (built by agents, launched by the engine):
+ *  Drone  { city: City; cityName: string; seed: number; level: number }  -> score 0..100, perfect = level beaten cleanly
+ *  Work   { puzzle: Puzzle; pay: number; day: number; days: number }       -> score 100 solved / 60 solved with hint / 0 wrong (failed); one puzzle per WORK WEEK tap, the result scales the week's pay */
 
 // ---------- Save ----------
 export const SAVE_KEY = 'nomadtrail.save.v2';  // v2: money, single bag

@@ -8,8 +8,10 @@ import { CarryOnScene, DEFAULT_LEVEL } from './CarryOnScene';
 import { KiteScene } from './KiteScene';
 import { AirportScene } from './AirportScene';
 import { LaundryScene } from './LaundryScene';
+import { DroneScene } from './DroneScene';
+import { WorkScene } from './WorkScene';
 
-export const MINIGAME_SCENES = [CookingScene, WorkoutScene, CarryOnScene, KiteScene, AirportScene, LaundryScene];
+export const MINIGAME_SCENES = [CookingScene, WorkoutScene, CarryOnScene, KiteScene, AirportScene, LaundryScene, WorkScene, DroneScene];
 
 const SAMPLES: { key: string; label: string; payload?: any }[] = [
   { key: MINIGAME_KEYS.cooking, label: 'Cooking: Kaspressknödel', payload: { id: 'kasp', name: 'Kaspressknödel', city: 'innsbruck', ingredients: ['stale bread', 'graukäse', 'onion', 'egg'], health: 18, mood: 14, steps: [{ kind: 'chop', count: 5 }, { kind: 'knead', count: 10 }, { kind: 'season', count: 3 }, { kind: 'flip', count: 3 }, { kind: 'pour', count: 1 }, { kind: 'stir', count: 2 }] } },
@@ -26,6 +28,7 @@ const SAMPLES: { key: string; label: string; payload?: any }[] = [
   { key: MINIGAME_KEYS.kite, label: 'Kiteboarding' },
   { key: MINIGAME_KEYS.airport, label: 'Airport dash' },
   { key: MINIGAME_KEYS.laundry, label: 'Laundry' },
+  { key: MINIGAME_KEYS.drone, label: 'Drone: Innsbruck level 1', payload: { city: { id: 'innsbruck', name: 'Innsbruck', climate: 'alpine', hazard: 'rock', altitude: 574 }, cityName: 'Innsbruck', seed: 3, level: 1 } },
 ];
 
 class MinigameHarness extends Phaser.Scene {

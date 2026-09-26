@@ -37,9 +37,54 @@ function buildings(ctx: Ctx, w: number, hy: number, c: number, win: number, r: R
     for (let wy = hy - bh + 3; wy < hy - 2; wy += 4) for (let wx = x + 2; wx < x + bw - 2; wx += 3) if (r.chance(lit)) P(ctx, wx, wy, win);
     if (r.chance(0.3)) R(ctx, x + Math.floor(bw / 2), hy - bh - r.int(3, 9), 1, 9, c); x += bw + r.int(1, 4); }
 }
-function palms(ctx: Ctx, w: number, hy: number, c: number, r: ReturnType<typeof rng>, n: number) {
-  for (let i = 0; i < n; i++) { const x = r.int(4, w - 4), h = r.int(22, 40); for (let y = 0; y < h; y++) P(ctx, x + Math.round(Math.sin(y / 9) * 2), hy - y, c); const top = hy - h;
-    for (const [dx, dy] of [[-8, 2], [8, 2], [-6, -3], [6, -3], [0, -5], [-3, 4], [3, 4]]) line(ctx, x, top, x + dx * 1.4, top + dy * 1.4, c); }
+/** Palms the size of the La Paz cacti (48 to 68 px) with real mass: a trunk 5 to 7 px wide at the base tapering to 3 to 4 px at
+ *  the crown (shaded far side, ring marks), and a head that is a chunky canopy first (a solid irregular ellipse about as wide as the
+ *  tree is tall) with 8 to 10 fronds drawn over it, 3 px thick at the crown thinning to 1 px, leaflet fringes on both sides so they
+ *  merge into the mass. Coconut cluster under the crown, dithered ground shadow. Dawn, dusk and night draw the whole tree in the
+ *  layer silhouette colour so it reads against the sky. Three size classes for depth. */
+function palms(ctx: Ctx, w: number, hy: number, c: number, r: ReturnType<typeof rng>, n: number, tod: TimeOfDay = 'dusk') {
+  const day = tod === 'day';
+  const trunk = day ? PAL.earth1 : c, trunkDk = day ? PAL.earth0 : c, ring = day ? PAL.earth2 : c;
+  const frond = day ? PAL.grass1 : c, frondLt = day ? PAL.grass2 : c, frondDk = day ? PAL.grass0 : c;
+  const nut = day ? PAL.earth0 : c, shadow = day ? PAL.night2 : c;
+  const sizes = [48, 58, 68];   /* the cardón cacti run 52 to 78 px */
+  for (let i = 0; i < n; i++) {
+    const x = Math.round((i + 0.5) * (w / n) + r.int(-w / (3 * n), w / (3 * n)));
+    const h = sizes[r.int(0, 2)] + r.int(-3, 3), lean = r.pick([-1, 1]) * r.int(4, 9), k = h / 58;
+    const baseW = r.int(5, 7), topW = r.int(3, 4);
+    /* ground shadow: a low dithered ellipse on the lean side */
+    for (let sx = -14; sx <= 14; sx++) if ((sx + i) % 2 === 0) P(ctx, x + Math.sign(lean) * 5 + sx, hy + (Math.abs(sx) > 9 ? 0 : 1), shadow);
+    /* trunk: quadratic lean, tapering width, 1 to 2 px shade on the far side, a lighter ring every 5 px */
+    let tx = x, ty = hy - h;
+    for (let y = 0; y <= h; y++) { const t = y / h; const cx = x + Math.round(lean * (1 - t) * (1 - t)); const wdt = Math.round(baseW - (baseW - topW) * t); const sh = wdt >= 6 ? 2 : 1;
+      R(ctx, cx - Math.floor(wdt / 2), hy - y, wdt, 1, trunk); R(ctx, cx - Math.floor(wdt / 2) + wdt - sh, hy - y, sh, 1, trunkDk);
+      if (y % 5 === 0 && y < h - 4) R(ctx, cx - Math.floor(wdt / 2), hy - y, wdt - sh, 1, ring);
+      if (y === h) { tx = cx; ty = hy - y; } }
+    /* canopy mass: a solid irregular ellipse, about as wide as the tree is tall, sitting on the crown */
+    const cw = Math.round(h * 0.26), ch = Math.round(h * 0.2), cy = ty + Math.round(ch * 0.25);
+    for (let yy = -ch; yy <= ch; yy++) { const hw = Math.round(cw * Math.sqrt(Math.max(0, 1 - (yy / ch) * (yy / ch))) + r.int(-3, 2)); if (hw > 0) R(ctx, tx - hw, cy + yy, hw * 2 + 1, 1, frondDk); }
+    if (day) for (let yy = -ch; yy <= -Math.round(ch * 0.3); yy++) { const hw = Math.round(cw * 0.7 * Math.sqrt(Math.max(0, 1 - (yy / ch) * (yy / ch)))); if (hw > 0) R(ctx, tx - hw, cy + yy, hw * 2 + 1, 1, frond); }
+    /* fronds over the mass: 3 px thick at the crown thinning to 1, leaflet fringes both sides, lit top edge by day */
+    const nf = r.int(8, 10);
+    for (let f = 0; f < nf; f++) {
+      const a = -Math.PI + Math.PI * ((f + 0.5) / nf) + (r.next() - 0.5) * 0.25;
+      const len = (26 + r.int(0, 10)) * k, droop = (18 + r.int(0, 10)) * k, steps = Math.round(len * 1.6);
+      const dirx = Math.cos(a), diry = Math.sin(a) * 0.75;
+      let px0 = tx, py0 = ty;
+      for (let sIdx = 0; sIdx <= steps; sIdx++) { const t = sIdx / steps; const fx = tx + dirx * len * t, fy = ty + diry * len * t + droop * t * t;
+        const th = t < 0.4 ? 3 : t < 0.75 ? 2 : 1;
+        R(ctx, fx, fy - Math.floor(th / 2), 1, th, frond);
+        if (day && t > 0.05) P(ctx, fx, fy - Math.floor(th / 2) - 1, frondLt);
+        if (t > 0.15 && sIdx % 2 === 0) { const tanx = fx - px0, tany = fy - py0, tl = Math.hypot(tanx, tany) || 1; const nx = -tany / tl, ny = tanx / tl; const ll = Math.max(1, Math.round((1 - t) * 5 * k) + 1);
+          line(ctx, fx, fy + Math.ceil(th / 2), fx + nx * ll * 0.4, fy + Math.ceil(th / 2) + Math.abs(ny) * ll + 1, frondDk);
+          line(ctx, fx, fy + Math.ceil(th / 2), fx - nx * ll * 0.4, fy + Math.ceil(th / 2) + Math.abs(ny) * ll + 1, frondDk);
+          if (day) P(ctx, fx, fy + Math.ceil(th / 2) + ll + 1, frond); }
+        px0 = fx; py0 = fy;
+      }
+    }
+    /* coconuts under the crown */
+    R(ctx, tx - 2, ty + 2, 2, 2, nut); R(ctx, tx + 1, ty + 2, 2, 2, nut); R(ctx, tx - 1, ty + 4, 2, 2, nut);
+  }
 }
 function sandDunes(ctx: Ctx, w: number, hy: number, lit: number, shade: number, r: ReturnType<typeof rng>, maxH = 34) {
   let x = 0; while (x < w) { const dw = r.int(70, 130), dh = r.int(14, maxH), crest = r.int(0.35 * dw, 0.6 * dw);
@@ -114,7 +159,7 @@ const CITY: Record<string, Drawer> = {
       R(ctx, x - 1, hy - 66, 3, 8, PAL.sun2); P(ctx, x, hy - 68, PAL.sun3, 1, 2);
       const cx2 = x + 52; R(ctx, cx2 - 10, hy - 12, 20, 14, PAL.sun2); circle(ctx, cx2, hy - 18, 10, PAL.sun2); for (let y = 0; y < 30; y++) R(ctx, cx2 - Math.round((30 - y) / 5), hy - 28 - y, Math.round((30 - y) / 2.5) + 1, 1, PAL.sun2); P(ctx, cx2, hy - 60, PAL.sun3, 1, 3);
     } else { buildings(ctx, w, hy, c, win, r, 8, 24, 12, 26, 0.3); for (let i = 0; i < 4; i++) { const x = r.int(0, w); R(ctx, x, hy - 8, 10, 6, r.pick([PAL.sun2, PAL.pink, PAL.neon])); } } },
-  hyeres: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { mountains(ctx, w, hy, c, r, 40, 50); } else if (L === 'mid') { water(ctx, w, hy - 12, 12, tod, r); kites(ctx, w, hy - 12, r, 5); buildings(ctx, w, hy - 12, c, win, r, 10, 24, 12, 24, 0.3); } else palms(ctx, w, hy + 4, c, r, 7); },
+  hyeres: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { mountains(ctx, w, hy, c, r, 40, 50); } else if (L === 'mid') { water(ctx, w, hy - 12, 12, tod, r); kites(ctx, w, hy - 12, r, 5); buildings(ctx, w, hy - 12, c, win, r, 10, 24, 12, 24, 0.3); } else palms(ctx, w, hy + 4, c, r, 7, tod); },
   patagonia: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') {
       mountains(ctx, w, hy, c, r, 60, 40);
       // granite towers: a cluster of broad-based spires with white tips, plus a second cluster a half-wrap later
@@ -124,7 +169,7 @@ const CITY: Record<string, Drawer> = {
     } else if (L === 'mid') { water(ctx, w, hy - 22, 22, tod, r); mountains(ctx, w, hy - 22, c, r, 26, 34);   // the glacier lake and its moraine
       for (let i = 0; i < 8; i++) { const x = r.int(0, w), h = r.int(14, 24); for (let y = 0; y < h; y++) P(ctx, x + Math.round(y * y / 60), hy - 22 - y, c); for (let k = 0; k < 4; k++) line(ctx, x + Math.round(h * h / 60), hy - 22 - h, x + Math.round(h * h / 60) + 6 + k * 3, hy - 22 - h + 2 + k, c); }   // wind-bent lenga
     } else { R(ctx, 0, hy - 4, w, 6, c); for (let i = 0; i < 70; i++) { const x = r.int(0, w), h = r.int(3, 9); line(ctx, x, hy - 2, x + 3, hy - 2 - h, c); } } },
-  miami: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') buildings(ctx, w, hy, c, win, r, 50, 120, 10, 18, 0.5); else if (L === 'mid') { water(ctx, w, hy - 20, 20, tod, r); line(ctx, 0, hy - 24, w, hy - 24, c); for (let x = 0; x < w; x += 30) R(ctx, x, hy - 24, 3, 6, c); neonSigns(ctx, w, hy - 30, r, 5); } else palms(ctx, w, hy + 4, c, r, 6); },
+  miami: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') buildings(ctx, w, hy, c, win, r, 50, 120, 10, 18, 0.5); else if (L === 'mid') { water(ctx, w, hy - 20, 20, tod, r); line(ctx, 0, hy - 24, w, hy - 24, c); for (let x = 0; x < w; x += 30) R(ctx, x, hy - 24, 3, 6, c); neonSigns(ctx, w, hy - 30, r, 5); } else palms(ctx, w, hy + 4, c, r, 6, tod); },
   newyork: (ctx, w, hy, L, c, win, r) => { if (L === 'far') { buildings(ctx, w, hy, c, win, r, 80, 160, 8, 16, 0.55); const x = Math.floor(w / 2); R(ctx, x, hy - 190, 10, 190, c); R(ctx, x + 4, hy - 205, 2, 15, c); } else if (L === 'mid') buildings(ctx, w, hy, c, win, r, 40, 100, 12, 22, 0.5); else { buildings(ctx, w, hy, c, win, r, 12, 30, 16, 30, 0.35); for (let x = 0; x < w; x += 6) P(ctx, x, hy - 2, PAL.sun2); } },
   boulder: (ctx, w, hy, L, c, win, r) => { if (L === 'far') mountains(ctx, w, hy, c, r, 90, 40, PAL.white);
     else if (L === 'mid') { mountains(ctx, w, hy, c, r, 34, 60);                                                        // foothills the slabs rise from
@@ -142,19 +187,19 @@ const CITY: Record<string, Drawer> = {
   lapaz: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') mountains(ctx, w, hy, c, r, 30, 90); else if (L === 'mid') { water(ctx, w, hy - 30, 30, tod, r);
       const tx = r.int(80, w - 80), ty = hy - 34; for (let k = 0; k < 6; k++) R(ctx, tx - 2, ty - k * 2, 4, 2, PAL.night3); R(ctx, tx - 10, ty - 14, 8, 3, PAL.night3); R(ctx, tx + 2, ty - 14, 8, 3, PAL.night3); R(ctx, tx - 13, ty - 16, 5, 2, PAL.night3); R(ctx, tx + 8, ty - 16, 5, 2, PAL.night3);   // whale tail
       for (let i = 0; i < 3; i++) { const bx = r.int(10, w - 30); R(ctx, bx, hy - 33, 18, 4, PAL.white); R(ctx, bx + 2, hy - 35, 14, 2, PAL.sky0); } }   // pangas
-    else { R(ctx, 0, hy - 6, w, 8, PAL.earth3); palms(ctx, w, hy, c, r, 2);
+    else { R(ctx, 0, hy - 6, w, 8, PAL.earth3); palms(ctx, w, hy, c, r, 2, tod);
       for (const base of [w * 0.33, w * 0.33 + w / 2]) { const hs = [52, 78, 64, 58, 70]; for (let i = 0; i < 5; i++) { const cw = r.int(6, 8), cx = Math.round(base + i * 22 + r.int(-3, 3)), ch = hs[i] + r.int(-4, 4);   // cardón cacti: tall ribbed trunks, grouped on the right third
         R(ctx, cx - 1, hy - ch - 1, cw + 2, ch + 1, PAL.ink); R(ctx, cx, hy - ch, cw, ch, PAL.grass0); R(ctx, cx, hy - ch - 1, cw, 1, PAL.grass0);
         for (let rib = 2; rib < cw; rib += 2) R(ctx, cx + rib, hy - ch + 2, 1, ch - 2, PAL.grass1);                                             // ribbing
         const arms = r.int(2, 3); for (let a = 0; a < arms; a++) { const side = a % 2 ? 1 : -1; const ay = hy - ch + r.int(10, Math.max(12, ch - 30)); const ax = side < 0 ? cx - 8 : cx + cw + 2, ah = r.int(14, 26);
           R(ctx, side < 0 ? cx - 8 : cx + cw, ay, 8, 5, PAL.grass0); R(ctx, ax - 1, ay - ah - 1, 7, ah + 2, PAL.ink); R(ctx, ax, ay - ah, 5, ah + 5, PAL.grass0); R(ctx, ax + 2, ay - ah + 2, 1, ah, PAL.grass1); } } } } },
   laventana: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') mountains(ctx, w, hy, c, r, 40, 60); else if (L === 'mid') { water(ctx, w, hy - 30, 30, tod, r); kites(ctx, w, hy - 30, r, 10); }
-    else { R(ctx, 0, hy - 6, w, 8, PAL.earth3); palms(ctx, w, hy, c, r, 3); } },
+    else { R(ctx, 0, hy - 6, w, 8, PAL.earth3); palms(ctx, w, hy, c, r, 3, tod); } },
   roatan: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') mountains(ctx, w, hy, c, r, 30, 50); else if (L === 'mid') { water(ctx, w, hy - 26, 26, tod, r); for (let i = 0; i < 20; i++) P(ctx, r.int(0, w), hy - r.int(2, 24), PAL.sea3); }
     else { // resort deck: hedge along the water's edge, stone tiles to the bottom, lounge chairs
       for (let ty = hy - 30; ty < hy + 70; ty += 8) for (let tx = 0; tx < w; tx += 14) { R(ctx, tx, ty, 14, 8, PAL.gray1); R(ctx, tx + 1, ty + 1, 12, 6, (Math.floor(tx / 14) + Math.floor(ty / 8)) % 2 ? PAL.gray2 : PAL.earth3); }
       for (let x = 0; x < w; x += 6) { const bh = 6 + (x % 18 === 0 ? 2 : 0); R(ctx, x, hy - 30 - bh, 6, bh + 2, PAL.grass1); R(ctx, x + 1, hy - 30 - bh, 2, 2, PAL.grass2); } R(ctx, 0, hy - 30, w, 1, PAL.grass0);
-      for (const cx of [w * 0.12, w * 0.3, w * 0.62, w * 0.8]) loungeChair(ctx, Math.round(cx), hy - 22, r.pick([PAL.sky1, PAL.sun1, PAL.pink])); palms(ctx, w, hy - 26, c, r, 3); } },
+      for (const cx of [w * 0.12, w * 0.3, w * 0.62, w * 0.8]) loungeChair(ctx, Math.round(cx), hy - 22, r.pick([PAL.sky1, PAL.sun1, PAL.pink])); palms(ctx, w, hy - 26, c, r, 3, tod); } },
   madrid: (ctx, w, hy, L, c, win, r) => { if (L === 'far') buildings(ctx, w, hy, c, win, r, 30, 70, 10, 20, 0.35); else if (L === 'mid') { buildings(ctx, w, hy, c, win, r, 20, 40, 16, 30, 0.35); const x = Math.floor(w * 0.2); R(ctx, x, hy - 70, 16, 70, c); circle(ctx, x + 8, hy - 74, 8, c); } else { for (let x = 0; x < w; x += 12) trees(ctx, w, hy, c, r, 1, false); R(ctx, 0, hy - 2, w, 4, c); } },
   granada: (ctx, w, hy, L, c, win, r) => { if (L === 'far') mountains(ctx, w, hy, c, r, 80, 40, PAL.white); else if (L === 'mid') { const x = Math.floor(w * 0.25); R(ctx, x - 60, hy - 40, 120, 40, PAL.earth2); R(ctx, x - 50, hy - 56, 18, 16, PAL.earth2); R(ctx, x + 30, hy - 60, 20, 20, PAL.earth2); for (let k = 0; k < 6; k++) P(ctx, x - 44 + k * 18, hy - 30, win); trees(ctx, w, hy, c, r, 14); } else { for (let x = 0; x < w; x += 14) { R(ctx, x, hy - 14, 13, 14, PAL.white); R(ctx, x, hy - 17, 13, 3, PAL.sun0); } } },
   riviera: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') mountains(ctx, w, hy, c, r, 50, 50); else if (L === 'mid') { buildings(ctx, w, hy - 16, c, win, r, 12, 30, 14, 28, 0.35); water(ctx, w, hy - 16, 16, tod, r); for (let i = 0; i < 5; i++) { const x = r.int(0, w); R(ctx, x, hy - 10, 6, 3, PAL.white); R(ctx, x + 3, hy - 18, 1, 8, PAL.white); } }
@@ -238,8 +283,8 @@ const CITY: Record<string, Drawer> = {
     else buildings(ctx, w, hy, c, win, r, 10, 30, 16, 30, 0.3); },
   buenosaires: (ctx, w, hy, L, c, win, r) => { if (L === 'far') buildings(ctx, w, hy, c, win, r, 40, 90, 10, 20, 0.4); else if (L === 'mid') { buildings(ctx, w, hy, c, win, r, 24, 50, 16, 30, 0.4); const x = Math.floor(w * 0.25); R(ctx, x, hy - 96, 8, 96, PAL.white); R(ctx, x - 6, hy - 40, 20, 8, PAL.white); } else { for (let x = 0; x < w; x += 16) { R(ctx, x, hy - 18, 15, 18, r.pick([PAL.sun2, PAL.sky1, PAL.pink, PAL.grass2])); P(ctx, x + 7, hy - 10, win); } } },
   montreal: (ctx, w, hy, L, c, win, r) => { if (L === 'far') { mountains(ctx, w, hy, c, r, 40, 80); const x = Math.floor(w * 0.25); R(ctx, x, hy - 60, 2, 20, PAL.white); R(ctx, x - 5, hy - 54, 12, 2, PAL.white); } else if (L === 'mid') buildings(ctx, w, hy, c, win, r, 30, 80, 10, 20, 0.45); else { buildings(ctx, w, hy, c, win, r, 12, 30, 14, 28, 0.3); for (let x = 0; x < w; x += 22) { for (let s = 0; s < 8; s++) R(ctx, x + 2 + s, hy - 6 - s * 3, 10, 1, c); } } },
-  lasvegas: (ctx, w, hy, L, c, win, r) => { if (L === 'far') mountains(ctx, w, hy, c, r, 40, 60); else if (L === 'mid') { buildings(ctx, w, hy, c, win, r, 50, 120, 14, 28, 0.6); const x = Math.floor(w * 0.225); R(ctx, x, hy - 150, 6, 150, c); circle(ctx, x + 3, hy - 156, 5, PAL.sun2); }
-    else { neonSigns(ctx, w, hy, r, 12); R(ctx, 0, hy - 4, w, 6, c); palms(ctx, w, hy, c, r, 3);
+  lasvegas: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') mountains(ctx, w, hy, c, r, 40, 60); else if (L === 'mid') { buildings(ctx, w, hy, c, win, r, 50, 120, 14, 28, 0.6); const x = Math.floor(w * 0.225); R(ctx, x, hy - 150, 6, 150, c); circle(ctx, x + 3, hy - 156, 5, PAL.sun2); }
+    else { neonSigns(ctx, w, hy, r, 12); R(ctx, 0, hy - 4, w, 6, c); palms(ctx, w, hy, c, r, 3, tod);
       for (const sx of [Math.floor(w * 0.36), Math.floor(w * 0.36 + w / 2)]) { const top = hy - 74;                       // the sign: diamond, red trim, starburst, pole
         R(ctx, sx - 1, hy - 40, 3, 40, PAL.gray1);
         for (let i = 0; i < 18; i++) { const half = Math.round(i < 9 ? 6 + i * 3.2 : 6 + (17 - i) * 3.2); R(ctx, sx - half, top + i * 2, half * 2, 2, PAL.white); R(ctx, sx - half, top + i * 2, 2, 2, PAL.red); R(ctx, sx + half - 2, top + i * 2, 2, 2, PAL.red); }
