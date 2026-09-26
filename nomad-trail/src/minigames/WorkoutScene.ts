@@ -157,7 +157,9 @@ export class WorkoutScene extends Phaser.Scene {
       marble.clear(); const sy = my - camY; landedT = Math.max(0, landedT - dt);
       // the climber: squats on landing (crouch frame, squashed), springs up with arms up while rising, tucks (crouch) while falling; leans with the steer
       fig.pose(landedT > 0 ? 1 : vy < 0 ? 2 : 1); fig.sprite.setPosition(mx, sy + F.radius + 2).setScale(landedT > 0 ? 0.6 : 0.5, landedT > 0 ? 0.4 : 0.5).setAngle(clamp(vx / F.steer, -1, 1) * 8);
-      marble.fillStyle(PAL.ink, 0.3).fillEllipse(mx, sy + F.radius + 3, 22, 5);
+      // the shadow stays on the surface below the climber (the highest ledge under his x), shrinking and fading as he rises, growing as he drops
+      { let under: Ledge | undefined; for (const l of ledges) if (l.y >= my + F.radius - 1 && mx >= l.x - 2 && mx <= l.x + l.w + 2 && (!under || l.y < under.y)) under = l;
+        if (under) { const h = under.y - (my + F.radius); const k = clamp(1 - h / 320, 0.25, 1); marble.fillStyle(PAL.ink, 0.38 * k).fillEllipse(mx, under.y - camY + 2, 24 * k, 6 * k); } }
       fx.clear(); if (gustT > 0) { fx.lineStyle(1, PAL.sky3, 0.8); for (let k = 0; k < 8; k++) { const yy = 40 + ((k * 73 + t * 400) % (H - 60)); const x0 = ((k * 131 + t * 500 * gustDir) % W + W) % W; fx.lineBetween(x0, yy, x0 + 26 * gustDir, yy); } }
       if (t > 3) hint.setAlpha(Math.max(0, 1 - (t - 3)));
       this.meter.set(heightFrac(), PAL.neon); this.frame.setProgress(`${Math.round(heightFrac() * 100)}%${falls ? `  ·  ${falls} fall${falls > 1 ? 's' : ''}` : ''}`); this.frame.setTimer(`${Math.floor(t)}s${gustT > 0 ? '  WIND' : ''}`);

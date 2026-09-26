@@ -134,6 +134,19 @@ if (q.get('auto') === '1') {
     };
     if (q.get('fast') === '1') { game.loop.stop(); let t = performance.now(); setInterval(() => { for (let k = 0; k < 6; k++) { t += 16.67; drive(); game.loop.step(t); } }, 0); } else setInterval(drive, 16);
   });
+} else if (q.get('shake')) {
+  // shake step checks (real time): 'motion' = READY then synthetic devicemotion events (alternating ±16 m/s²) → shake mode, N shakes → 100;
+  // 'swipe' = no motion events → after 1.5 s the step switches to swipe mode and the driver swipes; both report the mode the step ended in.
+  MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
+  game.events.once('ready', () => {
+    const mode = q.get('shake')!; let calls = 0; const t0 = performance.now(); const modes: string[] = [];
+    game.scene.start(MINIGAME_KEYS.cooking, { energy: 100, difficulty: 0.5, payload: { id: 'sushi', name: 'Shake test', city: 'tokyo', ingredients: ['rice'], health: 1, mood: 1, steps: [{ kind: 'shake', count: Number(q.get('n') || 6) }] }, onDone: (res: any) => { calls++; out.textContent = JSON.stringify({ mode, res, modes: [...new Set(modes)], motion: (scene as any).motion?.state, shakes: (scene as any).motion?.count, secs: (performance.now() - t0) / 1000, calls, errors }); document.title = 'SHAKE_DONE'; } } as MinigameLaunch);
+    const scene: any = game.scene.getScene(MINIGAME_KEYS.cooking); let dir = 1; let readyAt = 0;
+    const drive = () => { if (!scene.scene.isActive()) return; if (!scene.frame?.active) { scene.frame?.ready?.(); readyAt = performance.now(); return; } const c = scene.cook; if (!c || c.kind !== 'shake') return; const h = c.hint(); modes.push(h.mode);
+      if (mode === 'motion') { dir = -dir; window.dispatchEvent(new (window as any).DeviceMotionEvent('devicemotion', { acceleration: { x: 16 * dir, y: 1, z: 0 }, interval: 16 })); if (!(window as any).__shot && h.mode === 'shake' && h.count >= 2) { (window as any).__shot = true; document.title = 'SHOT_SHAKE'; } }
+      else if (h.mode === 'swipe') { if (!(window as any).__shot) { (window as any).__shot = true; document.title = 'SHOT_SWIPE'; } c.swing(dir); dir = -dir; } };
+    setInterval(drive, 150); void readyAt;
+  });
 } else if (q.get('knead') === '1') {
   // knead check: a single knead step, real time; the driver taps and screenshots mid-step; title flips when the step completes
   MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));

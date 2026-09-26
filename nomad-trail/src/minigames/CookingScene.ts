@@ -3,6 +3,7 @@ import { PAL } from '../core/palette';
 import { MINIGAME_KEYS, type Dish, type DishStep, type MinigameLaunch } from '../core/types';
 import { MinigameFrame, Meter, W, H, clamp, normalizeLaunch, panel, txt } from './_shared';
 import { drawDish, layerCount, DISH_TEX_W, DISH_TEX_H } from './dishArt';
+import { ShakeDetector } from './motion';
 
 const DEFAULT_DISH: Dish = { id: 'dalbhat', name: 'Dal Bhat', city: 'kathmandu', ingredients: ['lentils', 'rice', 'spinach', 'cumin'], health: 20, mood: 10,
   steps: [{ kind: 'chop', count: 6 }, { kind: 'pour', count: 1 }, { kind: 'stir', count: 3 }, { kind: 'season', count: 4 }, { kind: 'flip', count: 3 }, { kind: 'knead', count: 12 }] };
@@ -11,7 +12,7 @@ const STEP_TEXT: Record<DishStep['kind'], string> = {
   chop: 'TAP to chop: one cut per tap, keep a steady rhythm', slice: 'DRAG the knife onto the line, slide up and down', stir: 'DRAG in circles to stir', flip: 'TAP at the top of the toss',
   season: 'TAP exactly the right number of times, then wait', pour: 'HOLD to pour, release inside the band', knead: 'TAP fast to knead',
   grill: 'HOLD to sear, release in the golden band', dice: 'TAP the cubes in the order they lit up', roll: 'SWIPE left to right to roll',
-  simmer: 'TAP to add heat, keep the needle in the green', shake: 'SWIPE left, right, left, right', fold: 'DRAG along the dotted path',
+  simmer: 'TAP to add heat, keep the needle in the green', shake: 'SHAKE your phone (or swipe left and right)', fold: 'DRAG along the dotted path',
   plate: 'DRAG each garnish onto its spot', skewer: 'TAP as each piece crosses the skewer',
 };
 
@@ -21,6 +22,7 @@ export class CookingScene extends Phaser.Scene {
   private stepIdx = 0; private accuracies: number[] = [];
   private work!: Phaser.GameObjects.Graphics; private plateImg!: Phaser.GameObjects.Image; private layersTotal = 0; private stepText!: Phaser.GameObjects.Text; private hint!: Phaser.GameObjects.Text;
   private meter!: Meter; private cleanup: (() => void)[] = []; private stepTimer?: Phaser.Time.TimerEvent;
+  /** phone shake detection for the SHAKE step; permission is requested inside the READY tap */ motion = new ShakeDetector(); private readyAt = 0;
 
   constructor() { super(MINIGAME_KEYS.cooking); }
   init(data: any) {
@@ -47,9 +49,9 @@ export class CookingScene extends Phaser.Scene {
     this.hint = txt(this, W / 2, 610, '', 10, PAL.gray2).setDepth(5);
     this.work = this.add.graphics().setDepth(4);
     this.meter = new Meter(this, 40, 590, W - 80, 8);
-    this.frame.hud();
+    this.frame.hud(); this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.motion.stop());
     this.frame.scoreNow = () => { const done = this.accuracies; return done.length ? (done.reduce((a, b) => a + b, 0) / done.length) * 100 * (0.6 + 0.4 * done.length / this.dish.steps.length) : 40; };
-    this.frame.intro(`${this.dish.steps.length} steps. Each one shows what to do.`, () => this.nextStep(), { height: 400, extra: (s, add) => {
+    this.frame.intro(`${this.dish.steps.length} steps. Each one shows what to do.`, () => { this.readyAt = this.time.now; if (this.dish.steps.some(st => st.kind === 'shake')) this.motion.request(); this.nextStep(); }, { height: 400, extra: (s, add) => {
       const top = H / 2 - 200;
       add(txt(s, W / 2, top + 108, this.dish.ingredients.join(' · '), 9, PAL.gray2));
       add(s.add.image(W / 2, top + 186, drawDish(s, this.dish.id, undefined, this.dish.art)).setScale(1.8));
@@ -358,13 +360,26 @@ export class CookingScene extends Phaser.Scene {
 
   // --- SHAKE: alternate swipes / half-taps left, right, left.
   private stepShake(st: DishStep) {
-    const need = st.count; let count = 0, last = 0, tilt = 0;
-    const tick = this.time.addEvent({ delay: 16, loop: true, callback: () => { tilt *= 0.86; this.work.clear(); const cx = W / 2 + tilt * 30, cy = 460; this.work.fillStyle(PAL.ink).fillRoundedRect(cx - 24, cy - 50, 48, 100, 10); this.work.fillStyle(PAL.gray2).fillRoundedRect(cx - 22, cy - 48, 44, 96, 8); this.work.fillStyle(PAL.gray1).fillRect(cx - 22, cy - 48, 44, 14); this.work.fillStyle(PAL.sky2, 0.6).fillRect(cx - 18, cy - 10 + Math.abs(tilt) * 10, 36, 40); for (let i = 0; i < Math.min(count, 8); i++) this.work.fillStyle(PAL.sun3).fillCircle(cx - 14 + (i % 4) * 9, cy + 8 + Math.floor(i / 4) * 10, 2); this.meter.set(count / need); } });
-    const swing = (dir: number) => { if (!this.frame.active) return; if (dir !== last) { count++; last = dir; tilt = dir; this.frame.flash(PAL.sky2, 25); if (count >= need) this.endStep(1); } else this.frame.shake(50, 0.002); };
+    const need = st.count; let count = 0, last = 0, tilt = 0, jolt = 0; let mode: 'shake' | 'swipe' | 'pending' = this.motion.state === 'yes' ? 'shake' : this.motion.state === 'no' ? 'swipe' : 'pending';
+    const stepStart = this.time.now; const label = () => { this.hint.setText(mode === 'shake' ? 'SHAKE your phone' : mode === 'swipe' ? 'SWIPE left and right' : 'SHAKE your phone (or swipe)'); };
+    label(); this.hint.setColor(mode === 'shake' ? '#3ef0c8' : '#b4b9c4');
+    const tick = this.time.addEvent({ delay: 16, loop: true, callback: () => {
+      // pending: motion permission granted but no events yet; 1.5 s after READY (or this step's start) with none → swipe mode. Never blocks.
+      if (mode === 'pending') { if (this.motion.state === 'yes') { mode = 'shake'; label(); this.hint.setColor('#3ef0c8'); } else if (this.motion.state === 'no' || this.time.now - Math.max(this.readyAt, stepStart) > 1500) { mode = 'swipe'; label(); this.hint.setColor('#b4b9c4'); } }
+      tilt *= 0.86; jolt *= 0.8; this.work.clear(); const cx = W / 2 + tilt * 30, cy = 460 + jolt * 8;
+      this.work.fillStyle(PAL.ink).fillRoundedRect(cx - 24, cy - 50, 48, 100, 10); this.work.fillStyle(PAL.gray2).fillRoundedRect(cx - 22, cy - 48, 44, 96, 8); this.work.fillStyle(PAL.gray1).fillRect(cx - 22, cy - 48, 44, 14);
+      this.work.fillStyle(PAL.sky2, 0.6).fillRect(cx - 18, cy - 10 + Math.abs(tilt) * 10, 36, 40); for (let i = 0; i < Math.min(count, 8); i++) this.work.fillStyle(PAL.sun3).fillCircle(cx - 14 + (i % 4) * 9, cy + 8 + Math.floor(i / 4) * 10, 2);
+      if (jolt > 0.2) { this.work.fillStyle(PAL.white, jolt); this.work.fillRect(cx - 40, cy - 30, 8, 3).fillRect(cx + 32, cy - 30, 8, 3).fillRect(cx - 44, cy + 10, 8, 3).fillRect(cx + 36, cy + 10, 8, 3); }   // motion lines
+      if (mode === 'shake') { this.work.fillStyle(PAL.neon, 0.9); for (let k = 0; k < 3; k++) this.work.fillRect(cx - 70 - k * 8, cy - 4 + k * 3, 4, 8 - k * 2).fillRect(cx + 66 + k * 8, cy - 4 + k * 3, 4, 8 - k * 2); }
+      this.meter.set(count / need); } });
+    const shake = (dir: number) => { if (!this.frame.active || count >= need) return; count++; last = dir; tilt = dir; jolt = 1; this.frame.flash(PAL.sky2, 25); if (count >= need) this.endStep(1); };
+    const swing = (dir: number) => { if (mode === 'shake') return; if (dir !== last) shake(dir); else this.frame.shake(50, 0.002); };
+    this.motion.onShake = dir => { if (mode !== 'swipe') shake(dir); };
     let downX = 0; const down = (p: Phaser.Input.Pointer) => { downX = p.x; }; const up = (p: Phaser.Input.Pointer) => { const dx = p.x - downX; swing(Math.abs(dx) > 20 ? (dx < 0 ? -1 : 1) : (p.x < W / 2 ? -1 : 1)); };
     this.input.on('pointerdown', down); this.input.on('pointerup', up); const kb = this.input.keyboard; const l = () => swing(-1), r = () => swing(1); kb?.on('keydown-LEFT', l); kb?.on('keydown-RIGHT', r);
-    this.stepTimer = this.time.delayedCall(need * 650 / this.frame.speed + 1500, () => this.endStep(count / need));
-    this.cleanup.push(() => { tick.remove(); this.input.off('pointerdown', down); this.input.off('pointerup', up); kb?.off('keydown-LEFT', l); kb?.off('keydown-RIGHT', r); });
+    (this as any).cook = { kind: 'shake', hint: () => ({ mode, count, need }), swing };
+    this.stepTimer = this.time.delayedCall(need * 650 / this.frame.speed + 1500 + (mode === 'pending' ? 1500 : 0), () => this.endStep(count / need));
+    this.cleanup.push(() => { tick.remove(); this.motion.onShake = undefined; this.input.off('pointerdown', down); this.input.off('pointerup', up); kb?.off('keydown-LEFT', l); kb?.off('keydown-RIGHT', r); (this as any).cook = undefined; });
   }
 
   // --- FOLD: drag along a dotted path A -> bend -> B, N times.

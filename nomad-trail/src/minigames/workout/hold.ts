@@ -1,27 +1,37 @@
 // Hold / release / reaction micro-games.
 import { PAL } from '../../core/palette';
-import { W, clamp } from '../_shared';
+import { W, clamp, pixTexture } from '../_shared';
 import { Micro } from './micro';
 import { META } from './pools';
 
-/** PLANK: hold a finger down; a balance marker drifts with growing wobble; micro-drag left/right to keep it in the band. */
+/** PLANK, seen from above: head at the top, straight body, forearms and hands out front, feet at the bottom, on a mat. Hold a finger down;
+ *  the balance wobble tilts the body left/right; micro-drag left/right to keep it (and the bar marker) in the band. */
 export class Plank extends Micro {
   readonly id = 'plank'; readonly word = META.plank.word; readonly instr = META.plank.instr; readonly durationSec = META.plank.durationSec;
   private holding = false; private px = 0; private m = 0; private v = 0; private inBand = 0; private total = 0; private meter = 1;
   protected begin() {
-    const cx = W / 2; this.ctx.athlete.at(cx, 330).pose(1).show(true); const band = 0.16 * this.ctx.window + 0.06;
+    const cx = W / 2, cy = 380; const band = 0.16 * this.ctx.window + 0.06;
+    const map = { o: PAL.earth3, h: PAL.earth0, s: PAL.sun0, p: PAL.night3, k: PAL.ink };
+    const key = pixTexture(this.ctx.scene, 'ath_plank_top', [
+      '.oo......oo.', '.oo......oo.', '.ss.hhhh.ss.', '.ss.hhhhhhss.'.slice(0, 12), '.sshhhhhhss.', '.sshhhhhhss.', '.ss.hhhh.ss.', '.sssssssss..', '..ssssssss..', '..ssssssss..', '..ssssssss..', '..ssssssss..', '..ssssssss..',
+      '...pppppp...', '...pppppp...', '...pp..pp...', '...pp..pp...', '...pp..pp...', '...pp..pp...', '...oo..oo...', '...kk..kk...', '...kk..kk...'], map, 4);
+    this.ctx.athlete.at(cx, cy).show(true); this.ctx.athlete.sprite.setTexture(key);
     this.on('pointerdown', (p: any) => { this.holding = true; this.px = p.x; }); this.on('pointerup', () => { this.holding = false; });
     this.on('pointermove', (p: any) => { if (!this.holding) return; const dx = p.x - this.px; this.px = p.x; this.m = clamp(this.m + dx / 180, -1, 1); });
     this.key('keydown-SPACE', () => { this.holding = true; }); this.key('keyup-SPACE', () => { this.holding = false; }); this.key('keydown-LEFT', () => { this.m -= 0.12; }); this.key('keydown-RIGHT', () => { this.m += 0.12; });
     this.loop(dt => { this.total += dt; const wob = 0.6 + this.t * 0.35 * this.ctx.speed; this.v += (Math.sin(this.t * 3.1) * 0.9 + Math.sin(this.t * 7.3) * 0.5) * wob * dt; this.v *= 0.96; this.m = clamp(this.m + this.v * dt * 2, -1, 1);
       const ok = this.holding && Math.abs(this.m) < band; if (ok) this.inBand += dt; else this.meter = clamp(this.meter - dt * 0.35, 0, 1);
-      this.g.clear(); this.backdrop(380, 400); this.g.fillStyle(PAL.ink).fillRect(40, 240, W - 80, 14); this.g.fillStyle(PAL.grass1, 0.6).fillRect(cx - band * (W / 2 - 40), 240, band * (W - 80), 14); this.g.fillStyle(ok ? PAL.neon : PAL.red).fillRect(cx + this.m * (W / 2 - 40) - 3, 234, 6, 26);
-      this.g.fillStyle(PAL.ink).fillRect(40, 450, W - 80, 10); this.g.fillStyle(this.meter > 0.4 ? PAL.sun2 : PAL.red).fillRect(40, 450, (W - 80) * this.meter, 10);
-      this.ctx.athlete.sprite.angle = this.m * 12; this.ctx.frame.setProgress(this.holding ? `${Math.round(this.inBand * 10) / 10}s` : 'HOLD');
+      this.g.clear(); this.g.fillStyle(PAL.night2).fillRect(0, 26, W, 614); this.g.fillStyle(PAL.night1).fillRect(0, 26, W, 614);   // the floor, looking down
+      for (let i = 0; i < 12; i++) this.g.fillStyle(PAL.night2, 0.6).fillRect(0, 40 + i * 50, W, 2);                                       // floorboards
+      this.g.fillStyle(PAL.ink).fillRoundedRect(cx - 52, cy - 82, 104, 168, 10); this.g.fillStyle(PAL.dusk1).fillRoundedRect(cx - 48, cy - 78, 96, 160, 8); this.g.fillStyle(PAL.dusk2, 0.5).fillRoundedRect(cx - 40, cy - 70, 80, 144, 6);   // the mat
+      this.g.fillStyle(PAL.ink, 0.35).fillEllipse(cx + this.m * 6, cy + 4, 60, 96);                                                          // body shadow on the mat
+      this.g.fillStyle(PAL.ink).fillRect(40, 240, W - 80, 14); this.g.fillStyle(PAL.grass1, 0.6).fillRect(cx - band * (W / 2 - 40), 240, band * (W - 80), 14); this.g.fillStyle(ok ? PAL.neon : PAL.red).fillRect(cx + this.m * (W / 2 - 40) - 3, 234, 6, 26);   // balance readout
+      this.g.fillStyle(PAL.ink).fillRect(40, 560, W - 80, 10); this.g.fillStyle(this.meter > 0.4 ? PAL.sun2 : PAL.red).fillRect(40, 560, (W - 80) * this.meter, 10);   // plank meter
+      this.ctx.athlete.sprite.setAngle(this.m * 14).setPosition(cx + this.m * 4, cy); this.ctx.frame.setProgress(this.holding ? `${Math.round(this.inBand * 10) / 10}s` : 'HOLD');
       if (this.meter <= 0) this.finish(this.scoreNow()); });
   }
   protected scoreNow() { return clamp(this.inBand / (this.durationSec * 0.75), 0, 1) * (0.5 + 0.5 * this.meter); }
-  destroy() { this.ctx.athlete.sprite.angle = 0; super.destroy(); }
+  destroy() { this.ctx.athlete.sprite.setAngle(0); this.ctx.athlete.pose(0); super.destroy(); }
 }
 
 /** SQUAT DEPTH: hold to lower; release inside the green depth band. 4 reps, band narrows. */
