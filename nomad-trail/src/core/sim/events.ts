@@ -18,7 +18,7 @@ export function setFlag(s: RunState, flag: string, on: boolean) { s.achievements
 export const visibleAchievements = (s: RunState) => s.achievements.filter(a => !a.startsWith('_'));
 
 /** Events that can only happen once per run. */
-export const ONCE = new Set(['otter','kettle','wheel','seaurchin','oktoberfest','backinjury','upgrade','hostgift','surprisemeetup','nowifi','rockfall']);
+export const ONCE = new Set(['otter','kettle','wheel','oktoberfest','backinjury','upgrade','hostgift','surprisemeetup','nowifi',]);
 function overweightFactor(ratio: number) { return clamp((ratio - 0.85) / 0.15, 0, 1) * 1.45; }
 
 /** Chance multiplier from per-event special conditions the JSON schema cannot express. Returns 0 to veto. */

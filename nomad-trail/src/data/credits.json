@@ -43,51 +43,23 @@
   "where": "more Airbnbs than not"
  },
  "backinjury": {
-  "where": "on the road",
-  "note": "Cody can say where"
+  "where": "London",
+  "note": "the back went in London"
  },
  "delayed": {
-  "where": "on the road",
-  "note": "Cody can say where"
+  "where": "New York",
+  "note": "the suitcase arrived days later"
  },
  "airbnbcancel": {
-  "where": "on the road",
-  "note": "Cody can say where"
- },
- "forgot": {
-  "where": "on the road",
-  "note": "Cody can say where"
- },
- "seaurchin": {
-  "where": "on the road",
-  "note": "Cody can say where"
- },
- "altitude": {
-  "where": "on the road",
-  "note": "Cody can say where"
- },
- "rockfall": {
-  "where": "on the road",
-  "note": "Cody can say where"
+  "where": "the UK",
+  "note": "cancelled the same day"
  },
  "radonheadache": {
-  "where": "on the road",
-  "note": "Cody can say where"
+  "where": "Miami, Hyères and Montana",
+  "note": "the monitor read high in all three"
  },
  "radonmonitor": {
-  "where": "on the road",
-  "note": "Cody can say where"
- },
- "sunburn": {
-  "where": "on the road",
-  "note": "Cody can say where"
- },
- "laundrylost": {
-  "where": "on the road",
-  "note": "Cody can say where"
- },
- "lostcharger": {
-  "where": "on the road",
-  "note": "Cody can say where"
+  "where": "Miami, Hyères and Montana",
+  "note": "the monitor read high in all three"
  }
 }

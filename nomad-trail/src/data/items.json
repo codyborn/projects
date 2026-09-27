@@ -348,8 +348,7 @@
     "color": 14040124,
     "benefits": [
       "Cuts don't get infected",
-      "Otter-safe",
-      "Urchin-safe"
+      "Otter-safe"
     ]
   },
   {
@@ -368,7 +367,6 @@
     "color": 16052714,
     "benefits": [
       "Food poisoning is milder",
-      "Altitude is survivable",
       "Counts as health gear"
     ]
   },

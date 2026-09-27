@@ -151,28 +151,6 @@
     }
   },
   {
-    "id": "altitude",
-    "title": "Thin air",
-    "text": "Above 3,500 m on the circuit out of {city} the headache starts behind the eyes and the appetite leaves. Slowly, slowly: the only rule up here.",
-    "when": "action",
-    "baseChance": 0.7,
-    "effects": {
-      "health": -13,
-      "energy": -25,
-      "mood": -5
-    },
-    "requiresCity": "kathmandu",
-    "mitigatedBy": [
-      "meds",
-      "water",
-      "health"
-    ],
-    "mitigatedText": "Above 3,500 m on the circuit out of {city}. Altitude pills tingle in your fingers, electrolytes in the bottle, a rest day in the plan. The headache stays a rumour.",
-    "mitigatedEffects": {
-      "energy": -12
-    }
-  },
-  {
     "id": "jetlag",
     "title": "Jet lag",
     "text": "Six or more time zones in one leg. For three days you are awake at 4 am and asleep in meetings. The body keeps its own calendar.",
@@ -228,37 +206,6 @@
       "days": 1
     },
     "requiresOverweight": true
-  },
-  {
-    "id": "seaurchin",
-    "title": "Sea urchin",
-    "text": "A reef, a wave, a foot in the wrong place. Seven spines and a limp for the rest of the week.",
-    "when": "action",
-    "baseChance": 0.1,
-    "effects": {
-      "health": -7,
-      "mood": -6
-    },
-    "requiresCity": "roatan",
-    "mitigatedBy": [
-      "firstaid"
-    ],
-    "mitigatedText": "A reef, a wave, a foot in the wrong place. Tweezers, antiseptic, done before dinner.",
-    "mitigatedEffects": {
-      "health": -2
-    }
-  },
-  {
-    "id": "rockfall",
-    "title": "Rockfall",
-    "text": "On the ferrata above {city} a stone the size of a fist comes down the gully. The helmet earns its rental fee.",
-    "when": "action",
-    "baseChance": 0.06,
-    "effects": {
-      "health": -8,
-      "mood": 5
-    },
-    "requiresCity": "innsbruck"
   },
   {
     "id": "oktoberfest",

@@ -452,7 +452,7 @@ export function endingCause(s: RunState, kind: Ending['kind']): string {
   }
 }
 /** How each damaging event reads in the cause line. */
-const CAUSE_PHRASE: Record<string, string> = { otter: 'the otter', kettle: 'the kettle', foodpoisoning: 'food poisoning', backinjury: 'a thrown-out back', altitude: 'thin air', seaurchin: 'a sea urchin', rockfall: 'rockfall', mosquito: 'the mosquitoes', oktoberfest: 'Oktoberfest', sunburn: 'sunburn' };
+const CAUSE_PHRASE: Record<string, string> = { otter: 'the otter', kettle: 'the kettle', foodpoisoning: 'food poisoning', backinjury: 'a thrown-out back', mosquito: 'the mosquitoes', oktoberfest: 'Oktoberfest', sunburn: 'sunburn' };
 
 export function pendingChoices(s: RunState): { id: string; title: string; text: string; choices: EventChoice[] } | null {
   if (!s.pendingEvent) return null; const ev = EVENT[s.pendingEvent]; if (!ev?.choices) return null;

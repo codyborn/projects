@@ -7,10 +7,11 @@ import { BoulderBeta } from './boulder';
 import { Runner, Pace } from './legacy';
 import { CityRun } from './cityrun';
 import { Pinnacle } from './pinnacle';
-export { POOLS, META, MICRO_IDS, SESSION_GAMES, sessionLen, DENSE_CITIES, PINNACLE_CITIES, pickSession, pickOne, seededRng, hashStr } from './pools';
+import { WoodChop } from './woodchop';
+export { POOLS, META, MICRO_IDS, SESSION_GAMES, sessionLen, DENSE_CITIES, PINNACLE_CITIES, WOODCHOP_CITIES, pickSession, pickOne, seededRng, hashStr } from './pools';
 
 export const MICRO_REGISTRY: Record<string, () => Micro> = {
   pushup: () => new PushUp(), plank: () => new Plank(), jumprope: () => new JumpRope(), curls: () => new Curls(), burpee: () => new Burpee(), squat: () => new Squat(),
   sprint: () => new SprintStop(), stretch: () => new Stretch(), boulderbeta: () => new BoulderBeta(), dyno: () => new Dyno(),
-  riverstones: () => new RiverStones(), swimbreath: () => new SwimBreath(), balance: () => new BalanceBoard(), pose: () => new PoseMatch(), runner: () => new Runner(), pace: () => new Pace(), cityrun: () => new CityRun(), pinnacle: () => new Pinnacle(),
+  riverstones: () => new RiverStones(), swimbreath: () => new SwimBreath(), balance: () => new BalanceBoard(), pose: () => new PoseMatch(), runner: () => new Runner(), pace: () => new Pace(), cityrun: () => new CityRun(), pinnacle: () => new Pinnacle(), woodchop: () => new WoodChop(),
 };
