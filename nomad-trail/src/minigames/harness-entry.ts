@@ -4,6 +4,7 @@ import { GAME_W, GAME_H, MINIGAME_KEYS, type MinigameLaunch } from '../core/type
 import { PAL } from '../core/palette';
 import { launchHarness, MINIGAME_SCENES } from './devHarness';
 import { DEFAULT_LEVEL } from './CarryOnScene';
+import { ScubaScene } from './ScubaScene';
 import dishesJson from '../data/dishes.json';
 import { drawDish, DISH_ART_IDS, renderDishCanvas, DISH_TEX_W, DISH_TEX_H } from './dishArt';
 
@@ -256,6 +257,30 @@ if (q.get('auto') === '1') {
     if (mode === 'perfect' && q.get('fast') === '1') { game.loop.stop(); let t = performance.now(); setInterval(() => { for (let k = 0; k < 6; k++) { t += 16.67; fly(); game.loop.step(t); } }, 0); }
     else if (mode === 'perfect') setInterval(fly, 16);
     else setInterval(fly, 400);
+  });
+} else if (q.get('scuba')) {
+  /* scuba checks: 'rt' = READY, then no input: the dive must end on air with onDone once; 'perfect' = scripted diver: swim to a
+     standoff point from the nearest visible lionfish and fire when its body is in range; 'sting' = swim straight into a fish once
+     (for the spine-touch screenshot), then behave like 'perfect'. stage=ready keeps the card up for a screenshot. */
+  if (!game.scene.getScene(MINIGAME_KEYS.scuba)) game.scene.add(MINIGAME_KEYS.scuba, ScubaScene as any, false);
+  game.events.once('ready', () => {
+    const mode = q.get('scuba')!; const t0 = performance.now(); let calls = 0; const city = q.get('city') || 'roatan';
+    const launch: MinigameLaunch = { energy: Number(q.get('energy') || 100), difficulty: Number(q.get('difficulty') || 0.4), payload: { city, cityName: q.get('cityName') || city, seed: Number(q.get('seed') || 7) }, onDone: (res) => { calls++; const h = (scene as any).hint?.(); out.textContent = JSON.stringify({ mode, res, calls, secs: Math.round((performance.now() - t0) / 100) / 10, hint: h && { speared: h.speared, total: h.total, touches: h.touches, bycatch: h.bycatch, air: Math.round(h.air) } }); document.title = 'SCUBA_DONE'; } };
+    game.scene.start(MINIGAME_KEYS.scuba, launch); const scene: any = game.scene.getScene(MINIGAME_KEYS.scuba);
+    let stung = false;
+    const dive = () => {
+      if (!scene.scene.isActive() || !scene.frame?.active) { if (q.get('holdResult') !== '1') scene.frame?.proceed?.(); if (!scene.frame?.finished && q.get('stage') !== 'ready') scene.frame?.ready?.(); return; }
+      if (mode === 'rt') return; const h = scene.hint(); const vis = h.fish.filter((f: any) => !f.hiding); if (!vis.length) { scene.release(); return; }
+      let best = vis[0], bd = 1e9; for (const f of vis) { const d = Math.hypot(f.x - h.x, f.y - h.y); if (d < bd) { bd = d; best = f; } }
+      /* the diver stops 58 px short of the finger, so aim the finger past where we want to be */
+      const past = (px: number, py: number, extra: number) => { const l = Math.hypot(px - h.x, py - h.y) || 1; return [px + (px - h.x) / l * extra, py + (py - h.y) / l * extra] as const; };
+      if (mode === 'sting' && !stung) { const [tx, ty] = past(best.x, best.y, 70); scene.press(tx, ty); if (h.touches > 0) { stung = true; scene.release(); } return; }
+      /* stand off at ~95 px from the body, on our side of it; fire when it is between 60 and 140 px and no spear is out */
+      const side = h.x < best.x ? -1 : 1; const level = Math.abs(best.y - h.y) < 9; const px = best.x + side * 95, py = best.y;
+      if (bd > 130 || bd < 60 || !level) { const [tx, ty] = past(px, py, 58); scene.press(tx, ty); }
+      else if (!h.spear) { scene.release(); scene.fireAt(best.x, best.y); }
+    };
+    setInterval(dive, mode === 'rt' ? 400 : 50);
   });
 } else if (q.get('sheet') === '1') {
   // contact sheet: draw finished dishes into #results as a single canvas

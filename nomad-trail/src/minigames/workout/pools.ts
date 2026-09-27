@@ -19,6 +19,7 @@ export const META: Record<string, MicroMeta> = {
   cityrun:     { name: 'City Run',      word: 'DODGE!',    instr: 'Five lanes. D-PAD LEFT / RIGHT to change lane, UP to jump bags and cones, DOWN to duck under signs. Swipes work too. A blinking ! shows where the next hazard comes from.', durationSec: 25 },
   runner:      { name: 'Trail Run',     word: 'RUN!',      instr: 'TAP to jump the rocks. Press and HOLD to duck under the branches; let go and you jump.', durationSec: 8 },
   pace:        { name: 'Pace',          word: 'PACE!',     instr: 'Hold to walk. Keep the marker in the green band. Too fast and you get dizzy.', durationSec: 8 },
+  pinnacle:    { name: 'The In Pinn',   word: 'STEADY!',   instr: 'The Inaccessible Pinnacle, Skye. You walk the ridge on your own; gusts try to lean you off it. HOLD the LEFT or RIGHT half of the screen to lean against the wind (fog streaks show where the next gust comes from). Lean too far for too long and you fall.', durationSec: 22 },
 };
 export const MICRO_IDS = Object.keys(META);
 export const POOLS: Partial<Record<ActivityId, string[]>> = {
@@ -32,10 +33,13 @@ export const POOLS: Partial<Record<ActivityId, string[]>> = {
 /** How many different games a session chains, each played once at normal speed: hotel room and hike play three, everything else one. */
 export const SESSION_GAMES: Partial<Record<ActivityId, number>> = { bands: 3, hike: 3 };
 export function sessionLen(activity: string) { return SESSION_GAMES[activity as ActivityId] ?? 1; }
+/** The Highlands hike (and trail run) is always the Inaccessible Pinnacle traverse: one game, a profile shot first. */
+export const PINNACLE_CITIES = new Set(['highlands']);
 /** Cities where a run is a Frogger game: cyclists, cabs and buses instead of rocks and branches. */
 export const DENSE_CITIES = new Set(['newyork', 'tokyo', 'bangkok', 'hongkong', 'london']);
 /** Pick the workout's micro-game(s) for an activity (unknown → hotel room): a shuffle of the pool cut to sessionLen(), seeded by city+day upstream so days differ. */
 export function pickSession(activity: string, rng: () => number, city?: string): string[] {
+  if (city && PINNACLE_CITIES.has(city) && (activity === 'hike' || activity === 'trailrun')) return ['pinnacle'];
   if (city && DENSE_CITIES.has(city) && (activity === 'trailrun' || activity === 'bands' || !POOLS[activity as ActivityId]) && rng() < 0.8) return ['cityrun'];
   const pool = [...(POOLS[activity as ActivityId] ?? POOLS.bands!)];
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }

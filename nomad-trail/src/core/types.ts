@@ -31,7 +31,7 @@ export interface City {
   eventWeights: Record<string, number>;               // eventId -> multiplier
   legs: Leg[]; blurb: string; stampIcon: string;      // stampIcon: key for a tiny procedural glyph
 }
-export type ActivityId = 'kite' | 'boulder' | 'ferrata' | 'trailrun' | 'swim' | 'hike' | 'bands' | 'ski' | 'surf' | 'yoga';
+export type ActivityId = 'kite' | 'boulder' | 'ferrata' | 'trailrun' | 'swim' | 'hike' | 'bands' | 'ski' | 'surf' | 'yoga' | 'scuba';   // scuba: spear lionfish (Roatán, Miami; needs the swim kit) -> Scuba scene
 export interface GameEvent {
   id: string; title: string; text: string;            // text may use {city}, {day}, {item}
   when: 'leg' | 'arrive' | 'day' | 'leave' | 'flight' | 'action';
@@ -62,7 +62,7 @@ export interface RunState {
   achievements: string[]; log: LogLine[]; workStreak: number; coffeeMornings: number;
   phase: 'pack' | 'route' | 'city' | 'travel' | 'ended'; ending?: Ending;
   stayDays: number; pendingEvent?: string;
-  puzzlesSeen?: string[]; droneFlights?: number;   /* work-week puzzles already shown this run; drone flights so far (sets the level) */
+  puzzlesSeen?: string[]; droneFlights?: number; eventsFired?: string[];   /* every event id that fired this run, in order (credits page) */   /* work-week puzzles already shown this run; drone flights so far (sets the level) */
   pendingDish?: string; pendingGate?: string; dirtyDays?: number;   // consecutive days in dirty clothes (mood drain grows)              // gate for the airport dash after a taxi breakdown                              // dish id chosen when Cook was tapped; the mini-game and the result must use the same one
 }
 export interface LogLine { day: number; city: string; text: string; }
@@ -73,7 +73,8 @@ export type CityAction = 'work' | 'explore' | 'train' | 'cook' | 'rest' | 'laund
 // Every mini-game is a Phaser scene started with MinigameLaunch and MUST call launch.onDone(result) exactly once, then stop itself.
 export interface MinigameLaunch { energy: number; difficulty: number; payload?: any; extraLives?: number; onDone: (r: MinigameResult) => void; preview?: (r: MinigameResult) => string[]; }   // preview: result-card lines for what this outcome confers (+5 health ...)  // extraLives: hiking boots etc.
 export interface MinigameResult { score: number; perfect: boolean; failed: boolean; }
-export const MINIGAME_KEYS = { cooking: 'Cooking', workout: 'Workout', carryon: 'CarryOn', kite: 'Kite', airport: 'Airport', laundry: 'Laundry', drone: 'Drone', work: 'Work' } as const;
+export const MINIGAME_KEYS = { cooking: 'Cooking', workout: 'Workout', carryon: 'CarryOn', kite: 'Kite', airport: 'Airport', laundry: 'Laundry', drone: 'Drone', work: 'Work', scuba: 'Scuba' } as const;
+/** Scuba payload: { city: string; cityName: string; seed: number } -> score = lionfish speared / total x 100, minus 15 per spine touch; failed under 50. */
 /** Drone rules per country: 'ok' fly freely, 'permit' a fine is possible, 'banned' a fine is likely. Set on City.droneRule. */
 export type DroneRule = 'ok' | 'permit' | 'banned';
 /** A work-day puzzle (Professor Layton style, themed to a software engineer at Uniswap). kind 'choice': tap one of `choices`; kind 'number': type a number. `answer` is the index (choice) or the value (number). */

@@ -9,9 +9,10 @@ import { KiteScene } from './KiteScene';
 import { AirportScene } from './AirportScene';
 import { LaundryScene } from './LaundryScene';
 import { DroneScene } from './DroneScene';
+import { ScubaScene } from './ScubaScene';
 import { WorkScene } from './WorkScene';
 
-export const MINIGAME_SCENES = [CookingScene, WorkoutScene, CarryOnScene, KiteScene, AirportScene, LaundryScene, WorkScene, DroneScene];
+export const MINIGAME_SCENES = [CookingScene, WorkoutScene, CarryOnScene, KiteScene, AirportScene, LaundryScene, WorkScene, DroneScene, ScubaScene];
 
 const SAMPLES: { key: string; label: string; payload?: any }[] = [
   { key: MINIGAME_KEYS.cooking, label: 'Cooking: Kaspressknödel', payload: { id: 'kasp', name: 'Kaspressknödel', city: 'innsbruck', ingredients: ['stale bread', 'graukäse', 'onion', 'egg'], health: 18, mood: 14, steps: [{ kind: 'chop', count: 5 }, { kind: 'knead', count: 10 }, { kind: 'season', count: 3 }, { kind: 'flip', count: 3 }, { kind: 'pour', count: 1 }, { kind: 'stir', count: 2 }] } },

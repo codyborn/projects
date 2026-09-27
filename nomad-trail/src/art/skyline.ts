@@ -125,8 +125,40 @@ function neonSigns(ctx: Ctx, w: number, hy: number, r: ReturnType<typeof rng>, n
 function flags(ctx: Ctx, w: number, hy: number, r: ReturnType<typeof rng>) { const cols = [PAL.sky1, PAL.white, PAL.red, PAL.grass2, PAL.sun2]; for (let s = 0; s < 3; s++) { const y0 = hy - r.int(50, 90), x0 = r.int(0, 40), x1 = x0 + r.int(120, 220); for (let x = x0; x < x1; x += 7) { const y = Math.round(y0 + Math.sin((x - x0) / (x1 - x0) * Math.PI) * 14); line(ctx, x, y, x + 6, y + 1, PAL.gray0); R(ctx, x + 1, y + 1, 4, 5, cols[(x / 7 | 0) % 5]); } } }
 function water(ctx: Ctx, w: number, y: number, h: number, tod: TimeOfDay, r: ReturnType<typeof rng>) { const cs = tod === 'night' ? [PAL.night1, PAL.night2] : tod === 'day' ? [PAL.sea1, PAL.sea2] : [PAL.sea0, PAL.dusk2]; R(ctx, 0, y, w, h, cs[0]); for (let i = 0; i < w * h / 14; i++) R(ctx, r.int(0, w), y + r.int(0, h - 1), r.int(2, 6), 1, cs[1]); }
 
+/* ---- near-layer ground fills (the band below the horizon down to the bottom of the canvas). Each city that uses one is in NO_GROUND. ---- */
+type Tones = { base: number; detail: number; dark: number };
+const SAND: Record<TimeOfDay, Tones> = { day: { base: PAL.sun3, detail: PAL.earth3, dark: PAL.earth2 }, dawn: { base: PAL.earth3, detail: PAL.earth2, dark: PAL.earth1 }, dusk: { base: PAL.earth3, detail: PAL.earth2, dark: PAL.earth1 }, night: { base: PAL.night3, detail: PAL.night2, dark: PAL.night1 } };
+const GRASS: Record<TimeOfDay, Tones> = { day: { base: PAL.grass1, detail: PAL.grass2, dark: PAL.grass0 }, dawn: { base: PAL.grass0, detail: PAL.grass1, dark: PAL.night2 }, dusk: { base: PAL.grass0, detail: PAL.grass1, dark: PAL.night2 }, night: { base: PAL.night2, detail: PAL.night3, dark: PAL.night1 } };
+const bottomOf = (ctx: Ctx) => ctx.canvas.height;
+/** Dry sand from y down to the bottom: base colour, wind ripples, a few pebbles and shells. */
+function sandFill(ctx: Ctx, w: number, y: number, tod: TimeOfDay, r: ReturnType<typeof rng>) { const b = bottomOf(ctx), t = SAND[tod]; R(ctx, 0, y, w, b - y, t.base);
+  for (let i = 0; i < w * (b - y) / 90; i++) R(ctx, r.int(0, w), y + r.int(2, b - y - 2), r.int(4, 14), 1, t.detail);
+  for (let i = 0; i < w / 18; i++) { const px = r.int(0, w), py = y + r.int(6, Math.max(8, b - y - 4)); R(ctx, px, py, 2, 1, t.dark); if (r.chance(0.3)) { R(ctx, px, py - 1, 2, 1, tod === 'night' ? t.detail : PAL.white); } } }
+/** A beach: the sea continues down from the mid layer, a foam edge, a wet-sand line, then dry sand to the bottom. */
+function beachGround(ctx: Ctx, w: number, hy: number, tod: TimeOfDay, r: ReturnType<typeof rng>) { const t = SAND[tod];
+  water(ctx, w, hy - 40, 34, tod, r);
+  for (let x = 0; x < w; x += 2) { const dip = Math.round(Math.sin(x / 23) * 1.5); if (tod !== 'night' && (x + dip) % 5 !== 0) R(ctx, x, hy - 7 + dip, 2, 1, PAL.white); R(ctx, x, hy - 6 + dip, 2, 3, t.dark); }
+  sandFill(ctx, w, hy - 3, tod, r); }
+/** Grass from y down to the bottom: base, tufts, a few flowers and stones. */
+function grassGround(ctx: Ctx, w: number, y: number, tod: TimeOfDay, r: ReturnType<typeof rng>) { const b = bottomOf(ctx), t = GRASS[tod]; R(ctx, 0, y, w, b - y, t.base);
+  for (let i = 0; i < w * (b - y) / 40; i++) { const px = r.int(0, w), py = y + r.int(1, b - y - 4), h = r.int(2, 5); R(ctx, px, py - h, 1, h, t.detail); R(ctx, px + 1, py - Math.max(1, h - 2), 1, Math.max(1, h - 2), t.detail); }
+  for (let i = 0; i < w * (b - y) / 120; i++) R(ctx, r.int(0, w), y + r.int(2, b - y - 2), r.int(3, 9), 1, t.dark);
+  for (let i = 0; i < w / 22; i++) { const px = r.int(0, w), py = y + r.int(8, Math.max(10, b - y - 6)); if (r.chance(0.55)) { P(ctx, px, py, tod === 'night' ? t.detail : r.pick([PAL.sun2, PAL.pink, PAL.white])); P(ctx, px, py + 1, t.dark); } else { R(ctx, px, py, 3, 2, tod === 'night' ? t.dark : PAL.gray1); R(ctx, px, py, 3, 1, tod === 'night' ? t.dark : PAL.gray2); } } }
+/** Black volcanic sand over the whole band. */
+function blackSand(ctx: Ctx, w: number, y: number, tod: TimeOfDay, r: ReturnType<typeof rng>) { const b = bottomOf(ctx); R(ctx, 0, y, w, b - y, PAL.ink); speckle(ctx, 0, y, w, b - y, tod === 'night' ? PAL.night2 : PAL.gray0, 0.16, r); for (let i = 0; i < w / 14; i++) R(ctx, r.int(0, w), y + r.int(2, b - y - 2), r.int(2, 5), 1, tod === 'night' ? PAL.night3 : PAL.gray1); }
+/** Open water from y to the bottom of the canvas, with long reflection streaks. */
+function waterToBottom(ctx: Ctx, w: number, y: number, tod: TimeOfDay, r: ReturnType<typeof rng>) { const b = bottomOf(ctx); water(ctx, w, y, b - y, tod, r);
+  const hi = tod === 'night' ? PAL.night3 : tod === 'day' ? PAL.sea3 : PAL.sun2; for (let i = 0; i < w / 6; i++) { const px = r.int(0, w), py = y + r.int(4, b - y - 4); R(ctx, px, py, r.int(6, 22), 1, hi); if (r.chance(0.4)) R(ctx, px + r.int(2, 8), py + 2, r.int(4, 12), 1, hi); } }
+/** A dense conifer forest filling the band: rows of overlapping trees, larger toward the bottom. */
+function forestGround(ctx: Ctx, w: number, y: number, c: number, tod: TimeOfDay, r: ReturnType<typeof rng>) { const b = bottomOf(ctx); R(ctx, 0, y, w, b - y, tod === 'night' ? PAL.night0 : PAL.night1);
+  /* by day the cedars read as two greens; at dusk and night they are silhouettes with a faint rim */
+  const lit = tod === 'day' ? PAL.grass1 : tod === 'night' ? PAL.night1 : PAL.night2; if (tod === 'day') c = PAL.grass0;
+  for (let row = 0; row < 7; row++) { const baseY = y + 26 + row * Math.round((b - y - 26) / 6), th = 26 + row * 5, step = 10 + row * 2;
+    for (let x = r.int(-8, 0); x < w + 10; x += step) { const tx = x + r.int(-3, 3), h = th + r.int(-5, 5);
+      for (let k = 0; k < h; k++) { const hw = Math.max(1, Math.round((k / h) * (h * 0.32))); R(ctx, tx - hw, baseY - h + k, hw * 2 + 1, 1, c); if (k % 4 === 1 && hw > 2) R(ctx, tx - hw + 1, baseY - h + k, Math.max(1, hw - 1), 1, lit); } R(ctx, tx, baseY, 1, 3, c); } } }
+
 /** Cities that paint their own ground in the near layer (ocean to the bottom, resort tiles). */
-const NO_GROUND = new Set(['orangecounty', 'roatan']);
+const NO_GROUND = new Set(['orangecounty', 'roatan', 'miami', 'laventana', 'hyeres', 'scotland', 'montana', 'patagonia', 'iguazu', 'chiangmai', 'lasvegas', 'joshuatree', 'lapaz', 'iceland', 'salzkammergut', 'dakhla', 'hongkong', 'minakami']);
 /** Blocky 3x5 letters for signs. */
 const GLYPH3: Record<string, string[]> = { L: ['100','100','100','100','111'], A: ['010','101','111','101','101'], S: ['111','100','111','001','111'], V: ['101','101','101','101','010'], E: ['111','100','110','100','111'], G: ['111','100','101','101','111'], ' ': ['000','000','000','000','000'] };
 function signText(ctx: Ctx, x: number, y: number, txt: string, c: number, sc = 1) { let cx = x; for (const ch of txt) { const g = GLYPH3[ch] ?? GLYPH3[' ']; for (let r = 0; r < 5; r++) for (let k = 0; k < 3; k++) if (g[r][k] === '1') R(ctx, cx + k * sc, y + r * sc, sc, sc, c); cx += 4 * sc; } }
@@ -177,7 +209,7 @@ const CITY: Record<string, Drawer> = {
       const hx = Math.floor(w * 0.18), hb = prof[hx] + 2, hw = 10;   // the Hütte on the Nordkette slope, clear of the tower
       R(ctx, hx - 1, hb - 8, hw + 2, 9, PAL.ink); R(ctx, hx, hb - 7, hw, 7, PAL.white); for (let k = 0; k < 4; k++) R(ctx, hx - 1 + k, hb - 8 - 4 + k, hw + 2 - k * 2, 1, PAL.earth0); R(ctx, hx + 3, hb - 4, 2, 2, win); R(ctx, hx + hw + 1, hb - 16, 1, 9, PAL.gray1); R(ctx, hx + hw + 2, hb - 16, 4, 3, PAL.red);
     } else { buildings(ctx, w, hy, c, win, r, 14, 30, 12, 22, 0.4); const x = Math.floor(w * 0.3); R(ctx, x, hy - 60, 8, 60, c); circle(ctx, x + 4, hy - 64, 6, c); R(ctx, x + 3, hy - 74, 2, 6, c); P(ctx, x + 2, hy - 50, win); P(ctx, x + 5, hy - 50, win); } },
-  dakhla: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') sandDunes(ctx, w, hy, PAL.sun3, PAL.earth3, r, 34); else if (L === 'mid') { water(ctx, w, hy - 14, 14, tod, r); kites(ctx, w, hy - 14, r, 8); } else sandDunes(ctx, w, hy + 6, PAL.earth3, PAL.earth2, r, 22); },
+  dakhla: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') sandDunes(ctx, w, hy, PAL.sun3, PAL.earth3, r, 34); else if (L === 'mid') { water(ctx, w, hy - 14, 14, tod, r); kites(ctx, w, hy - 14, r, 8); } else waterToBottom(ctx, w, hy - 40, tod, r); },   /* the lagoon fills the foreground */
   lisbon: (ctx, w, hy, L, c, win, r) => { if (L === 'far') { buildings(ctx, w, hy, c, win, r, 20, 60, 8, 16, 0.3); const x = Math.floor(w * 0.15); R(ctx, x, hy - 90, 6, 90, c); R(ctx, x + 40, hy - 90, 6, 90, c); line(ctx, x - 40, hy - 70, x, hy - 88, c); line(ctx, x + 6, hy - 88, x + 40, hy - 88, c); line(ctx, x + 46, hy - 88, x + 90, hy - 70, c); } else if (L === 'mid') { for (let x = 0; x < w; x += 18) { const h = 20 + Math.round(Math.sin(x / 50) * 12); R(ctx, x, hy - h, 17, h + 2, c); R(ctx, x, hy - h - 3, 17, 3, PAL.sun0); for (let wy = hy - h + 4; wy < hy - 2; wy += 5) P(ctx, x + 6, wy, win); } } else { line(ctx, 0, hy - 30, w, hy - 30, c); for (let x = 0; x < w; x += 40) R(ctx, x, hy - 32, 1, 32, c); R(ctx, 120, hy - 16, 40, 14, PAL.sun2); R(ctx, 122, hy - 14, 36, 5, PAL.sky2); R(ctx, 126, hy - 2, 6, 3, c); R(ctx, 148, hy - 2, 6, 3, c); } },
   bangkok: (ctx, w, hy, L, c, win, r) => { if (L === 'far') buildings(ctx, w, hy, c, win, r, 40, 100, 10, 20, 0.45);
     else if (L === 'mid') { buildings(ctx, w, hy, c, win, r, 14, 40, 10, 22, 0.4);
@@ -187,7 +219,7 @@ const CITY: Record<string, Drawer> = {
       R(ctx, x - 1, hy - 66, 3, 8, PAL.sun2); P(ctx, x, hy - 68, PAL.sun3, 1, 2);
       const cx2 = x + 52; R(ctx, cx2 - 10, hy - 12, 20, 14, PAL.sun2); circle(ctx, cx2, hy - 18, 10, PAL.sun2); for (let y = 0; y < 30; y++) R(ctx, cx2 - Math.round((30 - y) / 5), hy - 28 - y, Math.round((30 - y) / 2.5) + 1, 1, PAL.sun2); P(ctx, cx2, hy - 60, PAL.sun3, 1, 3);
     } else { buildings(ctx, w, hy, c, win, r, 8, 24, 12, 26, 0.3); for (let i = 0; i < 4; i++) { const x = r.int(0, w); R(ctx, x, hy - 8, 10, 6, r.pick([PAL.sun2, PAL.pink, PAL.neon])); } } },
-  hyeres: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { mountains(ctx, w, hy, c, r, 40, 50); } else if (L === 'mid') { water(ctx, w, hy - 12, 12, tod, r); kites(ctx, w, hy - 12, r, 5); buildings(ctx, w, hy - 12, c, win, r, 10, 24, 12, 24, 0.3); } else umbrellaPines(ctx, w, hy + 4, c, r, 6, tod); },
+  hyeres: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { mountains(ctx, w, hy, c, r, 40, 50); } else if (L === 'mid') { water(ctx, w, hy - 12, 12, tod, r); kites(ctx, w, hy - 12, r, 5); buildings(ctx, w, hy - 12, c, win, r, 10, 24, 12, 24, 0.3); } else { beachGround(ctx, w, hy, tod, r); umbrellaPines(ctx, w, hy + 4, c, r, 6, tod); } },
   patagonia: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') {
       mountains(ctx, w, hy, c, r, 60, 40);
       // granite towers: a cluster of broad-based spires with white tips, plus a second cluster a half-wrap later
@@ -196,33 +228,33 @@ const CITY: Record<string, Drawer> = {
       for (let i = 0; i < 6; i++) { const x = r.int(0, w - 40), y = hy - r.int(150, 200); R(ctx, x, y, r.int(14, 34), 1, PAL.gray2); }
     } else if (L === 'mid') { water(ctx, w, hy - 22, 22, tod, r); mountains(ctx, w, hy - 22, c, r, 26, 34);   // the glacier lake and its moraine
       for (let i = 0; i < 8; i++) { const x = r.int(0, w), h = r.int(14, 24); for (let y = 0; y < h; y++) P(ctx, x + Math.round(y * y / 60), hy - 22 - y, c); for (let k = 0; k < 4; k++) line(ctx, x + Math.round(h * h / 60), hy - 22 - h, x + Math.round(h * h / 60) + 6 + k * 3, hy - 22 - h + 2 + k, c); }   // wind-bent lenga
-    } else { R(ctx, 0, hy - 4, w, 6, c); for (let i = 0; i < 70; i++) { const x = r.int(0, w), h = r.int(3, 9); line(ctx, x, hy - 2, x + 3, hy - 2 - h, c); } } },
-  miami: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') buildings(ctx, w, hy, c, win, r, 50, 120, 10, 18, 0.5); else if (L === 'mid') { water(ctx, w, hy - 20, 20, tod, r); line(ctx, 0, hy - 24, w, hy - 24, c); for (let x = 0; x < w; x += 30) R(ctx, x, hy - 24, 3, 6, c); neonSigns(ctx, w, hy - 30, r, 5); } else palms(ctx, w, hy + 4, c, r, 6, tod); },
+    } else { grassGround(ctx, w, hy - 40, tod, r); for (let i = 0; i < 70; i++) { const x = r.int(0, w), h = r.int(3, 9), y = hy + r.int(-2, 40); line(ctx, x, y, x + 3, y - h, c); } } },
+  miami: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') buildings(ctx, w, hy, c, win, r, 50, 120, 10, 18, 0.5); else if (L === 'mid') { water(ctx, w, hy - 20, 20, tod, r); line(ctx, 0, hy - 24, w, hy - 24, c); for (let x = 0; x < w; x += 30) R(ctx, x, hy - 24, 3, 6, c); neonSigns(ctx, w, hy - 30, r, 5); } else { beachGround(ctx, w, hy, tod, r); palms(ctx, w, hy + 4, c, r, 6, tod); } },
   newyork: (ctx, w, hy, L, c, win, r) => { if (L === 'far') { buildings(ctx, w, hy, c, win, r, 80, 160, 8, 16, 0.55); const x = Math.floor(w / 2); R(ctx, x, hy - 190, 10, 190, c); R(ctx, x + 4, hy - 205, 2, 15, c); } else if (L === 'mid') buildings(ctx, w, hy, c, win, r, 40, 100, 12, 22, 0.5); else { buildings(ctx, w, hy, c, win, r, 12, 30, 16, 30, 0.35); for (let x = 0; x < w; x += 6) P(ctx, x, hy - 2, PAL.sun2); } },
   boulder: (ctx, w, hy, L, c, win, r) => { if (L === 'far') mountains(ctx, w, hy, c, r, 90, 40, PAL.white);
     else if (L === 'mid') { mountains(ctx, w, hy, c, r, 34, 60);                                                        // foothills the slabs rise from
       for (let i = 0; i < 4; i++) { const bx = 40 + i * 88, sh = 58 - i * 5, lean = 0.42;                                    // Flatirons: broad tilted slabs leaning right, sunlit face on the left edge
         for (let y = 0; y < sh; y++) { const t = y / sh; const x0 = Math.round(bx + (sh - y) * lean), wdt = Math.round(14 + t * 26); R(ctx, x0, hy - sh + y, wdt, 1, c); R(ctx, x0, hy - sh + y, Math.max(2, Math.round(wdt * 0.3)), 1, PAL.gray1); } } }
     else { trees(ctx, w, hy, c, r, 24); R(ctx, 0, hy - 2, w, 4, c); } },
-  montana: (ctx, w, hy, L, c, win, r) => { if (L === 'far') mountains(ctx, w, hy, c, r, 50, 60, PAL.white);
+  montana: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') mountains(ctx, w, hy, c, r, 50, 60, PAL.white);
     else if (L === 'mid') { R(ctx, 0, hy - 3, w, 5, c); const x = Math.floor(w * 0.275), cw = 44, ch = 26;
       R(ctx, x, hy - ch, cw, ch, PAL.earth1); for (let ly = hy - ch + 2; ly < hy; ly += 3) R(ctx, x, ly, cw, 1, PAL.earth0);              // log walls
       R(ctx, x - 1, hy - ch, 1, ch, PAL.ink); R(ctx, x + cw, hy - ch, 1, ch, PAL.ink);
       for (let i = 0; i < 14; i++) { const half = Math.round(i * 1.9) + 2; R(ctx, x + cw / 2 - half, hy - ch - 14 + i, half * 2, 1, i === 0 || i === 13 ? PAL.ink : PAL.earth0); }   // peaked roof, apex up
       R(ctx, x + cw - 12, hy - ch - 10, 4, 12, PAL.gray0); R(ctx, x + 6, hy - ch + 8, 8, 7, win); R(ctx, x + cw / 2 - 3, hy - 10, 6, 10, PAL.earth0);   // chimney, lit window, door
       for (let i = 0; i < 10; i++) { let tx = r.int(0, w); if (tx > x - 14 && tx < x + cw + 14) tx = (tx + cw + 40) % w; const h = r.int(10, 22); for (let y = 0; y < h; y++) { const hw = Math.max(0, Math.round((y / h) * 5)); R(ctx, tx - hw, hy - h + y, hw * 2 + 1, 1, c); } } }   // pines, never in front of the cabin
-    else { for (let x = 0; x < w; x += 20) { R(ctx, x, hy - 10, 1, 10, c); line(ctx, x, hy - 8, x + 20, hy - 8, c); line(ctx, x, hy - 4, x + 20, hy - 4, c); } } },
+    else { grassGround(ctx, w, hy - 40, tod, r); for (let x = 0; x < w; x += 20) { R(ctx, x, hy - 10, 1, 10, c); line(ctx, x, hy - 8, x + 20, hy - 8, c); line(ctx, x, hy - 4, x + 20, hy - 4, c); } } },
   lapaz: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') mountains(ctx, w, hy, c, r, 30, 90); else if (L === 'mid') { water(ctx, w, hy - 30, 30, tod, r);
       const tx = r.int(80, w - 80), ty = hy - 34; for (let k = 0; k < 6; k++) R(ctx, tx - 2, ty - k * 2, 4, 2, PAL.night3); R(ctx, tx - 10, ty - 14, 8, 3, PAL.night3); R(ctx, tx + 2, ty - 14, 8, 3, PAL.night3); R(ctx, tx - 13, ty - 16, 5, 2, PAL.night3); R(ctx, tx + 8, ty - 16, 5, 2, PAL.night3);   // whale tail
       for (let i = 0; i < 3; i++) { const bx = r.int(10, w - 30); R(ctx, bx, hy - 33, 18, 4, PAL.white); R(ctx, bx + 2, hy - 35, 14, 2, PAL.sky0); } }   // pangas
-    else { R(ctx, 0, hy - 6, w, 8, PAL.earth3);
+    else { sandFill(ctx, w, hy - 40, tod, r);
       for (const base of [w * 0.33, w * 0.33 + w / 2]) { const hs = [52, 78, 64, 58, 70]; for (let i = 0; i < 5; i++) { const cw = r.int(6, 8), cx = Math.round(base + i * 22 + r.int(-3, 3)), ch = hs[i] + r.int(-4, 4);   // cardón cacti: tall ribbed trunks, grouped on the right third
         R(ctx, cx - 1, hy - ch - 1, cw + 2, ch + 1, PAL.ink); R(ctx, cx, hy - ch, cw, ch, PAL.grass0); R(ctx, cx, hy - ch - 1, cw, 1, PAL.grass0);
         for (let rib = 2; rib < cw; rib += 2) R(ctx, cx + rib, hy - ch + 2, 1, ch - 2, PAL.grass1);                                             // ribbing
         const arms = r.int(2, 3); for (let a = 0; a < arms; a++) { const side = a % 2 ? 1 : -1; const ay = hy - ch + r.int(10, Math.max(12, ch - 30)); const ax = side < 0 ? cx - 8 : cx + cw + 2, ah = r.int(14, 26);
           R(ctx, side < 0 ? cx - 8 : cx + cw, ay, 8, 5, PAL.grass0); R(ctx, ax - 1, ay - ah - 1, 7, ah + 2, PAL.ink); R(ctx, ax, ay - ah, 5, ah + 5, PAL.grass0); R(ctx, ax + 2, ay - ah + 2, 1, ah, PAL.grass1); } } } } },
   laventana: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') mountains(ctx, w, hy, c, r, 40, 60); else if (L === 'mid') { water(ctx, w, hy - 30, 30, tod, r); kites(ctx, w, hy - 30, r, 10); }
-    else { R(ctx, 0, hy - 6, w, 8, PAL.earth3); palms(ctx, w, hy, c, r, 3, tod); } },
+    else { beachGround(ctx, w, hy, tod, r); palms(ctx, w, hy, c, r, 3, tod); } },
   roatan: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') mountains(ctx, w, hy, c, r, 30, 50); else if (L === 'mid') { water(ctx, w, hy - 26, 26, tod, r); for (let i = 0; i < 20; i++) P(ctx, r.int(0, w), hy - r.int(2, 24), PAL.sea3); }
     else { /* resort deck: palms stand behind it (trunks partly hidden by the hedge and tiles), then hedge along the water's edge, stone tiles to the bottom, lounge chairs */
       palms(ctx, w, hy - 8, c, r, 3, tod);
@@ -232,20 +264,20 @@ const CITY: Record<string, Drawer> = {
   madrid: (ctx, w, hy, L, c, win, r) => { if (L === 'far') buildings(ctx, w, hy, c, win, r, 30, 70, 10, 20, 0.35); else if (L === 'mid') { buildings(ctx, w, hy, c, win, r, 20, 40, 16, 30, 0.35); const x = Math.floor(w * 0.2); R(ctx, x, hy - 70, 16, 70, c); circle(ctx, x + 8, hy - 74, 8, c); } else { for (let x = 0; x < w; x += 12) trees(ctx, w, hy, c, r, 1, false); R(ctx, 0, hy - 2, w, 4, c); } },
   granada: (ctx, w, hy, L, c, win, r) => { if (L === 'far') mountains(ctx, w, hy, c, r, 80, 40, PAL.white); else if (L === 'mid') { const x = Math.floor(w * 0.25); R(ctx, x - 60, hy - 40, 120, 40, PAL.earth2); R(ctx, x - 50, hy - 56, 18, 16, PAL.earth2); R(ctx, x + 30, hy - 60, 20, 20, PAL.earth2); for (let k = 0; k < 6; k++) P(ctx, x - 44 + k * 18, hy - 30, win); trees(ctx, w, hy, c, r, 14); } else { for (let x = 0; x < w; x += 14) { R(ctx, x, hy - 14, 13, 14, PAL.white); R(ctx, x, hy - 17, 13, 3, PAL.sun0); } } },
   riviera: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') mountains(ctx, w, hy, c, r, 50, 50); else if (L === 'mid') { buildings(ctx, w, hy - 16, c, win, r, 12, 30, 14, 28, 0.35); water(ctx, w, hy - 16, 16, tod, r); for (let i = 0; i < 5; i++) { const x = r.int(0, w); R(ctx, x, hy - 10, 6, 3, PAL.white); R(ctx, x + 3, hy - 18, 1, 8, PAL.white); } }
-    else { // the castle walkway: stone ramparts with crenellations, a flagstone path
-      R(ctx, 0, hy - 43, w, 45, PAL.gray1); for (let x = 0; x < w; x += 12) R(ctx, x, hy - 48, 7, 5, PAL.gray1); for (let y = hy - 41; y < hy; y += 6) for (let x = ((y / 6) | 0) % 2 ? 0 : 6; x < w; x += 12) R(ctx, x, y, 11, 5, PAL.gray2); for (let x = 0; x < w; x += 12) R(ctx, x, hy - 43, 12, 1, PAL.gray0);
-      for (let y = hy + 2; y < hy + 40; y += 7) for (let x = ((y / 7) | 0) % 2 ? 0 : 8; x < w; x += 16) { R(ctx, x, y, 15, 6, PAL.gray1); R(ctx, x, y + 6, 15, 1, PAL.gray0); R(ctx, x + 15, y, 1, 7, PAL.gray0); } } },
+    else { /* the castle walkway: stone ramparts with crenellations (half height), a flagstone path; every course starts left of the page border so no stone is missing at the edge */
+      R(ctx, -12, hy - 21, w + 24, 23, PAL.gray1); for (let x = -12; x < w + 12; x += 12) R(ctx, x, hy - 26, 7, 5, PAL.gray1); for (let y = hy - 19; y < hy; y += 6) for (let x = (((y / 6) | 0) % 2 ? 0 : 6) - 12; x < w + 12; x += 12) R(ctx, x, y, 11, 5, PAL.gray2); for (let x = -12; x < w + 12; x += 12) R(ctx, x, hy - 21, 12, 1, PAL.gray0);
+      for (let y = hy + 2; y < hy + 40; y += 7) for (let x = (((y / 7) | 0) % 2 ? 0 : 8) - 16; x < w + 16; x += 16) { R(ctx, x, y, 15, 6, PAL.gray1); R(ctx, x, y + 6, 15, 1, PAL.gray0); R(ctx, x + 15, y, 1, 7, PAL.gray0); } } },
   scotland: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { mountains(ctx, w, hy, c, r, 70, 70); mountains(ctx, w, hy + 10, c, r, 40, 50); }
     else if (L === 'mid') { mountains(ctx, w, hy - 10, c, r, 30, 60); water(ctx, w, hy - 10, 10, tod, r);
       // the Old Man of Storr: a tall leaning pinnacle on the ridge, smaller ones beside it
       const x = Math.floor(w * 0.32); for (let y = 0; y < 76; y++) { const hw = Math.max(1, Math.round(9 * (1 - y / 76)) + 1); R(ctx, x + Math.round(y * 0.18) - hw, hy - 10 - y, hw * 2, 1, c); }
       for (const [dx, h, lean] of [[24, 40, 0.1], [-18, 30, -0.12], [38, 22, 0.05]]) for (let y = 0; y < h; y++) { const hw = Math.max(1, Math.round(5 * (1 - y / h)) + 1); R(ctx, x + dx + Math.round(y * lean) - hw, hy - 10 - y, hw * 2, 1, c); }
-    } else { R(ctx, 0, hy - 3, w, 5, c); for (let i = 0; i < 60; i++) { const x = r.int(0, w), h = r.int(3, 8); line(ctx, x, hy - 1, x + 1, hy - 1 - h, c); if (i % 3 === 0) P(ctx, x + 1, hy - 2 - h, PAL.dusk3); } } },
+    } else { beachGround(ctx, w, hy, tod, r); for (let i = 0; i < 14; i++) { const x = r.int(0, w), h = r.int(3, 7), y = hy + r.int(10, 60); line(ctx, x, y, x + 1, y - h, c); if (i % 3 === 0) P(ctx, x + 1, y - 1 - h, PAL.dusk3); } } },   /* a Skye beach: sand up to the loch, a few heather tufts on the dunes */
   iceland: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { // broad dark mountains under wide glacier caps
       let x = 0; const pts: number[] = []; while (x <= w) { pts.push(hy - r.int(30, 80)); x += 60; }
       for (let px = 0; px < w; px++) { const i = Math.floor(px / 60), t = (px % 60) / 60; const y = Math.round(pts[i] * (1 - t) + (pts[Math.min(i + 1, pts.length - 1)]) * t); R(ctx, px, y, 1, hy - y + 2, c); const cap = hy - 52; if (y < cap) R(ctx, px, y, 1, cap - y + 2, PAL.white); }
     } else if (L === 'mid') { R(ctx, 0, hy - 10, w, 12, PAL.ink); speckle(ctx, 0, hy - 10, w, 12, PAL.gray0, 0.15, r);   // black sand
-    } else { R(ctx, 0, hy - 4, w, 6, PAL.ink); speckle(ctx, 0, hy - 4, w, 6, PAL.gray0, 0.2, r);
+    } else { blackSand(ctx, w, hy - 40, tod, r);
       const vx = Math.floor(w * 0.36), vb = hy - 6;   // the campervan, right third of the vista, fully in frame
       R(ctx, vx - 29, vb - 31, 58, 27, PAL.ink); R(ctx, vx - 27, vb - 29, 54, 23, PAL.sun3);                                  // body
       R(ctx, vx - 27, vb - 16, 54, 1, PAL.earth3); R(ctx, vx + 2, vb - 29, 1, 23, PAL.earth3);                                 // trim line, door line
@@ -256,16 +288,16 @@ const CITY: Record<string, Drawer> = {
       circle(ctx, vx - 16, vb - 2, 6, PAL.ink); circle(ctx, vx + 14, vb - 2, 6, PAL.ink); circle(ctx, vx - 16, vb - 2, 3, PAL.gray2); circle(ctx, vx + 14, vb - 2, 3, PAL.gray2); P(ctx, vx - 16, vb - 2, PAL.gray0); P(ctx, vx + 14, vb - 2, PAL.gray0);
       R(ctx, vx - 29, vb - 12, 3, 3, PAL.sun2); R(ctx, vx + 27, vb - 12, 2, 3, PAL.red); } },
   munich: (ctx, w, hy, L, c, win, r) => { if (L === 'far') mountains(ctx, w, hy, c, r, 30, 60, PAL.white); else if (L === 'mid') { buildings(ctx, w, hy, c, win, r, 20, 40, 14, 26, 0.35); for (const dx of [-24, 6]) { const x = Math.floor(w * 0.25) + dx; R(ctx, x, hy - 80, 16, 80, c); circle(ctx, x + 8, hy - 84, 8, PAL.sea1); R(ctx, x + 7, hy - 96, 2, 6, c); } } else { for (let x = 0; x < w; x += 16) { R(ctx, x, hy - 20, 15, 20, c); R(ctx, x, hy - 24, 15, 4, PAL.sun0); P(ctx, x + 7, hy - 12, win); } } },
-  salzkammergut: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { const mc = tod === 'day' ? PAL.night3 : tod === 'night' ? PAL.night2 : PAL.dusk0; peaks(ctx, w, hy, mc, r, 96, 30, PAL.white, 0.8); R(ctx, 0, hy - 2, w, 4, mc); } /* Dachstein: crisp peaks, snow on the summits only */ else if (L === 'mid') { trees(ctx, w, hy - 18, c, r, 30); water(ctx, w, hy - 18, 18, tod, r); const x = Math.floor(w * 0.175); R(ctx, x, hy - 44, 10, 26, PAL.white); R(ctx, x + 4, hy - 54, 2, 10, c); R(ctx, x + 2, hy - 48, 6, 4, c); } else { R(ctx, 0, hy - 4, w, 6, c); trees(ctx, w, hy, c, r, 12); } },
+  salzkammergut: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { const mc = tod === 'day' ? PAL.night3 : tod === 'night' ? PAL.night2 : PAL.dusk0; peaks(ctx, w, hy, mc, r, 96, 30, PAL.white, 0.8); R(ctx, 0, hy - 2, w, 4, mc); } /* Dachstein: crisp peaks, snow on the summits only */ else if (L === 'mid') { trees(ctx, w, hy - 18, c, r, 30); water(ctx, w, hy - 18, 18, tod, r); const x = Math.floor(w * 0.175); R(ctx, x, hy - 44, 10, 26, PAL.white); R(ctx, x + 4, hy - 54, 2, 10, c); R(ctx, x + 2, hy - 48, 6, 4, c); } else waterToBottom(ctx, w, hy - 40, tod, r); },   /* the Hallstätter See fills the foreground */
   casablanca: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { water(ctx, w, hy - 10, 10, tod, r); } else if (L === 'mid') { buildings(ctx, w, hy, c, win, r, 14, 34, 14, 26, 0.3); const x = Math.floor(w * 0.25); R(ctx, x, hy - 110, 12, 110, c); R(ctx, x + 2, hy - 116, 8, 6, PAL.sea2); } else { for (let x = 0; x < w; x += 20) { R(ctx, x, hy - 16, 19, 16, PAL.white); R(ctx, x + 7, hy - 22, 5, 6, PAL.white); } } },
   seoul: (ctx, w, hy, L, c, win, r) => { if (L === 'far') { mountains(ctx, w, hy, c, r, 70, 40); const x = Math.floor(w * 0.3); R(ctx, x, hy - 130, 4, 130, c); circle(ctx, x + 2, hy - 120, 6, c); } else if (L === 'mid') buildings(ctx, w, hy, c, win, r, 40, 90, 10, 20, 0.5); else { buildings(ctx, w, hy, c, win, r, 10, 28, 14, 30, 0.35); neonSigns(ctx, w, hy, r, 10); } },
-  chiangmai: (ctx, w, hy, L, c, win, r) => { if (L === 'far') mountains(ctx, w, hy, c, r, 60, 50); else if (L === 'mid') { for (let i = 0; i < 3; i++) { const x = 40 + i * 120; for (let y = 0; y < 34; y++) { const hw = Math.round((1 - y / 34) * 9) + 1; R(ctx, x - hw, hy - 20 - y, hw * 2, 1, PAL.sun2); } R(ctx, x - 12, hy - 20, 24, 22, c); } trees(ctx, w, hy, c, r, 16, false); } else { R(ctx, 0, hy - 3, w, 5, c); for (let i = 0; i < 8; i++) { const x = r.int(0, w); R(ctx, x, hy - 14, 3, 12, PAL.sun1); } } },
+  chiangmai: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') mountains(ctx, w, hy, c, r, 60, 50); else if (L === 'mid') { for (let i = 0; i < 3; i++) { const x = 40 + i * 120; for (let y = 0; y < 34; y++) { const hw = Math.round((1 - y / 34) * 9) + 1; R(ctx, x - hw, hy - 20 - y, hw * 2, 1, PAL.sun2); } R(ctx, x - 12, hy - 20, 24, 22, c); } trees(ctx, w, hy, c, r, 16, false); } else { grassGround(ctx, w, hy - 40, tod, r); for (let i = 0; i < 8; i++) { const x = r.int(0, w); R(ctx, x, hy - 14, 3, 12, PAL.sun1); } } },
   hongkong: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { mountains(ctx, w, hy - 40, c, r, 80, 40); buildings(ctx, w, hy, c, win, r, 90, 170, 6, 12, 0.6); }
     else if (L === 'mid') { buildings(ctx, w, hy - 20, c, win, r, 50, 120, 8, 16, 0.6); water(ctx, w, hy - 20, 20, tod, r);
       // a red-sailed junk in the harbour
       const jx = Math.floor(w * 0.4), jy = hy - 8; R(ctx, jx - 16, jy - 4, 34, 5, PAL.ink); R(ctx, jx - 12, jy - 7, 26, 3, PAL.earth0); for (let k = 0; k < 4; k++) R(ctx, jx + 14 + k, jy - 8 + k, 1, 4, PAL.ink);
       for (const [mx, mh, mw] of [[-8, 20, 9], [2, 26, 11], [12, 18, 8]]) { R(ctx, jx + mx, jy - 7 - mh, 1, mh, PAL.ink); for (let y = 0; y < mh; y++) { const sw = Math.round(mw * (0.4 + 0.6 * y / mh)); R(ctx, jx + mx + 1, jy - 7 - mh + y, sw, 1, y % 4 === 0 ? PAL.earth0 : PAL.red); } }
-    } else { for (let i = 0; i < 4; i++) { const x = r.int(0, w); R(ctx, x, hy - 8, 20, 6, c); R(ctx, x + 4, hy - 14, 12, 6, c); P(ctx, x + 8, hy - 12, win); } } },
+    } else { waterToBottom(ctx, w, hy - 40, tod, r); for (let i = 0; i < 4; i++) { const x = r.int(0, w), y = hy + r.int(-8, 50); R(ctx, x, y, 20, 6, c); R(ctx, x + 4, y - 6, 12, 6, c); P(ctx, x + 8, y - 4, win); R(ctx, x - 2, y + 6, 24, 1, PAL.night1); } } },   /* sampans on the harbour, which now runs to the bottom */
   kathmandu: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { const mc = tod === 'day' ? PAL.night3 : tod === 'night' ? PAL.night2 : PAL.dusk0; peaks(ctx, w, hy, mc, r, 76, 22, PAL.white, 0.7); R(ctx, 0, hy - 2, w, 4, mc); }   // the Himalaya: bases at the horizon, summits inside the frame, snow on the caps only
     else if (L === 'mid') { // Boudhanath: white dome, gold harmika with the eyes, thirteen-step spire, prayer flags
       const x = Math.floor(w * 0.3), by = hy - 6; R(ctx, x - 44, by - 8, 88, 10, PAL.gray2); for (let y = 0; y < 30; y++) { const hw = Math.round(Math.sqrt(1 - Math.pow(1 - y / 30, 2)) * 40); R(ctx, x - hw, by - 8 - 30 + y, hw * 2, 1, PAL.white); }
@@ -277,7 +309,7 @@ const CITY: Record<string, Drawer> = {
       const strands: [number, number, number, number][] = [[poles[0][0], poles[0][1], x, by - 82], [x, by - 82, poles[1][0], poles[1][1]], [poles[0][0], poles[0][1] + 16, poles[1][0], poles[1][1] + 14]];
       for (const [x0, y0, x1, y1] of strands) for (let xx = x0; xx < x1; xx += 7) { const t = (xx - x0) / (x1 - x0); const yy = Math.round(y0 + (y1 - y0) * t + Math.sin(t * Math.PI) * 12); const yn = Math.round(y0 + (y1 - y0) * (t + 7 / (x1 - x0)) + Math.sin((t + 7 / (x1 - x0)) * Math.PI) * 12); line(ctx, xx, yy, xx + 7, yn, PAL.gray0); R(ctx, xx + 1, yy + 1, 4, 5, cols[(xx / 7 | 0) % 5]); }
     } else { buildings(ctx, w, hy, c, win, r, 10, 26, 12, 22, 0.3); } },
-  iguazu: (ctx, w, hy, L, c, win, r) => { if (L === 'far') { // green ridge with a recorded profile so the pines stand on it
+  iguazu: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { // green ridge with a recorded profile so the pines stand on it
       const jag = 50, amp = 70; let x = 0; const pts: number[] = []; while (x <= w) { pts.push(hy - r.int(amp * 0.3, amp)); x += jag; }
       const prof: number[] = []; for (let px = 0; px < w; px++) { const i = Math.floor(px / jag), t = (px % jag) / jag; const y = Math.round(pts[i] * (1 - t) + (pts[Math.min(i + 1, pts.length - 1)]) * t); prof.push(y); R(ctx, px, y, 1, hy - y + 2, PAL.grass0); }
       for (let px = 0; px < w; px += 2) for (let y = hy - 70; y < hy; y += 2) if (y > prof[px] && ((px + y) / 2) % 3 === 0 && r.chance(0.35)) P(ctx, px, y, PAL.grass1);
@@ -293,7 +325,7 @@ const CITY: Record<string, Drawer> = {
       for (let y = 0; y < 12; y++) for (let px = 0; px < w; px += 2) if (((px + y) / 2) % 2 === 0 && r.chance(1 - y / 12)) P(ctx, px, hy - 8 - y, y < 5 ? PAL.white : PAL.sky3);   // foam band fading upward
       for (let i = 0; i < w / 4; i++) P(ctx, r.int(0, w), hy - r.int(14, 44), PAL.sky3);                                                       // spray haze
       birds(ctx, w, hy - 80, r, 6, PAL.ink);
-    } else { R(ctx, 0, hy - 4, w, 6, PAL.grass0); trees(ctx, w, hy, PAL.grass0, r, 8); } },
+    } else { grassGround(ctx, w, hy - 40, tod, r); trees(ctx, w, hy, PAL.grass0, r, 8); } },
   edinburgh: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { mountains(ctx, w, hy, c, r, 50, 60);
       const x = Math.floor(w * 0.36); for (let y = 0; y < 40; y++) R(ctx, x - 30 - Math.round(y * 0.8), hy - y, 60 + Math.round(y * 1.6), 1, c);   // castle rock
       R(ctx, x - 26, hy - 60, 52, 22, c); for (let k = 0; k < 7; k++) R(ctx, x - 26 + k * 8, hy - 64, 4, 4, c); R(ctx, x - 6, hy - 72, 12, 14, c); R(ctx, x + 14, hy - 68, 8, 10, c);
@@ -301,11 +333,11 @@ const CITY: Record<string, Drawer> = {
         for (let wy = hy - bh + 5; wy < hy - 4; wy += 8) for (let wx = x + 3; wx < x + bw - 3; wx += 6) if (r.chance(0.5)) R(ctx, wx, wy, 2, 3, win); x += bw + r.int(1, 3); }
       const sx = Math.floor(w * 0.22); R(ctx, sx - 5, hy - 70, 10, 40, c); for (let y = 0; y < 30; y++) R(ctx, sx - Math.round((30 - y) / 6), hy - 70 - y, Math.round((30 - y) / 3) + 1, 1, c);
     } else { let x = 0; while (x < w) { const bw = r.int(24, 36), bh = r.int(18, 30); R(ctx, x, hy - bh, bw, bh + 2, c); for (let st = 0; st < 4; st++) R(ctx, x + st * 3, hy - bh - 3 - st * 3, bw - st * 6, 3, c); for (let wy = hy - bh + 4; wy < hy - 4; wy += 7) for (let wx = x + 3; wx < x + bw - 3; wx += 7) if (r.chance(0.6)) R(ctx, wx, wy, 3, 4, win); R(ctx, x + Math.floor(bw / 2) - 2, hy - 7, 4, 7, PAL.ink); x += bw + r.int(2, 5); } } },
-  minakami: (ctx, w, hy, L, c, win, r) => { if (L === 'far') peaks(ctx, w, hy, c, r, 110, 30, PAL.white, 0.5);
+  minakami: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') peaks(ctx, w, hy, c, r, 110, 30, PAL.white, 0.5);
     else if (L === 'mid') { mountains(ctx, w, hy, c, r, 30, 40); trees(ctx, w, hy, c, r, 30);
       const tx = Math.floor(w * 0.35); R(ctx, tx - 22, hy - 44, 4, 44, PAL.red); R(ctx, tx + 18, hy - 44, 4, 44, PAL.red); R(ctx, tx - 28, hy - 48, 56, 4, PAL.red); R(ctx, tx - 24, hy - 40, 48, 3, PAL.red); R(ctx, tx - 2, hy - 48, 4, 8, PAL.red);   // torii
       const ox = Math.floor(w * 0.42); R(ctx, ox - 24, hy - 8, 48, 10, PAL.gray0); water(ctx, 40, hy - 6, 6, 'day', r); for (let i = 0; i < 18; i++) P(ctx, ox - 20 + r.int(0, 40), hy - 10 - r.int(0, 30), PAL.gray2, 1, 2);   // onsen pool and steam
-    } else { R(ctx, 0, hy - 3, w, 5, c); trees(ctx, w, hy, c, r, 14); } },
+    } else forestGround(ctx, w, hy - 40, c, tod, r); },
   santiago: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { const mc = tod === 'day' ? PAL.night3 : tod === 'night' ? PAL.night2 : PAL.dusk0; peaks(ctx, w, hy, mc, r, 88, 34, PAL.white, 0.8); R(ctx, 0, hy - 2, w, 4, mc); }   // the Andes: crisp against every sky, snow only on the summits
     else if (L === 'mid') { mountains(ctx, w, hy - 6, c, r, 26, 50);                                                    // foothill band
       let x = -r.int(0, 8); while (x < w) { const bw = r.int(10, 18), bh = r.int(18, 46); R(ctx, x, hy - bh, bw, bh + 2, c); for (let wy = hy - bh + 3; wy < hy - 2; wy += 4) for (let wx = x + 2; wx < x + bw - 2; wx += 3) if (r.chance(0.45)) P(ctx, wx, wy, win); x += bw + r.int(1, 4); } }   // towers, no antennas
@@ -313,15 +345,15 @@ const CITY: Record<string, Drawer> = {
   buenosaires: (ctx, w, hy, L, c, win, r) => { if (L === 'far') buildings(ctx, w, hy, c, win, r, 40, 90, 10, 20, 0.4); else if (L === 'mid') { buildings(ctx, w, hy, c, win, r, 24, 50, 16, 30, 0.4); const x = Math.floor(w * 0.25); R(ctx, x, hy - 96, 8, 96, PAL.white); R(ctx, x - 6, hy - 40, 20, 8, PAL.white); } else { for (let x = 0; x < w; x += 16) { R(ctx, x, hy - 18, 15, 18, r.pick([PAL.sun2, PAL.sky1, PAL.pink, PAL.grass2])); P(ctx, x + 7, hy - 10, win); } } },
   montreal: (ctx, w, hy, L, c, win, r) => { if (L === 'far') { mountains(ctx, w, hy, c, r, 40, 80); const x = Math.floor(w * 0.25); R(ctx, x, hy - 60, 2, 20, PAL.white); R(ctx, x - 5, hy - 54, 12, 2, PAL.white); } else if (L === 'mid') buildings(ctx, w, hy, c, win, r, 30, 80, 10, 20, 0.45); else { buildings(ctx, w, hy, c, win, r, 12, 30, 14, 28, 0.3); for (let x = 0; x < w; x += 22) { for (let s = 0; s < 8; s++) R(ctx, x + 2 + s, hy - 6 - s * 3, 10, 1, c); } } },
   lasvegas: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') mountains(ctx, w, hy, c, r, 40, 60); else if (L === 'mid') { buildings(ctx, w, hy, c, win, r, 50, 120, 14, 28, 0.6); const x = Math.floor(w * 0.225); R(ctx, x, hy - 150, 6, 150, c); circle(ctx, x + 3, hy - 156, 5, PAL.sun2); }
-    else { neonSigns(ctx, w, hy, r, 12); R(ctx, 0, hy - 4, w, 6, c); palms(ctx, w, hy, c, r, 3, tod);
+    else { sandFill(ctx, w, hy - 40, tod, r); neonSigns(ctx, w, hy, r, 12); palms(ctx, w, hy, c, r, 3, tod);
       for (const sx of [Math.floor(w * 0.36), Math.floor(w * 0.36 + w / 2)]) { const top = hy - 74;                       // the sign: diamond, red trim, starburst, pole
         R(ctx, sx - 1, hy - 40, 3, 40, PAL.gray1);
         for (let i = 0; i < 18; i++) { const half = Math.round(i < 9 ? 6 + i * 3.2 : 6 + (17 - i) * 3.2); R(ctx, sx - half, top + i * 2, half * 2, 2, PAL.white); R(ctx, sx - half, top + i * 2, 2, 2, PAL.red); R(ctx, sx + half - 2, top + i * 2, 2, 2, PAL.red); }
         signText(ctx, sx - 5, top + 12, 'LAS', PAL.night0, 1); signText(ctx, sx - 9, top + 20, 'VEGAS', PAL.red, 1);
         for (let a = 0; a < 8; a++) { const ang = a / 8 * Math.PI * 2; line(ctx, sx, top - 6, sx + Math.cos(ang) * 8, top - 6 + Math.sin(ang) * 8, PAL.sun2); } circle(ctx, sx, top - 6, 2, PAL.sun3); } } },
-  joshuatree: (ctx, w, hy, L, c, win, r) => { if (L === 'far') mountains(ctx, w, hy, c, r, 30, 70);
+  joshuatree: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') mountains(ctx, w, hy, c, r, 30, 70);
     else if (L === 'mid') { for (let i = 0; i < 6; i++) { const x = r.int(0, w); circle(ctx, x, hy - 6, r.int(6, 12), c); circle(ctx, x + 9, hy - 4, r.int(4, 8), c); } for (let i = 0; i < 6; i++) joshuaTree(ctx, r.int(10, w - 10), hy, r.int(16, 26), c, r); }   // boulder piles + distant trees
-    else { R(ctx, 0, hy - 2, w, 4, PAL.earth2); for (let i = 0; i < 7; i++) joshuaTree(ctx, r.int(10, w - 10), hy, r.int(24, 40), c, r); } },
+    else { sandFill(ctx, w, hy - 40, tod, r); for (let i = 0; i < 7; i++) joshuaTree(ctx, r.int(10, w - 10), hy, r.int(24, 40), c, r); } },
   orangecounty: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { mountains(ctx, w, hy, c, r, 30, 80); } else if (L === 'mid') { water(ctx, w, hy - 14, 14, tod, r); }
     else { water(ctx, w, hy - 40, 110, tod, r);                                                                          // the ocean runs to the bottom of the frame
       const yT = hy - 42, yB = hy + 10, xc = w / 4, wT = 14, wB = 200;                                                    // the visible frame ends around hy - 8, so the pier widens fast                                                   // the pier: a trapezoid from under your feet out to the horizon

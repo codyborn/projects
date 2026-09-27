@@ -34,7 +34,6 @@ export class CoffeeScene extends Phaser.Scene {
     this.add.image(0, 0, 'cf_wall2').setOrigin(0);
     // the kit, static on the counter
     this.add.sprite(84, 372, 'cf_grinder', 0).setOrigin(0.5, 1).setScale(2);
-    this.add.image(262, 372, 'cf_kettle').setOrigin(0.5, 1).setScale(2);
     this.add.image(150, 372, 'cf_dripper').setOrigin(0.5, 1).setScale(2);
     const cup = this.add.sprite(196, 372, 'cf_cup', 4).setOrigin(0.5, 1).setScale(2.5);
     // steam: the only thing that moves

@@ -1,0 +1,93 @@
+{
+ "cockroach": {
+  "where": "Dakhla, Morocco",
+  "note": "August 2025. The eggs were in the wrapper."
+ },
+ "wheel": {
+  "where": "Hong Kong, and again in Lisbon",
+  "note": "two suitcases, two wheels"
+ },
+ "foodpoisoning": {
+  "where": "Casablanca (August 2025), Lisbon (March 2024), and Innsbruck"
+ },
+ "flu": {
+  "where": "Boulder, Colorado, and Hong Kong"
+ },
+ "kettle": {
+  "where": "Lisbon, Portugal",
+  "note": "the collapsible kettle did explode"
+ },
+ "tick": {
+  "where": "the Scottish Highlands",
+  "note": "summer 2025, Skye and Glencoe"
+ },
+ "taxibreakdown": {
+  "where": "Casablanca (the taxi ran out of gas) and Roatán (it broke down)",
+  "note": "both on the way to the airport"
+ },
+ "jellyfish": {
+  "where": "La Ventana, Mexico",
+  "note": "on the lips. Super painful."
+ },
+ "otter": {
+  "where": "Harajuku, Tokyo",
+  "note": "on a stranger's shoulder"
+ },
+ "mosquito": {
+  "where": "Hyères, France"
+ },
+ "oktoberfest": {
+  "where": "Munich, Germany"
+ },
+ "dullknives": {
+  "where": "more Airbnbs than not"
+ },
+ "backinjury": {
+  "where": "on the road",
+  "note": "Cody can say where"
+ },
+ "delayed": {
+  "where": "on the road",
+  "note": "Cody can say where"
+ },
+ "airbnbcancel": {
+  "where": "on the road",
+  "note": "Cody can say where"
+ },
+ "forgot": {
+  "where": "on the road",
+  "note": "Cody can say where"
+ },
+ "seaurchin": {
+  "where": "on the road",
+  "note": "Cody can say where"
+ },
+ "altitude": {
+  "where": "on the road",
+  "note": "Cody can say where"
+ },
+ "rockfall": {
+  "where": "on the road",
+  "note": "Cody can say where"
+ },
+ "radonheadache": {
+  "where": "on the road",
+  "note": "Cody can say where"
+ },
+ "radonmonitor": {
+  "where": "on the road",
+  "note": "Cody can say where"
+ },
+ "sunburn": {
+  "where": "on the road",
+  "note": "Cody can say where"
+ },
+ "laundrylost": {
+  "where": "on the road",
+  "note": "Cody can say where"
+ },
+ "lostcharger": {
+  "where": "on the road",
+  "note": "Cody can say where"
+ }
+}

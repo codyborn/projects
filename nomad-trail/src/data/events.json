@@ -218,25 +218,6 @@
     ]
   },
   {
-    "id": "lostphone",
-    "title": "Lost phone",
-    "text": "Somewhere between the bar and the walk back in {city}, your phone stops being yours. The plan you wrote for this exact moment is, of course, on the phone.",
-    "when": "action",
-    "baseChance": 0.02,
-    "effects": {
-      "mood": -20,
-      "energy": -10,
-      "days": 1
-    },
-    "mitigatedBy": [
-      "essential"
-    ],
-    "mitigatedText": "Somewhere in {city} your phone stops being yours. The old phone comes out of the backpack and logs you back into everything. A bad evening instead of a bad week.",
-    "mitigatedEffects": {
-      "mood": -6
-    }
-  },
-  {
     "id": "overweight",
     "title": "Check-in scale",
     "text": "The airline scale reads a number and the agent reads it back to you like a diagnosis. Fifty pounds is fifty pounds.",
@@ -649,6 +630,92 @@
     "text": "{city}. A ranger appears from nowhere, the way rangers do. Flying here needs a permit, and the permit needs a form, and the form needs three weeks. The fine needs only your card. The footage stays on the card too.",
     "effects": {
       "mood": -3
+    }
+  },
+  {
+    "id": "jellyfish",
+    "title": "The jellyfish",
+    "when": "action",
+    "baseChance": 0.12,
+    "requiresCities": [
+      "laventana"
+    ],
+    "requiresActivity": [
+      "swim",
+      "kite",
+      "scuba"
+    ],
+    "text": "{city}. Warm water, a long swim out, and something soft brushes your face. The sting lands on your lips. Within a minute they are twice their size and you cannot say the word 'jellyfish' to the lifeguard, only point at your mouth. It hurts more than anything has any right to. Two days of soup through a straw.",
+    "effects": {
+      "health": -8,
+      "energy": -10,
+      "mood": -9,
+      "sick": 1,
+      "unlockAchievement": "jellyfish"
+    },
+    "mitigatedBy": [
+      "firstaid"
+    ],
+    "mitigatedText": "{city}. Warm water, a long swim out, and something soft brushes your face. The sting lands on your lips and they double in size in a minute. The first-aid kit has the antihistamines; by evening you can say 'jellyfish' again, slowly.",
+    "mitigatedEffects": {
+      "health": -3,
+      "energy": -6,
+      "mood": -5,
+      "unlockAchievement": "jellyfish"
+    }
+  },
+  {
+    "id": "tick",
+    "title": "The tick",
+    "when": "action",
+    "baseChance": 0.15,
+    "requiresCities": [
+      "highlands",
+      "edinburgh"
+    ],
+    "requiresActivity": [
+      "hike",
+      "trailrun"
+    ],
+    "text": "{city}. Heather, bracken, a long day on the hill. In the shower you find a small dark passenger behind your knee, legs waving. Tweezers, a steady hand, and three weeks of checking the bite for a ring.",
+    "effects": {
+      "health": -4,
+      "mood": -6,
+      "unlockAchievement": "tick"
+    },
+    "mitigatedBy": [
+      "firstaid"
+    ],
+    "mitigatedText": "{city}. Heather, bracken, a long day on the hill. In the shower you find a small dark passenger behind your knee. The tick tool from the first-aid kit has it out whole in one pull. You check the bite for a ring anyway, every day, for three weeks.",
+    "mitigatedEffects": {
+      "health": -1,
+      "mood": -2,
+      "unlockAchievement": "tick"
+    }
+  },
+  {
+    "id": "flu",
+    "title": "The flu",
+    "when": "day",
+    "baseChance": 0.004,
+    "text": "{city}. It starts as a scratchy throat on a video call and by nightfall you are shivering under every blanket the place owns. Three days lost to the ceiling. The city carries on outside the window without you.",
+    "effects": {
+      "health": -10,
+      "energy": -20,
+      "mood": -8,
+      "sick": 3,
+      "unlockAchievement": "flu"
+    },
+    "mitigatedBy": [
+      "meds"
+    ],
+    "mitigatedText": "{city}. A scratchy throat on a video call, shivers by nightfall. The medicine kit has the good paracetamol and the electrolytes; two rough days instead of three, and you keep the soup down.",
+    "mitigatedEffects": {
+      "health": -6,
+      "energy": -12,
+      "mood": -5,
+      "sick": 2,
+      "unlockAchievement": "flu"
     }
   }
 ]

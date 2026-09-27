@@ -16,6 +16,7 @@
       "cubano"
     ],
     "activities": [
+      "scuba",
       "swim",
       "trailrun",
       "bands"
@@ -146,7 +147,6 @@
       }
     ],
     "eventWeights": {
-      "lostphone": 2.0,
       "airbnbcancel": 1.4
     },
     "legs": [
@@ -947,6 +947,7 @@
       "conchsoup"
     ],
     "activities": [
+      "scuba",
       "swim",
       "yoga",
       "bands"
@@ -1210,7 +1211,6 @@
       }
     ],
     "eventWeights": {
-      "lostphone": 1.6,
       "sleepless": 1.5
     },
     "legs": [

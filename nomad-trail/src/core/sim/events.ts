@@ -18,7 +18,7 @@ export function setFlag(s: RunState, flag: string, on: boolean) { s.achievements
 export const visibleAchievements = (s: RunState) => s.achievements.filter(a => !a.startsWith('_'));
 
 /** Events that can only happen once per run. */
-export const ONCE = new Set(['otter','kettle','wheel','lostphone','seaurchin','oktoberfest','backinjury','upgrade','hostgift','surprisemeetup','nowifi','rockfall']);
+export const ONCE = new Set(['otter','kettle','wheel','seaurchin','oktoberfest','backinjury','upgrade','hostgift','surprisemeetup','nowifi','rockfall']);
 function overweightFactor(ratio: number) { return clamp((ratio - 0.85) / 0.15, 0, 1) * 1.45; }
 
 /** Chance multiplier from per-event special conditions the JSON schema cannot express. Returns 0 to veto. */
@@ -119,10 +119,12 @@ function resolve(s: RunState, ev: GameEvent, mitigated: boolean, rng: Rng): Reso
   const useMit = mitigated && !!ev.mitigatedEffects;
   const effects = useMit ? ev.mitigatedEffects! : ev.effects;
   if (ev.choices && !useMit) {
+    s.eventsFired = [...(s.eventsFired ?? []), ev.id];
     return { id: ev.id, title: ev.title, text: fmt(ev.text, s), effects: {}, mitigated, choices: availableChoices(s, ev.choices), pending: true };
   }
   const lost = applyEffects(s, effects, rng);
   const text = fmt(useMit && ev.mitigatedText ? ev.mitigatedText : ev.text, s, lost);
   s.log.push({ day: s.day, city: s.cityId, text: `${ev.title}: ${text}` });
+  s.eventsFired = [...(s.eventsFired ?? []), ev.id];   /* the credits page lists what really happened, keyed by these ids */
   return { id: ev.id, title: ev.title, text, effects, mitigated: useMit, pending: false };
 }

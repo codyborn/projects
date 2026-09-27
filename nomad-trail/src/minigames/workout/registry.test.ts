@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { META, MICRO_IDS, POOLS, DENSE_CITIES, pickSession, pickOne, seededRng, sessionLen, SESSION_GAMES } from './pools';
+import { META, MICRO_IDS, POOLS, DENSE_CITIES, PINNACLE_CITIES, pickSession, pickOne, seededRng, sessionLen, SESSION_GAMES } from './pools';
 describe('workout micro-game pools', () => {
   it('every pool entry has metadata; every micro has a name, a command word, an instruction and a 4 to 9 s duration', () => {
     for (const [act, ids] of Object.entries(POOLS)) for (const id of ids!) expect(META[id], `${act}:${id}`).toBeDefined();
-    for (const id of MICRO_IDS) { const m = META[id]; expect(m.name.length).toBeGreaterThan(2); expect(m.word.endsWith('!')).toBe(true); expect(m.instr.length).toBeGreaterThan(10); expect(m.durationSec).toBeGreaterThanOrEqual(4); expect(m.durationSec).toBeLessThanOrEqual(id === 'cityrun' ? 25 : 9); }   // City Run is always a single game: a 25 s run
+    for (const id of MICRO_IDS) { const m = META[id]; expect(m.name.length).toBeGreaterThan(2); expect(m.word.endsWith('!')).toBe(true); expect(m.instr.length).toBeGreaterThan(10); expect(m.durationSec).toBeGreaterThanOrEqual(4); expect(m.durationSec).toBeLessThanOrEqual(id === 'cityrun' ? 25 : id === 'pinnacle' ? 22 : 9); }   // City Run (25 s) and the Pinnacle (22 s) are always single games
     expect(MICRO_IDS.length).toBeGreaterThanOrEqual(15); expect(META.kettlebell).toBeUndefined(); expect(MICRO_IDS.includes('kettlebell')).toBe(false);
   });
   it('hotel room and hike sessions chain THREE different games; every other activity is one game; unknown activities use the hotel room', () => {
@@ -23,6 +23,12 @@ describe('workout micro-game pools', () => {
     let city = 0, elsewhere = 0; for (let s = 1; s <= 40; s++) { if (pickOne('trailrun', seededRng(s), 'newyork') === 'cityrun') city++; if (pickOne('trailrun', seededRng(s), 'boulder') === 'cityrun') elsewhere++; }
     expect(city).toBeGreaterThan(24); expect(elsewhere).toBe(0);
     expect(pickOne('bands', seededRng(3), 'tokyo')).toBe(pickOne('bands', seededRng(3), 'tokyo'));
+  });
+  it('the Highlands hike and trail run are always the Inaccessible Pinnacle, one game; other cities keep their pools', () => {
+    expect(PINNACLE_CITIES.has('highlands')).toBe(true); expect(META.pinnacle.word).toBe('STEADY!'); expect(META.pinnacle.name).toBe('The In Pinn');
+    for (let s = 1; s <= 12; s++) { expect(pickSession('hike', seededRng(s), 'highlands')).toEqual(['pinnacle']); expect(pickSession('trailrun', seededRng(s), 'highlands')).toEqual(['pinnacle']); }
+    expect(pickSession('hike', seededRng(3), 'innsbruck').length).toBe(3); expect(pickSession('hike', seededRng(3), 'innsbruck')).not.toContain('pinnacle');
+    expect(pickSession('swim', seededRng(3), 'highlands')).toEqual(['swimbreath']);
   });
   it('three of the longest hotel-room games plus result banners stay under the 36 s session cap', () => {
     const worst = Math.max(...POOLS.bands!.map(id => META[id].durationSec)); expect(worst * 3 + 0.65 * 3 + 1.5).toBeLessThanOrEqual(36);

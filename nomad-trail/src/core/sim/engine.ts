@@ -279,13 +279,14 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       if (locked) return { state, events: [], error: 'The gear is in the suitcase. The suitcase is somewhere else.' };
       if (s.backInjuryDays > 0) return { state, events: [], error: 'Your back says no. Not today.' };
       if (s.energy < 20) return { state, events: [], error: 'Too tired to train. Rest first.' };
-      const acts = city.activities.filter(a => (a !== 'kite' || hasTag(s, 'kite')) && (a !== 'boulder' && a !== 'ferrata' || hasTag(s, 'climb')) && (a !== 'swim' || hasTag(s, 'swim')) && (a !== 'bands' || hasTag(s, 'fitness')) && (a !== 'ski' || hasTag(s, 'cold')) && (a !== 'yoga' || hasTag(s, 'fitness')));
+      const acts = city.activities.filter(a => (a !== 'kite' || hasTag(s, 'kite')) && (a !== 'boulder' && a !== 'ferrata' || hasTag(s, 'climb')) && (a !== 'swim' && a !== 'scuba' || hasTag(s, 'swim')) && (a !== 'bands' || hasTag(s, 'fitness')) && (a !== 'ski' || hasTag(s, 'cold')) && (a !== 'yoga' || hasTag(s, 'fitness')));
       // kite cities with the kite packed: the first training day is a kite day, then rotate
       const ordered = acts.includes('kite') ? ['kite', ...acts.filter(a => a !== 'kite')] : acts;
       const activity = ordered.length ? ordered[(s.stayDays + s.day) % ordered.length] : 'trailrun';
       const extraLives = hasItem(s, 'hikingboots') && OUTDOOR_ACTIVITIES.has(activity) && activity !== 'kite' ? 1 : 0;
       s.workStreak = 0;
       if (activity === 'kite') return { state: s, events: [], minigame: { key: MINIGAME_KEYS.kite, payload: { city: city.id, day: s.day }, difficulty: diff } };
+      if (activity === 'scuba') return { state: s, events: [], minigame: { key: MINIGAME_KEYS.scuba, payload: { city: city.id, cityName: city.name, seed: hash32(s.seed, s.day, 61) }, difficulty: diff } };
       return { state: s, events: [], minigame: { key: MINIGAME_KEYS.workout, payload: { activity, city: city.id, day: s.day, extraLives }, difficulty: diff, ...(extraLives ? { extraLives } : {}) } }; }
     case 'cook': {
       if (locked) return { state, events: [], error: 'No kitchen kit, no clean anything. The suitcase is somewhere else.' };
@@ -311,6 +312,7 @@ export function minigameRewards(s: RunState, key: string, result: MinigameResult
   const r: MinigameRewards = { health: 0, mood: 0, energy: 0, money: 0, days: 0, notes: [] };
   switch (key) {
     case MINIGAME_KEYS.workout: r.energy = -10; r.health = 2 + Math.round(score * 5); r.mood = 3 + Math.round(score * 6); r.days = 1; break;
+    case MINIGAME_KEYS.scuba: r.energy = -12; r.health = 2 + Math.round(score * 4); r.mood = 5 + Math.round(score * 8); r.days = 1; if (result.perfect) r.notes.push('reef cleared'); break;
     case MINIGAME_KEYS.cooking: { const dish = (s.pendingDish && DISH[s.pendingDish]) || DISH[city.dishes[0]]; r.health = Math.round(dish.health * score); r.mood = Math.round(dish.mood * score) - (result.failed ? 4 : 0); r.energy = -5; r.days = 1; if (result.failed) r.notes.push('1 in 4 chance of food poisoning'); break; }
     case MINIGAME_KEYS.carryon: r.mood = 3 + Math.round(score * 7); r.energy = -3; if (result.perfect || score >= 0.99) r.notes.push('gold stamp'); r.notes.push('an evening, no day lost'); break;
     case MINIGAME_KEYS.drone: { r.mood = result.failed ? 1 : 4 + Math.round(score * 10); r.energy = -6; r.notes.push('an afternoon, no day lost'); const rule = city.droneRule ?? 'ok'; if (rule !== 'ok') r.notes.push(rule === 'banned' ? 'drones are illegal here: fines' : 'permit country: fines possible'); break; }
@@ -349,6 +351,9 @@ export function applyMinigameResult(state: RunState, key: string, result: Miniga
     case MINIGAME_KEYS.workout: {
       events = tickDay(s, rng); s.energy = clamp(s.energy + rw.energy, 0, energyCap(s)); s.health = clamp(s.health + rw.health, 0, 100); s.mood = clamp(s.mood + rw.mood, 0, 100);
       if (result.perfect) unlock(s, 'ironbody'); s.log.push({ day: s.day, city: s.cityId, text: result.failed ? 'Training, badly. Still counts.' : `Training in ${city.name}. ${result.perfect ? 'Flawless.' : 'Good enough.'}` }); break; }
+    case MINIGAME_KEYS.scuba: {
+      events = tickDay(s, rng); s.energy = clamp(s.energy + rw.energy, 0, energyCap(s)); s.health = clamp(s.health + rw.health, 0, 100); s.mood = clamp(s.mood + rw.mood, 0, 100);
+      if (result.perfect) unlock(s, 'lionfish'); s.log.push({ day: s.day, city: s.cityId, text: result.failed ? `A dive off ${city.name}. The lionfish won.` : `A dive off ${city.name}. ${result.perfect ? 'Every lionfish on the reef, speared clean.' : 'A few lionfish fewer. The reef says thanks.'}` }); break; }
     case MINIGAME_KEYS.cooking: {
       events = tickDay(s, rng); const dish = (s.pendingDish && DISH[s.pendingDish]) || DISH[city.dishes[0]]; s.pendingDish = undefined;
       s.health = clamp(s.health + rw.health, 0, 100); s.mood = clamp(s.mood + rw.mood, 0, 100); s.energy = clamp(s.energy + rw.energy, 0, energyCap(s));
