@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ShakeDetector } from './motion';
+import { ShakeDetector, TiltReader } from './motion';
 describe('shake detector', () => {
   it('counts direction reversals above the threshold and ignores small or same-direction motion', () => {
     const d = new ShakeDetector(12, 80); const dirs: number[] = []; d.onShake = dir => dirs.push(dir); let t = 0;
@@ -13,5 +13,13 @@ describe('shake detector', () => {
   it('falls back to the gravity-including vector minus g when the gravity-free one is missing', () => {
     const d = new ShakeDetector(12, 80); d.feed(undefined, { x: 0, y: 0, z: 9.81 }, 0); expect(d.count).toBe(0);
     d.feed(undefined, { x: 0, y: 0, z: 9.81 + 14 }, 200); d.feed(undefined, { x: 0, y: 0, z: -(9.81 + 14) }, 400); expect(d.count).toBe(2);
+  });
+});
+
+describe('TiltReader', () => {
+  it('maps gamma to -1..1 with a dead zone and a full-tilt angle; ignores null samples', () => {
+    const r = new TiltReader(2, 12); expect(r.state).toBe('unknown');
+    r.feed(null, 0); expect(r.state).toBe('unknown'); r.feed(1.5, 10); expect(r.state).toBe('yes'); expect(r.tilt).toBe(0);
+    r.feed(7, 20); expect(r.tilt).toBeCloseTo(0.5, 5); r.feed(-12, 30); expect(r.tilt).toBe(-1); r.feed(40, 40); expect(r.tilt).toBe(1); expect(r.lastAt).toBe(40);
   });
 });

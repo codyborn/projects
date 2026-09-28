@@ -20,7 +20,7 @@ export const META: Record<string, MicroMeta> = {
   runner:      { name: 'Trail Run',     word: 'RUN!',      instr: 'TAP to jump the rocks. Press and HOLD to duck under the branches; let go and you jump.', durationSec: 8 },
   pace:        { name: 'Pace',          word: 'PACE!',     instr: 'Hold to walk. Keep the marker in the green band. Too fast and you get dizzy.', durationSec: 8 },
   woodchop:    { name: 'Wood Chop',     word: 'CHOP!',     instr: 'The axe swings left and right over the block. SWIPE DOWN (or tap) when it points straight down, inside the green zone, to split the round clean. Eight rounds; it gets faster.', durationSec: 22 },
-  pinnacle:    { name: 'The In Pinn',   word: 'STEADY!',   instr: 'HOLD to walk the ridge. Balance drifts: tap LEFT or RIGHT to correct. When the fog streaks and the wind arrow appear, STOP. Walking in a gust is nearly impossible to balance.', durationSec: 40 },
+  pinnacle:    { name: 'The In Pinn',   word: 'STEADY!',   instr: 'HOLD anywhere to walk. TILT the phone left / right to balance (or tap the halves). When the fog streaks and the arrow appear: STOP. Wind while walking is almost impossible to balance. Reach the end of the ridge. Or fall.', durationSec: 3600 },
 };
 export const MICRO_IDS = Object.keys(META);
 export const POOLS: Partial<Record<ActivityId, string[]>> = {

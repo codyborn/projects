@@ -30,7 +30,7 @@ export class CityScene extends Phaser.Scene {
     try { buildIcons(this); } catch { /* icons are optional */ }
     this.hud = new Hud(this); this.hud.refresh(run);
     this.time.delayedCall(0, () => this.refreshButtons());
-    new Panel(this, 12, 244, 336, 118, { fill: PAL.night1, border: PAL.night3 }); this.logLbl = txt(this, 20, 250, '', 8, PAL.gray2, { wrap: 320 }); this.refreshLog();
+    new Panel(this, 12, 244, 336, 118, { fill: PAL.night1, border: PAL.night3 }).setDepth(5); this.logLbl = txt(this, 20, 250, '', 8, PAL.gray2, { wrap: 320 }).setDepth(6); this.refreshLog();
     // slot 6 (where MAP lives) belongs to the side games when they are packed: the drone, the handheld, or both at half width
     const hasDrone = Sim.hasItem(run, 'dronekit'), hasSwitch = Sim.hasTag(run, 'switch'); this.btnActs = [];
     ACTIONS.forEach((act, i) => {
@@ -43,7 +43,8 @@ export class CityScene extends Phaser.Scene {
       }
       this.btns.push(new Button(this, x, y, act.label, () => this.act(act.a), { w: 160, h: 48, size: 12, icon: act.icon, iconKey: act.a === 'map' ? 'ico_map' : undefined, fill: act.a === 'moveon' ? PAL.sea0 : PAL.night2 })); this.btnActs.push(act.a);
     });
-    txt(this, 180, 620, '1 action = 1 day · work = puzzle, then Mon-Fri', 8, PAL.gray0).setOrigin(0.5);
+    this.btns.forEach(b => b.setDepth(10));   /* above the vista (depth 1), which is rebuilt on day changes and would otherwise cover them */
+    txt(this, 180, 620, '1 action = 1 day · work = puzzle, then Mon-Fri', 8, PAL.gray0).setOrigin(0.5).setDepth(5);
     this.refreshWorkBtn(run.day);
     if (data.arrived) this.arrivalCard();
   }

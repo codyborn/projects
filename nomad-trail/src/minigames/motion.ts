@@ -33,3 +33,32 @@ export class ShakeDetector {
   }
   stop() { if (this.handler) { try { window.removeEventListener('devicemotion', this.handler); } catch { /* noop */ } this.handler = undefined; } this.onShake = undefined; }
 }
+
+/** Left/right phone tilt from deviceorientation (gamma), for balance games. `tilt` is -1..1: a dead zone of `deadDeg` degrees, full at `fullDeg`.
+ *  Same permission dance as the shake detector (iOS asks inside a user gesture). No Phaser: harness-stubbable through feed(). */
+export class TiltReader {
+  state: MotionState = 'unknown'; tilt = 0; lastAt = 0;
+  private handler?: (e: DeviceOrientationEvent) => void; private requested = false;
+  constructor(public deadDeg = 2, public fullDeg = 12) {}
+  request() {
+    if (this.requested) return; this.requested = true;
+    try {
+      const DOE = (window as any).DeviceOrientationEvent;
+      if (!DOE) { this.state = 'no'; return; }
+      if (typeof DOE.requestPermission === 'function') { DOE.requestPermission().then((r: string) => { if (r === 'granted') this.subscribe(); else this.state = 'no'; }).catch(() => { this.state = 'no'; }); }
+      else this.subscribe();
+    } catch { this.state = 'no'; }
+  }
+  subscribe() {
+    if (this.handler) return;
+    this.handler = (e: DeviceOrientationEvent) => this.feed(e.gamma, performance.now());
+    try { window.addEventListener('deviceorientation', this.handler); } catch { this.state = 'no'; }
+  }
+  /** One orientation sample: gamma in degrees (left/right roll in portrait). null = no sensor. */
+  feed(gamma: number | null | undefined, nowMs: number) {
+    if (typeof gamma !== 'number' || Number.isNaN(gamma)) return;
+    this.state = 'yes'; this.lastAt = nowMs; const a = Math.abs(gamma);
+    this.tilt = a < this.deadDeg ? 0 : Math.sign(gamma) * Math.min(1, (a - this.deadDeg) / (this.fullDeg - this.deadDeg));
+  }
+  stop() { if (this.handler) { try { window.removeEventListener('deviceorientation', this.handler); } catch { /* noop */ } this.handler = undefined; } }
+}

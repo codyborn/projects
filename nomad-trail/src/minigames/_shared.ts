@@ -101,12 +101,18 @@ export class MinigameFrame {
    *  clock and cap start on READY. Games with their own full card pass { auto: true } to get the old 1 s READY flash instead. */
   intro(instruction: string, cb: () => void, opts: { auto?: boolean; extra?: (s: Phaser.Scene, add: (o: Phaser.GameObjects.GameObject) => void) => void; height?: number; title?: string } = {}) {
     const s = this.scene; const add = (o: Phaser.GameObjects.GameObject) => { this.introObjs.push(o); return o; };
+    let starting = false;
     const start = () => {
-      if (this.active || this.finished) return;
+      if (this.active || this.finished || starting) return; starting = true;
       this.introObjs.forEach(o => o.destroy()); this.introObjs = [];
-      this.active = true; this.playStart = s.time.now;
-      this.capTimer = s.time.delayedCall(this.capSec * 1000, () => { if (!this.finished) this.finish(this.scoreNow()); });
-      cb();
+      /* the READY tap must not leak into play: wait for the finger to lift, then a short beat, before the game goes live */
+      const begin = () => s.time.delayedCall(200, () => {
+        if (this.finished) return;
+        this.active = true; this.playStart = s.time.now;
+        this.capTimer = s.time.delayedCall(this.capSec * 1000, () => { if (!this.finished) this.finish(this.scoreNow()); });
+        cb();
+      });
+      if (s.input.activePointer.isDown) s.input.once('pointerup', begin); else begin();
     };
     add(s.add.rectangle(W / 2, H / 2, W, H, PAL.night0, 0.86).setDepth(900));
     if (opts.auto) {

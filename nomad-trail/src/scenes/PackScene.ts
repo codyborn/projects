@@ -81,7 +81,7 @@ export class PackScene extends Phaser.Scene {
     // handle
     gg.fillStyle(PAL.gray1, 1); gg.fillRect(GRID_X + w / 2 - 22, GRID_Y - 8, 44, 6); gg.fillRect(GRID_X + w / 2 - 22, GRID_Y - 8, 5, 10); gg.fillRect(GRID_X + w / 2 + 17, GRID_Y - 8, 5, 10);
     // side notes
-    txt(this, GRID_X - 6, GRID_Y + 4, 'tap tile\nto take\nit out', 8, PAL.gray0, { align: 'right' }).setOrigin(1, 0);
+    txt(this, GRID_X - 6, GRID_Y + 4, 'tap tile\nto take\nit out\n\ndrag to\nmove', 8, PAL.gray0, { align: 'right' }).setOrigin(1, 0);
     txt(this, GRID_X + w + 6, GRID_Y + 4, 'tap card\nbelow to\npack it', 8, PAL.gray0).setOrigin(0, 0);
     this.wBar = this.add.graphics(); this.wLabel = txt(this, 180, GRID_Y + h + 12, '', 8, PAL.gray2, { align: 'center' }).setOrigin(0.5, 0);
     this.hints = txt(this, 180, GRID_Y + h + 24, '', 8, PAL.sun1, { align: 'center' }).setOrigin(0.5, 0);
@@ -90,6 +90,7 @@ export class PackScene extends Phaser.Scene {
     this.buildCatRow();
     this.trayAll = this.add.container(0, 0);   // pages live inside; only the current one is visible (Containers cannot be masked here)
     this.renderTray();
+    this.input.dragDistanceThreshold = 8;   /* a tap stays a tap; a tile only starts dragging after 8 px */
     const zone = this.add.zone(180, TRAY_Y + TRAY_H / 2, 360, TRAY_H).setInteractive({ draggable: true }); this.setupTrayInput(zone);
     // restore a saved pack
     const run = getRun(this); for (const p of run.items) { const it = Data.item(p.id); if (it && this.fits(p.x, p.y, it.w, it.h)) this.place(it, p.x, p.y, false, false); }
@@ -212,8 +213,18 @@ export class PackScene extends Phaser.Scene {
     obj.setInteractive(new Phaser.Geom.Rectangle(w * CELL / 2, h * CELL / 2, w * CELL, h * CELL), Phaser.Geom.Rectangle.Contains);
     obj.on('pointerup', (ptr: Phaser.Input.Pointer) => {
       if (Math.abs(ptr.downX - ptr.upX) > 10 || Math.abs(ptr.downY - ptr.upY) > 10) return;
-      const now = this.time.now;
-      void now; if (!this.placed.includes(p)) return; this.unpack(p);   // single tap takes it out (no rotation: the engine validates footprints as authored)
+      if (!this.placed.includes(p) || (p as any).dragging) return; this.unpack(p);   /* a plain tap takes it out; a drag repositions it */
+    });
+    /* drag to reposition: the tile's cells are freed while it is in the air, then it snaps to the nearest free footprint or back home */
+    this.input.setDraggable(obj); let home = { x: obj.x, y: obj.y };
+    obj.on('dragstart', () => { if (!this.placed.includes(p)) return; (p as any).dragging = true; home = { x: obj.x, y: obj.y }; this.mark(p, false); obj.setDepth(50).setAlpha(0.85); });
+    obj.on('drag', (_ptr: Phaser.Input.Pointer, dx: number, dy: number) => { if ((p as any).dragging) obj.setPosition(dx, dy); });
+    obj.on('dragend', () => {
+      if (!(p as any).dragging) return; (p as any).dragging = false; obj.setDepth(0).setAlpha(1);
+      const gx = Math.round((obj.x - GRID_X) / CELL), gy = Math.round((obj.y - GRID_Y) / CELL);
+      if (this.fits(gx, gy, w, h)) { p.x = gx; p.y = gy; this.mark(p, true); obj.setPosition(GRID_X + gx * CELL, GRID_Y + gy * CELL); }
+      else { this.mark(p, true); this.tweens.add({ targets: obj, x: home.x, y: home.y, duration: 160, ease: 'Quad.Out' }); this.cameras.main.shake(40, 0.003); }
+      this.refreshWeights();
     });
     if (animate) { obj.setScale(1.15); this.tweens.add({ targets: obj, scaleX: 1, scaleY: 1, duration: 140, ease: 'Back.Out' }); }
     return p;

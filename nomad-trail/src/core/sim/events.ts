@@ -18,6 +18,10 @@ export function setFlag(s: RunState, flag: string, on: boolean) { s.achievements
 export const visibleAchievements = (s: RunState) => s.achievements.filter(a => !a.startsWith('_'));
 
 /** Events that can only happen once per run. */
+/** Global multiplier on every event's chance; Cody found the trail too chaotic at 1.0. */
+export const EVENT_RATE = 0.65;
+/** Consequences of the player's own choices keep their full odds (an overweight bag should still cost you a back). */
+const RATE_EXEMPT = new Set(['backinjury', 'overweight', 'dirtyclothes', 'broke']);
 export const ONCE = new Set(['otter','kettle','wheel','oktoberfest','backinjury','upgrade','hostgift','surprisemeetup','nowifi',]);
 function overweightFactor(ratio: number) { return clamp((ratio - 0.85) / 0.15, 0, 1) * 1.45; }
 
@@ -51,7 +55,7 @@ export function eventChance(ev: GameEvent, s: RunState, ctx: RollCtx): { chance:
   if (ev.requiresTag && !hasTag(s, ev.requiresTag)) return { chance: 0, mitigated: false };
   if (ev.requiresOverweight && (ctx.overweightRatio ?? 0) < 0.85) return { chance: 0, mitigated: false };
   const mitigated = !!ev.mitigatedBy?.some(t => hasTag(s, t)) || (ev.id === 'forgot' && hasFlag(s, 'roomchecked'));
-  let chance = ev.baseChance * (city.eventWeights[ev.id] ?? 1) * special(ev, s, city, ctx);
+  let chance = (RATE_EXEMPT.has(ev.id) ? 1 : EVENT_RATE) * ev.baseChance * (city.eventWeights[ev.id] ?? 1) * special(ev, s, city, ctx);
   if (mitigated && !ev.mitigatedEffects) chance *= 0.35;
   return { chance: clamp(chance, 0, 0.95), mitigated };
 }

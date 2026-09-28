@@ -216,7 +216,7 @@ function tickDay(s: RunState, rng: Rng, opts: { rest?: boolean; work?: boolean }
   s.energy += 5 + (lodging?.energyPerDay ?? 0) + (opts.rest ? 0 : 0);
   s.mood += (lodging?.moodPerDay ?? 0) - 1;
   // slow wear: the year itself is the opponent. Routine (training, cooking, supplements) pushes back.
-  s.health -= 0.09 + s.day * 0.0017 + (s.energy < 40 ? (opts.work ? 0.15 : 0.35) : 0) + (hasTag(s, 'fitness') ? 0 : 0.2);   /* a laptop week indoors wears less than a tired day out */
+  s.health -= 0.15 + s.day * 0.0024 + (s.energy < 40 ? (opts.work ? 0.15 : 0.35) : 0) + (hasTag(s, 'fitness') ? 0 : 0.2);   /* wear nudged up when the event rate went to 0.65 */   /* a laptop week indoors wears less than a tired day out */
   if (coffeePacked(s)) { s.energy += 15; s.mood += 2; s.coffeeMornings += 1; }
   if (s.sickDays > 0) { s.sickDays -= 1; s.health -= 4; s.energy -= 5; }
   if (s.backInjuryDays > 0) s.backInjuryDays -= 1;

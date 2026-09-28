@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { PAL } from '../../core/palette';
-import { W, H, pixTexture } from '../_shared';
+import { pixTexture } from '../_shared';
 
 /** Seeded rng (mulberry32) so a dive is repeatable for a given city + seed. */
 export function rng32(seed: number) {
@@ -8,24 +8,48 @@ export function rng32(seed: number) {
   return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 
-export const SAND_Y = 586;           /* top of the sand */
+/** The reef is a world about three screens wide and two tall; the camera follows the diver. */
+export const WW = 1080, WH = 1200;
+export const SAND_Y = WH - 60;       /* top of the sand */
 export const HUD_H = 26;
 
 /** Pixel sprites: diver (2 frames: fins up / down), lionfish (2 frames), reef fish, spear tip. */
 export function buildScubaSprites(scene: Phaser.Scene) {
-  const M = { k: PAL.ink, b: PAL.night3, s: PAL.gray2, f: PAL.sun0, y: PAL.sun2, w: PAL.white, t: PAL.sea3, r: PAL.red, m: PAL.dusk2, p: PAL.pink, d: PAL.dusk1, n: PAL.neon, g: PAL.gray1, o: PAL.sun1, e: PAL.earth1 };
-  const diver = (fin: string[]) => [
-    '.......ww........',
-    '......wttw..kkk..',
-    '......wttw.kbbbk.',
-    '.....bbbbbkbbbbbk',
-    '....bbbbbbbbbbbb.',
-    '...bbbbbbbbbbb...',
-    '..bbbbbbbbbbb....',
-    ...fin,
-  ];
-  pixTexture(scene, 'sc_diver0', diver(['.ffbbbbbbbb......', 'ffff.............']), M, 1);
-  pixTexture(scene, 'sc_diver1', diver(['..bbbbbbbbb......', '.ffff............', 'ffff.............']), M, 1);
+  const M = { k: PAL.ink, b: PAL.night3, s: PAL.gray2, f: PAL.sun0, y: PAL.sun2, w: PAL.white, t: PAL.sea3, r: PAL.red, m: PAL.dusk2, p: PAL.pink, d: PAL.dusk1, n: PAL.neon, g: PAL.gray1, o: PAL.sun1, e: PAL.earth3 };
+  /* diver, 28x14 drawn at 3x: dark wetsuit, hooded head with a lighter visor, regulator hose to a yellow tank on the back
+     (valve visible), fins, spear gun held forward. Two frames: fins kicking up / down. Faces right; the scene mirrors it. */
+  pixTexture(scene, 'sc_diver0', [
+    '............................',
+    '........oooooooooo..........',
+    '.......oyyyyyyyyyyss........',
+    'f......oyyyyyyyyyys.g.......',
+    'ff......oooooooooo...g......',
+    'fff..bbbnbbbnbbbnbbbnbbkttw.',
+    '.bbbbbbbbbbbbbbbbbbbbbbkttt.',
+    '.bbbbbbbbbbbbbbbbbbbbbbbeee.',
+    '.bbbbbbbbbbbbbbbbbbbbbbbkkb.',
+    'fff................bbbbbb...',
+    '.f....................sssssw',
+    '.......................bb...',
+    '............................',
+    '............................',
+  ], M, 1);
+  pixTexture(scene, 'sc_diver1', [
+    '............................',
+    '........oooooooooo..........',
+    '.......oyyyyyyyyyyss........',
+    '.......oyyyyyyyyyys.g.......',
+    '.f......oooooooooo...g......',
+    'fff..bbbnbbbnbbbnbbbnbbkttw.',
+    '.bbbbbbbbbbbbbbbbbbbbbbkttt.',
+    '.bbbbbbbbbbbbbbbbbbbbbbbeee.',
+    '.bbbbbbbbbbbbbbbbbbbbbbbkkb.',
+    'f.f................bbbbbb...',
+    'ff....................sssssw',
+    'ff.....................bb...',
+    '............................',
+    '............................',
+  ], M, 1);
   /* lionfish, 28x20 (drawn at 2x = 56x40, roughly the 25 px danger halo): maroon/white banded body, a tall crest of separate dorsal
      rays, a feathered pectoral fan spreading down and back, a fanned tail, a dark bar through the eye, a down-turned mouth.
      Frame 0 fins flared, frame 1 relaxed; the dead frame is the same silhouette gone grey. Faces right; the scene mirrors it. */
@@ -103,21 +127,24 @@ export function buildScubaSprites(scene: Phaser.Scene) {
 
 export type Coral = { x: number; y: number; w: number; h: number; kind: 'brain' | 'fan' | 'branch' | 'rock' | 'anemone'; color: number };
 
-/** Lay out the reef: a wall on the right, clumps along the sand. Returns coral shapes (also used as hiding spots). */
+/** Lay out the reef across the world: a wall on the right edge, clumps along the sand, ledges and bommies mid-water. */
 export function layoutReef(rand: () => number, murky: boolean): Coral[] {
   const out: Coral[] = [];
   const kinds: Coral['kind'][] = ['brain', 'fan', 'branch', 'rock', 'anemone'];
   const cols = [PAL.dusk3, PAL.sun0, PAL.sun2, PAL.pink, PAL.dusk2, PAL.sun1];
-  /* the wall: stacked rocks on the right edge */
-  for (let y = 120; y < SAND_Y; y += 46 + Math.floor(rand() * 18)) out.push({ x: W - 44 - rand() * 18, y, w: 60 + rand() * 20, h: 40 + rand() * 16, kind: 'rock', color: PAL.gray0 });
-  /* wall growth */
-  for (let i = 0; i < 5; i++) out.push({ x: W - 46 - rand() * 12, y: 150 + i * 88 + rand() * 20, w: 22 + rand() * 10, h: 22 + rand() * 12, kind: kinds[Math.floor(rand() * 3)], color: cols[Math.floor(rand() * cols.length)] });
+  /* the wall */
+  for (let y = HUD_H + 60; y < SAND_Y; y += 46 + Math.floor(rand() * 18)) out.push({ x: WW - 48 - rand() * 18, y, w: 66 + rand() * 20, h: 40 + rand() * 16, kind: 'rock', color: PAL.gray0 });
+  for (let i = 0; i < 12; i++) out.push({ x: WW - 50 - rand() * 12, y: HUD_H + 90 + i * 88 + rand() * 20, w: 22 + rand() * 10, h: 22 + rand() * 12, kind: kinds[Math.floor(rand() * 3)], color: cols[Math.floor(rand() * cols.length)] });
   /* clumps along the sand */
   let x = 18;
-  while (x < W - 90) { const w = 34 + rand() * 30, h = 26 + rand() * 30; out.push({ x, y: SAND_Y - h + 6, w, h, kind: kinds[Math.floor(rand() * kinds.length)], color: cols[Math.floor(rand() * cols.length)] }); x += w + 6 + rand() * 26; }
-  /* a mid-water bommie (an isolated coral head) to hide behind */
-  out.push({ x: 60 + rand() * 120, y: 330 + rand() * 90, w: 54, h: 44, kind: 'rock', color: PAL.gray0 });
-  out.push({ x: out[out.length - 1].x + 8, y: out[out.length - 1].y - 18, w: 36, h: 26, kind: murky ? 'branch' : 'fan', color: cols[Math.floor(rand() * cols.length)] });
+  while (x < WW - 100) { const w = 34 + rand() * 30, h = 26 + rand() * 30; out.push({ x, y: SAND_Y - h + 6, w, h, kind: kinds[Math.floor(rand() * kinds.length)], color: cols[Math.floor(rand() * cols.length)] }); x += w + 6 + rand() * 30; }
+  /* mid-water bommies and ledges to hide behind: one per ~150 px of width, staggered in height */
+  for (let i = 0; i < 9; i++) {
+    const bx = 60 + i * 110 + rand() * 60, by = HUD_H + 120 + rand() * (SAND_Y - HUD_H - 300); const bw = 50 + rand() * 30, bh = 40 + rand() * 20;
+    out.push({ x: bx, y: by, w: bw, h: bh, kind: 'rock', color: PAL.gray0 });
+    out.push({ x: bx + 8, y: by - 18, w: 36, h: 26, kind: murky ? 'branch' : kinds[Math.floor(rand() * 3)], color: cols[Math.floor(rand() * cols.length)] });
+    if (rand() < 0.5) out.push({ x: bx + bw - 14, y: by - 12, w: 20, h: 18, kind: 'anemone', color: cols[Math.floor(rand() * cols.length)] });
+  }
   return out;
 }
 
@@ -150,20 +177,19 @@ export function drawCoral(g: Phaser.GameObjects.Graphics, c: Coral, rand: () => 
   }
 }
 
-/** Water background: gradient bands, light rays, sand. Murky water (Miami) is greener and dimmer. */
+/** Water background over the whole world: gradient bands, dithered transitions, sand. Murky water (Miami) is greener and dimmer. */
 export function drawWater(g: Phaser.GameObjects.Graphics, murky: boolean) {
-  const bands = murky ? [PAL.sea1, PAL.sea1, PAL.sea0, PAL.sea0, PAL.night2] : [PAL.sea2, PAL.sea1, PAL.sea1, PAL.sea0, PAL.sea0];
+  const bands = murky ? [PAL.sea1, PAL.sea1, PAL.sea0, PAL.sea0, PAL.night2, PAL.night2] : [PAL.sea2, PAL.sea1, PAL.sea1, PAL.sea0, PAL.sea0, PAL.night2];
   const bh = (SAND_Y - HUD_H) / bands.length;
-  bands.forEach((c, i) => g.fillStyle(c).fillRect(0, HUD_H + i * bh, W, bh + 1));
-  /* dithered transitions */
-  bands.forEach((c, i) => { if (!i) return; const y0 = HUD_H + i * bh; g.fillStyle(bands[i - 1]); for (let x = 0; x < W; x += 4) for (let k = 0; k < 3; k++) if (((x >> 2) + k) % 2 === 0) g.fillRect(x, y0 + k * 3, 2, 2); });
-  /* sand */
-  g.fillStyle(murky ? PAL.earth2 : PAL.earth3).fillRect(0, SAND_Y, W, H - SAND_Y); g.fillStyle(murky ? PAL.earth1 : PAL.earth2, 0.6); for (let x = 0; x < W; x += 9) g.fillRect(x + ((x / 9) % 2) * 3, SAND_Y + 6 + ((x / 9) % 3) * 9, 5, 1);
-  g.fillStyle(PAL.sea3, murky ? 0.15 : 0.35).fillRect(0, SAND_Y, W, 2);
+  bands.forEach((c, i) => g.fillStyle(c).fillRect(0, HUD_H + i * bh, WW, bh + 1));
+  bands.forEach((c, i) => { if (!i) return; const y0 = HUD_H + i * bh; g.fillStyle(bands[i - 1]); for (let x = 0; x < WW; x += 4) for (let k = 0; k < 3; k++) if (((x >> 2) + k) % 2 === 0) g.fillRect(x, y0 + k * 3, 2, 2); });
+  g.fillStyle(murky ? PAL.earth2 : PAL.earth3).fillRect(0, SAND_Y, WW, WH - SAND_Y); g.fillStyle(murky ? PAL.earth1 : PAL.earth2, 0.6); for (let x = 0; x < WW; x += 9) g.fillRect(x + ((x / 9) % 2) * 3, SAND_Y + 6 + ((x / 9) % 3) * 9, 5, 1);
+  g.fillStyle(PAL.sea3, murky ? 0.15 : 0.35).fillRect(0, SAND_Y, WW, 2);
+  g.fillStyle(PAL.sky3, 0.15).fillRect(0, HUD_H, WW, 3);   /* the surface */
 }
 
 export function drawRays(g: Phaser.GameObjects.Graphics, t: number, murky: boolean) {
   g.clear();
-  const n = murky ? 3 : 5;
-  for (let i = 0; i < n; i++) { const x0 = 30 + i * 74 + Math.sin(t * 0.4 + i) * 10; const a = murky ? 0.05 : 0.09 + 0.03 * Math.sin(t * 0.9 + i * 1.3); g.fillStyle(PAL.sky3, a); g.fillTriangle(x0, HUD_H, x0 + 28, HUD_H, x0 + 70 + Math.sin(t * 0.3 + i) * 12, SAND_Y - 40); }
+  const n = murky ? 8 : 14;
+  for (let i = 0; i < n; i++) { const x0 = 30 + i * (WW / n) + Math.sin(t * 0.4 + i) * 10; const a = murky ? 0.05 : 0.09 + 0.03 * Math.sin(t * 0.9 + i * 1.3); g.fillStyle(PAL.sky3, a); g.fillTriangle(x0, HUD_H, x0 + 28, HUD_H, x0 + 90 + Math.sin(t * 0.3 + i) * 12, SAND_Y - 200); }
 }
