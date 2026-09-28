@@ -25,6 +25,7 @@ const settle = async (max = 12) => {
       const n = window.__nomad; const act = n.activeScenes();
       if (act.includes('Event')) { n.dismissEvents(); return 'event'; }
       if (act.includes('Coffee')) { n.finishMinigame(0); return 'coffee'; }
+      if (act.includes('Credits')) { n.scene('Credits')?.finish?.(); return 'credits'; }
       const mg = ['Cooking','Workout','CarryOn','Kite','Airport','Laundry'].find(k => act.includes(k)); if (mg) { n.finishMinigame(80); return mg; }
       if (act.includes('Travel')) return 'travel';
       const c = n.game.scene.getScene('City'); if (act.includes('City') && c && c.busy) return 'busy';

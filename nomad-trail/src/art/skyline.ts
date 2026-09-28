@@ -42,14 +42,14 @@ function buildings(ctx: Ctx, w: number, hy: number, c: number, win: number, r: R
  *  tree is tall) with 8 to 10 fronds drawn over it, 3 px thick at the crown thinning to 1 px, leaflet fringes on both sides so they
  *  merge into the mass. Coconut cluster under the crown, dithered ground shadow. Dawn, dusk and night draw the whole tree in the
  *  layer silhouette colour so it reads against the sky. Three size classes for depth. */
-function palms(ctx: Ctx, w: number, hy: number, c: number, r: ReturnType<typeof rng>, n: number, tod: TimeOfDay = 'dusk') {
+function palms(ctx: Ctx, w: number, hy: number, c: number, r: ReturnType<typeof rng>, n: number, tod: TimeOfDay = 'dusk', xs?: number[]) {   /* xs: fixed trunk positions (else spread across w with jitter) */
   const day = tod === 'day';
   const trunk = day ? PAL.earth1 : c, trunkDk = day ? PAL.earth0 : c, ring = day ? PAL.earth2 : c;
   const frond = day ? PAL.grass1 : c, frondLt = day ? PAL.grass2 : c, frondDk = day ? PAL.grass0 : c;
   const nut = day ? PAL.earth0 : c, shadow = day ? PAL.night2 : c;
   const sizes = [48, 58, 68];   /* the cardón cacti run 52 to 78 px */
   for (let i = 0; i < n; i++) {
-    const x = Math.round((i + 0.5) * (w / n) + r.int(-w / (3 * n), w / (3 * n)));
+    const x = xs ? xs[i % xs.length] : Math.round((i + 0.5) * (w / n) + r.int(-w / (3 * n), w / (3 * n)));
     const h = sizes[r.int(0, 2)] + r.int(-3, 3), lean = r.pick([-1, 1]) * r.int(4, 9), k = h / 58;
     const baseW = r.int(5, 7), topW = r.int(3, 4);
     /* ground shadow: a low dithered ellipse on the lean side */
@@ -360,8 +360,10 @@ const CITY: Record<string, Drawer> = {
       for (const xc of [w / 4, w / 4 + w / 2]) {
         for (let y = yT; y < yB; y++) { const t = (y - yT) / (yB - yT); const half = (6 + 254 * t) / 2; R(ctx, xc - half, y, half * 2, 1, asphalt); R(ctx, xc - half, y, 1, 1, edge); R(ctx, xc + half - 1, y, 1, 1, edge); if (t > 0.05 && Math.round(y / Math.max(3, 3 + t * 9)) % 2 === 0) R(ctx, xc - 1, y, Math.max(1, Math.round(1 + t * 2)), 1, PAL.sun3); }
         for (let i = 0; i < 4; i++) { const t = 0.15 + i * 0.22, y = Math.round(yT + (yB - yT) * t), half = (6 + 254 * t) / 2, sz = Math.max(1, Math.round(1 + t * 3)); R(ctx, Math.round(xc + half * 0.45) - sz, y, sz, sz, PAL.red); R(ctx, Math.round(xc + half * 0.45) + sz, y, sz, sz, PAL.red); R(ctx, Math.round(xc - half * 0.45) - sz, y + 3, sz, sz, tod === 'day' ? PAL.gray2 : PAL.sun3); R(ctx, Math.round(xc - half * 0.45) + sz, y + 3, sz, sz, tod === 'day' ? PAL.gray2 : PAL.sun3); } }
-      neonSigns(ctx, w, hy, r, 12); palms(ctx, w, hy, c, r, 3, tod);
-      for (const sx of [Math.floor(w * 0.36), Math.floor(w * 0.36 + w / 2)]) { const top = hy - 74;                       // the sign: diamond, red trim, starburst, pole
+      neonSigns(ctx, w, hy, r, 12);
+      /* the sign stands on the sand right of the highway and the palms on the sand left of it, at both wrap offsets, clear of the asphalt */
+      palms(ctx, w, hy, c, r, 4, tod, [Math.floor(w / 4 - 92), Math.floor(w / 4 - 150), Math.floor(w * 3 / 4 - 92), Math.floor(w * 3 / 4 - 150)]);
+      for (const sx of [Math.floor(w / 4 + 105), Math.floor(w * 3 / 4 + 105)]) { const top = hy - 74;                       // the sign: diamond, red trim, starburst, pole
         R(ctx, sx - 1, hy - 40, 3, 40, PAL.gray1);
         for (let i = 0; i < 18; i++) { const half = Math.round(i < 9 ? 6 + i * 3.2 : 6 + (17 - i) * 3.2); R(ctx, sx - half, top + i * 2, half * 2, 2, PAL.white); R(ctx, sx - half, top + i * 2, 2, 2, PAL.red); R(ctx, sx + half - 2, top + i * 2, 2, 2, PAL.red); }
         signText(ctx, sx - 5, top + 12, 'LAS', PAL.night0, 1); signText(ctx, sx - 9, top + 20, 'VEGAS', PAL.red, 1);

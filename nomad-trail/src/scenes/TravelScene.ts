@@ -49,7 +49,7 @@ export class TravelScene extends Phaser.Scene {
     const events = [...res.events];
     const dash = res.minigame; let dashDone = !dash;
     const runEvents = () => { const id = events.shift(); if (!id && !dashDone) { dashDone = true; const launch = { energy: getRun(this).energy, difficulty: dash!.difficulty, payload: dash!.payload, preview: (r: MinigameResult) => Sim.previewMinigame(getRun(this), dash!.key, r), onDone: (r: MinigameResult) => { if (this.scene.isActive(dash!.key) || this.scene.isPaused(dash!.key)) this.scene.stop(dash!.key); this.scene.resume(); const s = Sim.applyMinigameResult(getRun(this), dash!.key, r); putRun(this, s); runEvents(); } }; launchOnTop(this, dash!.key, launch); this.scene.pause(); return; }
-      if (!id) { const end = Sim.checkEnding(getRun(this)); if (end) { const r = getRun(this); r.ending = end; r.phase = 'ended'; putRun(this, r); return this.scene.start('End'); } return this.scene.start('City', { arrived: true }); }
+      if (!id) { const end = Sim.checkEnding(getRun(this)); if (end) { const r = getRun(this); r.ending = end; r.phase = 'ended'; putRun(this, r); return this.scene.start('Credits', { next: 'End' }); } return this.scene.start('City', { arrived: true }); }
       launchOnTop(this, 'Event', { eventId: id, onDone: () => { this.scene.stop('Event'); runEvents(); } }); };
     showBeats(0, runEvents);
   }

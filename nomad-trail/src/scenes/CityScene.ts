@@ -114,7 +114,7 @@ export class CityScene extends Phaser.Scene {
   }
   private after(a: CityAction) {
     const run = getRun(this); this.hud.refresh(run); this.refreshLog();
-    const end = Sim.checkEnding(run); if (end) { run.ending = end; run.phase = 'ended'; putRun(this, run); this.cameras.main.fadeOut(300, 0, 0, 0); this.time.delayedCall(320, () => this.scene.start('End')); return; }
+    const end = Sim.checkEnding(run); if (end) { run.ending = end; run.phase = 'ended'; putRun(this, run); this.cameras.main.fadeOut(300, 0, 0, 0); this.time.delayedCall(320, () => this.scene.start('Credits', { next: 'End' })); return; }
     if (a === 'moveon' || run.phase === 'route') { this.cameras.main.fadeOut(200, 0, 0, 0); this.time.delayedCall(210, () => this.scene.start('Route')); return; }
     if (run.cleanClothes <= 0) toast(this, 'Out of clean clothes. Laundry, or consequences.', PAL.sun1, 1400);
     this.busy = false; this.btns.forEach(b => b.setDisabled(false)); this.refreshButtons(); this.refreshWorkBtn(run.day); const lbl = this.children.list.find(o => (o as any).text?.startsWith?.(Data.city(run.cityId)?.country ?? '')) as Label | undefined; lbl?.setText(`${Data.city(run.cityId)?.country ?? ''} · stay day ${run.stayDays + 1}${Sim.dullKnives(run) ? ' · dull knife' : ''}`);

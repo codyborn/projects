@@ -1,65 +1,66 @@
 {
  "cockroach": {
-  "where": "Dakhla, Morocco",
-  "note": "August 2025. The eggs were in the wrapper."
+  "title": "Cockroach chocolate",
+  "where": "Dakhla, Morocco"
  },
  "wheel": {
-  "where": "Hong Kong, and again in Lisbon",
-  "note": "two suitcases, two wheels"
+  "title": "One wheel short",
+  "where": "Hong Kong and Lisbon"
  },
  "foodpoisoning": {
-  "where": "Casablanca (August 2025), Lisbon (March 2024), and Innsbruck"
+  "title": "Food poisoning",
+  "where": "Casablanca, Lisbon and Innsbruck"
  },
  "flu": {
-  "where": "Boulder, Colorado, and Hong Kong"
+  "title": "The flu",
+  "where": "Boulder and Hong Kong"
  },
  "kettle": {
-  "where": "Lisbon, Portugal",
-  "note": "the collapsible kettle did explode"
+  "title": "Kettle bomb",
+  "where": "Lisbon"
  },
  "tick": {
-  "where": "the Scottish Highlands",
-  "note": "summer 2025, Skye and Glencoe"
+  "title": "The tick",
+  "where": "Aviemore"
  },
  "taxibreakdown": {
-  "where": "Casablanca (the taxi ran out of gas) and Roatán (it broke down)",
-  "note": "both on the way to the airport"
+  "title": "The taxi dies",
+  "where": "Casablanca and Roatán"
  },
  "jellyfish": {
-  "where": "La Ventana, Mexico",
-  "note": "on the lips. Super painful."
+  "title": "The jellyfish",
+  "where": "La Ventana"
  },
  "otter": {
-  "where": "Harajuku, Tokyo",
-  "note": "on a stranger's shoulder"
+  "title": "The otter",
+  "where": "Tokyo"
  },
  "mosquito": {
-  "where": "Hyères, France"
+  "title": "The mosquito swarm",
+  "where": "Hyères"
  },
  "oktoberfest": {
-  "where": "Munich, Germany"
- },
- "dullknives": {
-  "where": "more Airbnbs than not"
+  "title": "Oktoberfest",
+  "where": "Munich"
  },
  "backinjury": {
-  "where": "London",
-  "note": "the back went in London"
+  "title": "The back",
+  "where": "London"
  },
  "delayed": {
-  "where": "New York",
-  "note": "the suitcase arrived days later"
+  "title": "Delayed baggage",
+  "where": "New York"
  },
  "airbnbcancel": {
-  "where": "the UK",
-  "note": "cancelled the same day"
+  "title": "Cancelled on arrival",
+  "where": "the UK"
  },
  "radonheadache": {
-  "where": "Miami, Hyères and Montana",
-  "note": "the monitor read high in all three"
+  "title": "High radon",
+  "where": "Miami, Hyères and Montana"
  },
  "radonmonitor": {
-  "where": "Miami, Hyères and Montana",
-  "note": "the monitor read high in all three"
+  "title": "High radon",
+  "where": "Miami, Hyères and Montana"
  }
 }
