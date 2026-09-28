@@ -7,7 +7,7 @@ import { rng32, buildScubaSprites, layoutReef, drawCoral, drawWater, drawRays, S
 /**
  * SCUBA: spear the lionfish (Roatán, Miami). One thumb: HOLD anywhere and the diver swims toward your finger (stopping short)
  * while a dotted aim line shows the shot; RELEASE to fire a short spear. The spear must hit the lionfish BODY: the fanned spines
- * deflect it, and the diver must never touch a spine halo (red flash, -15, recoil, 5 s of air lost). Small reef fish are not
+ * deflect it (a shot within 16 px of the body line, 22 px along it, counts), and the diver must never touch a spine halo (red flash, -15, recoil, 5 s of air lost). Small reef fish are not
  * targets: spearing one costs 10. Lionfish drift, turn toward the diver when close, and sometimes tuck behind coral.
  * 45 s of air; the dive ends when the air is gone or every lionfish is speared. Score = speared / total x 100 - 15 per touch
  * - 10 per bycatch. Payload: { city, cityName, seed }. Miami is murkier with fewer fish; Roatán is the lionfish capital.
@@ -53,7 +53,7 @@ export class ScubaScene extends Phaser.Scene {
     /* lionfish: spread over the reef, never right on top of the diver's start */
     for (let i = 0; i < this.total; i++) {
       let x = 150 + this.rand() * (W - 220), y = HUD_H + 70 + this.rand() * (SAND_Y - HUD_H - 130); if (Math.hypot(x - this.dx, y - this.dy) < 130) x += 120;
-      const spr = this.add.sprite(x, y, 'sc_lion0').setDepth(5).setScale(3);
+      const spr = this.add.sprite(x, y, 'sc_lion0').setDepth(5).setScale(2);
       this.lions.push({ x, y, vx: 0, vy: 0, heading: this.rand() * 6.3, t: this.rand() * 10, alive: true, hiding: false, hideT: 0, nextHide: 5 + this.rand() * 8, flare: 0, calm: 0, sprite: spr, dead: false, deadT: 0 });
     }
     this.meter = new Meter(this, 40, 604, W - 80, 10, PAL.neon);
@@ -138,7 +138,7 @@ export class ScubaScene extends Phaser.Scene {
     if (this.spear) {
       const S = this.spear; const stepLen = SPEAR_V * dt; S.x += S.ux * stepLen; S.y += S.uy * stepLen; S.gone += stepLen;
       let done = S.gone >= RANGE || S.x < 0 || S.x > W || S.y < HUD_H || S.y > SAND_Y;
-      for (const L of this.lions) { if (!L.alive || L.hiding) continue; const d = Math.hypot(S.x - L.x, S.y - L.y); if (d < 13 && Math.abs(S.y - L.y) < 10) { this.spearFish(L); done = true; break; } if (d < sr - 2 && Math.abs(S.y - L.y) >= 10) { /* the fanned spines above and below the body: the spear glances off */ this.spark(S.x, S.y, PAL.gray2, 6); L.flare = 1; this.say('DEFLECTED: aim level at the body', PAL.gray2); done = true; break; } }
+      for (const L of this.lions) { if (!L.alive || L.hiding) continue; const d = Math.hypot(S.x - L.x, S.y - L.y); if (Math.abs(S.x - L.x) < 22 && Math.abs(S.y - L.y) < 16) { this.spearFish(L); done = true; break; } if (d < sr - 2 && Math.abs(S.y - L.y) >= 16) { /* the fanned spines above and below the body: the spear glances off */ this.spark(S.x, S.y, PAL.gray2, 6); L.flare = 1; this.say('DEFLECTED: aim level at the body', PAL.gray2); done = true; break; } }
       if (!done) for (const f of this.reef) { if (!f.alive) continue; if (Math.hypot(S.x - f.x, S.y - f.y) < 8) { f.alive = false; f.sprite.destroy(); this.bycatch++; this.say('BYCATCH  -10', PAL.sun1); this.frame.shake(80, 0.003); done = true; break; } }
       if (done) { this.lastSpear = { x0: S.sx, y0: S.sy, x1: S.x, y1: S.y }; this.spearFade = 0.25; this.spear = undefined; }
     }
@@ -168,7 +168,7 @@ export class ScubaScene extends Phaser.Scene {
     /* aim line: dotted from the gun to the target, clipped to the spear's range; gold when a lionfish body sits on it */
     if (this.held && !this.spear) {
       this.updateAim(); const sx = this.dx + this.facing * 16, sy = this.dy + 2; const len = Math.min(RANGE, Math.hypot(this.targetX - sx, this.targetY - sy));
-      let good = false; for (const L of this.lions) { if (!L.alive || L.hiding) continue; const px = L.x - sx, py = L.y - sy; const along = px * this.aimX + py * this.aimY; if (along > 0 && along < len + 10) { const off = Math.abs(px * this.aimY - py * this.aimX); if (off < 11 && Math.abs(this.aimY) < 0.5) good = true; } }
+      let good = false; for (const L of this.lions) { if (!L.alive || L.hiding) continue; const px = L.x - sx, py = L.y - sy; const along = px * this.aimX + py * this.aimY; if (along > 0 && along < len + 10) { const off = Math.abs(px * this.aimY - py * this.aimX); if (off < 16 && Math.abs(this.aimY) < 0.6) good = true; } }
       const c = good ? PAL.sun2 : PAL.neon; for (let d = 10; d < len; d += 9) g.fillStyle(c, 0.85).fillRect(sx + this.aimX * d - 1, sy + this.aimY * d - 1, 2, 2);
       g.lineStyle(1, c, 0.5).strokeCircle(sx + this.aimX * len, sy + this.aimY * len, 4);
       g.fillStyle(PAL.white, 0.25).fillCircle(this.targetX, this.targetY, 6);

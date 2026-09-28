@@ -32,12 +32,12 @@ export class CoffeeScene extends Phaser.Scene {
       ditherGradient(ctx, 0, 440, W, H - 440, [PAL.earth0, PAL.night1, PAL.night0]);
     });
     this.add.image(0, 0, 'cf_wall2').setOrigin(0);
-    // the kit, static on the counter
-    this.add.sprite(84, 372, 'cf_grinder', 0).setOrigin(0.5, 1).setScale(2);
-    this.add.image(150, 372, 'cf_dripper').setOrigin(0.5, 1).setScale(2);
-    const cup = this.add.sprite(196, 372, 'cf_cup', 4).setOrigin(0.5, 1).setScale(2.5);
+    /* the kit, centred on the counter: grinder left, cup in the middle, pour-over right */
+    this.add.sprite(100, 372, 'cf_grinder', 0).setOrigin(0.5, 1).setScale(2);
+    this.add.image(260, 372, 'cf_dripper').setOrigin(0.5, 1).setScale(2);
+    const cup = this.add.sprite(180, 372, 'cf_cup', 4).setOrigin(0.5, 1).setScale(2.5);
     // steam: the only thing that moves
-    const steam = this.add.particles(196, 318, 'cf_steam', { speedY: { min: -22, max: -48 }, speedX: { min: -10, max: 10 }, scale: { start: 1.2, end: 0.2 }, alpha: { start: 0.7, end: 0 }, lifespan: 1800, frequency: 110, emitting: true });
+    const steam = this.add.particles(180, 318, 'cf_steam', { speedY: { min: -22, max: -48 }, speedX: { min: -10, max: 10 }, scale: { start: 1.2, end: 0.2 }, alpha: { start: 0.7, end: 0 }, lifespan: 1800, frequency: 110, emitting: true });
     void steam; this.tweens.add({ targets: cup, scaleY: 2.55, yoyo: true, repeat: -1, duration: 1400, ease: 'Sine.easeInOut' });
     const label = ptext(this, W / 2, 404, `DAY ${d.day}`, PAL.sun3, 2).setOrigin(0.5, 0);
     ptext(this, W / 2, 432, (d.cityId || '').toUpperCase(), PAL.gray2, 1).setOrigin(0.5, 0);

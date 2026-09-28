@@ -12,9 +12,9 @@ const W = 360, H = 640;
 
 /** Credits: the events that fired in this run, each with the real place it happened on the real trip. Reached from the End screen. */
 export class CreditsScene extends Phaser.Scene {
-  static KEY = 'Credits'; private backKey?: string; private scrollY = 0; private content!: Phaser.GameObjects.Container; private maxScroll = 0;
+  static KEY = 'Credits'; private backKey?: string; private onClose?: () => void; private scrollY = 0; private content!: Phaser.GameObjects.Container; private maxScroll = 0;
   constructor() { super(CreditsScene.KEY); }
-  init(d?: { back?: string }) { this.backKey = d?.back; this.scrollY = 0; }
+  init(d?: { back?: string; onClose?: () => void }) { this.backKey = d?.back; this.onClose = d?.onClose; this.scrollY = 0; }
   create() {
     this.cameras.main.setBackgroundColor(PAL.night0);
     const run = getRun(this);
@@ -23,9 +23,9 @@ export class CreditsScene extends Phaser.Scene {
     const ids = Array.from(new Set(fired.length ? fired : (run?.log ?? []).map(l => Data.events.find(e => l.text.startsWith(e.title + ':'))?.id).filter((x): x is string => !!x)));
     const rows = ids.map(id => ({ id, ev: Data.events.find(e => e.id === id), cr: CREDITS[id] })).filter(r => r.ev && r.cr);
     txt(this, W / 2, 26, 'WHAT REALLY HAPPENED', 16, PAL.sun2).setOrigin(0.5).setDepth(5);
-    txt(this, W / 2, 48, rows.length ? 'Every event in your run is something that happened to Cody on the trip. Here is where.' : 'Nothing that happened to you this run has happened to Cody. Yet.', 8, PAL.gray2, { align: 'center', wrap: 300 }).setOrigin(0.5, 0).setDepth(5);
+    txt(this, W / 2, 46, rows.length ? 'Every event in your run happened to Cody on the trip. Here is where.' : 'Nothing that happened to you this run has happened to Cody. Yet.', 8, PAL.gray2, { align: 'center', wrap: 300 }).setOrigin(0.5, 0).setDepth(5);
     this.content = this.add.container(0, 0).setDepth(2);
-    let y = 84;
+    let y = 92;
     for (const r of rows) {
       const bodyLines = Math.ceil((r.cr!.where.length + (r.cr!.note ? r.cr!.note.length + 3 : 0)) / 36);
       const h = 34 + bodyLines * 12;
@@ -44,7 +44,7 @@ export class CreditsScene extends Phaser.Scene {
     this.input.on('wheel', (_p: any, _o: any, _dx: number, dy: number) => this.setScroll(this.scrollY + dy * 0.5));
     const bar = this.add.rectangle(W / 2, H - 28, W, 56, PAL.night0).setDepth(9);
     void bar;
-    new Button(this, W / 2, H - 28, 'BACK', () => { const back = this.backKey; this.scene.stop(); this.scene.start(back || 'End'); }, { w: 200, h: 40, fill: PAL.dusk0, size: 12 }).setDepth(10);
+    new Button(this, W / 2, H - 28, 'BACK', () => { const back = this.backKey, cb = this.onClose; this.scene.stop(); if (cb) cb(); else this.scene.start(back || 'End'); }, { w: 200, h: 40, fill: PAL.dusk0, size: 12 }).setDepth(10);
     this.cameras.main.fadeIn(200, 0, 0, 0);
   }
   private setScroll(v: number) { this.scrollY = Phaser.Math.Clamp(v, 0, this.maxScroll); this.content.setY(-this.scrollY); }

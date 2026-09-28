@@ -240,22 +240,23 @@ if (q.get('auto') === '1') {
   MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
   game.events.once('ready', () => { game.scene.start(MINIGAME_KEYS.carryon, { energy: 100, difficulty: 0.5, payload: { game: q.get('console'), city: q.get('city') || 'tokyo', cityName: q.get('cityName') || 'Tokyo', hazard: q.get('hazard') || 'otter', seed: Number(q.get('seed') || 7) }, onDone: () => { document.title = 'CONSOLE_DONE'; } } as MinigameLaunch); document.title = 'CONSOLE_UP'; if (q.get('autostart') !== '0') { const press = setInterval(() => { const sc: any = game.scene.getScene(MINIGAME_KEYS.carryon); if (sc?.titleCard && !sc.started) { sc.beginPlay(); clearInterval(press); } }, 300); } });
 } else if (q.get('drone')) {
-  // drone checks: 'rt' = READY only, no flying input, must land on its own (battery or route end); 'perfect' = scripted: aim at the next ring's height under the virtual clock
+  // drone checks: 'rt' = READY only, no flying input, must land on its own (battery or route end); 'perfect' = scripted vertical-only pilot (hold / release) under the virtual clock; 'random' = random hold / release
   MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
   game.events.once('ready', () => {
     const mode = q.get('drone')!; const t0 = performance.now(); let calls = 0; const cityId = q.get('city') || 'innsbruck';
     const city = { id: cityId, name: q.get('cityName') || cityId, climate: q.get('climate') || 'alpine', hazard: q.get('hazard') || 'rock', altitude: Number(q.get('altitude') || 0) };
     const launch: MinigameLaunch = { energy: Number(q.get('energy') || 100), difficulty: Number(q.get('difficulty') || 0.5), payload: { city, cityName: city.name, seed: Number(q.get('seed') || 7), level: Number(q.get('level') || 1) }, onDone: (res) => { calls++; const h = (scene as any).hint?.(); out.textContent = JSON.stringify({ mode, res, set: h?.set, hits: h?.hits, collisions: h?.collisions, hearts: h?.hearts, bombs: h?.bombs, battery: h?.battery, secs: (performance.now() - t0) / 1000, calls, errors }); document.title = 'DRONE_DONE'; } };
     game.scene.start(MINIGAME_KEYS.drone, launch); const scene: any = game.scene.getScene(MINIGAME_KEYS.drone);
-    const fly = () => { if (!scene.scene.isActive() || !scene.frame?.active) { if (q.get('holdResult') !== '1') scene.frame?.proceed?.(); if (!scene.frame?.finished && q.get('hold') !== '1') scene.frame?.ready?.(); return; } if (mode !== 'perfect') return; const h = scene.hint(); const ty = h.next ? h.next.y : 240;
-      // hold while above the target height (screen y grows downward), release below it; keep x at 110 unless a hazard box is ahead at our height
-      // a solid box ahead at our height: go over it if it hangs low, under it if it stands tall; otherwise fly at the ring's height
-      // a pickup within reach and roughly ahead: go get it first
-      const pu = (h.pickups || []).find((k: any) => k.x > h.x && k.x < h.x + 160); if (pu) { if (h.y > pu.y + 3 || (h.y > pu.y - 8 && h.vy > 60)) scene.press(110); else { scene.release(); scene.targetX = 110; } return; }
-      let steerX = 110, aim = ty; for (const b of h.hazards) { if (b.x + b.width > h.x - 10 && b.x < h.x + 150 && b.y < h.y + 16 && b.y + b.height > h.y - 16) { aim = b.y > 150 ? b.y - 24 : b.y + b.height + 24; steerX = 70; break; } }
-      if (h.y > aim + 3 || (h.y > aim - 8 && h.vy > 60)) scene.press(steerX); else { scene.release(); scene.targetX = steerX; } };
-    if (mode === 'perfect' && q.get('fast') === '1') { game.loop.stop(); let t = performance.now(); setInterval(() => { for (let k = 0; k < 6; k++) { t += 16.67; fly(); game.loop.step(t); } }, 0); }
-    else if (mode === 'perfect') setInterval(fly, 16);
+    let flip = 0;
+    const fly = () => { if (!scene.scene.isActive() || !scene.frame?.active) { if (q.get('holdResult') !== '1') scene.frame?.proceed?.(); if (!scene.frame?.finished && q.get('hold') !== '1') scene.frame?.ready?.(); return; }
+      if (mode === 'random') { flip -= 1; if (flip <= 0) { flip = 10 + Math.floor(Math.random() * 40); if (scene.held) scene.release(); else scene.press(); } return; }
+      if (mode !== 'perfect') return; const h = scene.hint(); const ty = h.next ? h.next.y : 240;
+      // vertical only: a pickup ahead in the lane is worth a detour; a solid box ahead at our height: over it if it hangs low, under it if it stands tall; else fly at the ring's height
+      const pu = (h.pickups || []).find((k: any) => k.x > h.x && k.x < h.x + 160); let aim = pu ? pu.y : ty;
+      for (const b of h.hazards) { if (b.x + b.width > h.x - 10 && b.x < h.x + 150 && b.y < h.y + 16 && b.y + b.height > h.y - 16) { aim = b.y > 150 ? b.y - 24 : b.y + b.height + 24; break; } }
+      if (h.y > aim + 3 || (h.y > aim - 8 && h.vy > 60)) scene.press(); else scene.release(); };
+    if ((mode === 'perfect' || mode === 'random') && q.get('fast') === '1') { game.loop.stop(); let t = performance.now(); setInterval(() => { for (let k = 0; k < 6; k++) { t += 16.67; fly(); game.loop.step(t); } }, 0); }
+    else if (mode === 'perfect' || mode === 'random') setInterval(fly, 16);
     else setInterval(fly, 400);
   });
 } else if (q.get('scuba')) {
@@ -276,7 +277,7 @@ if (q.get('auto') === '1') {
       const past = (px: number, py: number, extra: number) => { const l = Math.hypot(px - h.x, py - h.y) || 1; return [px + (px - h.x) / l * extra, py + (py - h.y) / l * extra] as const; };
       if (mode === 'sting' && !stung) { const [tx, ty] = past(best.x, best.y, 70); scene.press(tx, ty); if (h.touches > 0) { stung = true; scene.release(); } return; }
       /* stand off at ~95 px from the body, on our side of it; fire when it is between 60 and 140 px and no spear is out */
-      const side = h.x < best.x ? -1 : 1; const level = Math.abs(best.y - h.y) < 9; const px = best.x + side * 95, py = best.y;
+      const side = h.x < best.x ? -1 : 1; const level = Math.abs(best.y - h.y) < 14; const px = best.x + side * 95, py = best.y;
       if (bd > 130 || bd < 60 || !level) { const [tx, ty] = past(px, py, 58); scene.press(tx, ty); }
       else if (!h.spear) { scene.release(); scene.fireAt(best.x, best.y); }
     };

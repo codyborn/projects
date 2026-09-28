@@ -110,8 +110,18 @@ const G: Record<string, string[]> = {
 '\u00e9':['00010','00100','01110','10001','11111','10000','01110'], // é
 };
 export function __glyphs(): Record<string, string[]> { return G; }
-const EXTRA = '\u00b7\u2192\u2190\u2014\u2019\u2026\u2605\u00e9';
+const EXTRA = '\u00b7\u2192\u2190\u2014\u2019\u2026\u2605\u00e9èùàáú';
 export const FONT_CHARS = Array.from({ length: 95 }, (_, i) => String.fromCharCode(32 + i)).join('') + EXTRA;
+/** Make a string drawable by a given font: keep chars the table has, strip accents to the base letter otherwise (É -> E for the 5x7 font), '?' as last resort. */
+export function fitText(s: string, fontKey: string): string {
+  const table = fontKey.startsWith('pix7') ? G7 : G; let out = '';
+  for (const c of s) {
+    if (c === '\n' || (table[c] && FONT_CHARS.includes(c))) { out += c; continue; }
+    const base = c.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    out += base && table[base] ? base : (table[c] ? c : '?');
+  }
+  return out;
+}
 export const CW = 6, CH = 8; // cell size (5x7 glyph + 1px spacing)
 
 /** Cell sizes of the body font 'pix7' (7x11 glyph + 1px spacing). */

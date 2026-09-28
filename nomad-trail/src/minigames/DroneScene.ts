@@ -8,8 +8,8 @@ import { makeHazard, boxes, cableY, plumeUp, plumeWarn, MOVER_SPEED, ZONES, type
 /**
  * DRONE FLIGHT: the side game for the drone kit. The landscape scrolls right to left; the drone flies through photo rings
  * (the shots the traveller wants) while dodging what lives in that landscape. One thumb: HOLD anywhere to climb, RELEASE to sink,
- * DRAG left / right to move along the screen; DOUBLE-TAP drops a battery bomb (2 per flight) that clears every bird on screen.
- * The camera fires forward by itself and knocks birds out of the way. Arrows / SPACE / B on desktop.
+ * No horizontal control: the drone holds a fixed x a third in from the left and the world scrolls toward it. DOUBLE-TAP drops a battery bomb (2 per flight) that clears every bird on screen.
+ * The camera fires forward by itself and knocks birds out of the way. SPACE or UP = hold, B/X = bomb on desktop.
  * Lives: 3 hearts (up to 5). A hit costs a heart and 10 points, then 1.5 s of blinking invulnerability. Hearts at 0 = crash (FAILED).
  * Power-ups drift down the lane every 10 to 14 s: HEART (+1 life), DOUBLE SHOT (two shots at once for 15 s), SHIELD (absorbs one hit, 8 s).
  * Battery is the clock; climbing burns it faster. Payload: { city: City, cityName, seed, level 1..3 }.
@@ -28,10 +28,10 @@ export class DroneScene extends Phaser.Scene {
   private frame!: MinigameFrame; private launch!: MinigameLaunch; private set!: DroneSet; private city?: Partial<City>; private cityName = ''; private seed = 7; private level = 1;
   private g!: Phaser.GameObjects.Graphics; private drone!: Phaser.GameObjects.Sprite; private toastT?: Phaser.GameObjects.Text;
   private scroll = 0; private v = 60; private t = 0; private tick?: Phaser.Time.TimerEvent;
-  x = 110; y = 260; vy = 0; held = false; targetX = 110;
+  x = 120; y = 260; vy = 0; held = false;
   private rings: Ring[] = []; private hazards: Hazard[] = []; private pickups: Pickup[] = []; private shots: Shot[] = []; private spawnT = 0; private puT = 0; private lastStaticWx = -1e9; private rng!: () => number;
   hits = 0; collisions = 0; hearts = 3; bombs = 2; private shield = 0; private doubleT = 0; private fireT = 0; private iframes = 0; private battery = 1; private drain = 1; private ended = false; private landing = false; private anim = 0; private landT = 0;
-  private keyUp = false; private keyX = 0; private mistK = 0; private lastTap = -1; private toastUntil = 0;
+  private keyUp = false; private mistK = 0; private lastTap = -1; private toastUntil = 0;
   constructor() { super(MINIGAME_KEYS.drone); }
 
   init(data: any) {
@@ -40,9 +40,9 @@ export class DroneScene extends Phaser.Scene {
     this.seed = typeof p.seed === 'number' ? p.seed : 7; this.level = clamp(Math.round(Number(p.level) || 1), 1, 3);
     this.set = SETS[pickSet(this.city)];
     let s = (this.seed * 9301 + this.level * 49297) >>> 0; this.rng = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
-    this.scroll = 0; this.t = 0; this.x = 110; this.y = 260; this.vy = 0; this.held = false; this.targetX = 110; this.rings = []; this.hazards = []; this.pickups = []; this.shots = []; this.spawnT = 2.2; this.puT = 5; this.lastStaticWx = -1e9;
+    this.scroll = 0; this.t = 0; this.x = 120; this.y = 260; this.vy = 0; this.held = false; this.rings = []; this.hazards = []; this.pickups = []; this.shots = []; this.spawnT = 2.2; this.puT = 5; this.lastStaticWx = -1e9;
     this.hits = 0; this.collisions = 0; this.hearts = 3; this.bombs = 2; this.shield = 0; this.doubleT = 0; this.fireT = 0; this.iframes = 0; this.battery = 1; this.ended = false; this.landing = false; this.anim = 0; this.landT = 0;
-    this.keyUp = false; this.keyX = 0; this.mistK = 0; this.lastTap = -1; this.toastUntil = 0;
+    this.keyUp = false; this.mistK = 0; this.lastTap = -1; this.toastUntil = 0;
   }
 
   get ringCount() { return 6 + 2 * this.level; }
@@ -64,7 +64,7 @@ export class DroneScene extends Phaser.Scene {
         const top = H / 2 - 234; add(s.add.sprite(W / 2, top + 118, 'dr_drone0').setScale(3));
         const ic = s.add.graphics(); add(ic);
         const row = (y: number, draw: () => void, label: string) => { ic.fillStyle(PAL.night3).fillRect(34, y - 16, 36, 32); draw(); add(txt(s, 80, y, label, 9, PAL.white, 'left')); };
-        row(top + 168, () => { ic.fillStyle(PAL.neon).fillCircle(52, top + 168, 7); ic.fillStyle(PAL.night3).fillCircle(52, top + 168, 3); ic.fillStyle(PAL.neon).fillTriangle(52, top + 155, 47, top + 162, 57, top + 162); }, 'HOLD climb · RELEASE sink · DRAG to move');
+        row(top + 168, () => { ic.fillStyle(PAL.neon).fillCircle(52, top + 168, 7); ic.fillStyle(PAL.night3).fillCircle(52, top + 168, 3); ic.fillStyle(PAL.neon).fillTriangle(52, top + 155, 47, top + 162, 57, top + 162); }, 'HOLD to climb · RELEASE to sink');
         row(top + 208, () => { ic.fillStyle(PAL.white).fillRect(44, top + 206, 8, 2).fillRect(56, top + 206, 8, 2); ic.fillStyle(PAL.sun2).fillRect(48, top + 214, 4, 4).fillRect(56, top + 214, 4, 4); }, 'auto shots · DOUBLE-TAP = battery bomb (2)');
         row(top + 248, () => { for (let i = 0; i < 3; i++) { ic.fillStyle(PAL.red).fillRect(40 + i * 9, top + 245, 6, 5).fillRect(41 + i * 9, top + 250, 4, 2).fillRect(42 + i * 9, top + 252, 2, 1); } }, '3 hearts · a hit = -1 heart, -10 points');
         row(top + 288, () => { ic.fillStyle(PAL.red).fillRect(38, top + 284, 8, 7); ic.fillStyle(PAL.sun2).fillRect(49, top + 284, 7, 7); ic.fillStyle(PAL.sky2).fillRect(59, top + 284, 7, 7); }, 'HEART +1 life · DOUBLE SHOT 15 s · SHIELD 1 hit');
@@ -86,18 +86,16 @@ export class DroneScene extends Phaser.Scene {
   /** Dismiss the card and fly (harness calls this through frame.ready()). */
   private startRun() {
     this.time.delayedCall(60, () => {
-      this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { if (p.y < 30) return; const now = this.time.now; if (this.lastTap > 0 && now - this.lastTap < 300) { this.bomb(); this.lastTap = -1; } else this.lastTap = now; this.held = true; this.targetX = clamp(p.x, 40, W - 60); });
-      this.input.on('pointermove', (p: Phaser.Input.Pointer) => { if (this.held) this.targetX = clamp(p.x, 40, W - 60); });
+      this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { if (p.y < 30) return; const now = this.time.now; if (this.lastTap > 0 && now - this.lastTap < 300) { this.bomb(); this.lastTap = -1; } else this.lastTap = now; this.held = true; });
       this.input.on('pointerup', () => { this.held = false; });
       const kb = this.input.keyboard;
       kb?.on('keydown-UP', () => { this.keyUp = true; }); kb?.on('keyup-UP', () => { this.keyUp = false; }); kb?.on('keydown-SPACE', () => { this.keyUp = true; }); kb?.on('keyup-SPACE', () => { this.keyUp = false; });
-      kb?.on('keydown-LEFT', () => { this.keyX = -1; }); kb?.on('keyup-LEFT', () => { if (this.keyX < 0) this.keyX = 0; }); kb?.on('keydown-RIGHT', () => { this.keyX = 1; }); kb?.on('keyup-RIGHT', () => { if (this.keyX > 0) this.keyX = 0; });
       kb?.on('keydown-B', () => this.bomb()); kb?.on('keydown-X', () => this.bomb());
       this.tick = this.time.addEvent({ delay: 16, loop: true, callback: () => this.step(0.016) });
     });
   }
   /** Harness hooks */
-  press(x: number) { this.held = true; this.targetX = clamp(x, 40, W - 60); }
+  press() { this.held = true; }
   release() { this.held = false; }
   hint() { const next = this.rings.find(r => r.state === 'open' && r.wx - this.scroll > this.x - 20); return { x: this.x, y: this.y, vy: this.vy, next: next ? { x: next.wx - this.scroll, y: next.y } : null, hits: this.hits, collisions: this.collisions, hearts: this.hearts, bombs: this.bombs, shield: this.shield, double: this.doubleT, battery: this.battery, set: this.set.id, pickups: this.pickups.filter(p => p.alive).map(p => ({ kind: p.kind, x: p.wx - this.scroll, y: p.y })), hazards: this.hazards.filter(h => h.solid).flatMap(h => boxes(h, h.wx - this.scroll)) }; }
   score() { return clamp((this.hits / this.ringCount) * 100 - 10 * this.collisions, 0, 100); }
@@ -116,12 +114,11 @@ export class DroneScene extends Phaser.Scene {
     if (this.shield > 0) this.shield -= dt; if (this.doubleT > 0) this.doubleT -= dt;
     if (this.toastT && this.toastUntil > 0 && this.t > this.toastUntil - 0.4) { this.toastT.setAlpha(Math.max(0, (this.toastUntil - this.t) / 0.4)); }
     // physics
-    if (this.keyX) this.targetX = clamp(this.targetX + this.keyX * 140 * dt, 40, W - 60);
     const sluggish = this.mistK > 0 ? 0.55 : 1;
     this.vy += (holding ? -500 : 360) * dt * sluggish; this.vy = clamp(this.vy, -165, 165);
-    for (const h of this.hazards) { if (!ZONES.includes(h.kind)) continue; const sx = h.wx - this.scroll; if (this.x > sx - h.a / 2 && this.x < sx + h.a / 2) { if (h.kind === 'updraft') this.vy -= 360 * dt; else if (h.kind === 'gust') this.targetX = clamp(this.targetX + h.b * 100 * dt, 40, W - 60); } }
+    for (const h of this.hazards) { if (!ZONES.includes(h.kind)) continue; const sx = h.wx - this.scroll; if (this.x > sx - h.a / 2 && this.x < sx + h.a / 2) { if (h.kind === 'updraft') this.vy -= 360 * dt; else if (h.kind === 'gust') this.vy += h.b * 260 * dt; } }   // gusts buffet up or down (no sideways control to fight with)
     this.mistK = this.hazards.some(h => h.kind === 'mist' && Math.abs(h.wx - this.scroll - this.x) < h.a / 2) ? 1 : 0;
-    this.x += (this.targetX - this.x) * Math.min(1, 6 * dt); this.y += this.vy * dt;
+    this.y += this.vy * dt;
     if (this.y < 40) { this.y = 40; this.vy = Math.max(0, this.vy); }
     const gy = this.groundY(this.x) - 8; const water = this.waterAt(this.x + this.scroll) ? BASE - 10 : Infinity; const floor = Math.min(gy, water);
     if (this.y > floor) { this.y = floor; this.vy = -150; this.hurt(); }   // ground / water contact is a hit

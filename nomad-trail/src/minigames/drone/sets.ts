@@ -25,7 +25,7 @@ export const SETS: Record<SetId, DroneSet> = {
   mountain: { id: 'mountain', name: 'THE MOUNTAINS', tagline: 'updrafts, cliffs, eagles, a cable car', sky: [PAL.sky0, PAL.sky2], far: PAL.gray1, farDark: PAL.gray0, ground: PAL.grass0, groundDark: PAL.earth0, terrain: 'jagged', hazards: ['eagle', 'cliff', 'updraft', 'cable'], props: ['pine', 'rock', 'hut'] },
   desert:   { id: 'desert', name: 'THE DESERT', tagline: 'dust devils over the dunes, camels below', sky: [PAL.sun1, PAL.sun3], far: PAL.earth2, farDark: PAL.earth1, ground: PAL.sun2, groundDark: PAL.earth2, terrain: 'dunes', hazards: ['dust', 'dust', 'updraft', 'gull'], props: ['cactus', 'camel', 'rock'] },
   jungle:   { id: 'jungle', name: 'THE JUNGLE', tagline: 'toucans, mist, spray off the falls', sky: [PAL.grass1, PAL.grass3], far: PAL.grass0, farDark: PAL.night2, ground: PAL.grass1, groundDark: PAL.grass0, terrain: 'hills', water: PAL.sea3, hazards: ['toucan', 'plume', 'mist', 'toucan'], props: ['canopy', 'canopy', 'hut'] },
-  ice:      { id: 'ice', name: 'FIRE AND ICE', tagline: 'geysers, steam, gusts off the glacier', sky: [PAL.night2, PAL.sky2], far: PAL.gray2, farDark: PAL.gray1, ground: PAL.gray0, groundDark: PAL.ink, terrain: 'lava', water: PAL.sky3, hazards: ['geyser', 'gust', 'steam', 'geyser'], props: ['vent', 'rock'] },
+  ice:      { id: 'ice', name: 'FIRE AND ICE', tagline: 'geysers, steam, gusts that shove you up and down', sky: [PAL.night2, PAL.sky2], far: PAL.gray2, farDark: PAL.gray1, ground: PAL.gray0, groundDark: PAL.ink, terrain: 'lava', water: PAL.sky3, hazards: ['geyser', 'gust', 'steam', 'geyser'], props: ['vent', 'rock'] },
 };
 
 /** Cities whose landscape is not what the hazard / climate would suggest. */

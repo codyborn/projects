@@ -4,7 +4,7 @@ import type { HazardKind } from './sets';
 
 export interface Hazard {
   kind: HazardKind; wx: number; y: number; t: number; alive: boolean;
-  /** solid boxes are collidable; zones (updraft, gust, mist) only push */
+  /** solid boxes are collidable; zones (updraft, gust, mist) only push vertically or slow the controls */
   solid: boolean;
   /** kind-specific numbers */ a: number; b: number; c: number; phase: number;
   spr?: Phaser.GameObjects.Sprite;

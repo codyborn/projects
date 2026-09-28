@@ -14,6 +14,8 @@ export type MicroDone = (score01: number) => void;
 /** Base class: bookkeeping for inputs, loops and objects so a micro-game can be torn down cleanly. */
 export abstract class Micro {
   abstract readonly id: string; abstract readonly word: string; abstract readonly instr: string; abstract readonly durationSec: number;
+  /** the game draws its own intro (shot + scrolling text) and then asks the frame for the READY card itself; WorkoutScene skips its first card */
+  readonly selfIntro?: boolean;
   protected ctx!: MicroCtx; protected done!: MicroDone; private finished = false;
   private objs: Phaser.GameObjects.GameObject[] = []; private timers: Phaser.Time.TimerEvent[] = []; private listeners: { ev: string; fn: (...a: any[]) => void; kb?: boolean }[] = [];
   protected g!: Phaser.GameObjects.Graphics; protected t = 0;

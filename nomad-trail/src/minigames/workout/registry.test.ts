@@ -3,7 +3,7 @@ import { META, MICRO_IDS, POOLS, DENSE_CITIES, PINNACLE_CITIES, WOODCHOP_CITIES,
 describe('workout micro-game pools', () => {
   it('every pool entry has metadata; every micro has a name, a command word, an instruction and a 4 to 9 s duration', () => {
     for (const [act, ids] of Object.entries(POOLS)) for (const id of ids!) expect(META[id], `${act}:${id}`).toBeDefined();
-    for (const id of MICRO_IDS) { const m = META[id]; expect(m.name.length).toBeGreaterThan(2); expect(m.word.endsWith('!')).toBe(true); expect(m.instr.length).toBeGreaterThan(10); expect(m.durationSec).toBeGreaterThanOrEqual(4); expect(m.durationSec).toBeLessThanOrEqual(id === 'cityrun' ? 25 : id === 'pinnacle' || id === 'woodchop' ? 22 : 9); }   // City Run (25 s), the Pinnacle and Wood Chop (22 s) are always single games
+    for (const id of MICRO_IDS) { const m = META[id]; expect(m.name.length).toBeGreaterThan(2); expect(m.word.endsWith('!')).toBe(true); expect(m.instr.length).toBeGreaterThan(10); expect(m.durationSec).toBeGreaterThanOrEqual(4); expect(m.durationSec).toBeLessThanOrEqual(id === 'cityrun' ? 25 : id === 'pinnacle' ? 40 : id === 'woodchop' ? 22 : 9); }   // City Run (25 s), the Pinnacle (40 s cap, intro paused) and Wood Chop (22 s) are always single games
     expect(MICRO_IDS.length).toBeGreaterThanOrEqual(15); expect(META.kettlebell).toBeUndefined(); expect(MICRO_IDS.includes('kettlebell')).toBe(false);
   });
   it('hotel room and hike sessions chain THREE different games; every other activity is one game; unknown activities use the hotel room', () => {

@@ -13,7 +13,7 @@ export const HUD_H = 26;
 
 /** Pixel sprites: diver (2 frames: fins up / down), lionfish (2 frames), reef fish, spear tip. */
 export function buildScubaSprites(scene: Phaser.Scene) {
-  const M = { k: PAL.ink, b: PAL.night3, s: PAL.gray2, f: PAL.sun0, y: PAL.sun2, w: PAL.white, t: PAL.sea3, r: PAL.red, p: PAL.pink, d: PAL.dusk3, n: PAL.neon, g: PAL.gray1, o: PAL.sun1, e: PAL.earth1 };
+  const M = { k: PAL.ink, b: PAL.night3, s: PAL.gray2, f: PAL.sun0, y: PAL.sun2, w: PAL.white, t: PAL.sea3, r: PAL.red, m: PAL.dusk2, p: PAL.pink, d: PAL.dusk1, n: PAL.neon, g: PAL.gray1, o: PAL.sun1, e: PAL.earth1 };
   const diver = (fin: string[]) => [
     '.......ww........',
     '......wttw..kkk..',
@@ -26,40 +26,75 @@ export function buildScubaSprites(scene: Phaser.Scene) {
   ];
   pixTexture(scene, 'sc_diver0', diver(['.ffbbbbbbbb......', 'ffff.............']), M, 1);
   pixTexture(scene, 'sc_diver1', diver(['..bbbbbbbbb......', '.ffff............', 'ffff.............']), M, 1);
-  /* lionfish: striped body, fanned spines (drawn as separate dorsal rays) */
+  /* lionfish, 28x20 (drawn at 2x = 56x40, roughly the 25 px danger halo): maroon/white banded body, a tall crest of separate dorsal
+     rays, a feathered pectoral fan spreading down and back, a fanned tail, a dark bar through the eye, a down-turned mouth.
+     Frame 0 fins flared, frame 1 relaxed; the dead frame is the same silhouette gone grey. Faces right; the scene mirrors it. */
   pixTexture(scene, 'sc_lion0', [
-    '....r..r..r.....',
-    '...r.r.r.r.r....',
-    '..rrrrrrrrrrr...',
-    '.rowowowowowor..',
-    'rowowowowowowowr',
-    '.rowowowowowor..',
-    '..rrrrrrrrrrr...',
-    '...r.r.r.r.r....',
-    '....r..r..r.....',
+    '............................',
+    '.............w..............',
+    '...........w.d.w............',
+    '.w.........d.d.d............',
+    '..d......w.d.d.d.w..........',
+    '...d.....d.d.d.d.d..........',
+    '....d....d.d.d.d.d.w........',
+    'wd.mmmmm..rrwrrwrrwd........',
+    '..dmmmmm.wrrwrrwrrwrrrk.....',
+    '...mmmmmrwrrwrrwrrwrrwkwr...',
+    'wddmmmmmrwrrwrrwrrwrrrkrrr..',
+    '...mmmmmrwrrwrrwrrwrrrrrk...',
+    '..dmmmmm.wrrwrrwrrwrrrr..k..',
+    'wd.mmmmm..rrdrdwdrdddd......',
+    '....d......d.d..d.d.d.dd....',
+    '...d......d.d...d.d..d..dd..',
+    '..d.....dd..d...d.d..d....w.',
+    '.w.....d...d...d...d..d.....',
+    '......d...d....d...d...w....',
+    '.....w...w.....w...w........',
   ], M, 1);
   pixTexture(scene, 'sc_lion1', [
-    '...r..r..r......',
-    '..r.r.r.r.r.....',
-    '..rrrrrrrrrrr...',
-    '.rowowowowowor..',
-    'rowowowowowowowr',
-    '.rowowowowowor..',
-    '..rrrrrrrrrrr...',
-    '..r.r.r.r.r.....',
-    '...r..r..r......',
+    '.............w..............',
+    '...........w.d.w............',
+    '...........d.d.d............',
+    '.........w.d.d.d.w..........',
+    '.w.......d.d.d.d.d..........',
+    '..d......d.d.d.d.d.w........',
+    '...d.....d.d.d.d.d.d........',
+    'wd.mmmmm..rrwrrwrrwd........',
+    '..dmmmmm.wrrwrrwrrwrrrk.....',
+    '...mmmmmrwrrwrrwrrwrrwkwr...',
+    'wddmmmmmrwrrwrrwrrwrrrkrrr..',
+    '...mmmmmrwrrwrrwrrwrrrrrk...',
+    '..dmmmmm.wrrwrrwrrwrrrr..k..',
+    'wd.mmmmm..rrdrdwdrddd.......',
+    '...d.......d.d..d.d.ddd.....',
+    '..d.......d..d.d..d.d..dd...',
+    '.w.......d..d..d..d..d...w..',
+    '........d..d...d..d..d......',
+    '.......d...d..d...d...w.....',
+    '......w...w...w...w.........',
   ], M, 1);
   pixTexture(scene, 'sc_lion_dead', [
-    '................',
-    '...g..g..g......',
-    '..ggggggggggg...',
-    '.ggsgsgsgsgsgg..',
-    'ggsgsgsgsgsgsgsg',
-    '.ggsgsgsgsgsgg..',
-    '..ggggggggggg...',
-    '...g..g..g......',
-    '................',
-  ], M, 1);
+    '.............w..............',
+    '...........w.d.w............',
+    '...........d.d.d............',
+    '.........w.d.d.d.w..........',
+    '.w.......d.d.d.d.d..........',
+    '..d......d.d.d.d.d.w........',
+    '...d.....d.d.d.d.d.d........',
+    'wd.mmmmm..rrwrrwrrwd........',
+    '..dmmmmm.wrrwrrwrrwrrrk.....',
+    '...mmmmmrwrrwrrwrrwrrwkwr...',
+    'wddmmmmmrwrrwrrwrrwrrrkrrr..',
+    '...mmmmmrwrrwrrwrrwrrrrrk...',
+    '..dmmmmm.wrrwrrwrrwrrrr..k..',
+    'wd.mmmmm..rrdrdwdrddd.......',
+    '...d.......d.d..d.d.ddd.....',
+    '..d.......d..d.d..d.d..dd...',
+    '.w.......d..d..d..d..d...w..',
+    '........d..d...d..d..d......',
+    '.......d...d..d...d...w.....',
+    '......w...w...w...w.........',
+  ], { ...M, r: PAL.gray1, m: PAL.gray0, w: PAL.gray2, d: PAL.gray0, k: PAL.ink }, 1);
   pixTexture(scene, 'sc_fish_y', ['..yyy..', '.yyyyyy', 'yykyyyy', '.yyyyyy', '..yyy..'], M, 1);
   pixTexture(scene, 'sc_fish_t', ['..ttt..', '.tttttt', 'ttkttt.', '.tttttt', '..ttt..'], M, 1);
   pixTexture(scene, 'sc_fish_p', ['..ppp..', '.pppppp', 'ppkpppp', '.pppppp', '..ppp..'], M, 1);

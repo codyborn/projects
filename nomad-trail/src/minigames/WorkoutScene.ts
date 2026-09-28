@@ -89,6 +89,7 @@ export class WorkoutScene extends Phaser.Scene {
       });
     };
     const opts = { extra, height: 340, title: meta.name };
+    if (micro.selfIntro) { this.frame.active = true; begin(); return; }   /* the game's own intro comes first (no cap yet); it asks the frame for the card and arms the cap itself */
     if (first) this.frame.intro(meta.instr, begin, opts); else this.frame.card(meta.instr, begin, opts);
     this.time.delayedCall(150, () => { const go = () => this.frame.ready(); this.input.once('pointerdown', go); });   // tap anywhere also starts (after the tap that opened the card)
   }

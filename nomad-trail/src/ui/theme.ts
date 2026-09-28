@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { PAL, hex } from '../core/palette';
 import { GAME_W, GAME_H } from '../core/types';
-import { pixFont } from '../art/font';
+import { pixFont, fitText } from '../art/font';
 export { PAL, hex, GAME_W, GAME_H };
 export const FONT = 'monospace';
 export type Size = number;
@@ -9,7 +9,7 @@ export type Size = number;
 export function txt(scene: Phaser.Scene, x: number, y: number, s: string, size: Size = 12, color: number = PAL.white, opts: { align?: string; wrap?: number; bold?: boolean } = {}) {
   if (scene.cache.bitmapFont.exists('pix7')) {
     const f = pixFont(size);
-    const t = scene.add.bitmapText(Math.round(x), Math.round(y), f.key, s, f.fontSize).setTint(color);
+    const t = scene.add.bitmapText(Math.round(x), Math.round(y), f.key, fitText(s, f.key), f.fontSize).setTint(color);
     if (opts.wrap) t.setMaxWidth(opts.wrap);
     if (opts.align === 'center') t.setCenterAlign(); else if (opts.align === 'right') t.setRightAlign();
     return t as unknown as Label;
