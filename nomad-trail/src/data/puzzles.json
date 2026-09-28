@@ -119,13 +119,13 @@
  },
  {
   "id": "rollout-steps",
-  "title": "The rollout",
-  "prompt": "Deploying the new pool contract from chain 1 to chain 4 took 48 minutes at a steady pace. At the same pace, how long from chain 4 to chain 8?",
+  "title": "Take the stairs",
+  "prompt": "Climbing from floor 1 to floor 4 of the Uniswap office takes 48 seconds. At the same pace, how long does it take to climb from floor 4 to floor 8?",
   "kind": "number",
   "answer": 64,
-  "hint": "Count steps between chains, not chain numbers. 1 to 4 is three steps.",
-  "explain": "64 minutes. 1 to 4 is 3 steps of 16 minutes. 4 to 8 is 4 steps. The classic off-by-one.",
-  "art": "chain"
+  "hint": "Count the flights of stairs between floors, not the floor numbers. 1 to 4 is three flights.",
+  "explain": "64 seconds. Floor 1 to 4 is 3 flights at 16 seconds each. Floor 4 to 8 is 4 flights. The classic off-by-one, on the stairs.",
+  "art": "whiteboard"
  },
  {
   "id": "server-cube",

@@ -12,12 +12,12 @@ import { makeHazard, boxes, cableY, plumeUp, plumeWarn, MOVER_SPEED, ZONES, type
  * The camera fires forward by itself and knocks birds out of the way. SPACE or UP = hold, B/X = bomb on desktop.
  * Lives: 3 hearts (up to 5). A hit costs a heart and 10 points, then 1.5 s of blinking invulnerability. Hearts at 0 = crash (FAILED).
  * Power-ups drift down the lane every 10 to 14 s: HEART (+1 life), DOUBLE SHOT (two shots at once for 15 s), SHIELD (absorbs one hit, 8 s).
- * Battery is the clock; climbing burns it faster. Payload: { city: City, cityName, seed, level 1..3 }.
+ * Each level is a fixed-length course (about 45 / 55 / 65 s of scroll) that ends at a landing pad drawn per set (towel, H pad, cairn, flag,
+ * clearing, beacon); the drone auto-lands there with a dust puff, then the result card. No battery, no timer. Payload: { city: City, cityName, seed, level 1..3 }.
  * Score = rings hit / rings × 100 − 10 per hit. Six level sets (coast, city, mountain, desert, jungle, fire and ice) picked from the city (drone/sets.ts).
- * Level 1 is the gentle one (slow scroll, sparse hazards, long battery); 2 and 3 ramp.
+ * Level 1 is the gentle one (slow scroll, sparse hazards, short course); 2 and 3 ramp.
  */
 const BASE = H - 64;                 // ground baseline (screen y)
-const RING_GAP = 190;
 const MAX_HEARTS = 5;
 type PuKind = 'heart' | 'double' | 'shield';
 interface Ring { wx: number; y: number; state: 'open' | 'hit' | 'miss'; flash: number; }
@@ -30,7 +30,7 @@ export class DroneScene extends Phaser.Scene {
   private scroll = 0; private v = 60; private t = 0; private tick?: Phaser.Time.TimerEvent;
   x = 120; y = 260; vy = 0; held = false;
   private rings: Ring[] = []; private hazards: Hazard[] = []; private pickups: Pickup[] = []; private shots: Shot[] = []; private spawnT = 0; private puT = 0; private lastStaticWx = -1e9; private rng!: () => number;
-  hits = 0; collisions = 0; hearts = 3; bombs = 2; private shield = 0; private doubleT = 0; private fireT = 0; private iframes = 0; private battery = 1; private drain = 1; private ended = false; private landing = false; private anim = 0; private landT = 0;
+  hits = 0; collisions = 0; hearts = 3; bombs = 2; private shield = 0; private doubleT = 0; private fireT = 0; private iframes = 0; private padWx = 3000; private ended = false; private puffed = false; private landing = false; private anim = 0; private landT = 0;
   private keyUp = false; private mistK = 0; private lastTap = -1; private toastUntil = 0;
   constructor() { super(MINIGAME_KEYS.drone); }
 
@@ -41,7 +41,7 @@ export class DroneScene extends Phaser.Scene {
     this.set = SETS[pickSet(this.city)];
     let s = (this.seed * 9301 + this.level * 49297) >>> 0; this.rng = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
     this.scroll = 0; this.t = 0; this.x = 120; this.y = 260; this.vy = 0; this.held = false; this.rings = []; this.hazards = []; this.pickups = []; this.shots = []; this.spawnT = 2.2; this.puT = 5; this.lastStaticWx = -1e9;
-    this.hits = 0; this.collisions = 0; this.hearts = 3; this.bombs = 2; this.shield = 0; this.doubleT = 0; this.fireT = 0; this.iframes = 0; this.battery = 1; this.ended = false; this.landing = false; this.anim = 0; this.landT = 0;
+    this.hits = 0; this.collisions = 0; this.hearts = 3; this.bombs = 2; this.shield = 0; this.doubleT = 0; this.fireT = 0; this.iframes = 0; this.ended = false; this.puffed = false; this.landing = false; this.anim = 0; this.landT = 0;
     this.keyUp = false; this.mistK = 0; this.lastTap = -1; this.toastUntil = 0;
   }
 
@@ -49,26 +49,27 @@ export class DroneScene extends Phaser.Scene {
   create() {
     this.frame = new MinigameFrame(this, this.launch, 'Drone flight');
     this.v = (44 + 13 * this.level) * (0.9 + 0.2 * this.launch.difficulty) * (1 + 0.1 * this.frame.hard);   // level 1 ≈ 44 px/s, level 3 ≈ 83
-    const dur = 44 + 8 * this.level; this.drain = 1 / dur; this.frame.capSec = dur + 14;
+    const dur = 35 + 10 * this.level; this.padWx = Math.round(this.v * dur) + this.x; this.frame.capSec = dur + 30;   // course length in scroll px: 45 / 55 / 65 s at this level's speed; the cap is only a safety net
     this.cameras.main.setBackgroundColor(this.set.sky[0]);
     this.textures_();
     const N = 10; for (let i = 0; i < N; i++) { const c = Phaser.Display.Color.Interpolate.ColorWithColor(Phaser.Display.Color.ValueToColor(this.set.sky[0]), Phaser.Display.Color.ValueToColor(this.set.sky[1]), N - 1, i); const bh = (BASE - 26) / N; this.add.rectangle(W / 2, 26 + i * bh + bh / 2, W, bh + 1, Phaser.Display.Color.GetColor(c.r, c.g, c.b)).setDepth(0); }   // ten sky bands
     this.g = this.add.graphics().setDepth(2);
     this.drone = this.add.sprite(this.x, this.y, 'dr_drone0').setScale(2).setDepth(5);
-    const first = 420; for (let i = 0; i < this.ringCount; i++) { const wx = first + i * RING_GAP; const gy = BASE - terrainH(this.set.terrain, wx, this.seed); this.rings.push({ wx, y: 80 + this.rng() * (gy - 140), state: 'open', flash: 0 }); }
-    this.frame.hud(); this.frame.setProgress(`0/${this.ringCount} shots`); this.frame.setTimer('battery 100%');
+    const first = 420, gap = Math.max(150, (this.padWx - 300 - first) / (this.ringCount - 1)); for (let i = 0; i < this.ringCount; i++) { const wx = Math.round(first + i * gap); const gy = BASE - terrainH(this.set.terrain, wx, this.seed); this.rings.push({ wx, y: 80 + this.rng() * (gy - 140), state: 'open', flash: 0 }); }
+    this.frame.hud(); this.frame.setProgress(`0/${this.ringCount} shots`); this.frame.setTimer(`${this.metersLeft()} m to the pad`);
     this.toastT = txt(this, W / 2, 62, '', 12, PAL.sun2).setDepth(20).setAlpha(0);
     this.frame.scoreNow = () => this.score();
-    this.frame.intro(`${this.cityName.toUpperCase()} · ${this.set.name}. Fly through ${this.ringCount} photo rings. ${this.set.tagline}. Climbing burns battery.`, () => this.startRun(),
-      { height: 468, title: `Drone flight · level ${this.level}`, extra: (s, add) => {
-        const top = H / 2 - 234; add(s.add.sprite(W / 2, top + 118, 'dr_drone0').setScale(3));
+    this.frame.intro(`${this.cityName.toUpperCase()} · ${this.set.name}. Fly through ${this.ringCount} photo rings to the landing pad. ${this.set.tagline}.`, () => this.startRun(),
+      { height: 500, title: `Drone flight · level ${this.level}`, extra: (s, add) => {
+        const top = H / 2 - 250; add(s.add.sprite(W / 2, top + 118, 'dr_drone0').setScale(3));
         const ic = s.add.graphics(); add(ic);
         const row = (y: number, draw: () => void, label: string) => { ic.fillStyle(PAL.night3).fillRect(34, y - 16, 36, 32); draw(); add(txt(s, 80, y, label, 9, PAL.white, 'left')); };
         row(top + 168, () => { ic.fillStyle(PAL.neon).fillCircle(52, top + 168, 7); ic.fillStyle(PAL.night3).fillCircle(52, top + 168, 3); ic.fillStyle(PAL.neon).fillTriangle(52, top + 155, 47, top + 162, 57, top + 162); }, 'HOLD to climb · RELEASE to sink');
         row(top + 208, () => { ic.fillStyle(PAL.white).fillRect(44, top + 206, 8, 2).fillRect(56, top + 206, 8, 2); ic.fillStyle(PAL.sun2).fillRect(48, top + 214, 4, 4).fillRect(56, top + 214, 4, 4); }, 'auto shots · DOUBLE-TAP = battery bomb (2)');
         row(top + 248, () => { for (let i = 0; i < 3; i++) { ic.fillStyle(PAL.red).fillRect(40 + i * 9, top + 245, 6, 5).fillRect(41 + i * 9, top + 250, 4, 2).fillRect(42 + i * 9, top + 252, 2, 1); } }, '3 hearts · a hit = -1 heart, -10 points');
+        row(top + 328, () => { ic.fillStyle(PAL.sun2).fillRect(40, top + 334, 24, 4); ic.fillStyle(PAL.ink).fillRect(48, top + 328, 8, 6); ic.fillStyle(PAL.white).fillRect(50, top + 329, 4, 4); }, 'fly to the LANDING PAD at the end of the course');
         row(top + 288, () => { ic.fillStyle(PAL.red).fillRect(38, top + 284, 8, 7); ic.fillStyle(PAL.sun2).fillRect(49, top + 284, 7, 7); ic.fillStyle(PAL.sky2).fillRect(59, top + 284, 7, 7); }, 'HEART +1 life · DOUBLE SHOT 15 s · SHIELD 1 hit');
-        add(txt(s, W / 2, top + 322, `ring = 1 shot · hearts at 0 = crash`, 9, PAL.sun1));
+        add(txt(s, W / 2, top + 356, `ring = 1 shot · hearts at 0 = crash`, 9, PAL.sun1));
       } });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.tick?.remove());
   }
@@ -97,10 +98,11 @@ export class DroneScene extends Phaser.Scene {
   /** Harness hooks */
   press() { this.held = true; }
   release() { this.held = false; }
-  hint() { const next = this.rings.find(r => r.state === 'open' && r.wx - this.scroll > this.x - 20); return { x: this.x, y: this.y, vy: this.vy, next: next ? { x: next.wx - this.scroll, y: next.y } : null, hits: this.hits, collisions: this.collisions, hearts: this.hearts, bombs: this.bombs, shield: this.shield, double: this.doubleT, battery: this.battery, set: this.set.id, pickups: this.pickups.filter(p => p.alive).map(p => ({ kind: p.kind, x: p.wx - this.scroll, y: p.y })), hazards: this.hazards.filter(h => h.solid).flatMap(h => boxes(h, h.wx - this.scroll)) }; }
+  hint() { const next = this.rings.find(r => r.state === 'open' && r.wx - this.scroll > this.x - 20); return { x: this.x, y: this.y, vy: this.vy, next: next ? { x: next.wx - this.scroll, y: next.y } : null, hits: this.hits, collisions: this.collisions, hearts: this.hearts, bombs: this.bombs, shield: this.shield, double: this.doubleT, landing: this.landing, metersLeft: this.metersLeft(), set: this.set.id, pickups: this.pickups.filter(p => p.alive).map(p => ({ kind: p.kind, x: p.wx - this.scroll, y: p.y })), hazards: this.hazards.filter(h => h.solid).flatMap(h => boxes(h, h.wx - this.scroll)) }; }
   score() { return clamp((this.hits / this.ringCount) * 100 - 10 * this.collisions, 0, 100); }
   update(_t: number, dt: number) { this.frame.update(dt); }
 
+  metersLeft() { return Math.max(0, Math.round((this.padWx - this.scroll - this.x) / 4)); }
   private groundY(sx: number) { return BASE - terrainH(this.set.terrain, sx + this.scroll, this.seed); }
   private waterAt(wx: number) { return !!this.set.water && this.set.terrain !== 'hills' && h32(Math.floor(wx / 90), this.seed + 5) > 0.66; }
   private toast(msg: string, color: number = PAL.sun2) { if (!this.toastT) return; this.toastT.setText(msg).setColor('#' + color.toString(16).padStart(6, '0')).setAlpha(1).setY(62); this.toastUntil = this.t + 1.3; }
@@ -108,9 +110,8 @@ export class DroneScene extends Phaser.Scene {
 
   private step(dt: number) {
     if (!this.frame.active || this.ended) return; this.t += dt; const holding = this.held || this.keyUp;
-    // scroll and battery
-    const scrollV = this.landing ? this.v * 0.4 : this.v; this.scroll += scrollV * dt;
-    this.battery -= this.drain * dt * (holding ? 1.4 : 1); if (this.battery <= 0 && !this.landing) { this.battery = 0; this.land(); }
+    // scroll: the course is a fixed length; the landing pad scrolls in at the end and the drone sets down on it
+    if (!this.landing) this.scroll += this.v * dt;
     if (this.shield > 0) this.shield -= dt; if (this.doubleT > 0) this.doubleT -= dt;
     if (this.toastT && this.toastUntil > 0 && this.t > this.toastUntil - 0.4) { this.toastT.setAlpha(Math.max(0, (this.toastUntil - this.t) / 0.4)); }
     // physics
@@ -132,7 +133,7 @@ export class DroneScene extends Phaser.Scene {
       else if (sx < this.x - 26) { r.state = 'miss'; r.flash = 0.5; this.frame.setProgress(`${this.hits}/${this.ringCount} shots`); } }
     // spawns: hazards paced by level, a power-up every 10 to 14 s (the first one early)
     if (!this.landing) {
-      this.spawnT -= dt; if (this.spawnT <= 0) { this.spawnT = Math.max(1.2, 3.4 - 0.45 * this.level - 0.3 * this.launch.difficulty) * (0.8 + this.rng() * 0.4); this.spawn(); }
+      this.spawnT -= dt; if (this.spawnT <= 0) { this.spawnT = Math.max(1.4, 4.0 - 0.5 * this.level - 0.3 * this.launch.difficulty) * (0.8 + this.rng() * 0.4); this.spawn(); }   // ~3.5 / 3.0 / 2.5 s between hazards: the course got longer, the count per flight should not
       this.puT -= dt; if (this.puT <= 0) { this.puT = 10 + this.rng() * 4; this.spawnPickup(); }
     }
     const dr = new Phaser.Geom.Rectangle(this.x - 12, this.y - 6, 24, 12);
@@ -160,15 +161,16 @@ export class DroneScene extends Phaser.Scene {
     for (const p of this.pickups) { p.t += dt; p.wx -= 18 * dt; const sx = p.wx - this.scroll; const py = p.y + Math.sin(p.t * 3) * 6; if (sx < -30) { p.alive = false; continue; } if (Math.hypot(sx - this.x, py - this.y) < 20) { p.alive = false; this.collect(p.kind); } }
     this.pickups = this.pickups.filter(p => p.alive);
     if (this.iframes > 0) { this.iframes -= dt; this.drone.setAlpha(Math.sin(this.iframes * 40) > 0 ? 1 : 0.35); } else this.drone.setAlpha(1);
-    // end of the route: past the last ring the drone lands
-    const last = this.rings[this.rings.length - 1]; if (!this.landing && last.wx - this.scroll < this.x - 60) this.land();
-    if (this.landing) { const ly = this.groundY(this.x) - 10; this.y += (ly - this.y) * Math.min(1, 3 * dt); this.vy = 0; if (Math.abs(ly - this.y) < 2 && this.t > this.landT + 1.4) this.finishRun(false); }
-    this.frame.setTimer(`battery ${Math.ceil(this.battery * 100)}%`);
+    // the landing pad reaches the drone: auto-land with a dust puff, then the result card
+    if (!this.landing && this.padWx - this.scroll <= this.x) this.land();
+    if (this.landing) { const ly = this.groundY(this.x) - 10; this.y += (ly - this.y) * Math.min(1, 2.2 * dt); this.vy = 0; if (Math.abs(ly - this.y) < 3) { if (!this.puffed) { this.puffed = true; this.puff(this.x, ly + 8); } if (this.t > this.landT + 1.6) this.finishRun(false); } }
+    this.frame.setTimer(this.landing ? 'landing' : `${this.metersLeft()} m to the pad`);
     this.draw();
   }
   private kill(h: Hazard) { h.alive = false; h.spr?.destroy(); }
   private poof(x: number, y: number) { const r = this.add.circle(x, y, 6, PAL.white, 0.9).setDepth(7); this.tweens.add({ targets: r, scale: 2.4, alpha: 0, duration: 220, onComplete: () => r.destroy() }); }
   private land() { if (this.landing) return; this.landing = true; this.landT = this.t; this.held = false; }
+  private puff(x: number, y: number) { for (let i = 0; i < 6; i++) { const c = this.add.circle(x - 14 + i * 6, y, 3 + (i % 2) * 2, this.set.groundDark === PAL.ink ? PAL.gray1 : PAL.earth3, 0.8).setDepth(7); this.tweens.add({ targets: c, x: c.x + (i - 2.5) * 10, y: c.y - 8 - (i % 3) * 4, scale: 2, alpha: 0, duration: 500 + i * 40, onComplete: () => c.destroy() }); } }
   private hurt() {
     if (this.iframes > 0) return;
     if (this.shield > 0) { this.shield = 0; this.iframes = 1.0; this.toast('SHIELD TOOK IT', PAL.sky2); this.frame.flash(PAL.sky2, 60); return; }
@@ -223,12 +225,26 @@ export class DroneScene extends Phaser.Scene {
     g.fillStyle(PAL.white); for (const sh of this.shots) g.fillRect(sh.x - 4, sh.y - 1, 8, 2);
     // shield ring
     if (this.shield > 0) g.lineStyle(2, PAL.sky2, this.shield < 2 ? 0.3 + 0.5 * Math.abs(Math.sin(this.t * 12)) : 0.8).strokeCircle(this.x, this.y, 20);
-    // HUD extras: hearts (empty slots up to 3, extras only while held), bombs, double-shot timer, battery bar, landing pad
+    // landing pad at the end of the course
+    { const px = this.padWx - this.scroll; if (px > -40 && px < W + 40) this.pad(px, BASE - terrainH(S.terrain, this.padWx, seed)); }
+    // HUD extras: hearts (empty slots up to 3, extras only while held), bombs, double-shot timer, course progress
     for (let i = 0; i < Math.max(3, this.hearts); i++) { const on = i < this.hearts; const hx = 10 + i * 13, hy = 32; g.fillStyle(on ? PAL.red : PAL.gray0).fillRect(hx, hy, 3, 3).fillRect(hx + 4, hy, 3, 3).fillRect(hx - 1, hy + 2, 9, 3).fillRect(hx + 1, hy + 5, 5, 2).fillRect(hx + 3, hy + 7, 1, 1); }
     for (let i = 0; i < this.bombs; i++) { g.fillStyle(PAL.sun2).fillRect(84 + i * 10, 32, 6, 8); g.fillStyle(PAL.ink).fillRect(86 + i * 10, 30, 2, 2); }
     if (this.doubleT > 0) { g.fillStyle(PAL.sun2, 0.9).fillRect(112, 34, Math.round(40 * this.doubleT / 15), 4); g.fillStyle(PAL.white).fillRect(112, 30, 8, 2).fillRect(112, 40, 8, 2); }
-    g.fillStyle(PAL.ink).fillRect(W - 66, 30, 58, 8); g.fillStyle(this.battery > 0.3 ? PAL.neon : PAL.red).fillRect(W - 65, 31, Math.round(56 * this.battery), 6);
-    if (this.landing) { const ly = this.groundY(this.x); g.fillStyle(PAL.sun2).fillRect(this.x - 16, ly - 2, 32, 3); }
+    { const prog = clamp((this.scroll + this.x - 120) / (this.padWx - 120), 0, 1); g.fillStyle(PAL.ink).fillRect(W - 86, 30, 78, 8); g.fillStyle(PAL.night3).fillRect(W - 85, 31, 76, 6); g.fillStyle(PAL.neon).fillRect(W - 85, 31, Math.round(76 * prog), 6); g.fillStyle(PAL.sun2).fillRect(W - 12, 29, 3, 10); }
+  }
+  /** The landing pad at the end of the course, drawn per set: beach towel, rooftop H pad, cairn, desert flag, jungle clearing, glacier beacon. */
+  private pad(x: number, y: number) {
+    const g = this.g; const blink = Math.sin(this.t * 6) > 0;
+    switch (this.set.id) {
+      case 'coast': g.fillStyle(PAL.red).fillRect(x - 18, y - 4, 36, 4); g.fillStyle(PAL.white).fillRect(x - 18, y - 4, 36, 1).fillRect(x - 18, y - 2, 36, 1); g.fillStyle(PAL.sun2).fillRect(x + 12, y - 12, 6, 8); break;   // towel and a bag
+      case 'city': g.fillStyle(PAL.gray0).fillRect(x - 22, y - 6, 44, 6); g.lineStyle(2, PAL.sun2).strokeCircle(x, y - 3, 12); g.fillStyle(PAL.sun2).fillRect(x - 5, y - 8, 2, 10).fillRect(x + 3, y - 8, 2, 10).fillRect(x - 5, y - 4, 10, 2); if (blink) { g.fillStyle(PAL.red).fillRect(x - 20, y - 8, 2, 2).fillRect(x + 18, y - 8, 2, 2); } break;   // H pad
+      case 'mountain': g.fillStyle(PAL.gray1).fillRect(x - 10, y - 6, 20, 6).fillRect(x - 7, y - 12, 14, 6).fillRect(x - 4, y - 17, 8, 5).fillRect(x - 2, y - 20, 4, 3); g.fillStyle(PAL.gray2).fillRect(x - 6, y - 11, 4, 2); g.fillStyle(PAL.sun2).fillRect(x + 14, y - 22, 2, 22); g.fillStyle(PAL.red).fillRect(x + 16, y - 22, 8, 5); break;   // cairn and a marker flag
+      case 'desert': g.fillStyle(PAL.earth1).fillRect(x - 20, y - 3, 40, 3); g.fillStyle(PAL.white).fillRect(x - 1, y - 26, 2, 26); g.fillStyle(PAL.sun0).fillTriangle(x + 1, y - 26, x + 15, y - 21, x + 1, y - 16); g.fillStyle(PAL.sun3).fillRect(x - 14, y - 5, 6, 2).fillRect(x + 8, y - 5, 6, 2); break;   // flag on a swept patch
+      case 'jungle': g.fillStyle(PAL.earth3).fillRect(x - 20, y - 4, 40, 4); g.fillStyle(PAL.white).fillRect(x - 12, y - 4, 24, 1); g.lineStyle(2, PAL.white).lineBetween(x - 8, y - 12, x + 8, y - 2).lineBetween(x + 8, y - 12, x - 8, y - 2); break;   // cleared patch with an X
+      case 'ice': g.fillStyle(PAL.gray2).fillRect(x - 18, y - 4, 36, 4); g.fillStyle(PAL.gray1).fillRect(x - 2, y - 22, 4, 18); g.fillStyle(blink ? PAL.neon : PAL.sea1).fillRect(x - 4, y - 26, 8, 5); break;   // beacon on a plate
+    }
+    g.fillStyle(PAL.sun2, blink ? 0.9 : 0.4).fillTriangle(x - 6, y - 40, x + 6, y - 40, x, y - 32);   // the "land here" arrow
   }
   private prop(kind: PropKind, x: number, y: number, slot: number) {
     const g = this.g; const r = h32(slot, 77);

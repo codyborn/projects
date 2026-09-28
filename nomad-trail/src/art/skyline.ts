@@ -403,7 +403,7 @@ export function buildSkyline(scene: Phaser.Scene, cityIdOrRegion: string, tod: T
   const key = resolveSkylineKey(cityIdOrRegion, region ?? (cityIdOrRegion as Region));
   const draw = CITY[key] || CITY.boulder; const r = rng(seedOf(key));
   const sil = SIL[tod], win = WIN[tod];
-  const mk = (name: string, cw: number, ch: number, fn: (ctx: Ctx) => void) => { const k = `sky_${key}_${tod}_${name}`; if (!scene.textures.exists(k)) scene.textures.addCanvas(k, makeCanvas(cw, ch, fn)); return k; };
+  const mk = (name: string, cw: number, ch: number, fn: (ctx: Ctx) => void) => { const k = `sky_${key}_${tod}_${name}_${w}x${h}_${horizonY}`;   /* size in the key: the coffee window and the city vista draw the same city at different heights */ if (!scene.textures.exists(k)) scene.textures.addCanvas(k, makeCanvas(cw, ch, fn)); return k; };
   const skyKey = mk('sky', w, h, ctx => { ditherGradient(ctx, 0, 0, w, horizonY + 20, SKY[tod]); if (tod === 'night' || tod === 'dawn') { const rr = rng(7); for (let i = 0; i < (tod === 'night' ? 90 : 25); i++) P(ctx, rr.int(0, w - 1), rr.int(0, horizonY - 40), rr.chance(0.3) ? PAL.white : PAL.gray2); }
     if (tod === 'dusk' || tod === 'dawn') { const sx = tod === 'dusk' ? w * 0.125 : w * 0.35; circle(ctx, sx, horizonY - 30, 16, PAL.sun3); circle(ctx, sx, horizonY - 30, 12, PAL.sun2); }
     if (tod === 'night') circle(ctx, w * 0.375, 90, 14, PAL.sun3), circle(ctx, w * 0.375 + 6, 86, 12, SKY.night[1]);

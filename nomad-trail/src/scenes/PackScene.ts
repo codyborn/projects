@@ -42,7 +42,7 @@ function benefitsOf(it: Item): string[] {
   if (t.has('kite')) b.push('wind days become the best days');
   if (t.has('hike')) b.push('+1 life in outdoor games');
   if (t.has('water')) b.push('safe water, no filter days');
-  if (t.has('switch')) b.push('Carry-On on rest days');
+  if (t.has('switch')) b.push('Coin Collector evenings');
   if (t.has('organizer')) b.push('nothing left behind');
   if (t.has('camera')) b.push('mood from the views');
   if (t.has('luxury') && !b.length) b.push('a little mood, some weight');
@@ -259,7 +259,7 @@ export class PackScene extends Phaser.Scene {
     // one line each, max 40 chars (8 px per char at size 8 on a 340 px screen)
     if (pct >= 0.9) h.push('! heavy bag: back risk, slow travel'); if (!tags.has('work')) h.push('! no laptop: no work, no pay'); if (clothes < 7) h.push(`! ${clothes} days of clothes: laundry often`);
     if (!tags.has('firstaid') && !tags.has('meds')) h.push('! nothing for cuts or fevers'); if (!tags.has('health') && !tags.has('fitness')) h.push('! no health kit: sickness risk');
-    if (tags.has('coffee')) h.push('+ coffee mornings'); if (tags.has('switch')) h.push('+ Carry-On on rest days');
+    if (tags.has('coffee')) h.push('+ coffee mornings'); if (tags.has('switch')) h.push('+ handheld evenings');
     this.hints.setText(h.slice(0, 2).join('\n'));
   }
   private depart() {

@@ -1,4 +1,5 @@
-// CARRY-ON: the platformer. D-pad left/right, A jumps (variable height), collect every stamp piece, dodge the city's hazard.
+// COIN COLLECTOR (game id 'carryon', scene key 'CarryOn' kept for the engine): the platformer. D-pad left/right, A jumps (variable height),
+// DOWN drops through thin platforms, collect every coin piece, dodge the city's hazard.
 import Phaser from 'phaser';
 import { PAL } from '../../../core/palette';
 import type { ArcadeLevel, Hazard } from '../../../core/types';
@@ -11,14 +12,14 @@ interface Mover { spr: Phaser.GameObjects.Rectangle; vx: number; vy: number; kin
 const RAMP_AT = 40;
 
 export class CarryOnGame implements ConsoleGame {
-  readonly id = 'carryon' as const; readonly name = 'CARRY-ON'; readonly controls = ['D-PAD  move', 'A      jump (hold for higher)', 'START  pause']; readonly capSec = 60;
-  get instructions() { return `Collect the ${this.total || 'stamp'} pieces. Dodge the ${this.level.hazard}s. D-pad moves, A jumps.`; }
+  readonly id = 'carryon' as const; readonly name = 'COIN COLLECTOR'; readonly controls = ['D-PAD  move · DOWN drop through thin ledges', 'A      jump (hold for higher)', 'START  pause']; readonly capSec = 60;
+  get instructions() { return `Collect all ${this.total || ''} coins. Dodge the ${this.level.hazard}s. D-pad moves, A jumps, DOWN drops through thin ledges.`; }
   private ctx!: ConsoleCtx; private done!: (r: ConsoleResult) => void; private level!: ArcadeLevel; private ox = 0; private oy = 0; private cols = 23; private rows = 20;
   private player!: Phaser.Physics.Arcade.Sprite; private solids!: Phaser.Physics.Arcade.StaticGroup; private oneways!: Phaser.Physics.Arcade.StaticGroup;
   private stamps: Phaser.GameObjects.Image[] = []; private spikes: Phaser.Geom.Rectangle[] = []; private movers: Mover[] = []; private spawners: { x: number; y: number }[] = [];
   private crumbles: { img: Phaser.Physics.Arcade.Image; t: number }[] = [];
   private hearts = 3; private collected = 0; private total = 0; private t = 0; private iframes = 0; private windForce = 0; private windT = 0; private waterY = 0; private rockT = 0; private gd = 1;
-  private jumpBuffer = 0; private coyote = 0; private jumpHeld = false; private ended = false;
+  private jumpBuffer = 0; private coyote = 0; private jumpHeld = false; private ended = false; private dropT = 0;   // >0: passing down through thin platforms
   private objs: Phaser.GameObjects.GameObject[] = []; private windStreaks!: Phaser.GameObjects.Graphics; private water!: Phaser.GameObjects.Rectangle;
   private skyline: { spr: Phaser.GameObjects.Rectangle; spd: number; w: number }[] = [];
 
@@ -42,7 +43,9 @@ export class CarryOnGame implements ConsoleGame {
       else if (c === 'H') this.spawners.push({ x: px, y: py });
     }));
     this.player = s.physics.add.sprite(sx, sy, 'co_player').setDepth(D + 6); this.player.setSize(10, 13).setOffset(1, 1); this.player.setMaxVelocity(220, 620);
-    s.physics.add.collider(this.player, this.solids); s.physics.add.collider(this.player, this.oneways);
+    s.physics.add.collider(this.player, this.solids);
+    // thin platforms (one-way '-' and crumble 'C'): solid from above only, and not at all during a DOWN drop-through window
+    s.physics.add.collider(this.player, this.oneways, undefined, () => this.dropT <= 0);
     this.windStreaks = s.add.graphics().setDepth(D + 5); this.objs.push(this.windStreaks);
     this.water = s.add.rectangle(ctx.screen.centerX, ctx.screen.bottom + 200, ctx.screen.width, 400, PAL.sea1, 0.75).setDepth(D + 7).setVisible(this.level.hazard === 'wave'); this.objs.push(this.water);
     this.spawnHazards(); this.ctx.setHearts(this.hearts, 3); this.ctx.setStatus(`${this.collected}/${this.total}`);
@@ -75,6 +78,8 @@ export class CarryOnGame implements ConsoleGame {
     }
     if (hz === 'wave') this.waterY = this.oy + this.rows * TILE - TILE * 1.5;
   }
+  /** Is the tile directly under the player's feet a thin platform ('-' or 'C') rather than ground / solid? */
+  private onThinPlatform() { const cx = Math.floor((this.player.x - this.ox) / TILE), cy = Math.floor((this.player.y + 8 - this.oy) / TILE); if (cy < 0 || cy >= this.rows || cx < 0 || cx >= this.cols) return false; const c = this.level.tiles[cy][cx] || '.'; return c === '-' || c === 'C'; }
   private groundBelow(x: number, y: number) { const cx = Math.floor((x - this.ox) / TILE); let cy = Math.floor((y - this.oy) / TILE); while (cy < this.rows - 1 && (this.level.tiles[cy + 1][cx] || '.') !== '#') cy++; return this.oy + (cy + 1) * TILE; }
   private isSolidAt(x: number, y: number) { const cx = Math.floor((x - this.ox) / TILE), cy = Math.floor((y - this.oy) / TILE); if (cy < 0 || cy >= this.rows || cx < 0 || cx >= this.cols) return true; return (this.level.tiles[cy][cx] || '.') === '#'; }
   private ramp() { return 1 + 0.8 * clamp(this.t / RAMP_AT, 0, 1); }
@@ -88,6 +93,8 @@ export class CarryOnGame implements ConsoleGame {
     else { body.setAccelerationX(0); body.setVelocityX((left ? -run : right ? run : 0) + this.windForce); }
     if (left) this.player.setFlipX(true); if (right) this.player.setFlipX(false);
     const grounded = body.blocked.down || body.touching.down; if (grounded) this.coyote = 0.1; else this.coyote -= dt; this.jumpBuffer -= dt;
+    // DOWN on a thin platform: 150 ms no-collide window so the player falls through to whatever is below. Ground and solid blocks never drop.
+    this.dropT -= dt; if (pad.justPressed('down') && grounded && this.onThinPlatform()) { this.dropT = 0.15; this.coyote = 0; body.setVelocityY(60); this.ctx.sfx('whoosh'); }
     const jv = (hz === 'snow' ? PHYS.snowJump : PHYS.jump) * (1 - 0.04 * this.ctx.hard);
     if (this.jumpBuffer > 0 && this.coyote > 0) { body.setVelocityY(-jv); this.jumpBuffer = 0; this.coyote = 0; this.player.setScale(0.8, 1.25); this.ctx.scene.tweens.add({ targets: this.player, scaleX: 1, scaleY: 1, duration: 140 }); this.ctx.sfx('jump'); }
     if (!pad.held('a')) { if (this.jumpHeld && body.velocity.y < -80) body.setVelocityY(body.velocity.y * 0.55); this.jumpHeld = false; }

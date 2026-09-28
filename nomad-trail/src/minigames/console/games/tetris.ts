@@ -1,4 +1,4 @@
-// PACK-TRIS: a 10x16 well, the seven tetrominoes as suitcase bundles. D-pad left/right, down = soft drop, up = hard drop, A / B rotate.
+// PACK-TRIS: a 10x16 well, the seven tetrominoes as suitcase bundles. D-pad left/right, DOWN held = soft drop (~10x gravity), A / B rotate. No hard drop.
 // No clock: the game ends only on 8 lines (win) or top-out (fail). Gravity ramps per level so a slow player is pressured by speed.
 import Phaser from 'phaser';
 import { PAL } from '../../../core/palette';
@@ -21,8 +21,8 @@ const COLORS: Record<string, number> = { I: PAL.sky1, O: PAL.sun1, T: PAL.dusk3,
 const NAMES = Object.keys(SHAPES);
 
 export class TetrisGame implements ConsoleGame {
-  readonly id = 'tetris' as const; readonly name = 'PACK-TRIS'; readonly controls = ['D-PAD  move · DOWN soft drop · UP hard drop', 'A / B  rotate', 'START  pause']; readonly capSec = 0;   // 0 = no cap: play until 8 lines or top-out
-  readonly instructions = `Clear ${GOAL} lines. No clock: it ends when you do, or when the well fills. D-pad moves, DOWN soft-drops, UP hard-drops, A / B rotate.`;
+  readonly id = 'tetris' as const; readonly name = 'PACK-TRIS'; readonly controls = ['D-PAD  move · hold DOWN to drop faster', 'A / B  rotate', 'START  pause']; readonly capSec = 0;   // 0 = no cap: play until 8 lines or top-out
+  readonly instructions = `Clear ${GOAL} lines. No clock: it ends when you do, or when the well fills. D-pad moves, hold DOWN to drop faster, A / B rotate.`;
   private ctx!: ConsoleCtx; private done!: (r: ConsoleResult) => void;
   private grid: (string | null)[][] = []; private cur = { k: 'T', r: 0, x: 3, y: 0 }; private next = 'I'; private bag: string[] = [];
   private lines = 0; private t = 0; private fall = 0; private level = 0; private level0 = 0; private das = 0; private dasDir = 0; private ended = false; private lockT = 0;
@@ -49,8 +49,7 @@ export class TetrisGame implements ConsoleGame {
     // horizontal with DAS
     const ax = pad.axisX; if (ax !== this.dasDir) { this.dasDir = ax; this.das = 0; if (ax && !this.collides(c.x + ax, c.y, c.r)) c.x += ax; } else if (ax) { this.das += dt; if (this.das > 0.16) { this.das -= 0.05; if (!this.collides(c.x + ax, c.y, c.r)) c.x += ax; } }
     if (pad.justPressed('a')) this.rotate(1); if (pad.justPressed('b')) this.rotate(-1);
-    if (pad.justPressed('up')) { while (!this.collides(c.x, c.y + 1, c.r)) c.y++; this.lock(); this.ctx.sfx('whoosh'); return; }
-    this.fall += dt * (pad.held('down') ? 8 : 1);
+    this.fall += dt * (pad.held('down') ? 10 : 1);   // soft drop only: DOWN speeds the fall, nothing slams a piece to the bottom
     if (this.fall >= this.gravity()) { this.fall = 0; if (!this.collides(c.x, c.y + 1, c.r)) c.y++; else { this.lockT += this.gravity(); if (this.lockT >= 0.3) this.lock(); } }
     this.render();
   }

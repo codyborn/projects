@@ -1,5 +1,6 @@
 // The morning coffee: a cup on the counter, steam rising, a static twilight skyline. scene.launch('Coffee', { cityId, day, climate?, region?, onDone })
 import Phaser from 'phaser';
+import { Data } from '../ui/simBridge';
 import { PAL } from '../core/palette';
 import { GAME_W, GAME_H } from '../core/types';
 import type { City, Region } from '../core/types';
@@ -40,7 +41,7 @@ export class CoffeeScene extends Phaser.Scene {
     const steam = this.add.particles(180, 318, 'cf_steam', { speedY: { min: -22, max: -48 }, speedX: { min: -10, max: 10 }, scale: { start: 1.2, end: 0.2 }, alpha: { start: 0.7, end: 0 }, lifespan: 1800, frequency: 110, emitting: true });
     void steam; this.tweens.add({ targets: cup, scaleY: 2.55, yoyo: true, repeat: -1, duration: 1400, ease: 'Sine.easeInOut' });
     const label = ptext(this, W / 2, 404, `DAY ${d.day}`, PAL.sun3, 2).setOrigin(0.5, 0);
-    ptext(this, W / 2, 432, (d.cityId || '').toUpperCase(), PAL.gray2, 1).setOrigin(0.5, 0);
+    ptext(this, W / 2, 432, (Data.city(d.cityId || '')?.name ?? d.cityId ?? '').toUpperCase(), PAL.gray2, 1).setOrigin(0.5, 0);
     ptext(this, W / 2, 456, 'MORNING. THE GOOD KIND.', PAL.gray1, 1).setOrigin(0.5, 0);
     const hint = ptext(this, W / 2, H - 30, 'TAP TO CONTINUE', PAL.gray1, 1).setOrigin(0.5); this.tweens.add({ targets: hint, alpha: 0.3, yoyo: true, repeat: -1, duration: 700 });
     label.setAlpha(0); this.tweens.add({ targets: label, alpha: 1, duration: 500, delay: 300 });

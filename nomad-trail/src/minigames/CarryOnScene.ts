@@ -44,7 +44,7 @@ export class CarryOnScene extends Phaser.Scene {
   }
 
   create() {
-    const names: Record<ConsoleGameId, string> = { carryon: 'Carry-On', tetris: 'Pack-Tris' };
+    const names: Record<ConsoleGameId, string> = { carryon: 'Coin Collector', tetris: 'Pack-Tris' };
     this.frame = new MinigameFrame(this, this.launch, names[this.gameId]);
     this.cameras.main.setBackgroundColor(PAL.ink);
     this.drawBezel();
