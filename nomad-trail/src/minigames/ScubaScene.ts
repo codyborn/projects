@@ -133,7 +133,8 @@ export class ScubaScene extends Phaser.Scene {
       if (L.dead) { L.deadT += dt; L.y -= 18 * dt; L.x += Math.sin(L.deadT * 3) * 0.3; L.sprite.setPosition(L.x, L.y).setAlpha(Math.max(0, 1 - L.deadT / 3)).setAngle(160 + Math.sin(L.deadT * 2) * 10); continue; }
       L.t += dt; const dd = Math.hypot(this.dx - L.x, this.dy - L.y);
       if (L.hiding) { L.hideT -= dt; L.vx *= 0.8; L.vy *= 0.8; if (L.hideT <= 0) { L.hiding = false; L.sprite.setDepth(5); L.nextHide = 6 + this.rand() * 9; } }
-      if (dd > 700) { L.sprite.setPosition(L.x, L.y); continue; }   /* far-off fish idle cheaply (but still come out of hiding) */
+      if (dd > 700) { L.sprite.setPosition(L.x, L.y); continue; }   /* far-off fish idle cheaply (but still come out of hiding, above) */
+      if (L.hiding) { /* tucked in: nothing else to do this frame */ }
       else if (dd < 110 && L.calm <= 0) { /* it turns to face the diver and drifts closer, but hovers at a standoff: the danger is you moving into it */
         const want = 52; const sp = (dd > want ? 16 + L.flare * 24 : -12); L.vx += ((this.dx - L.x) / dd * sp - L.vx) * Math.min(1, dt * 1.5); L.vy += ((this.dy - L.y) / dd * sp - L.vy) * Math.min(1, dt * 1.5); }
       else {

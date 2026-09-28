@@ -279,9 +279,9 @@ if (q.get('auto') === '1') {
       if (mode === 'sting' && !stung) { const [tx, ty] = past(best.x, best.y, 70); scene.press(tx, ty); if (h.touches > 0) { stung = true; scene.release(); } return; }
       /* stand off at ~95 px from the body, on our side of it; fire when it is between 60 and 140 px and no spear is out */
       /* crowded: two fish hovering at their standoff can pin the diver; back straight away from the crowd first */
-      const close = vis.filter((f: any) => Math.hypot(f.x - h.x, f.y - h.y) < 70); if (close.length) { let ax = 0, ay = 0; for (const f of close) { ax += h.x - f.x; ay += h.y - f.y; } const l = Math.hypot(ax, ay) || 1; scene.press(h.x + ax / l * 140, h.y + ay / l * 140); return; }
+      const close = vis.filter((f: any) => Math.hypot(f.x - h.x, f.y - h.y) < 70); if (close.length >= 2) { let ax = 0, ay = 0; for (const f of close) { ax += h.x - f.x; ay += h.y - f.y; } const l = Math.hypot(ax, ay) || 1; scene.press(h.x + ax / l * 140, h.y + ay / l * 140); return; }
       const side = h.x < best.x ? -1 : 1; const level = Math.abs(best.y - h.y) < 14; const px = best.x + side * 95, py = best.y;
-      if (bd > 130 || bd < 60 || !level) { const [tx, ty] = past(px, py, 58); scene.press(tx, ty); }
+      if (bd > 140 || bd < 45 || !level) { const [tx, ty] = past(px, py, 58); scene.press(tx, ty); }
       else if (!h.spear) { scene.release(); scene.fireAt(best.x, best.y); }
     };
     setInterval(dive, mode === 'rt' ? 400 : 50);
