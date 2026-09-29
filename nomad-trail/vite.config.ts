@@ -10,7 +10,7 @@ export default defineConfig({
       start_url: '/trail/', scope: '/trail/', display: 'standalone', orientation: 'portrait', background_color: '#0b0f1a', theme_color: '#0b0f1a',
       icons: [{ src: 'icon-192.png', sizes: '192x192', type: 'image/png' }, { src: 'icon-512.png', sizes: '512x512', type: 'image/png' }] },
     workbox: {
-      globPatterns: ['**/*.{js,css,html,png,json,ogg,wav,woff2}'], globIgnores: ['review/**'], maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+      globPatterns: ['**/*.{js,css,html,png,json,ogg,wav,woff2}'], globIgnores: ['review/**', 'audio/**'], maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
       // the review hub lives under /trail/review/ and must not be swallowed by the app-shell navigation fallback
       navigateFallbackDenylist: [/\/review(\/|$)/, /\/review\//],
     },

@@ -1,0 +1,242 @@
+{
+ "title": [
+  {
+   "id": "title.oga.dreamtune",
+   "slug": "dreamtune",
+   "title": "Dreamtune",
+   "author": "Fupi",
+   "url": "https://opengameart.org/content/dreamtune",
+   "file": "audio/dreamtune.mp3",
+   "bytes": 353421
+  },
+  {
+   "id": "title.oga.exploring-town",
+   "slug": "exploring-town",
+   "title": "Exploring Town",
+   "author": "Spring Spring",
+   "url": "https://opengameart.org/content/exploring-town",
+   "file": "audio/exploring-town.mp3",
+   "bytes": 360549
+  }
+ ],
+ "americas": [
+  {
+   "id": "americas.oga.8-bit-theme-moving-right-along",
+   "slug": "8-bit-theme-moving-right-along",
+   "title": "8-bit theme - Moving Right Along",
+   "author": "Wolfgang_",
+   "url": "https://opengameart.org/content/8-bit-theme-moving-right-along",
+   "file": "audio/8-bit-theme-moving-right-along.mp3",
+   "bytes": 256653
+  },
+  {
+   "id": "americas.oga.free-run-8-bitish",
+   "slug": "free-run-8-bitish",
+   "title": "Free Run [8 bit(ish)]",
+   "author": "TAD",
+   "url": "https://opengameart.org/content/free-run-8-bitish",
+   "file": "audio/free-run-8-bitish.mp3",
+   "bytes": 360549
+  }
+ ],
+ "mexico": [
+  {
+   "id": "mexico.oga.dance-field",
+   "slug": "dance-field",
+   "title": "Dance field",
+   "author": "Centurion_of_war",
+   "url": "https://opengameart.org/content/dance-field",
+   "file": "audio/dance-field.mp3",
+   "bytes": 329661
+  },
+  {
+   "id": "mexico.oga.digital-bananas",
+   "slug": "digital-bananas",
+   "title": "Digital Bananas",
+   "author": "Locomule",
+   "url": "https://opengameart.org/content/digital-bananas",
+   "file": "audio/digital-bananas.mp3",
+   "bytes": 280197
+  }
+ ],
+ "europe": [
+  {
+   "id": "europe.oga.chiptune-medieval-the-bards-tale",
+   "slug": "chiptune-medieval-the-bards-tale",
+   "title": "[Chiptune] Medieval: The Bard's Tale",
+   "author": "RandomMind",
+   "url": "https://opengameart.org/content/chiptune-medieval-the-bards-tale",
+   "file": "audio/chiptune-medieval-the-bards-tale.mp3",
+   "bytes": 360549
+  },
+  {
+   "id": "europe.oga.chiptune-medieval-the-old-tower-inn",
+   "slug": "chiptune-medieval-the-old-tower-inn",
+   "title": "[Chiptune] Medieval: The Old Tower Inn",
+   "author": "RandomMind",
+   "url": "https://opengameart.org/content/chiptune-medieval-the-old-tower-inn",
+   "file": "audio/chiptune-medieval-the-old-tower-inn.mp3",
+   "bytes": 360549
+  }
+ ],
+ "alps": [
+  {
+   "id": "alps.oga.chiptune-medieval-minstrel-dance",
+   "slug": "chiptune-medieval-minstrel-dance",
+   "title": "[Chiptune] Medieval: Minstrel Dance",
+   "author": "RandomMind",
+   "url": "https://opengameart.org/content/chiptune-medieval-minstrel-dance",
+   "file": "audio/chiptune-medieval-minstrel-dance.mp3",
+   "bytes": 360549
+  },
+  {
+   "id": "alps.oga.chippy-melody-1",
+   "slug": "chippy-melody-1",
+   "title": "Chippy melody 1",
+   "author": "Centurion_of_war",
+   "url": "https://opengameart.org/content/chippy-melody-1",
+   "file": "audio/chippy-melody-1.mp3",
+   "bytes": 154269
+  }
+ ],
+ "africa": [
+  {
+   "id": "africa.oga.desert-theme-8bit-chiptune-theme",
+   "slug": "desert-theme-8bit-chiptune-theme",
+   "title": "Desert Theme - 8bit Chiptune Theme",
+   "author": "Wolfgang_",
+   "url": "https://opengameart.org/content/desert-theme-8bit-chiptune-theme",
+   "file": "audio/desert-theme-8bit-chiptune-theme.mp3",
+   "bytes": 238941
+  },
+  {
+   "id": "africa.oga.egyptian-fortress-boss",
+   "slug": "egyptian-fortress-boss",
+   "title": "Egyptian Fortress Boss",
+   "author": "Spring Spring",
+   "url": "https://opengameart.org/content/egyptian-fortress-boss",
+   "file": "audio/egyptian-fortress-boss.mp3",
+   "bytes": 360549
+  }
+ ],
+ "asia": [
+  {
+   "id": "asia.oga.chipnese",
+   "slug": "chipnese",
+   "title": "Chipnese",
+   "author": "Spring Spring",
+   "url": "https://opengameart.org/content/chipnese",
+   "file": "audio/chipnese.mp3",
+   "bytes": 360549
+  },
+  {
+   "id": "asia.oga.ch-ay-na",
+   "slug": "ch-ay-na",
+   "title": "CH-AY-NA",
+   "author": "Spring Spring",
+   "url": "https://opengameart.org/content/ch-ay-na",
+   "file": "audio/ch-ay-na.mp3",
+   "bytes": 352989
+  }
+ ],
+ "himalaya": [
+  {
+   "id": "himalaya.oga.fields-of-ice",
+   "slug": "fields-of-ice",
+   "title": "Fields of Ice",
+   "author": "Jonathan So",
+   "url": "https://opengameart.org/content/fields-of-ice",
+   "file": "audio/fields-of-ice.mp3",
+   "bytes": 360549
+  },
+  {
+   "id": "himalaya.oga.8-bit-cave-loop",
+   "slug": "8-bit-cave-loop",
+   "title": "8-Bit Cave Loop",
+   "author": "Wolfgang_",
+   "url": "https://opengameart.org/content/8-bit-cave-loop",
+   "file": "audio/8-bit-cave-loop.mp3",
+   "bytes": 360549
+  }
+ ],
+ "travel": [
+  {
+   "id": "travel.oga.catchy",
+   "slug": "catchy",
+   "title": "Catchy",
+   "author": "Spring Spring",
+   "url": "https://opengameart.org/content/catchy",
+   "file": "audio/catchy.mp3",
+   "bytes": 360549
+  },
+  {
+   "id": "travel.oga.freddie-friday-loop",
+   "slug": "freddie-friday-loop",
+   "title": "Freddie Friday Loop",
+   "author": "iamoneabe",
+   "url": "https://opengameart.org/content/freddie-friday-loop",
+   "file": "audio/freddie-friday-loop.mp3",
+   "bytes": 337005
+  }
+ ],
+ "action": [
+  {
+   "id": "action.oga.8-bit-battle-loop",
+   "slug": "8-bit-battle-loop",
+   "title": "8-Bit Battle Loop",
+   "author": "Wolfgang_",
+   "url": "https://opengameart.org/content/8-bit-battle-loop",
+   "file": "audio/8-bit-battle-loop.mp3",
+   "bytes": 160533
+  },
+  {
+   "id": "action.oga.chiptune-battle-music",
+   "slug": "chiptune-battle-music",
+   "title": "Chiptune Battle Music",
+   "author": "pmiller",
+   "url": "https://opengameart.org/content/chiptune-battle-music",
+   "file": "audio/chiptune-battle-music.mp3",
+   "bytes": 360549
+  }
+ ],
+ "winSting": [
+  {
+   "id": "winSting.oga.8-bit-victory-loop",
+   "slug": "8-bit-victory-loop",
+   "title": "8-Bit Victory Loop",
+   "author": "Wolfgang_",
+   "url": "https://opengameart.org/content/8-bit-victory-loop",
+   "file": "audio/8-bit-victory-loop.mp3",
+   "bytes": 54477
+  },
+  {
+   "id": "winSting.oga.bonus-round-8bit",
+   "slug": "bonus-round-8bit",
+   "title": "Bonus Round - 8bit",
+   "author": "Wolfgang_",
+   "url": "https://opengameart.org/content/bonus-round-8bit",
+   "file": "audio/bonus-round-8bit.mp3",
+   "bytes": 54477
+  }
+ ],
+ "loseSting": [
+  {
+   "id": "loseSting.oga.continue",
+   "slug": "continue",
+   "title": "Continue?",
+   "author": "megupets",
+   "url": "https://opengameart.org/content/continue",
+   "file": "audio/continue.mp3",
+   "bytes": 54477
+  },
+  {
+   "id": "loseSting.oga.drama-drama-drama",
+   "slug": "drama-drama-drama",
+   "title": "DRAMA DRAMA DRAMA",
+   "author": "Spring Spring",
+   "url": "https://opengameart.org/content/drama-drama-drama",
+   "file": "audio/drama-drama-drama.mp3",
+   "bytes": 54477
+  }
+ ]
+}

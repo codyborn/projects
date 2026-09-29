@@ -134,7 +134,7 @@ export class CasinoScene extends Phaser.Scene {
     const idx = spinWheel(this.rng); const n = WHEEL[idx]; const step = (Math.PI * 2) / WHEEL.length;
     const cx = 100, cy = 176, R = 70; const turns = 3; const target = -(idx + 0.5) * step;   // wheel rotates so pocket idx ends at angle 0 (3 o'clock); ball settles there
     const a0 = this.wheelA; const ballTurns = 5; const b0 = this.ballA;
-    this.tweens.addCounter({ from: 0, to: 1, duration: 2200, ease: 'Cubic.Out', onUpdate: tw => { const t = tw.getValue() ?? 0; if (t < 0.92) Audio.playSfx('wheel', 70 + t * 260); this.wheelA = a0 + t * (turns * Math.PI * 2 + ((target - a0) % (Math.PI * 2))); this.ballA = b0 - t * ballTurns * Math.PI * 2 * 1.0 + t * ((0 - b0) % (Math.PI * 2)); if (t > 0.98) this.ballA = 0; this.drawWheel(cx, cy, R); },
+    this.tweens.addCounter({ from: 0, to: 1, duration: 2200, ease: 'Cubic.Out', onUpdate: tw => { const t = tw.getValue() ?? 0; if (t < 0.9) Audio.playSfx('wheel', 140 + t * 400); this.wheelA = a0 + t * (turns * Math.PI * 2 + ((target - a0) % (Math.PI * 2))); this.ballA = b0 - t * ballTurns * Math.PI * 2 * 1.0 + t * ((0 - b0) % (Math.PI * 2)); if (t > 0.98) this.ballA = 0; this.drawWheel(cx, cy, R); },
       onComplete: () => { this.wheelA = target; this.ballA = 0; this.drawWheel(cx, cy, R); this.settleRoulette(n, staked); } });
     this.setMsg('No more bets.');
   }

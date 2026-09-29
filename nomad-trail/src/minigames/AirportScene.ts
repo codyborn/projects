@@ -176,7 +176,7 @@ export class AirportScene extends Phaser.Scene {
     // motion
     this.stunned = Math.max(0, this.stunned - dt); this.iframes = Math.max(0, this.iframes - dt); this.boost = Math.max(0, this.boost - dt);
     const ramp = 1 + 0.006 * this.elapsed + 0.25 * this.frame.hard; const v = this.speed * ramp * (this.stunned > 0 ? 0.45 : 1) * (this.boost > 0 ? 1.5 : 1);
-    this.dist += v * dt; if (v > 0 && this.frame.active) Audio.playSfx('step', 320);
+    this.dist += v * dt; if (v > 0 && this.frame.active) Audio.playSfx('step', 520);
     if (this.deadEnd >= 0) { this.deadEnd -= v * 1.4 * dt; if (this.deadEnd <= 0.04) this.wrongWay(true); this.draw(); return; }
     if (this.jumpT >= 0) { this.jumpT += dt / 0.6; if (this.jumpT >= 1) this.jumpT = -1; }
     // spawn: a fork wall appears far ahead and holds at the horizon so the signs can be read, then approaches

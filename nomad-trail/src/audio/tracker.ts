@@ -5,6 +5,8 @@
 export type LoopName = 'title' | 'americas' | 'mexico' | 'europe' | 'alps' | 'africa' | 'asia' | 'himalaya' | 'travel' | 'action' | 'none';
 export type Stinger = 'winSting' | 'loseSting';
 export interface Loop { bpm: number; p1: string; p2: string; wave: string; drums: string; duty1?: number; duty2?: number; vol?: number; }
+/** Global tempo factor (Cody found the first pass too busy; everything runs at 80%). */
+export const TEMPO = 0.8;
 
 const NOTE: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 export function midiOf(tok: string): number | null {
@@ -88,6 +90,13 @@ export const LOOPS: Record<Exclude<LoopName, 'none'>, Loop> = {
     wave: rep('E2 - E2 - E2 - E2 - E2 - E2 - D2 - D2 -', 4) + ' ' + rep('C2 - C2 - C2 - C2 - D2 - D2 - B1 - B1 -', 4),
     drums: rep('k . h . s . h . k . h . s . h .', 8) },
 };
+/** A calmer reading of every loop: no second pulse, the lead thinned (every other note rests), drums down to a soft kick. */
+export function calmOf(l: Loop): Loop {
+  const toks = l.p1.trim().split(/\s+/); let seen = 0;
+  const p1 = toks.map(t => { if (t === '.' || t === '-') return t; seen++; return seen % 2 === 0 ? '.' : t; }).join(' ');
+  const d = l.drums.trim().split(/\s+/).map((t, i) => (t === 'k' && i % 16 === 0 ? 'k' : '.')).join(' ');
+  return { ...l, p1, p2: l.p2.trim().split(/\s+/).map(() => '.').join(' '), drums: d, vol: (l.vol ?? 1) * 0.9 };
+}
 export const STINGERS: Record<Stinger, Loop> = {
   winSting: { bpm: 140, duty1: 0.25, duty2: 0.5, p1: 'C5 - E5 - G5 - C6 - - - - - - - - -', p2: 'E4 - G4 - C5 - E5 - - - - - - - - -', wave: 'C3 - - - - - - - C3 - - - - - - -', drums: 'k . . . k . . . s . . . . . . .' },
   loseSting: { bpm: 96, duty1: 0.5, duty2: 0.25, p1: 'E5 - - - Eb5 - - - D5 - - - C#5 - - -', p2: 'C4 - - - B3 - - - Bb3 - - - A3 - - -', wave: 'A2 - - - - - - - - - - - - - - -', drums: 'k . . . . . . . k . . . . . . .' },
@@ -115,20 +124,20 @@ export class Tracker {
   get playing() { return !!this.loop; }
   tick() {
     if (!this.loop || !this.parsed) return;
-    const stepDur = 60 / this.loop.bpm / 4; const len = this.parsed.p1.length;
+    const stepDur = 60 / (this.loop.bpm * TEMPO) / 4; const len = this.parsed.p1.length;
     while (this.nextTime < this.ctx.currentTime + 0.3) {
       if (this.step >= len) { if (this.once) { const cb = this.onEnd; this.loop = null; this.parsed = null; cb?.(); return; } this.step = 0; }
       const i = this.step, t = this.nextTime, v = this.loop.vol ?? 1;
-      const n1 = this.parsed.p1[i]; if (n1) this.pulse(n1.midi, t, n1.len * stepDur, this.loop.duty1 ?? 0.5, 0.11 * v);
-      const n2 = this.parsed.p2[i % this.parsed.p2.length]; if (n2) this.pulse(n2.midi, t, n2.len * stepDur, this.loop.duty2 ?? 0.25, 0.07 * v);
-      const nw = this.parsed.wave[i % this.parsed.wave.length]; if (nw) this.tri(nw.midi, t, nw.len * stepDur, 0.16 * v);
+      const n1 = this.parsed.p1[i]; if (n1) this.pulse(n1.midi, t, n1.len * stepDur, 0.5, 0.09 * v);
+      const n2 = this.parsed.p2[i % this.parsed.p2.length]; if (n2) this.pulse(n2.midi, t, n2.len * stepDur, 0.5, 0.045 * v);
+      const nw = this.parsed.wave[i % this.parsed.wave.length]; if (nw) this.tri(nw.midi, t, nw.len * stepDur, 0.13 * v);
       const d = this.parsed.drums[i % this.parsed.drums.length]; if (d && d !== '.') this.drum(d, t, v);
       this.nextTime += stepDur; this.step++;
     }
   }
   private pulse(midi: number, t: number, dur: number, duty: number, vol: number) {
     const o = this.ctx.createOscillator(); o.setPeriodicWave(pulseWave(this.ctx, duty)); o.frequency.value = hz(midi);
-    const g = this.ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.008); g.gain.setValueAtTime(vol, t + Math.max(0.01, dur * 0.7)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    const g = this.ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.02); g.gain.setValueAtTime(vol, t + Math.max(0.03, dur * 0.6)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.98);
     o.connect(g); g.connect(this.out); o.start(t); o.stop(t + dur + 0.02);
   }
   private tri(midi: number, t: number, dur: number, vol: number) {
@@ -140,10 +149,28 @@ export class Tracker {
   private drum(kind: string, t: number, v: number) {
     if (!this.noiseBuf) { const n = this.ctx.sampleRate * 0.3; this.noiseBuf = this.ctx.createBuffer(1, n, this.ctx.sampleRate); const d = this.noiseBuf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; }
     const s = this.ctx.createBufferSource(); s.buffer = this.noiseBuf; const f = this.ctx.createBiquadFilter(); const g = this.ctx.createGain();
-    const dur = kind === 'k' ? 0.12 : kind === 's' ? 0.14 : 0.04; const vol = (kind === 'k' ? 0.22 : kind === 's' ? 0.14 : 0.06) * v;
-    f.type = kind === 'k' ? 'lowpass' : 'highpass'; f.frequency.value = kind === 'k' ? 160 : kind === 's' ? 1800 : 6000;
+    /* gentle kit: a soft kick, a low-passed brush instead of a snare, a whisper of hat */
+    const dur = kind === 'k' ? 0.1 : kind === 's' ? 0.1 : 0.03; const vol = (kind === 'k' ? 0.16 : kind === 's' ? 0.06 : 0.025) * v;
+    f.type = kind === 'h' ? 'highpass' : 'lowpass'; f.frequency.value = kind === 'k' ? 140 : kind === 's' ? 900 : 7000;
     g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     s.connect(f); f.connect(g); g.connect(this.out); s.start(t); s.stop(t + dur + 0.01);
-    if (kind === 'k') { const o = this.ctx.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.1); const og = this.ctx.createGain(); og.gain.setValueAtTime(0.25 * v, t); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.12); o.connect(og); og.connect(this.out); o.start(t); o.stop(t + 0.14); }
+    if (kind === 'k') { const o = this.ctx.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.1); const og = this.ctx.createGain(); og.gain.setValueAtTime(0.18 * v, t); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.12); o.connect(og); og.connect(this.out); o.start(t); o.stop(t + 0.14); }
   }
 }
+
+/* ---- music candidates: two tracker readings and two public-domain tracks per slot ---- */
+import ogaJson from './oga_tracks.json';
+export type MusicSlot = Exclude<LoopName, 'none'> | Stinger;
+export const MUSIC_SLOTS: MusicSlot[] = ['title', 'americas', 'mexico', 'europe', 'alps', 'africa', 'asia', 'himalaya', 'travel', 'action', 'winSting', 'loseSting'];
+export type MusicCandidate = { id: string; label: string; kind: 'tracker'; loop: Loop } | { id: string; label: string; kind: 'file'; file: string; title: string; author: string; url: string; bytes: number };
+const OGA = ogaJson as Record<string, { id: string; slug: string; title: string; author: string; url: string; file: string; bytes: number }[]>;
+export const MUSIC_CANDIDATES: Record<MusicSlot, MusicCandidate[]> = Object.fromEntries(MUSIC_SLOTS.map(s => {
+  const base: Loop = (s in LOOPS ? LOOPS[s as keyof typeof LOOPS] : STINGERS[s as Stinger]);
+  const list: MusicCandidate[] = [
+    { id: `${s}.tracker.calm`, label: 'tracker · calm', kind: 'tracker', loop: calmOf(base) },
+    { id: `${s}.tracker.melodic`, label: 'tracker · melodic', kind: 'tracker', loop: base },
+    ...(OGA[s] ?? []).map(o => ({ id: o.id, label: `${o.title} · ${o.author}`, kind: 'file' as const, file: o.file, title: o.title, author: o.author, url: o.url, bytes: o.bytes })),
+  ];
+  return [s, list];
+})) as Record<MusicSlot, MusicCandidate[]>;
+export function musicById(id: string): MusicCandidate | undefined { const slot = id.split('.')[0] as MusicSlot; return MUSIC_CANDIDATES[slot]?.find(c => c.id === id); }
