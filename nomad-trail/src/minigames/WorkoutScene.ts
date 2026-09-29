@@ -66,12 +66,12 @@ export class WorkoutScene extends Phaser.Scene {
     const id = this.microIds[this.idx]; const micro = MICRO_REGISTRY[id](); const meta = META[id]; const first = this.idx === 0; const n = this.microIds.length;
     this.frame.setTitle(meta.name); this.meter.set(this.idx / n, PAL.sun2); this.frame.setProgress(n > 1 ? `GAME ${this.idx + 1}/${n}` : ''); this.frame.setTimer('');
     const extra = (s: Phaser.Scene, add: (o: Phaser.GameObjects.GameObject) => void) => {
-      const top = H / 2 - 170; const word = txt(s, W / 2, top + 150, micro.word, 40, PAL.white); add(word); word.setScale(0.4); s.tweens.add({ targets: word, scale: 1, duration: 220, ease: 'Back.Out' });
+      const top = H / 2 - 170; const line = txt(s, W / 2, top + 150, meta.hint ?? '', 13, PAL.white); add(line); line.setScale(0.6); s.tweens.add({ targets: line, scale: 1, duration: 220, ease: 'Back.Out' });   // the plain control line, not a WarioWare word
       if (n > 1) add(txt(s, W / 2, top + 178, first ? `${n} games, each played once` : `game ${this.idx + 1} of ${n}`, 9, PAL.gray1));
       this.athlete.show(true).pose(0); this.athlete.sprite.setDepth(905).setPosition(W / 2, top + 228); add({ destroy: () => { /* the athlete is reused */ } } as any);
     };
     const begin = () => {
-      if (this.frame.finished) return; this.current = micro; this.athlete.show(true).pose(0); this.athlete.sprite.setDepth(4).setPosition(W / 2, 330);
+      if (this.frame.finished) return; this.current = micro; this.athlete.show(true).pose(0); this.athlete.sprite.setDepth(4).setPosition(W / 2, 330); this.frame.setHint(meta.hint ?? '');   // the control line stays in the HUD for the whole game
       const flash = txt(this, W / 2, H / 2, 'GO', 30, PAL.neon).setDepth(750); this.tweens.add({ targets: flash, alpha: 0, scale: 1.8, duration: 260, onComplete: () => flash.destroy() });
       const ctx: MicroCtx = { scene: this, frame: this.frame, speed: 1, window: this.frame.window, hard: this.frame.hard, rng: this.rng, athlete: this.athlete, city: this.city };
       const dur = micro.durationSec * 1000; const t0 = this.time.now;
@@ -152,6 +152,11 @@ export class WorkoutScene extends Phaser.Scene {
       cliff.clear(); cliff.fillStyle(PAL.gray0).fillRect(0, 26, W, H - 26);
       for (let yy = Math.floor((camY + 26) / 40) * 40; yy < camY + H; yy += 40) { const sy = yy - camY; cliff.fillStyle(((yy / 40) % 2 === 0) ? PAL.night3 : PAL.gray0).fillRect(0, sy, F.wallPad, 40).fillRect(W - F.wallPad, sy, F.wallPad, 40); cliff.fillStyle(PAL.night2, 0.35).fillRect(F.wallPad, sy + ((yy * 7) % 23), W - F.wallPad * 2, 3); }
       for (let i = 0; i < ledges.length; i++) { const l = ledges[i]; const sy = l.y - camY; if (sy < 20 || sy > H) continue;
+        if (i + 1 < ledges.length) {   // the steel cable to the next ledge: a sagging line with a lighter highlight and a bolt at each end (behind the climber)
+          const n = ledges[i + 1]; const ax = l.x + l.w / 2, ay = sy + 3, bx = n.x + n.w / 2, by = n.y - camY + 3; const sag = 14 + Math.abs(bx - ax) * 0.08;
+          for (let k = 0; k < 10; k++) { const t0 = k / 10, t1 = (k + 1) / 10; const px = (t: number) => ax + (bx - ax) * t, py = (t: number) => ay + (by - ay) * t + Math.sin(t * Math.PI) * sag;
+            cliff.lineStyle(1, PAL.gray1, 0.9).lineBetween(px(t0), py(t0), px(t1), py(t1)); cliff.lineStyle(1, PAL.gray2, 0.5).lineBetween(px(t0), py(t0) - 1, px(t1), py(t1) - 1); }
+          cliff.fillStyle(PAL.gray2).fillCircle(ax, ay, 2).fillCircle(bx, by, 2); cliff.fillStyle(PAL.ink).fillCircle(ax, ay, 1).fillCircle(bx, by, 1); }
         const col = l.kind === 'anchor' ? PAL.neon : l.kind === 'thin' ? PAL.gray2 : PAL.earth3;
         cliff.fillStyle(PAL.ink).fillRect(l.x - 1, sy - 1, l.w + 2, 8); cliff.fillStyle(col).fillRect(l.x, sy, l.w, 6);
         if (l.kind === 'anchor') { cliff.fillStyle(PAL.ink).fillCircle(l.x + l.w / 2, sy + 3, 3); cliff.fillStyle(i <= anchorIdx ? PAL.sun2 : PAL.gray2).fillCircle(l.x + l.w / 2, sy + 3, 2); } }

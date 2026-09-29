@@ -24,37 +24,37 @@ export class Curls extends Micro {
   protected scoreNow() { return clamp(this.hits / this.need, 0, 1); }
 }
 
-/** BURPEE CHAIN: four gestures (tap / swipe up / swipe down / hold), one big card at a time with a "next up" preview; ~1.6 s per move.
- *  The athlete demonstrates the target move. Score = moves done right / 4. */
+/** BURPEES: five repeats of DROP (swipe down) -> PLANK (hold 0.6 s) -> JUMP (swipe up); each phase is cued by the big card and the HUD hint line.
+ *  Score = clean phases / 15. The athlete strikes each phase's pose. */
 export class Burpee extends Micro {
   readonly id = 'burpee'; readonly word = META.burpee.word; readonly instr = META.burpee.instr; readonly durationSec = META.burpee.durationSec;
-  private chain: ('tap' | 'up' | 'down' | 'hold')[] = []; private i = 0; private life = 0; private ttl = 1.6; private hits = 0; private holdT = 0; private holding = false; private consumed = false;
+  private chain: ('down' | 'hold' | 'up')[] = []; private i = 0; private life = 0; private ttl = 1.0; private hits = 0; private holdT = 0; private holding = false; private consumed = false;
   private downAt = 0; private downX = 0; private downY = 0;
-  /** harness: what to do now and how to do it */
-  hint() { return { i: this.i, move: this.chain[this.i], life: this.life, hits: this.hits, done: this.i >= this.chain.length }; }
+  /** harness: what to do now */
+  hint() { return { i: this.i, move: this.chain[this.i], life: this.life, hits: this.hits, done: this.i >= this.chain.length, rep: Math.floor(this.i / 3) + 1 }; }
   press(x: number, y: number) { this.downAt = this.t; this.downX = x; this.downY = y; this.holding = true; this.consumed = false; this.holdT = 0; }
   release(x: number, y: number) {
-    if (!this.holding) return; this.holding = false; const dur = this.t - this.downAt; const dx = x - this.downX, dy = y - this.downY;
+    if (!this.holding) return; this.holding = false; const dx = x - this.downX, dy = y - this.downY;
     if (this.i >= this.chain.length || this.consumed) return; const cur = this.chain[this.i];
     if (Math.abs(dy) > 22 && Math.abs(dy) > Math.abs(dx)) this.step(cur === (dy < 0 ? 'up' : 'down'));
-    else if (dur < 0.25) this.step(cur === 'tap');
-    else this.step(false);   // a long press that was not a completed hold (holds resolve in the loop at 0.6 s)
+    else this.step(false);   // a tap, a long press, or a plank let go too early: not the cued move
   }
+  private cue() { const cur = this.chain[this.i]; const poses: Record<string, 0 | 1 | 2 | 3> = { down: 1, hold: 3, up: 2 }; if (cur) { this.ctx.athlete.pose(poses[cur]); const rep = this.hint().rep; this.ctx.frame.setHint(cur === 'down' ? `${rep}/5 DROP: swipe DOWN` : cur === 'hold' ? `${rep}/5 PLANK: hold 0.6 s` : `${rep}/5 JUMP: swipe UP`); } }
   private step(ok: boolean) {
-    const cx = W / 2; const poses: Record<string, 0 | 1 | 2 | 3> = { tap: 0, up: 2, down: 1, hold: 3 };
+    const cx = W / 2;
     if (ok) { this.hits++; this.pop(cx, 250, 'YES'); this.ctx.athlete.bump(); } else { this.pop(cx, 250, 'NOPE', PAL.red); this.ctx.frame.shake(100, 0.004); }
-    this.i++; this.consumed = true; this.life = this.ttl; this.holdT = 0; this.ctx.frame.setProgress(`${this.i}/${this.chain.length}`);
-    if (this.i >= this.chain.length) this.after(300, () => this.finish(this.scoreNow())); else this.ctx.athlete.pose(poses[this.chain[this.i]]);
+    this.i++; this.consumed = true; this.life = this.ttl; this.holdT = 0; this.ctx.frame.setProgress(`${this.hits}/15 clean`);
+    if (this.i >= this.chain.length) this.after(300, () => this.finish(this.scoreNow())); else this.cue();
   }
   protected begin() {
-    const cx = W / 2; const kinds = ['tap', 'up', 'down', 'hold'] as const; this.chain = Array.from({ length: 4 }, () => kinds[Math.floor(this.ctx.rng() * 4)]); this.ttl = (1.6 * (0.75 + 0.25 * this.ctx.window)) / this.ctx.speed;
-    const poses: Record<string, 0 | 1 | 2 | 3> = { tap: 0, up: 2, down: 1, hold: 3 }; this.ctx.athlete.at(cx, 330).pose(poses[this.chain[0]]).show(true);
+    const cx = W / 2; this.chain = Array.from({ length: 5 }, () => ['down', 'hold', 'up'] as const).flat(); this.ttl = (1.0 * (0.8 + 0.2 * this.ctx.window)) / this.ctx.speed;
+    this.ctx.athlete.at(cx, 330).pose(1).show(true); this.cue();
     this.on('pointerdown', (p: Phaser.Input.Pointer) => this.press(p.x, p.y)); this.on('pointerup', (p: Phaser.Input.Pointer) => this.release(p.x, p.y));
     this.key('keydown-SPACE', () => this.press(cx, 300)); this.key('keyup-SPACE', () => this.release(cx, 300));
     this.key('keydown-UP', () => { this.press(cx, 300); this.release(cx, 260); }); this.key('keydown-DOWN', () => { this.press(cx, 300); this.release(cx, 340); });
     this.life = this.ttl;
-    const icon = (x: number, y: number, kd: string, r: number, col: number) => { this.g.fillStyle(col); if (kd === 'tap') this.g.fillCircle(x, y, r * 0.55); else if (kd === 'up') this.g.fillTriangle(x, y - r * 0.8, x - r * 0.7, y + r * 0.6, x + r * 0.7, y + r * 0.6); else if (kd === 'down') this.g.fillTriangle(x, y + r * 0.8, x - r * 0.7, y - r * 0.6, x + r * 0.7, y - r * 0.6); else this.g.fillRect(x - r * 0.75, y - r * 0.3, r * 1.5, r * 0.6); };
-    const LABEL: Record<string, string> = { tap: 'TAP', up: 'UP', down: 'DOWN', hold: 'HOLD' };
+    const icon = (x: number, y: number, kd: string, r: number, col: number) => { this.g.fillStyle(col); if (kd === 'up') this.g.fillTriangle(x, y - r * 0.8, x - r * 0.7, y + r * 0.6, x + r * 0.7, y + r * 0.6); else if (kd === 'down') this.g.fillTriangle(x, y + r * 0.8, x - r * 0.7, y - r * 0.6, x + r * 0.7, y - r * 0.6); else this.g.fillRect(x - r * 0.75, y - r * 0.3, r * 1.5, r * 0.6); };
+    const LABEL: Record<string, string> = { down: 'DROP', hold: 'PLANK', up: 'JUMP' };
     this.loop(dt => {
       if (this.i < this.chain.length) { this.life -= dt; const cur = this.chain[this.i];
         if (this.holding && !this.consumed && cur === 'hold') { this.holdT += dt; if (this.holdT >= 0.6) this.step(true); }
@@ -67,8 +67,9 @@ export class Burpee extends Micro {
         this.labels.push(this.label(cx, 208, LABEL[cur], 14, PAL.sun2));
         if (cur === 'hold' && this.holding) { this.g.fillStyle(PAL.neon).fillRect(cx - 36, 186, 72 * clamp(this.holdT / 0.6, 0, 1), 4); }
         const nxt = this.chain[this.i + 1]; if (nxt) { this.g.fillStyle(PAL.night3).fillRect(cx + 78, 128, 44, 44); icon(cx + 100, 150, nxt, 14, PAL.gray2); this.labels.push(this.label(cx + 100, 186, 'next', 8, PAL.gray1)); }
+        this.labels.push(this.label(cx - 100, 150, `${Math.floor(this.i / 3) + 1}/5`, 16, PAL.white));
       }
-      for (let k = 0; k < this.chain.length; k++) this.g.fillStyle(k < this.i ? PAL.grass1 : k === this.i ? PAL.sun2 : PAL.night3).fillRect(cx - 44 + k * 24, 470, 18, 8);   // progress pips
+      for (let k = 0; k < this.chain.length; k++) this.g.fillStyle(k < this.i ? PAL.grass1 : k === this.i ? PAL.sun2 : PAL.night3).fillRect(cx - 90 + k * 12 + Math.floor(k / 3) * 4, 470, 9, 8);   // 15 pips in five groups
     });
   }
   private labels: Phaser.GameObjects.Text[] = [];

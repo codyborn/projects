@@ -104,11 +104,13 @@ export class AirportScene extends Phaser.Scene {
   jump() { this.act(() => { if (this.jumpT < 0) this.jumpT = 0; }); }
   /** Harness hint: the lane to be in and whether to jump right now, for a scripted perfect run. */
   hint(): { lane: number; jump: boolean } {
-    const f = this.fork; const near = this.obstacles.filter(o => !o.hit && !o.used && o.z < 0.34).sort((a, b) => a.z - b.z)[0];
-    let lane = this.lane;
-    if (f) lane = f.correct;
-    else if (near && near.kind !== 'walkway' && near.lane === this.lane && (near.kind === 'traveller' || near.kind === 'cart')) lane = this.lane === 1 ? 0 : 1;
-    const jump = !!near && near.lane === this.lane && (near.kind === 'bag' || near.kind === 'rope') && near.z < 0.14 && this.jumpT < 0;
+    const f = this.fork; const live = this.obstacles.filter(o => !o.hit && !o.used && o.z < 0.34);
+    const blocker = (ln: number) => live.filter(o => o.lane === ln && (o.kind === 'traveller' || o.kind === 'cart')).sort((a, b) => a.z - b.z)[0];
+    const target = f ? f.correct : this.lane; let lane = target;
+    if (blocker(target) && (!f || f.z > 0.22)) {   // the lane we want has a person or a cart coming: sidestep to a free neighbour, come back for the wall
+      const alts = [target - 1, target + 1].filter(l => l >= 0 && l <= 2 && !blocker(l)); if (alts.length) lane = alts.includes(this.lane) ? this.lane : alts[0]; }
+    const near = live.filter(o => o.lane === this.lane).sort((a, b) => a.z - b.z)[0];
+    const jump = !!near && lane === this.lane && (near.kind === 'bag' || near.kind === 'rope') && near.z < 0.14 && this.jumpT < 0;
     return { lane, jump };
   }
 
@@ -175,10 +177,11 @@ export class AirportScene extends Phaser.Scene {
     if (this.jumpT >= 0) { this.jumpT += dt / 0.6; if (this.jumpT >= 1) this.jumpT = -1; }
     // spawn: a fork wall appears far ahead and holds at the horizon so the signs can be read, then approaches
     if (!this.fork && this.elapsed >= this.nextForkAt && this.stage < 5) this.fork = this.makeFork();
-    if (!this.fork && this.elapsed >= this.nextObAt) {
-      const kinds: ObKind[] = ['traveller', 'traveller', 'bag', 'bag', 'rope', 'cart', 'walkway']; const kind = Phaser.Utils.Array.GetRandom(kinds); const lane = Phaser.Math.Between(0, 2);
-      if (!this.obstacles.some(o => o.z > 0.8)) this.obstacles.push({ kind, lane, z: 1 });
-      this.nextObAt = this.elapsed + clamp(1.3 / (ramp * this.frame.speed), 0.7, 1.6);
+    // obstacles keep coming while a wall is still far (they step out from its base), so the approach is not an empty corridor; none once it is close
+    if ((!this.fork || this.fork.z > 0.5) && this.elapsed >= this.nextObAt) {
+      const kinds: ObKind[] = ['traveller', 'traveller', 'bag', 'bag', 'rope', 'cart', 'walkway']; const kind = Phaser.Utils.Array.GetRandom(kinds); const lane = Phaser.Math.Between(0, 2); const z0 = this.fork ? Math.min(1, this.fork.z - 0.03) : 1;
+      if (!this.obstacles.some(o => o.z > z0 - 0.2)) this.obstacles.push({ kind, lane, z: z0 });
+      this.nextObAt = this.elapsed + clamp(0.87 / (ramp * this.frame.speed), 0.47, 1.07);   // round 10: 1.5x the obstacles; one lane each, so every gap stays passable
     }
     // advance
     for (const o of this.obstacles) o.z -= v * dt;
@@ -203,18 +206,17 @@ export class AirportScene extends Phaser.Scene {
   // ---------- drawing ----------
   private draw() {
     const g = this.g; g.clear(); const vx = VX + this.ox;
-    // ceiling with fluorescent strips receding
+    // ceiling (plain: the light streaks were removed in round 10)
     g.fillStyle(PAL.night1).fillRect(0, 26, W, HORIZON - 26); g.fillStyle(PAL.night3).fillRect(0, HORIZON - 3, W, 3);
-    for (let i = 0; i < 6; i++) { const z = ((i / 6) + (this.dist * 0.5) % (1 / 6)) % 1; const y = this.ceilY(z); const s = this.scaleAt(z); g.fillStyle(PAL.sky3, 0.5 + 0.4 * (1 - z)).fillRect(vx - 60 * s, y, 120 * s, Math.max(1, 3 * s)); }
     // floor: corridor trapezoid, tiles scrolling toward the player
     g.fillStyle(PAL.gray0).fillRect(0, HORIZON, W, FLOOR - HORIZON + 30);
     g.fillStyle(PAL.gray1).beginPath(); g.moveTo(vx - this.halfW(0), FLOOR + 30); g.lineTo(vx - this.halfW(1), HORIZON); g.lineTo(vx + this.halfW(1), HORIZON); g.lineTo(vx + this.halfW(0), FLOOR + 30); g.closePath(); g.fillPath();
-    for (let i = 0; i < 9; i++) { const z = ((i / 9) + (this.dist % (1 / 9))) % 1; const y = this.screenY(z); const hw = this.halfW(z); g.fillStyle(PAL.gray2, 0.35).fillRect(vx - hw, y, hw * 2, 1); }
+    for (let i = 0; i < 9; i++) { const z = ((i / 9) - (this.dist % (1 / 9)) + 1) % 1;   /* tile lines approach */ const y = this.screenY(z); const hw = this.halfW(z); g.fillStyle(PAL.gray2, 0.35).fillRect(vx - hw, y, hw * 2, 1); }
     for (const lane of [-0.5, 0.5]) { g.lineStyle(1, PAL.gray2, 0.25); g.beginPath(); g.moveTo(vx + lane * 2 * LANE_NEAR, FLOOR + 30); g.lineTo(vx + lane * 2 * LANE_FAR, HORIZON); g.strokePath(); }
     // walls
     g.fillStyle(PAL.night3).beginPath(); g.moveTo(vx - 400, 26); g.lineTo(vx - this.halfW(1), HORIZON - 3); g.lineTo(vx - this.halfW(0), FLOOR + 30); g.lineTo(vx - 400, FLOOR + 30); g.closePath(); g.fillPath();
     g.fillStyle(PAL.night3).beginPath(); g.moveTo(vx + 400, 26); g.lineTo(vx + this.halfW(1), HORIZON - 3); g.lineTo(vx + this.halfW(0), FLOOR + 30); g.lineTo(vx + 400, FLOOR + 30); g.closePath(); g.fillPath();
-    for (let i = 0; i < 5; i++) { const z = ((i / 5) + (this.dist * 0.7) % (1 / 5)) % 1; const y = this.screenY(z) - 90 * this.scaleAt(z); const s = this.scaleAt(z); const xl = vx - this.halfW(z) - 4; g.fillStyle(PAL.sky1, 0.5).fillRect(xl - 26 * s, y, 24 * s, 34 * s); g.fillStyle(PAL.sky1, 0.5).fillRect(vx + this.halfW(z) + 6, y, 24 * s, 34 * s); }
+    for (let i = 0; i < 5; i++) { const z = ((i / 5) - (this.dist * 0.7) % (1 / 5) + 1) % 1;   /* panels approach: z falls as the runner advances */ const y = this.screenY(z) - 90 * this.scaleAt(z); const s = this.scaleAt(z); const xl = vx - this.halfW(z) - 4; g.fillStyle(PAL.sky1, 0.5).fillRect(xl - 26 * s, y, 24 * s, 34 * s); g.fillStyle(PAL.sky1, 0.5).fillRect(vx + this.halfW(z) + 6, y, 24 * s, 34 * s); }
     // the junction wall (fork) or the dead-end wall
     this.signL.setVisible(false); this.signR.setVisible(false); this.signM.setVisible(false);
     const f = this.fork ?? this.turning?.wall;
@@ -259,12 +261,12 @@ export class AirportScene extends Phaser.Scene {
       if (z <= 0.4) {   // near: a label over each door
         this.signL.setText(f.doors[0]).setPosition(this.laneScreenX(0, z), yF - 76 * s).setScale(sc).setColor('#0a0a12').setVisible(true); this.signM.setText(f.doors[1]).setPosition(this.laneScreenX(1, z), yF - 76 * s).setScale(sc).setColor('#0a0a12').setVisible(true); this.signR.setText(f.doors[2]).setPosition(this.laneScreenX(2, z), yF - 76 * s).setScale(sc).setColor('#0a0a12').setVisible(true);
       } else {          // far: one board listing the three doors, so the text never overlaps
-        this.signM.setText(f.doors.join('   ')).setScale(sc).setColor('#f7cf6b'); const bw = this.signM.width * sc + 28, bh = 34; const bx = vx - bw / 2, by = Math.max(30, yC + (yF - yC) * 0.32 - bh / 2);
+        this.signM.setText(f.doors.join('   ')).setScale(sc).setColor('#f7cf6b'); const bw = this.signM.width * sc + 28, bh = 34; const bx = vx - bw / 2, by = Math.max(96, yC + (yF - yC) * 0.32 - bh / 2);
         g.fillStyle(PAL.ink).fillRect(bx - 2, by - 2, bw + 4, bh + 4); g.fillStyle(PAL.night0).fillRect(bx, by, bw, bh); this.signM.setPosition(vx, by + bh / 2).setVisible(true);
       }
     } else {
       this.signL.setText(f.left).setScale(sc); this.signR.setText(f.right).setScale(sc);
-      const bwL = this.signL.width * sc + 30, bwR = this.signR.width * sc + 30, bh = 34; const by = Math.max(30, Math.min(yC + (yF - yC) * 0.32 - bh / 2, yF - bh - 12));
+      const bwL = this.signL.width * sc + 30, bwR = this.signR.width * sc + 30, bh = 34; const by = Math.max(96, Math.min(yC + (yF - yC) * 0.32 - bh / 2, yF - bh - 12));   // never over the GATE header
       const gap = Math.max(hw * 0.5, Math.max(bwL, bwR) / 2 + 4); const xl = vx - gap - bwL / 2, xr = vx + gap - bwR / 2;   // boards keep their readable size and never overlap (they may overhang the wall when it is far)
       for (const [bx, bw, arrowLeft] of [[xl, bwL, true], [xr, bwR, false]] as [number, number, boolean][]) {
         g.fillStyle(PAL.ink).fillRect(bx - 2, by - 2, bw + 4, bh + 4); g.fillStyle(PAL.night0).fillRect(bx, by, bw, bh);

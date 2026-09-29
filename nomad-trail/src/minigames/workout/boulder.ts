@@ -21,10 +21,19 @@ export class BoulderBeta extends Micro {
     this.loop(dt => { if (!this.showing && !this.dyno) { this.grip -= dt * (0.16 + 0.08 * this.rounds) * this.ctx.speed; if (this.grip <= 0) { this.pop(W / 2, 480, 'PUMPED OUT', PAL.red); this.rounds++; if (this.rounds >= this.need) { this.after(300, () => this.finish(this.scoreNow())); return; } startRound(); } }
       if (this.dyno) this.ph += 2.6 * this.ctx.speed * dt;
       this.g.clear(); this.g.fillStyle(PAL.gray0).fillRect(0, 26, W, 614); for (let i = 0; i < 9; i++) this.g.fillStyle(PAL.night3, 0.5).fillRect(0, 60 + i * 64, W, 5);
-      this.holds.forEach((h, i) => { const lit = this.showing && this.seq[this.showIdx] === i; const done = !this.showing && this.input.includes(i); this.g.fillStyle(PAL.ink).fillCircle(h.x, h.y, 16); this.g.fillStyle(lit ? PAL.sun2 : done ? PAL.grass1 : [PAL.sky1, PAL.dusk3, PAL.earth2, PAL.pink][i % 4]).fillCircle(h.x, h.y, 13); });
+      this.holds.forEach((h, i) => { const lit = this.showing && this.seq[this.showIdx] === i; const done = !this.showing && this.input.includes(i); this.drawHold(h.x, h.y, i % 4, lit ? PAL.sun2 : done ? PAL.grass1 : PAL.night3, lit ? PAL.sun1 : done ? PAL.grass0 : PAL.night2); });
       this.g.fillStyle(PAL.ink).fillRect(40, 500, W - 80, 10); this.g.fillStyle(this.grip > 0.3 ? PAL.neon : PAL.red).fillRect(40, 500, (W - 80) * clamp(this.grip, 0, 1), 10);
       if (this.dyno) { const s = Math.sin(this.ph); this.g.fillStyle(PAL.sun2).fillRect(W / 2 - 16, 60, 32, 10); this.ctx.athlete.at(W / 2 + Math.cos(this.ph) * 50, 200 - Math.max(0, s) * 90); this.g.fillStyle(s > 0.7 ? PAL.neon : PAL.gray2, 0.3).fillRect(W / 2 - 60, 100, 120, 8); }
       this.ctx.frame.setTimer(this.showing ? 'WATCH' : this.dyno ? 'TAP AT THE TOP' : 'YOUR TURN'); });
+  }
+  /** Climbing holds in one dark tone so the lit one pops: 0 jug (fat blob with a lip), 1 crimp (thin edge), 2 sloper (half dome), 3 pinch (tall lump). Shaded underside, a bolt dot. */
+  private drawHold(x: number, y: number, kind: number, body: number, shade: number) {
+    const g = this.g; g.fillStyle(PAL.ink);
+    if (kind === 0) { g.fillEllipse(x, y, 40, 28); g.fillStyle(body).fillEllipse(x, y - 1, 36, 24); g.fillStyle(shade).fillEllipse(x + 2, y + 5, 28, 10); g.fillStyle(body).fillEllipse(x - 4, y - 5, 18, 8); }
+    else if (kind === 1) { g.fillRect(x - 18, y - 6, 36, 12); g.fillStyle(body).fillRect(x - 16, y - 4, 32, 8); g.fillStyle(shade).fillRect(x - 16, y + 1, 32, 3); g.fillStyle(body).fillRect(x - 12, y - 4, 20, 2); }
+    else if (kind === 2) { g.fillEllipse(x, y + 4, 42, 24); g.fillRect(x - 21, y + 4, 42, 8); g.fillStyle(body).fillEllipse(x, y + 4, 38, 20); g.fillRect(x - 19, y + 4, 38, 6); g.fillStyle(shade).fillRect(x - 19, y + 7, 38, 3); g.fillStyle(body).fillEllipse(x - 5, y - 1, 16, 6); }
+    else { g.fillEllipse(x, y, 22, 34); g.fillStyle(body).fillEllipse(x, y, 18, 30); g.fillStyle(shade).fillEllipse(x + 2, y + 8, 12, 12); g.fillStyle(body).fillEllipse(x - 3, y - 8, 8, 10); }
+    g.fillStyle(PAL.gray1).fillCircle(x, y + (kind === 2 ? 4 : 0), 2);   // the bolt
   }
   protected scoreNow() { return clamp(this.correct / (this.need + 0.5), 0, 1); }
 }

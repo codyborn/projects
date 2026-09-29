@@ -241,7 +241,7 @@ function tickDay(s: RunState, rng: Rng, opts: { rest?: boolean; work?: boolean }
   s.energy += 5 + (lodging?.energyPerDay ?? 0) + (opts.rest ? 0 : 0);
   s.mood += (lodging?.moodPerDay ?? 0) - 1;
   // slow wear: the year itself is the opponent. Routine (training, cooking, supplements) pushes back.
-  s.health -= 0.18 + s.day * 0.0024 + (s.energy < 40 ? (opts.work ? 0.15 : 0.35) : 0) + (hasTag(s, 'fitness') ? 0 : 0.2);   /* wear nudged up when the event rate went to 0.65 */   /* a laptop week indoors wears less than a tired day out */
+  s.health -= 0.24 + s.day * 0.0026 + (s.energy < 40 ? (opts.work ? 0.15 : 0.35) : 0) + (hasTag(s, 'fitness') ? 0 : 0.2);   /* wear nudged up when the event rate went to 0.65 */   /* a laptop week indoors wears less than a tired day out */
   if (coffeePacked(s)) { s.energy += 15; s.mood += 2; s.coffeeMornings += 1; }
   if (s.sickDays > 0) { s.sickDays -= 1; s.health -= 4; s.energy -= 5; }
   if (s.backInjuryDays > 0) s.backInjuryDays -= 1;
@@ -291,7 +291,12 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       const bonus = outdoors && geared; s.energy = clamp(s.energy - (bonus ? 9 : 12), 0, energyCap(s)); s.mood = clamp(s.mood + 7 + (bonus ? 6 : 0), 0, 100);
       s.log.push({ day: s.day, city: s.cityId, text: bonus ? `You go out with the whole kit. ${city.name} is built for it.` : DAILY.explore });
       if (outdoors && !geared && rng.chance(0.3)) { s.mood = clamp(s.mood - 3, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: STR.log.wrongShoes }); }
-      events.push(...rollEvents(s, 'action', ctx, rngFor(s, 4), 1)); break; }
+      events.push(...rollEvents(s, 'action', ctx, rngFor(s, 4), 1));
+      /* follow-ups: a new animal friend can carry a tick; a shoreline swim can pick up a fin; a Vegas walk can end at a table */
+      if (events.some(e => e.id === 'animal') && rngFor(s, 21).chance(0.15)) events.push(forceEvent(s, 'tick', rng, hasTag(s, 'firstaid')));
+      if (events.some(e => e.id === 'oceanswim') && rngFor(s, 22).chance(0.1)) events.push(forceEvent(s, 'shark', rng));
+      if (s.cityId === 'lasvegas' && s.money > 100 && !hasFlag(s, 'casino_' + s.day) && rngFor(s, 23).chance(0.3)) { setFlag(s, 'casino_' + s.day, true); events.push(forceEvent(s, 'casinonight', rng)); checkEnding(s); return { state: s, events, minigame: { key: MINIGAME_KEYS.casino, payload: { money: s.money, cityName: city.name, seed: hash32(s.seed, s.day, 88) }, difficulty: 0.5 } }; }
+      break; }
     case 'rest': {
       s.workStreak = 0; events = tickDay(s, rng, { rest: true }); s.energy = clamp(s.energy + 28, 0, energyCap(s)); s.mood = clamp(s.mood + 2, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: DAILY.rest });
       break; }
@@ -353,6 +358,7 @@ export function minigameRewards(s: RunState, key: string, result: MinigameResult
       r.clothes = s.maxClothes ? clamp(back, 1, s.maxClothes + 3) : (result.failed ? 0 : 1);   // no clothes packed: you wash what you are wearing, clean for one day
       r.mood = result.failed ? -3 : result.perfect ? 3 : 0; if (result.failed) r.notes.push('everything is pink now'); if (kit) r.notes.push('laundry kit: no day lost'); break; }
     case MINIGAME_KEYS.kite: r.mood = 5 + Math.round(score * 15); r.energy = -12; break;
+    case MINIGAME_KEYS.casino: { const net = Math.round(result.money ?? 0); r.money = net; r.mood = net > 0 ? 6 : net < 0 ? -4 : 0; r.notes.push(net > 0 ? 'the house lost tonight' : net < 0 ? 'the house always wins' : 'walked away even'); break; }
     case MINIGAME_KEYS.airport: if (result.failed) { r.days = 1; r.energy = -15; r.mood = -10; r.notes.push('missed the flight'); } else { r.mood = 6; r.energy = -6; r.notes.push('made the flight'); } break;
   }
   return r;
@@ -416,6 +422,10 @@ export function applyMinigameResult(state: RunState, key: string, result: Miniga
       for (let i = 0; i < days; i++) { if (checkEnding(s)) break; if (i > 0 && (s.energy < 30 || s.mood < 15)) { s.log.push({ day: s.day, city: s.cityId, text: STR.log.workStopped }); break; }   /* running on fumes: the week ends early */ s.workStreak += 1; const n = s.workStreak; events.push(...tickDay(s, rng, { work: true })); s.energy = clamp(s.energy - WORK_ENERGY(n), 0, energyCap(s)); s.mood = clamp(s.mood - WORK_MOOD(n), 0, 100); s.money += perDay; earned += perDay; }
       s.mood = clamp(s.mood + rw.mood, 0, 100);
       s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.workWeek, { days: Math.round(earned / perDay), money: earned.toLocaleString('en-US'), flavor: result.perfect ? STR.log.workPerfect : result.failed ? STR.log.workBad : STR.log.workOk }) });
+      break; }
+    case MINIGAME_KEYS.casino: {
+      s.money += rw.money; s.mood = clamp(s.mood + rw.mood, 0, 100); if (rw.money >= 500) unlock(s, 'highroller');
+      s.log.push({ day: s.day, city: s.cityId, text: rw.money > 0 ? `The casino. Up $${rw.money.toLocaleString('en-US')}, and you walked away. Nobody believes you.` : rw.money < 0 ? `The casino. Down $${Math.abs(rw.money).toLocaleString('en-US')}. The air conditioning was excellent.` : 'The casino. You left with exactly what you came with, which counts as a win.' });
       break; }
     case MINIGAME_KEYS.kite: { s.mood = clamp(s.mood + rw.mood, 0, 100); s.energy = clamp(s.energy + rw.energy, 0, energyCap(s)); if (result.perfect) unlock(s, 'kitemaster'); break; }
     case MINIGAME_KEYS.airport: {

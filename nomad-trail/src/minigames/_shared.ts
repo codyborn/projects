@@ -62,6 +62,8 @@ export class MinigameFrame {
   private wobbleT = 0;
   /** 0..1, how tired: energy < 50 ramps this up */
   readonly hard: number;
+  /** extra fields a game wants on its MinigameResult (the casino sets { money: net }) */
+  resultExtra?: Partial<MinigameResult>;
   /** multiplier for timing windows / target sizes (1 = generous, ~0.4 = tight) */
   readonly window: number;
   /** input lag in ms when tired (max ~140ms) */
@@ -234,7 +236,7 @@ export class MinigameFrame {
     const s = this.scene;
     s.cameras.main.setRotation(0).setZoom(1);
     if (perfect) this.shake(150, 0.003);
-    const result: MinigameResult = { score, perfect, failed };
+    const result: MinigameResult = { score, perfect, failed, ...(this.resultExtra ?? {}) };   /* e.g. the casino's net money */
     let lines: string[] = []; try { lines = this.launch.preview?.(result) ?? []; } catch { lines = []; }   // what the run gets out of this: +5 health, a day passes ...
     this.resultCard(label, color, [`SCORE ${score}`, ...lines.slice(0, 2)], () => { try { this.launch.onDone(result); } finally { s.scene.stop(); } }, opts);
   }

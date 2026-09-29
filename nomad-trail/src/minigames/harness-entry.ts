@@ -16,6 +16,26 @@ if (q.get('holdResult') !== '1') setInterval(() => { for (const sc of game.scene
 const out = document.getElementById('results')!; const prog = (m: string) => { (window as any).__progress = m; document.getElementById('progress')!.textContent = m; };
 const errors: string[] = []; window.addEventListener('error', e => errors.push(String(e.message) + ' @ ' + String((e as any).error?.stack || '').split('\n').slice(1, 4).join(' | '))); window.addEventListener('unhandledrejection', e => errors.push('rej:' + String((e as any).reason)));
 
+// casino checks: ?casino=auto[&money=800][&seed=3] = scripted 6 roulette spins + 6 pulls (onDone once, reports net); ?casino=shot&stage=roulette|slots|result holds a state for screenshots
+if (q.get('casino')) {
+  const mode = q.get('casino')!; const stage = q.get('stage');
+  import('./CasinoScene').then(({ CasinoScene }) => {
+    const key = (MINIGAME_KEYS as any).casino ?? 'Casino'; if (!game.scene.getScene(key)) game.scene.add(key, CasinoScene, false);
+    let doneCalls = 0; const t0 = performance.now(); const money = Number(q.get('money') || 800);
+    const launch: MinigameLaunch = { energy: 90, difficulty: 0.4, payload: { money, cityName: 'Las Vegas', seed: Number(q.get('seed') || 3) }, onDone: (r) => { doneCalls++; out.textContent = JSON.stringify({ mode, money, result: r, doneCalls, secs: Math.round((performance.now() - t0) / 100) / 10, errors }); document.title = 'HARNESS_DONE'; } };
+    game.scene.start(key, launch); const scene: any = game.scene.getScene(key);
+    const wait = (ms: number) => new Promise(r => setTimeout(r, ms)); const idle = async () => { while (scene.busy) await wait(50); };
+    (async () => {
+      await wait(600); if (stage === 'roulette') { scene.frame.ready(); await wait(300); scene.bet('red'); scene.setChip(2); scene.bet('number', 17); scene.spin(); await wait(900); return; }
+      scene.frame.ready(); await wait(300);
+      if (stage === 'slots') { scene.tab('slots'); await wait(200); scene.pull(); await wait(700); return; }
+      for (let i = 0; i < 6 && !scene.ended; i++) { scene.setChip(1); scene.bet('red'); scene.bet(i % 2 ? 'odd' : 'even'); scene.setChip(0); scene.bet('number', (i * 7) % 37); scene.spin(); await wait(100); await idle(); await wait(150); }
+      if (!scene.ended) { scene.tab('slots'); await wait(200); for (let i = 0; i < 6 && !scene.ended; i++) { scene.pull(); await wait(100); await idle(); await wait(150); } }
+      if (stage === 'result') return;   // the frame's result card is up (holdResult=1 keeps it)
+      await wait(1200); if (!scene.ended) scene.walkAway(); await wait(1200); scene.frame.proceed();
+    })();
+  });
+}
 // work puzzle checks: ?work=solve|hint|fail[&puzzle=id][&stage=page|hint|explain] — scripted through scene.answer()/hint()/tapExplain(); stage holds a state for screenshots
 if (q.get('work')) {
   const mode = q.get('work')!; const stage = q.get('stage');
@@ -296,6 +316,6 @@ if (q.get('auto') === '1') {
   const cols = 3, scale = 3; const sheet = document.createElement('canvas'); sheet.width = cols * (DISH_TEX_W * scale + 12); sheet.height = Math.ceil(ids.length / cols) * (DISH_TEX_H * scale + 28); const ctx = sheet.getContext('2d')!; ctx.imageSmoothingEnabled = false; ctx.fillStyle = '#141a2e'; ctx.fillRect(0, 0, sheet.width, sheet.height);
   ids.forEach((id, i) => { const c = renderDishCanvas(id); const x = (i % cols) * (DISH_TEX_W * scale + 12) + 6, y = Math.floor(i / cols) * (DISH_TEX_H * scale + 28) + 4; ctx.drawImage(c, x, y, DISH_TEX_W * scale, DISH_TEX_H * scale); ctx.fillStyle = '#f7cf6b'; ctx.font = '12px monospace'; ctx.fillText((dishesJson as any[]).find(d => d.id === id)?.name ?? id, x, y + DISH_TEX_H * scale + 16); });
   sheet.id = 'sheet'; document.body.appendChild(sheet); document.title = 'SHEET_DONE'; void drawDish;
-} else if (!q.get('work')) {
+} else if (!q.get('work') && !q.get('casino')) {
   game.events.once('ready', () => launchHarness(game));
 }

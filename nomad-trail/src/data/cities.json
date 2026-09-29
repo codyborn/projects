@@ -105,7 +105,9 @@
     "blurb": "Home base, allegedly. Ninety-six days here last year and the tan never took.",
     "stampIcon": "palm",
     "costPerDay": 150,
-    "droneRule": "ok"
+    "droneRule": "ok",
+    "museum": "the Pérez Art Museum",
+    "coast": true
   },
   {
     "id": "newyork",
@@ -216,7 +218,9 @@
     "blurb": "The team onsite city. Twenty days at a time, four times a year, always a hotel with a view of a wall.",
     "stampIcon": "skyline",
     "costPerDay": 180,
-    "droneRule": "banned"
+    "droneRule": "banned",
+    "museum": "the Met",
+    "coast": true
   },
   {
     "id": "boulder",
@@ -306,7 +310,9 @@
     "costPerDay": 140,
     "radon": 3,
     "outdoorsy": true,
-    "droneRule": "ok"
+    "droneRule": "ok",
+    "museum": "the Fiske Planetarium",
+    "animal": "a horse"
   },
   {
     "id": "bozeman",
@@ -395,7 +401,9 @@
     "costPerDay": 120,
     "radon": 3,
     "outdoorsy": true,
-    "droneRule": "ok"
+    "droneRule": "ok",
+    "museum": "the Museum of the Rockies",
+    "animal": "a horse"
   },
   {
     "id": "lasvegas",
@@ -477,7 +485,8 @@
     "blurb": "A layover that became five days. Nobody remembers why.",
     "stampIcon": "dice",
     "costPerDay": 130,
-    "droneRule": "ok"
+    "droneRule": "ok",
+    "museum": "the Neon Museum"
   },
   {
     "id": "joshuatree",
@@ -684,7 +693,9 @@
     "blurb": "Home. Family, laundry that someone else folds, and the Pacific as the front door.",
     "stampIcon": "sun",
     "costPerDay": 60,
-    "droneRule": "ok"
+    "droneRule": "ok",
+    "museum": "the Bowers Museum",
+    "coast": true
   },
   {
     "id": "montreal",
@@ -754,7 +765,8 @@
     "stampIcon": "maple",
     "costPerDay": 110,
     "radon": 2,
-    "droneRule": "ok"
+    "droneRule": "ok",
+    "museum": "the Montreal Museum of Fine Arts"
   },
   {
     "id": "lapaz",
@@ -839,7 +851,8 @@
     "blurb": "Whale sharks, a rental car, the good kind of quiet.",
     "stampIcon": "whale",
     "costPerDay": 65,
-    "droneRule": "ok"
+    "droneRule": "ok",
+    "coast": true
   },
   {
     "id": "laventana",
@@ -920,7 +933,8 @@
     "stampIcon": "kite",
     "costPerDay": 70,
     "outdoorsy": true,
-    "droneRule": "ok"
+    "droneRule": "ok",
+    "coast": true
   },
   {
     "id": "roatan",
@@ -993,7 +1007,8 @@
     "blurb": "Five weeks on an island of biohackers, reef, and one road.",
     "stampIcon": "reef",
     "costPerDay": 90,
-    "droneRule": "ok"
+    "droneRule": "ok",
+    "coast": true
   },
   {
     "id": "santiago",
@@ -1086,7 +1101,9 @@
     "altitude": 520,
     "costPerDay": 90,
     "radon": 1,
-    "droneRule": "permit"
+    "droneRule": "permit",
+    "museum": "the Museum of Memory and Human Rights",
+    "coast": true
   },
   {
     "id": "patagonia",
@@ -1152,7 +1169,9 @@
     "stampIcon": "peaks",
     "costPerDay": 110,
     "outdoorsy": true,
-    "droneRule": "permit"
+    "droneRule": "permit",
+    "animal": "a horse",
+    "coast": true
   },
   {
     "id": "buenosaires",
@@ -1251,7 +1270,9 @@
     "blurb": "DevConnect. Steak at midnight, meetings at ten, a city that never asked what time zone you were on.",
     "stampIcon": "tango",
     "costPerDay": 80,
-    "droneRule": "permit"
+    "droneRule": "permit",
+    "museum": "MALBA",
+    "coast": true
   },
   {
     "id": "iguazu",
@@ -1389,13 +1410,6 @@
         "timezones": 3
       },
       {
-        "to": "carvoeiro",
-        "transport": "car",
-        "days": 1,
-        "energy": 6,
-        "timezones": 0
-      },
-      {
         "to": "madrid",
         "transport": "train",
         "days": 1,
@@ -1420,80 +1434,9 @@
     "blurb": "The European base. Hills, tiles, a tram that arrives when it feels like it.",
     "stampIcon": "tram",
     "costPerDay": 110,
-    "droneRule": "ok"
-  },
-  {
-    "id": "carvoeiro",
-    "name": "Carvoeiro",
-    "country": "Portugal",
-    "region": "europe",
-    "lat": 37.1,
-    "lon": -8.47,
-    "hero": false,
-    "minStay": 8,
-    "suggestedStay": 10,
-    "climate": "hot",
-    "timezone": 0,
-    "dishes": [
-      "pasteldenata",
-      "bacalhau"
-    ],
-    "activities": [
-      "swim",
-      "hike",
-      "trailrun"
-    ],
-    "hazard": "wave",
-    "lodgings": [
-      {
-        "id": "airbnb",
-        "name": "Airbnb",
-        "cancelChance": 0.08,
-        "quiet": 2,
-        "moodPerDay": 2,
-        "energyPerDay": 1
-      },
-      {
-        "id": "hotel",
-        "name": "Hotel",
-        "cancelChance": 0.01,
-        "quiet": 3,
-        "moodPerDay": 1,
-        "energyPerDay": 3
-      },
-      {
-        "id": "hostel",
-        "name": "Hostel dorm",
-        "cancelChance": 0.0,
-        "quiet": 0,
-        "moodPerDay": -2,
-        "energyPerDay": -2
-      }
-    ],
-    "eventWeights": {
-      "sunburn": 1.5
-    },
-    "legs": [
-      {
-        "to": "lisbon",
-        "transport": "car",
-        "days": 1,
-        "energy": 6,
-        "timezones": 0
-      },
-      {
-        "to": "madrid",
-        "transport": "train",
-        "days": 1,
-        "energy": 8,
-        "timezones": 1
-      }
-    ],
-    "blurb": "Cliffs, caves, a rental car with the turning radius of a boat.",
-    "stampIcon": "cliff",
-    "costPerDay": 100,
-    "outdoorsy": true,
-    "droneRule": "ok"
+    "droneRule": "ok",
+    "museum": "the Tile Museum",
+    "coast": true
   },
   {
     "id": "madrid",
@@ -1561,13 +1504,6 @@
         "timezones": 4
       },
       {
-        "to": "carvoeiro",
-        "transport": "train",
-        "days": 1,
-        "energy": 8,
-        "timezones": 1
-      },
-      {
         "to": "lisbon",
         "transport": "train",
         "days": 1,
@@ -1594,7 +1530,8 @@
     "altitude": 650,
     "costPerDay": 110,
     "radon": 2,
-    "droneRule": "permit"
+    "droneRule": "permit",
+    "museum": "the Prado"
   },
   {
     "id": "granada",
@@ -1676,7 +1613,8 @@
     "costPerDay": 90,
     "radon": 2,
     "outdoorsy": true,
-    "droneRule": "permit"
+    "droneRule": "permit",
+    "museum": "the Alhambra"
   },
   {
     "id": "london",
@@ -1775,7 +1713,8 @@
     "blurb": "Six weeks of a city that charges rent on the air.",
     "stampIcon": "bigben",
     "costPerDay": 170,
-    "droneRule": "banned"
+    "droneRule": "banned",
+    "museum": "the British Museum"
   },
   {
     "id": "brussels",
@@ -1845,7 +1784,8 @@
     "blurb": "A week. Fries as a food group.",
     "stampIcon": "waffle",
     "costPerDay": 120,
-    "droneRule": "permit"
+    "droneRule": "permit",
+    "museum": "the Magritte Museum"
   },
   {
     "id": "amsterdam",
@@ -1923,7 +1863,9 @@
     "blurb": "Bikes have right of way over everything, including you.",
     "stampIcon": "bike",
     "costPerDay": 140,
-    "droneRule": "permit"
+    "droneRule": "permit",
+    "museum": "the Rijksmuseum",
+    "coast": true
   },
   {
     "id": "marseille",
@@ -1997,7 +1939,9 @@
     "blurb": "One night. The bouillabaisse was worth the night.",
     "stampIcon": "port",
     "costPerDay": 110,
-    "droneRule": "permit"
+    "droneRule": "permit",
+    "museum": "MUCEM",
+    "coast": true
   },
   {
     "id": "hyeres",
@@ -2071,7 +2015,9 @@
     "blurb": "Twenty-six days on the Riviera. Bread is the answer to most things.",
     "stampIcon": "palm",
     "costPerDay": 120,
-    "droneRule": "permit"
+    "droneRule": "permit",
+    "museum": "Villa Noailles",
+    "coast": true
   },
   {
     "id": "antibes",
@@ -2158,7 +2104,9 @@
     "blurb": "Nice, Monaco, the sea every morning. If you can't beat 'em.",
     "stampIcon": "yacht",
     "costPerDay": 140,
-    "droneRule": "permit"
+    "droneRule": "permit",
+    "museum": "the Picasso Museum",
+    "coast": true
   },
   {
     "id": "edinburgh",
@@ -2229,7 +2177,9 @@
     "stampIcon": "castle",
     "costPerDay": 130,
     "radon": 1,
-    "droneRule": "ok"
+    "droneRule": "ok",
+    "museum": "the National Museum of Scotland",
+    "coast": true
   },
   {
     "id": "highlands",
@@ -2311,7 +2261,9 @@
     "costPerDay": 120,
     "radon": 2,
     "outdoorsy": true,
-    "droneRule": "ok"
+    "droneRule": "ok",
+    "animal": "a Highland cow",
+    "coast": true
   },
   {
     "id": "reykjavik",
@@ -2384,7 +2336,10 @@
     "stampIcon": "geyser",
     "costPerDay": 170,
     "outdoorsy": true,
-    "droneRule": "permit"
+    "droneRule": "permit",
+    "museum": "Perlan",
+    "animal": "an Icelandic horse",
+    "coast": true
   },
   {
     "id": "munich",
@@ -2508,7 +2463,8 @@
     "altitude": 520,
     "costPerDay": 130,
     "radon": 2,
-    "droneRule": "permit"
+    "droneRule": "permit",
+    "museum": "the Deutsches Museum"
   },
   {
     "id": "innsbruck",
@@ -2593,7 +2549,9 @@
     "costPerDay": 130,
     "radon": 3,
     "outdoorsy": true,
-    "droneRule": "permit"
+    "droneRule": "permit",
+    "museum": "the Hofburg",
+    "animal": "a Haflinger horse"
   },
   {
     "id": "hallstatt",
@@ -2669,7 +2627,9 @@
     "costPerDay": 120,
     "radon": 3,
     "outdoorsy": true,
-    "droneRule": "permit"
+    "droneRule": "permit",
+    "museum": "the salt mine",
+    "animal": "a horse"
   },
   {
     "id": "casablanca",
@@ -2768,7 +2728,10 @@
     "blurb": "A week of tagine and the realization that the movie was not filmed here.",
     "stampIcon": "lantern",
     "costPerDay": 70,
-    "droneRule": "banned"
+    "droneRule": "banned",
+    "museum": "the Hassan II Mosque",
+    "animal": "a stray dog",
+    "coast": true
   },
   {
     "id": "dakhla",
@@ -2851,7 +2814,9 @@
     "stampIcon": "dune",
     "costPerDay": 70,
     "outdoorsy": true,
-    "droneRule": "banned"
+    "droneRule": "banned",
+    "animal": "a stray dog",
+    "coast": true
   },
   {
     "id": "seoul",
@@ -2945,7 +2910,9 @@
     "stampIcon": "lantern",
     "costPerDay": 110,
     "radon": 1,
-    "droneRule": "banned"
+    "droneRule": "banned",
+    "museum": "the Leeum",
+    "coast": true
   },
   {
     "id": "chiangmai",
@@ -3019,7 +2986,9 @@
     "stampIcon": "temple",
     "altitude": 310,
     "costPerDay": 60,
-    "droneRule": "permit"
+    "droneRule": "permit",
+    "museum": "the Lanna Folklife Museum",
+    "animal": "a stray dog"
   },
   {
     "id": "bangkok",
@@ -3112,7 +3081,10 @@
     "blurb": "Street food at 1 am, a tuk-tuk at 1:05, regret at 4.",
     "stampIcon": "tuktuk",
     "costPerDay": 70,
-    "droneRule": "permit"
+    "droneRule": "permit",
+    "museum": "the Jim Thompson House",
+    "animal": "a stray dog",
+    "coast": true
   },
   {
     "id": "hongkong",
@@ -3212,7 +3184,9 @@
     "blurb": "Skyscrapers with hiking trails behind them. A week of dim sum and stairs.",
     "stampIcon": "junk",
     "costPerDay": 150,
-    "droneRule": "banned"
+    "droneRule": "banned",
+    "museum": "M+",
+    "coast": true
   },
   {
     "id": "tokyo",
@@ -3313,7 +3287,9 @@
     "blurb": "Three weeks of convenience stores, alleys, animal cafes and trains that apologize for being early.",
     "stampIcon": "torii",
     "costPerDay": 160,
-    "droneRule": "banned"
+    "droneRule": "banned",
+    "museum": "the Ghibli Museum",
+    "coast": true
   },
   {
     "id": "minakami",
@@ -3381,7 +3357,8 @@
     "costPerDay": 120,
     "radon": 1,
     "outdoorsy": true,
-    "droneRule": "permit"
+    "droneRule": "permit",
+    "animal": "a deer"
   },
   {
     "id": "kathmandu",
@@ -3462,6 +3439,8 @@
     "costPerDay": 45,
     "radon": 2,
     "outdoorsy": true,
-    "droneRule": "permit"
+    "droneRule": "permit",
+    "museum": "the Patan Museum",
+    "animal": "a stray dog"
   }
 ]

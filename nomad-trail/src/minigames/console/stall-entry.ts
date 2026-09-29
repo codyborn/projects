@@ -5,6 +5,8 @@
 //   ?game=tetris&rot=1                      gravity frozen, A pressed 20x: piece y and fall accumulator must not change; plus D-pad geometry (low RIGHT thumb = right only)
 //   ?game=tetris&mech=1                     scripted FRAGILE shatter, ZIPPER pull and BATTERY blast against a hand-set well
 //   ?game=carryon&hazard=wave&water=1       samples the water line: grace before it moves, time to peak, rise rate
+//   ?game=carryon&bot=1&seed=N              a hold-RIGHT bot that jumps at walls, pits, spikes and hazards: must reach the flag (add &god=1 to make it invulnerable)
+//   ?game=carryon&noinput=1                 nothing pressed: must end by death or the 90 s cap, onDone once
 //   &rt=1                                   real-time loop (for screenshots)   &autostart=0  leave the title card up
 import Phaser from 'phaser';
 import { GAME_W, GAME_H, MINIGAME_KEYS, type MinigameLaunch } from '../../core/types';
@@ -61,7 +63,28 @@ game.events.once('ready', () => {
       samples.push([c.t, c.waterY]); if (c.t > 14 || c.ended) { clearInterval(run);
       const base = samples[0][1]; const firstMove = samples.find(([, w]) => base - w > 1); let peak = samples[0]; for (const sm of samples) if (sm[1] < peak[1]) peak = sm; const rise = base - peak[1]; const riseRate = rise / (peak[0] - (firstMove ? firstMove[0] : 0));
       finish('WATER_DONE', { water: { graceUntilS: firstMove ? +firstMove[0].toFixed(2) : null, peakAtS: +peak[0].toFixed(2), risePx: +rise.toFixed(1), riseTiles: +(rise / 16).toFixed(2), riseRatePxPerS: +riseRate.toFixed(1), samples: samples.length } }); } }, 20); }
+  if (q.get('bot') === '1' || q.get('noinput') === '1') { const bot = q.get('bot') === '1'; const log: any = { jumps: 0 };
+    // the bot runs INSIDE the cartridge's update (once per virtual frame) and writes the pad snapshot directly: hold RIGHT, jump at walls, pits, spikes, hazards, or when stuck
+    const hook = setInterval(() => { const s = sc(); const c = s?.cart; if (!c || !s.started || !c.player || (c as any).__bot) return; (c as any).__bot = true; clearInterval(hook); if (q.get('god') === '1') c.hurt = () => {}; if (!bot) return;
+      let jumpFrames = 0, stuck = 0, lastX = -1; const orig = c.update.bind(c);
+      c.update = (dt: number, pad: any) => {
+        if (!c.ended) { pad.cur.right = true; const p = c.player, b = p.body, grounded = b.blocked.down || b.touching.down, feet = p.y + 8; const tA = (dx: number, dy: number) => c.tileAt(p.x + dx, feet + dy);
+          const pit = tA(12, 6) === '.' || tA(24, 6) === '.'; const spike = tA(16, -2) === '^' || tA(28, -2) === '^'; const foe = c.movers.some((m: any) => m.alive && m.spr.x > p.x && m.spr.x - p.x < 44 && Math.abs(m.spr.y - p.y) < 20);
+          if (p.x > lastX + 1) { lastX = p.x; stuck = 0; } else stuck += dt;
+          // how wide is the gap ahead (tiles until something standable reappears at foot level or up to 3 rows above)? short gap = short hop
+          let gap = 0; if (pit) { for (let k = 1; k <= 6; k++) { let found = false; for (let up = 0; up <= 3; up++) { const t = tA(k * 16, 6 - up * 16); if (t === '#' || t === '-' || t === 'C' || t === 'M') found = true; } if (found) break; gap = k; } }
+          // moving platforms: ride one to its right end before jumping off; wait at a pit edge until a mover swings close
+          const mps = c.movingPlats.getChildren() as any[]; const riding = mps.find(mp => Math.abs(p.x - mp.x) < 18 && Math.abs(feet - (mp.y - 4)) < 9); const aheadMp = mps.find(mp => mp.getData('x0') - p.x > -10 && mp.getData('x0') - p.x < 150);
+          const noStaticLanding = pit && gap >= 6;
+          if (grounded && riding) { pad.cur.right = false; stuck = 0; const x0 = riding.getData('x0'); if (jumpFrames <= 0 && riding.x >= x0 + 40) { jumpFrames = 22; log.jumps++; pad.prev.a = false; } }
+          else if (grounded && noStaticLanding && aheadMp) { const d = aheadMp.x - p.x; stuck = 0; if (jumpFrames <= 0 && d > 16 && d < 64 && aheadMp.body.velocity.x < 0) { jumpFrames = 14; log.jumps++; pad.prev.a = false; } else if (jumpFrames <= 0) pad.cur.right = false; }
+          else if (jumpFrames <= 0 && grounded && (b.blocked.right || pit || spike || foe || stuck > 1.0)) { jumpFrames = pit && gap <= 2 && !b.blocked.right ? 9 : pit && gap === 3 ? 15 : 22; log.jumps++; stuck = 0; pad.prev.a = false; }
+          if (jumpFrames > 0) { pad.cur.a = true; jumpFrames--; }
+          // landing rule: descending with something standable under the feet → stop drifting right and drop onto it
+          if (!grounded && b.velocity.y > 0) { const u = tA(0, 6); if (u === '#' || u === '-' || u === 'C' || u === 'M') pad.cur.right = false; } }
+        orig(dt, pad); }; }, 50);
+    Object.defineProperty(extra, 'bot', { get: () => { const s = sc(); const c = s?.cart; return { ...log, reachedFlag: c?.stats?.reachedFlag, hearts: c?.hearts, coins: `${c?.collected}/${c?.total}`, progress: +(c?.progress ?? 0).toFixed(2), stomps: c?.stats?.stomps, pits: c?.stats?.pits, playSeconds: +(c?.t ?? 0).toFixed(1), screens: s?.level?.tiles?.[0]?.length / 23, families: s?.level?.families?.join(',') }; } }); }
   const payload = q.get('drop') === '1' ? { game: 'carryon', level: DROP_LEVEL, city: 'droptest', cityName: 'Drop Test' } : { game: q.get('game') || 'tetris', city: q.get('city') || 'lisbon', cityName: q.get('cityName') || 'Lisbon', hazard: (q.get('hazard') || 'pigeon') as any, seed: Number(q.get('seed') || 5) };
   game.scene.start(MINIGAME_KEYS.carryon, { energy: 100, difficulty: Number(q.get('diff') || 0.5), payload,
-    onDone: (r) => { calls++; const rs = (window as any).__resultSeen; out.textContent = JSON.stringify({ virtualSeconds: game.getTime() / 1000, wall: (performance.now() - t0) / 1000, calls, result: r, cardSeenAt: (window as any).__cardSeenVirtual, resultSeenVirtual: rs?.virtual, heldWallMs: rs ? Math.round(performance.now() - rs.wall) : null, ...(extra.soft ? { soft: extra.soft } : {}), errors }); document.title = 'STALL_DONE'; } } as MinigameLaunch);
+    onDone: (r) => { calls++; const rs = (window as any).__resultSeen; out.textContent = JSON.stringify({ virtualSeconds: game.getTime() / 1000, wall: (performance.now() - t0) / 1000, calls, result: r, cardSeenAt: (window as any).__cardSeenVirtual, resultSeenVirtual: rs?.virtual, heldWallMs: rs ? Math.round(performance.now() - rs.wall) : null, ...(extra.soft ? { soft: extra.soft } : {}), ...(extra.bot ? { bot: extra.bot } : {}), errors }); document.title = 'STALL_DONE'; } } as MinigameLaunch);
 });

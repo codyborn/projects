@@ -62,7 +62,8 @@ export function eventChance(ev: GameEvent, s: RunState, ctx: RollCtx): { chance:
 
 export const availableChoices = (s: RunState, choices: EventChoice[]) => choices.filter(c => !c.requiresTag || hasTag(s, c.requiresTag));
 export function fmt(text: string, s: RunState, item?: string) {
-  return text.replace(/\{city\}/g, CITY[s.cityId]?.name ?? s.cityId).replace(/\{day\}/g, String(s.day)).replace(/\{item\}/g, item ?? 'something');
+  const c = CITY[s.cityId];
+  return text.replace(/\{city\}/g, c?.name ?? s.cityId).replace(/\{day\}/g, String(s.day)).replace(/\{item\}/g, item ?? 'something').replace(/\{museum\}/g, c?.museum ?? 'the museum').replace(/\{animal\}/g, c?.animal ?? 'a dog');
 }
 
 /** Applies an Effects block to the state in place. Returns the lost item name, if any. */
@@ -76,6 +77,8 @@ export function applyEffects(s: RunState, e: Effects, rng: Rng): string | undefi
   if (e.wheelBroken) s.wheelBroken = true;
   if (e.backInjury) s.backInjuryDays = Math.max(s.backInjuryDays, e.backInjury);
   if (e.sick) s.sickDays = Math.max(s.sickDays, e.sick);
+  if (e.money) s.money += e.money;
+  if (e.cleanClothes === 'full') s.cleanClothes = Math.max(s.cleanClothes, s.maxClothes);
   if (e.unlockAchievement && !s.achievements.includes(e.unlockAchievement)) s.achievements.push(e.unlockAchievement);
   if (e.loseItemTag) {
     const idx = s.items.findIndex(p => ITEM[p.id]?.tags.includes(e.loseItemTag!));

@@ -14,6 +14,7 @@ export interface ConsoleCtx {
   level: ArcadeLevel; cityName: string; hazard: Hazard; palette: [number, number, number];
   rng: () => number; difficulty: number; hard: number; speed: number;
   /** depth base for game objects (bezel sits above) */ depth: number;
+  /** the screen's own camera: viewport = screen, scroll starts at (screen.x, screen.y) so screen coords are identity; scrolling games move scrollX */ camera: Phaser.Cameras.Scene2D.Camera;
   setHearts(n: number, max: number): void; setStatus(text: string): void; flash(color: number, ms?: number): void; shake(ms?: number, k?: number): void; sfx(name: string): void;
 }
 
@@ -21,6 +22,7 @@ export interface ConsoleGame {
   readonly id: ConsoleGameId; readonly name: string; readonly instructions: string;
   /** 2 to 3 short lines mapping the D-pad / A / B for this cartridge, shown on the title card */ readonly controls: string[];
   /** seconds of play before the shell ends the game with scoreNow(); 0 = no cap, the game decides (Pack-Tris) */ readonly capSec: number;
+  /** true: the cartridge draws its own time bar, the shell hides the HUD clock text */ readonly timerBar?: boolean;
   init(ctx: ConsoleCtx, done: (r: ConsoleResult) => void): void;
   update(dt: number, pad: Pad): void;
   scoreNow(): number;

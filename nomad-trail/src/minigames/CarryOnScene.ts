@@ -7,7 +7,7 @@ import { MinigameFrame, W, H, normalizeLaunch, panel, txt } from './_shared';
 import { Audio } from '../audio/synth';
 import { Pad, type PadLayout, type PadKey } from './console/input';
 import { CONSOLE_GAMES, isConsoleGameId, type ConsoleGame, type ConsoleGameId, type ConsoleCtx } from './console/games';
-import { DEFAULT_LEVEL, validateLevel, trimStamps, generateLevel, hashSeed, paletteFor, levelRng, type LevelFamily } from './carryonLevel';
+import { DEFAULT_LEVEL, validateLevel, trimStamps, generateLevel, generateCourse, hashSeed, paletteFor, levelRng, type LevelFamily } from './carryonLevel';
 export { DEFAULT_LEVEL, validateLevel, generateLevel } from './carryonLevel';
 
 const SCREEN = new Phaser.Geom.Rectangle(-4, 150, 368, 320);   // 23 x 20 tiles of 16 px; the 4 px overhang is the wall tiles
@@ -36,8 +36,10 @@ export class CarryOnScene extends Phaser.Scene {
     const seed = typeof raw.seed === 'number' ? raw.seed : hashSeed(`${cityId}|${this.gameId}`);
     this.rng = levelRng(seed);
     // level: a valid hand-built level is a template for its city; otherwise (or when a seed asks for variety) generate one
-    const useTemplate = rawLevel && rawLevel.city !== 'generic' && typeof raw.seed !== 'number' && validateLevel(rawLevel).length === 0;
-    if (useTemplate) { this.level = trimStamps(rawLevel!); this.family = undefined; }
+    // a hand-built level is used only if it is a full course (has a flag 'F') and validates; otherwise generate a 6 to 8 screen course
+    const useTemplate = rawLevel && rawLevel.city !== 'generic' && typeof raw.seed !== 'number' && rawLevel.tiles.some(r => r.includes('F')) && validateLevel(rawLevel).length === 0;
+    if (useTemplate) { this.level = trimStamps(rawLevel!, 999); this.family = undefined; }
+    else if (this.gameId === 'carryon') { const c = generateCourse(seed, { city: this.cityName, hazard: this.hazard, climate: raw.climate, palette: rawLevel?.palette }); this.level = c; this.family = c.family; }
     else { const g = generateLevel(seed, { city: this.cityName, hazard: this.hazard, climate: raw.climate, palette: rawLevel?.palette }); this.level = g; this.family = g.family; }
     this.palette = (this.level.palette as [number, number, number]) || paletteFor(raw.climate);
     this.paused = false; this.started = false; this.lastPad = ''; this.cart = undefined;
@@ -46,23 +48,24 @@ export class CarryOnScene extends Phaser.Scene {
   create() {
     const names: Record<ConsoleGameId, string> = { carryon: 'Coin Collector', tetris: 'Pack-Tris' };
     this.frame = new MinigameFrame(this, this.launch, names[this.gameId]);
-    this.cameras.main.setBackgroundColor(PAL.ink);
     this.drawBezel();
     this.pad = new Pad(this, LAYOUT, (k) => this.onPadPress(k));
     this.padG = this.add.graphics().setDepth(24); this.drawPad();
     // cartridge in
     this.cart = CONSOLE_GAMES[this.gameId]();
+    // the screen is its own camera: viewport = the screen, scroll = (screen.x, screen.y) so screen coordinates are identity for non-scrolling
+    // cartridges; the platformer moves scrollX. The main camera ignores game objects (depth 2..19) and the screen camera ignores the bezel.
+    this.gameCam = this.cameras.add(SCREEN.x, SCREEN.y, SCREEN.width, SCREEN.height); this.gameCam.setScroll(SCREEN.x, SCREEN.y); this.gameCam.setBackgroundColor(PAL.ink);
+    // render order: the screen camera first, then the main camera (transparent) on top, so title / pause / result cards cover the screen
+    const cams = this.cameras.cameras; cams.splice(cams.indexOf(this.cameras.main), 1); cams.push(this.cameras.main); this.cameras.main.transparent = true;
     const ctx: ConsoleCtx = {
       scene: this, screen: SCREEN, level: this.level, cityName: this.cityName, hazard: this.hazard, palette: this.palette, rng: this.rng,
-      difficulty: this.launch.difficulty, hard: this.frame.hard, speed: this.frame.speed, depth: 2,
-      setHearts: (n, max) => this.drawHearts(n, max), setStatus: (t) => this.statusT.setText(t), flash: (c, ms) => this.frame.flash(c, ms), shake: (ms, k) => this.frame.shake(ms, k), sfx: (n) => { try { Audio.playSfx(n as any); } catch { /* audio not unlocked yet */ } },
+      difficulty: this.launch.difficulty, hard: this.frame.hard, speed: this.frame.speed, depth: 2, camera: this.gameCam,
+      setHearts: (n, max) => this.drawHearts(n, max), setStatus: (t) => this.statusT.setText(t), flash: (c, ms = 80) => this.gameCam.flash(ms, (c >> 16) & 255, (c >> 8) & 255, c & 255), shake: (ms = 120, k = 0.004) => this.gameCam.shake(ms, k), sfx: (n) => { try { Audio.playSfx(n as any); } catch { /* audio not unlocked yet */ } },
     };
     this.cart.init(ctx, (r) => { if (!this.frame.active) return; this.frame.finish(r.score, !!r.failed); if (r.detail) txt(this, W / 2, H / 2 + 94, r.detail, 9, PAL.sun2).setDepth(953); });
     this.frame.capSec = this.cart.capSec > 0 ? this.cart.capSec : 24 * 3600; this.frame.scoreNow = () => this.cart?.scoreNow() ?? 0;
-    // screen mask so games never draw over the bezel
-    const maskShape = this.make.graphics({}); maskShape.fillStyle(0xffffff).fillRect(SCREEN.x, SCREEN.y, SCREEN.width, SCREEN.height);
-    const mask = maskShape.createGeometryMask(); this.children.list.forEach(o => { const d = (o as any).depth; if (typeof d === 'number' && d >= 2 && d < 20 && (o as any).setMask) (o as any).setMask(mask); });
-    (this as any)._screenMask = mask;
+    this.splitCameras();
     // boot: chime, then the cartridge's title card (name, city, instructions, controls). It waits for START, A, or a tap on the
     // screen; nothing auto-starts and the play cap is not running until then.
     try { Audio.playSfx('chime'); } catch { /* not unlocked */ }
@@ -74,9 +77,12 @@ export class CarryOnScene extends Phaser.Scene {
     const go = txt(this, W / 2, SCREEN.bottom - 30, 'PRESS START · A · OR TAP THE SCREEN', 9, PAL.neon); card.add(go); this.tweens.add({ targets: go, alpha: 0.35, yoyo: true, repeat: -1, duration: 600 });
     const tap = (p: Phaser.Input.Pointer) => { if (Phaser.Geom.Rectangle.Contains(SCREEN, p.x, p.y)) this.beginPlay(); }; this.input.on('pointerdown', tap); (this as any)._tapToStart = tap;
     this.frame.hud(); this.frame.setProgress(''); this.frame.setTimer('');
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.cart?.destroy(); this.cart = undefined; });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.cart?.destroy(); this.cart = undefined; try { this.cameras.remove(this.gameCam); } catch { /* */ } });
   }
 
+  private gameCam!: Phaser.Cameras.Scene2D.Camera;
+  /** game objects (depth 2..19) render only in the screen camera; everything else only in the main camera */
+  private splitCameras() { const mainId = this.cameras.main.id, gameId = this.gameCam.id; for (const o of this.children.list) { const a = o as any; if (typeof a.depth !== 'number' || a.cameraFilter === undefined) continue; const isGame = a.depth >= 2 && a.depth < 20; const want = isGame ? mainId : gameId; if (!(a.cameraFilter & want)) a.cameraFilter |= want; } }
   private drawBezel() {
     const g = this.add.graphics().setDepth(20);
     // body
@@ -130,12 +136,11 @@ export class CarryOnScene extends Phaser.Scene {
   }
   update(_t: number, dtMs: number) {
     this.frame.update(dtMs); this.pad.update();
-    // anything a cartridge spawned since last frame gets clipped to the screen (bezel stays clean)
-    const mask = (this as any)._screenMask; if (mask && (this.time.now | 0) % 6 === 0) this.children.list.forEach(o => { const a = o as any; if (typeof a.depth === 'number' && a.depth >= 2 && a.depth < 20 && !a.mask && a.setMask) a.setMask(mask); });
+    this.splitCameras();   // anything a cartridge spawned since last frame renders only through the screen camera
     const sig = JSON.stringify(this.pad.pressed); if (sig !== this.lastPad) { this.lastPad = sig; this.drawPad(); }
     this.ledT += dtMs; this.led.setFillStyle(this.paused ? PAL.sun2 : (Math.sin(this.ledT / 400) > -0.5 ? PAL.red : PAL.dusk1));
     if (!this.started || !this.frame.active || this.paused || !this.cart) return;
     this.cart.update(Math.min(0.05, dtMs / 1000), this.pad);
-    this.frame.setTimer(this.cart.capSec > 0 ? `${Math.max(0, Math.ceil(this.frame.remaining))}s` : '');
+    this.frame.setTimer(this.cart.capSec > 0 && !this.cart.timerBar ? `${Math.max(0, Math.ceil(this.frame.remaining))}s` : '');
   }
 }

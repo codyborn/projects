@@ -62,7 +62,9 @@ export function reachTiles(jump: number, rise: number) {
   const t = (jump + Math.sqrt(disc)) / g; return Math.floor((t * PHYS.run * 0.92) / TILE);   // 0.92: players do not hit the edge at full speed
 }
 
-const isStand = (at: (x: number, y: number) => string, x: number, y: number) => { const c = at(x, y); if (c === '#' || c === '^') return false; const b = at(x, y + 1); return b === '#' || b === '-' || b === 'C'; };
+/** Moving platforms ('M') travel ±MOVE_RANGE tiles horizontally, so the cells above that whole span count as standable for validation. */
+export const MOVE_RANGE = 3;
+const isStand = (at: (x: number, y: number) => string, x: number, y: number, hgt: number) => { if (y + 1 >= hgt) return false; /* below the world is a pit, not a floor */ const c = at(x, y); if (c === '#' || c === '^') return false; const b = at(x, y + 1); if (b === '#' || b === '-' || b === 'C' || b === 'M') return true; for (let d = -MOVE_RANGE; d <= MOVE_RANGE; d++) if (at(x + d, y + 1) === 'M') return true; return false; };
 
 /** Standable cells reachable from S with the real jump arcs (BFS). Coarse: ignores mid-air ceilings except directly above the take-off. */
 export function reachableCells(tiles: string[], jump: number): { reach: Set<string>; start: [number, number] | null } {
@@ -71,14 +73,14 @@ export function reachableCells(tiles: string[], jump: number): { reach: Set<stri
   let start: [number, number] | null = null;
   for (let y = 0; y < hgt; y++) for (let x = 0; x < wid; x++) if (at(x, y) === 'S') start = [x, y];
   const reach = new Set<string>(); if (!start) return { reach, start };
-  let [sx, sy] = start; while (!isStand(at, sx, sy) && sy < hgt - 1) sy++;
+  let [sx, sy] = start; while (!isStand(at, sx, sy, hgt) && sy < hgt - 1) sy++;
   const maxRise = maxRiseRows(jump); const q: [number, number][] = [[sx, sy]]; reach.add(`${sx},${sy}`);
   while (q.length) {
     const [x, y] = q.shift()!;
     for (let ty = y - maxRise; ty <= Math.min(hgt - 1, y + 14); ty++) {
       const rise = y - ty; const r = reachTiles(jump, rise); if (r < 0) continue;
       for (let tx = x - r; tx <= x + r; tx++) {
-        if (!isStand(at, tx, ty) || reach.has(`${tx},${ty}`)) continue;
+        if (!isStand(at, tx, ty, hgt) || reach.has(`${tx},${ty}`)) continue;
         if (rise > 0 && [...Array(rise)].some((_, k) => at(x, y - 1 - k) === '#')) continue;   // head room above the take-off
         reach.add(`${tx},${ty}`); q.push([tx, ty]);
       }
@@ -87,7 +89,10 @@ export function reachableCells(tiles: string[], jump: number): { reach: Set<stri
   return { reach, start: [sx, sy] };
 }
 
-/** Design-mistake catcher: start, stamp count, and every stamp reachable (stand in/under it within a jump, or 1 tile beside). */
+/** A coin is collectable if some reachable standable cell is at most 3 tiles away horizontally and between 1 row above and a jump's height below it
+ *  (stand there, jump up to it, drift sideways in the air: flat reach is 4 tiles). Also covers coins in arcs over gaps. */
+export function coinReachable(reach: Set<string>, x: number, y: number, maxRise: number) { for (let dy = -1; dy <= maxRise + 1; dy++) for (let dx = -3; dx <= 3; dx++) if (reach.has(`${x + dx},${y + dy}`)) return true; return false; }
+/** Design-mistake catcher: start, stamp count, every coin collectable, and the flag ('F') reachable when the level has one. */
 export function validateLevel(level: ArcadeLevel, opts: { snow?: boolean } = {}): string[] {
   const rows = level.tiles, issues: string[] = []; const hgt = rows.length, wid = Math.max(...rows.map(r => r.length));
   const at = (x: number, y: number) => (y < 0 || y >= hgt || x < 0 || x >= wid) ? '#' : (rows[y][x] || '.');
@@ -97,11 +102,8 @@ export function validateLevel(level: ArcadeLevel, opts: { snow?: boolean } = {})
   if (level.stampPieces && level.stampPieces !== stamps.length) issues.push(`stampPieces=${level.stampPieces} but ${stamps.length} '*' tiles`);
   if (!hasStart) return issues;
   const jump = jumpFor(level, opts.snow); const { reach } = reachableCells(rows, jump); const maxRise = maxRiseRows(jump);
-  for (const [x, y] of stamps) {
-    let ok = false;
-    for (let dy = 0; dy <= maxRise + 1 && !ok; dy++) for (let dx = -1; dx <= 1 && !ok; dx++) if (reach.has(`${x + dx},${y + dy}`)) ok = true;
-    if (!ok) issues.push(`stamp at ${x},${y} is not reachable from S`);
-  }
+  for (const [x, y] of stamps) if (!coinReachable(reach, x, y, maxRise)) issues.push(`stamp at ${x},${y} is not reachable from S`);
+  for (let y = 0; y < hgt; y++) for (let x = 0; x < wid; x++) if (at(x, y) === 'F') { let ok = false; for (let dy = -1; dy <= 6 && !ok; dy++) if (reach.has(`${x},${y + dy}`)) ok = true; if (!ok) issues.push(`flag at ${x},${y} is not reachable from S`); }
   return issues;
 }
 
@@ -206,4 +208,84 @@ function placeStart(g: string[][], rng: () => number, fam: LevelFamily) {
   const ground = ROWS - 2; const x = fam === 'staircase' ? 1 : 1 + Math.floor(rng() * 3);
   for (let dx = 0; dx < 3; dx++) if (g[ground][x + dx] === '^') g[ground][x + dx] = '.';
   g[ground][x] = 'S';
+}
+
+
+// ---------------------------------------------------------------- side-scrolling courses (round 7b): segments of the five families stitched into 6 to 8 screens, ending at a flag
+export interface Course extends ArcadeLevel { family: LevelFamily; families: LevelFamily[]; screens: number; }
+const G = ROWS - 2;   // the standing row above the ground
+/**
+ * Build a course `screens` wide (6 to 8 by default) from a seed: a flat intro with S, family segments 18 to 26 tiles wide with pits carved in
+ * the ground between them, and a flat outro with the flag 'F'. Coins: lines on platform tops, arcs over pits, a hidden cluster or two up high.
+ * After building, every coin the validator cannot reach is pruned, so the course is collectable by construction; the flag must be reachable
+ * or the seed variant is retried (20 attempts, then the last one is returned with its issues logged by the caller).
+ */
+export function generateCourse(seed: number, opts: GenOpts & { screens?: number } = {}): Course {
+  const hazard = opts.hazard || 'pigeon'; const jump = jumpFor({ hazard }); const step = Math.max(2, maxRiseRows(jump));
+  let last: Course | null = null;
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const rng = levelRng(hashSeed(`course:${seed}:${attempt}`)); const screens = opts.screens ?? 6 + Math.floor(rng() * 3); const W = screens * COLS;
+    const g: string[][] = []; for (let y = 0; y < ROWS; y++) { const row: string[] = []; for (let x = 0; x < W; x++) row.push(y === ROWS - 1 || x === 0 || x === W - 1 ? '#' : '.'); g.push(row); }
+    const fams: LevelFamily[] = []; const order = FAMILIES.slice(); for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+    g[G][2] = 'S'; let x = 10; let fi = 0; const coins: [number, number][] = []; const spawners: [number, number][] = [];
+    while (x < W - 14 - 18) {
+      const fam = order[fi % order.length]; fi++; const w = Math.min(18 + Math.floor(rng() * 9), W - 14 - x); fams.push(fam);
+      buildSegment(g, fam, x, w, rng, step, coins, spawners);
+      x += w; if (x < W - 20 && fam !== 'islands' && fam !== 'bridges') { const pw = 2 + Math.floor(rng() * 2); const px = x - 2 - Math.floor(rng() * 3); carvePit(g, px, pw, coins); x += 1; }
+    }
+    const fx = W - 5; g[G][fx] = 'F'; for (let cx = x + 1; cx < fx - 2; cx += 2) if (rng() < 0.5) coins.push([cx, G]);   // a few coins on the run-in
+    for (const [sx, sy] of spawners) if (g[sy][sx] === '.') g[sy][sx] = 'H';
+    // hidden clusters: up high, on reachable cells only
+    const tiles0 = g.map(r => r.join('')); const { reach } = reachableCells(tiles0, jump); const maxRise = maxRiseRows(jump);
+    const high = [...reach].map(k => k.split(',').map(Number) as [number, number]).filter(([, y]) => y <= 7); for (let k = 0; k < 2 && high.length; k++) { const [hx, hy] = high[Math.floor(rng() * high.length)]; coins.push([hx, hy - 1], [hx + 1, hy - 1], [hx, hy - 2]); }
+    const seen = new Set<string>(); let kept = 0;
+    for (const [cx, cy] of coins) { const key = `${cx},${cy}`; if (seen.has(key) || cx <= 0 || cx >= W - 1 || cy <= 0 || cy >= ROWS - 1 || g[cy][cx] !== '.') continue; if (!coinReachable(reach, cx, cy, maxRise)) continue; seen.add(key); g[cy][cx] = '*'; kept++; }
+    const level: Course = { city: opts.city || 'Somewhere', hazard, palette: opts.palette || paletteFor(opts.climate), stampPieces: kept, parTime: 60, tiles: g.map(r => r.join('')), family: fams[0] || 'towers', families: fams, screens };
+    last = level; if (validateLevel(level).length === 0 && kept >= 12) return level;
+  }
+  return last!;
+}
+const platAt = (g: string[][], x0: number, y: number, w: number, ch = '#') => { const W = g[0].length; for (let x = Math.max(1, x0); x < Math.min(W - 1, x0 + w); x++) if (y > 0 && y < ROWS) g[y][x] = ch; };   // row ROWS-1 is allowed: ground-level islands sit in the carved pit
+const coinLine = (coins: [number, number][], x0: number, y: number, w: number, every = 1) => { for (let x = x0; x < x0 + w; x += every) coins.push([x, y]); };
+function carvePit(g: string[][], x0: number, w: number, coins: [number, number][]) {
+  const W = g[0].length; if (x0 < 12 || x0 + w >= W - 8) return;
+  // never under a platform or a start, and the take-off / landing zones (3 tiles either side) need head room for a full jump
+  for (let x = x0 - 3; x < x0 + w + 3; x++) { if (x < 1 || x >= W - 1) return; for (let dy = 0; dy <= 4; dy++) if (g[G - dy][x] !== '.') return; }
+  for (let x = x0; x < x0 + w; x++) g[ROWS - 1][x] = '.';
+  for (let i = 0; i < w; i++) coins.push([x0 + i, G - 1 - (i === 0 || i === w - 1 ? 0 : 1)]);   // the arc over the gap
+}
+function buildSegment(g: string[][], fam: LevelFamily, x0: number, w: number, rng: () => number, S: number, coins: [number, number][], spawners: [number, number][]) {
+  const ri = (a: number, b: number) => a + Math.floor(rng() * (b - a + 1)); const W = g[0].length;
+  switch (fam) {
+    case 'staircase': {   // up to the right in 3-row steps, a landing, then down
+      let y = G + 1 - S, x = x0 + 2; const up = Math.min(4, Math.floor((w - 4) / 8)); const plats: [number, number][] = [];
+      for (let i = 0; i < up && y > 3; i++) { platAt(g, x, y, 3); plats.push([x, y]); x += 4; y -= S; }
+      y += S; platAt(g, x, y, 4); plats.push([x, y]); coinLine(coins, x, y - 1, 4); x += 5;
+      for (let i = 0; i < up && x < x0 + w - 3; i++) { y += S; if (y > G) break; platAt(g, x, y, 3); plats.push([x, y]); x += 4; }
+      for (const [px, py] of plats) if (rng() < 0.7) coins.push([px + 1, py - 1]);
+      if (plats.length > 2) spawners.push([plats[1][0] + 1, plats[1][1] - 1]);
+      break; }
+    case 'towers': {   // stacked ledges every S rows, three towers, coins on the tops, a walker on the middle one
+      const n = 3, tw = Math.floor(w / n);
+      for (let i = 0; i < n; i++) { const cx = x0 + i * tw + Math.floor(tw / 2); const h = ri(2, 4); let y = G + 1 - S; for (let k = 0; k < h && y > 3; k++) { const pw = ri(2, 3); const px = cx - Math.floor(pw / 2) + (k % 2 ? ri(-1, 1) : 0); platAt(g, px, y, pw); if (k === h - 1) coinLine(coins, px, y - 1, pw); if (i === 1 && k === 0) spawners.push([px, y - 1]); y -= S; } }
+      break; }
+    case 'zigzag': {   // long alternating ledges climbing across the segment, coin lines along them
+      let side = 0; const lw = Math.floor(w * 0.55);
+      for (let y = G + 1 - S, k = 0; y > 3 && k < 4; y -= S, k++) { const px = side ? x0 + w - lw - 1 : x0 + 1; platAt(g, px, y, lw); coinLine(coins, px + 1, y - 1, lw - 2, 2); side ^= 1; if (k === 1) spawners.push([px + Math.floor(lw / 2), y - 1]); }
+      break; }
+    case 'islands': {   // a wide pit with floating platforms and moving platforms ('M') over it, coins in arcs between
+      const pit0 = x0 + 3, pit1 = x0 + w - 4; for (let x = pit0; x <= pit1; x++) g[ROWS - 1][x] = '.';
+      let x = pit0 + 1; let y = G; let first = true;
+      while (x < pit1 - 2) { const pw = ri(2, 3); const ny = first ? G : Math.max(G - 2 * S, Math.min(G, y + ri(-1, 1) * (S - 1))); first = false;
+        if (x > pit0 + 4 && rng() < 0.35 && x + 6 < pit1) { g[ny + 1][x + 1] = 'M'; coins.push([x + 1, ny - 1], [x + 2, ny - 2], [x + 3, ny - 1]); x += 4 + MOVE_RANGE; y = ny; continue; }
+        platAt(g, x, ny + 1, pw); coins.push([x + Math.floor(pw / 2), ny - 1]); const gap = ri(2, ny < y ? 2 : 3); /* a rising hop gets the shorter gap (snow reach) */ for (let i = 1; i <= gap; i++) coins.push([x + pw - 1 + i, ny - 1 - (i === 1 || i === gap ? 0 : 1)]); x += pw + gap; y = ny; }
+      break; }
+    case 'bridges': {   // one-way and crumble spans over spikes, a pillar, a shelf above
+      const sx0 = x0 + 3, len = w - 7; for (let x = sx0 + 2; x < sx0 + len - 2; x++) g[G][x] = '^';
+      const by = G + 1 - S;   // the span sits one jump-step above the ground (3 rows normally, 2 on snow)
+      platAt(g, sx0, by, Math.floor(len / 2), '-'); platAt(g, sx0 + Math.floor(len / 2), by, len - Math.floor(len / 2), 'C'); coinLine(coins, sx0 + 1, by - 1, len - 2, 2);
+      const px = sx0 + ri(3, Math.max(3, len - 4)); platAt(g, px, by - S, 3); coins.push([px + 1, by - S - 1]); spawners.push([sx0 + 1, by - 1]);
+      break; }
+  }
+  void W;
 }

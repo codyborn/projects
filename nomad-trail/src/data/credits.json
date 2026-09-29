@@ -62,5 +62,17 @@
  "radonmonitor": {
   "title": "High radon",
   "where": "Miami, Hyères and Montana"
+ },
+ "shark": {
+  "title": "The shark",
+  "where": "Miami"
+ },
+ "sandflies": {
+  "title": "Sand flies",
+  "where": "Roatán"
+ },
+ "icecave": {
+  "title": "The ice cave",
+  "where": "Iceland"
  }
 }

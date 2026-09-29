@@ -28,6 +28,7 @@ export interface City {
   outdoorsy?: boolean;                                // adventure gear pays off here
   costPerDay?: number;                                // lodging + food, USD
   dishes: string[]; activities: ActivityId[]; hazard: Hazard; lodgings: Lodging[]; droneRule?: DroneRule;
+  museum?: string; animal?: string; coast?: boolean;   /* event flavour: a real museum, the animal you can befriend, whether there is sea to swim in */
   eventWeights: Record<string, number>;               // eventId -> multiplier
   legs: Leg[]; blurb: string; stampIcon: string;      // stampIcon: key for a tiny procedural glyph
 }
@@ -43,7 +44,7 @@ export interface GameEvent {
 }
 export interface EventChoice { label: string; text: string; effects: Effects; requiresTag?: ItemTag; }
 export interface Effects { health?: number; energy?: number; mood?: number; days?: number; loseRandomItem?: boolean; loseItemTag?: ItemTag;
-  bagLocked?: number; wheelBroken?: boolean; backInjury?: number; sick?: number; unlockAchievement?: string; }
+  bagLocked?: number; wheelBroken?: boolean; backInjury?: number; sick?: number; unlockAchievement?: string; money?: number; cleanClothes?: 'full'; }   /* money: dollars in or out; cleanClothes 'full': a laundromat restocks every clean day */
 export interface Dish { id: string; name: string; city: string; ingredients: string[]; steps: DishStep[]; health: number; mood: number; art?: string; }  // art: key into the dish art table (defaults to id)
 export type DishStepKind = 'chop' | 'slice' | 'stir' | 'flip' | 'season' | 'pour' | 'knead' | 'grill' | 'dice' | 'roll' | 'simmer' | 'shake' | 'fold' | 'plate' | 'skewer';
 export type DishStep = { kind: DishStepKind; count: number; };
@@ -72,8 +73,9 @@ export type CityAction = 'work' | 'explore' | 'train' | 'cook' | 'rest' | 'laund
 // ---------- Mini-game contract ----------
 // Every mini-game is a Phaser scene started with MinigameLaunch and MUST call launch.onDone(result) exactly once, then stop itself.
 export interface MinigameLaunch { energy: number; difficulty: number; payload?: any; extraLives?: number; onDone: (r: MinigameResult) => void; preview?: (r: MinigameResult) => string[]; }   // preview: result-card lines for what this outcome confers (+5 health ...)  // extraLives: hiking boots etc.
-export interface MinigameResult { score: number; perfect: boolean; failed: boolean; }
-export const MINIGAME_KEYS = { cooking: 'Cooking', workout: 'Workout', carryon: 'CarryOn', kite: 'Kite', airport: 'Airport', laundry: 'Laundry', drone: 'Drone', work: 'Work', scuba: 'Scuba' } as const;
+export interface MinigameResult { score: number; perfect: boolean; failed: boolean; money?: number; }
+export const MINIGAME_KEYS = { cooking: 'Cooking', workout: 'Workout', carryon: 'CarryOn', kite: 'Kite', airport: 'Airport', laundry: 'Laundry', drone: 'Drone', work: 'Work', scuba: 'Scuba', casino: 'Casino' } as const;
+/** Casino payload: { money: number; cityName: string; seed: number }; result.money = signed net change in dollars. */
 /** Scuba payload: { city: string; cityName: string; seed: number } -> score = lionfish speared / total x 100, minus 15 per spine touch; failed under 50. */
 /** Drone rules per country: 'ok' fly freely, 'permit' a fine is possible, 'banned' a fine is likely. Set on City.droneRule. */
 export type DroneRule = 'ok' | 'permit' | 'banned';

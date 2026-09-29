@@ -42,6 +42,7 @@ export function installPlayLink(game: Phaser.Game): boolean {
       case 'CarryOn': { const gm = q.get('game') || 'carryon'; const lvl = LEVELS.find(l => l.city === city.id) || LEVELS.find(l => l.city === 'generic');
         game.scene.start('CarryOn', { ...base, payload: { game: gm, level: lvl ? { ...lvl, city: city.name, hazard: city.hazard } : undefined, city: city.id, cityName: city.name, hazard: city.hazard, climate: city.climate, seed: Number(q.get('seed') || 7) }, onDone: done(`${gm} · ${city.name}`) }); break; }
       case 'Kite': game.scene.start('Kite', { ...base, payload: { city: city.id }, onDone: done(`kite · ${city.name}`) }); break;
+      case 'Casino': game.scene.start('Casino', { ...base, payload: { money: Number(q.get('money') || 3000), cityName: 'Las Vegas', seed: Number(q.get('seed') || 7) }, onDone: done('casino') }); break;
       case 'Scuba': game.scene.start('Scuba', { ...base, payload: { city: city.id, cityName: city.name, seed: Number(q.get('seed') || 7) }, onDone: done(`scuba · ${city.name}`) }); break;
       case 'Airport': game.scene.start('Airport', { ...base, payload: { gate: q.get('gate') || 'B56' }, onDone: done('gate dash') }); break;
       case 'Drone': game.scene.start('Drone', { ...base, payload: { city, cityName: city.name, seed: Number(q.get('seed') || 7), level: Number(q.get('level') || 1) }, onDone: done(`drone · ${city.name}`) }); break;

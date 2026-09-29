@@ -420,7 +420,7 @@
     "title": "The cafe",
     "text": "You find the cafe in {city}. Not a cafe: THE cafe. You will structure the rest of the stay around it.",
     "when": "action",
-    "baseChance": 0.08,
+    "baseChance": 0.035,
     "effects": {
       "mood": 8,
       "energy": 5
@@ -525,7 +525,7 @@
     "id": "cockroach",
     "title": "The chocolate",
     "when": "day",
-    "baseChance": 0.05,
+    "baseChance": 0.03,
     "requiresCities": [
       "dakhla",
       "casablanca",
@@ -664,5 +664,243 @@
       "sick": 2,
       "unlockAchievement": "flu"
     }
+  },
+  {
+    "id": "museum",
+    "title": "Museum day",
+    "when": "action",
+    "baseChance": 0.06,
+    "requiresCities": [
+      "amsterdam",
+      "antibes",
+      "bangkok",
+      "boulder",
+      "bozeman",
+      "brussels",
+      "buenosaires",
+      "casablanca",
+      "chiangmai",
+      "edinburgh",
+      "granada",
+      "hallstatt",
+      "hongkong",
+      "hyeres",
+      "innsbruck",
+      "kathmandu",
+      "lasvegas",
+      "lisbon",
+      "london",
+      "madrid",
+      "marseille",
+      "miami",
+      "montreal",
+      "munich",
+      "newyork",
+      "orangecounty",
+      "reykjavik",
+      "santiago",
+      "seoul",
+      "tokyo"
+    ],
+    "text": "{city}. Rain, or a hangover, or just a Tuesday: you spend the afternoon in {museum} and come out three hours later blinking, with a postcard you will never send. Worth it.",
+    "effects": {
+      "mood": 6,
+      "energy": -4
+    }
+  },
+  {
+    "id": "sandflies",
+    "title": "Sand flies",
+    "when": "day",
+    "baseChance": 0.08,
+    "requiresCities": [
+      "roatan"
+    ],
+    "text": "{city}. A perfect evening on the beach, feet in the sand, nothing biting that you could see. The next morning your ankles and shins are a constellation of red welts. Sand flies. Nobody warned you because everyone assumes you know.",
+    "effects": {
+      "health": -3,
+      "mood": -6,
+      "unlockAchievement": "sandflies"
+    },
+    "mitigatedBy": [
+      "repellent"
+    ],
+    "mitigatedText": "{city}. A perfect evening on the beach, feet in the sand. You sprayed the ankles out of habit. In the morning: two bites. The couple at the next table look like they lost a fight with a constellation.",
+    "mitigatedEffects": {
+      "mood": 1
+    }
+  },
+  {
+    "id": "laundromat",
+    "title": "A laundromat",
+    "when": "action",
+    "baseChance": 0.05,
+    "text": "{city}. Behind the bakery, a laundromat with working machines and a bench in the sun. $15, ninety minutes, a whole bag of clean everything. The small victories are the ones you remember.",
+    "effects": {
+      "mood": 3,
+      "money": -15,
+      "cleanClothes": "full"
+    }
+  },
+  {
+    "id": "dolphins",
+    "title": "Dolphins",
+    "when": "action",
+    "baseChance": 0.05,
+    "requiresCities": [
+      "amsterdam",
+      "antibes",
+      "bangkok",
+      "buenosaires",
+      "casablanca",
+      "dakhla",
+      "edinburgh",
+      "highlands",
+      "hongkong",
+      "hyeres",
+      "lapaz",
+      "laventana",
+      "lisbon",
+      "marseille",
+      "miami",
+      "newyork",
+      "orangecounty",
+      "patagonia",
+      "reykjavik",
+      "roatan",
+      "santiago",
+      "seoul",
+      "tokyo"
+    ],
+    "text": "{city}. Out on the water before the wind picks up, and a fin, then three, then a whole pod cutting through the swell twenty metres out. You stop everything. So does everyone else.",
+    "effects": {
+      "mood": 7
+    }
+  },
+  {
+    "id": "longwalk",
+    "title": "The long walk",
+    "when": "action",
+    "baseChance": 0.06,
+    "text": "{city}. What started out as a walk around the block turned into a five-hour adventure: a market, a hill, a neighbourhood that was not on the map, a bakery that saved the day. Your legs file a complaint. Everything else is delighted.",
+    "effects": {
+      "mood": 6,
+      "health": 3,
+      "energy": -14
+    }
+  },
+  {
+    "id": "matcha",
+    "title": "Matcha soft serve",
+    "when": "action",
+    "baseChance": 0.12,
+    "requiresCities": [
+      "tokyo",
+      "minakami"
+    ],
+    "text": "{city}. A stand by the station sells matcha soft serve so green it looks fake. It is not fake. You have two. This is not a health decision.",
+    "effects": {
+      "health": -2,
+      "mood": 5,
+      "energy": 8
+    }
+  },
+  {
+    "id": "icecave",
+    "title": "The ice cave",
+    "when": "action",
+    "baseChance": 0.12,
+    "requiresCities": [
+      "reykjavik"
+    ],
+    "text": "{city}. Crampons on, into the glacier. The ice is blue in a way that photos will not carry home, and the cave breathes cold on the back of your neck. You come out tired and quiet.",
+    "effects": {
+      "mood": 9,
+      "energy": -12,
+      "unlockAchievement": "icecave"
+    }
+  },
+  {
+    "id": "animal",
+    "title": "A new friend",
+    "when": "action",
+    "baseChance": 0.07,
+    "requiresCities": [
+      "bangkok",
+      "boulder",
+      "bozeman",
+      "casablanca",
+      "chiangmai",
+      "dakhla",
+      "hallstatt",
+      "highlands",
+      "innsbruck",
+      "kathmandu",
+      "minakami",
+      "patagonia",
+      "reykjavik"
+    ],
+    "text": "{city}. On the way back, {animal} decides you are worth a closer look. Ten minutes later you have a friend for the afternoon and a face full of hair. The best company on the trail does not talk.",
+    "effects": {
+      "energy": 4,
+      "mood": 7,
+      "health": 2
+    }
+  },
+  {
+    "id": "oceanswim",
+    "title": "Ocean swim",
+    "when": "action",
+    "baseChance": 0.06,
+    "requiresCities": [
+      "amsterdam",
+      "antibes",
+      "bangkok",
+      "buenosaires",
+      "casablanca",
+      "dakhla",
+      "edinburgh",
+      "highlands",
+      "hongkong",
+      "hyeres",
+      "lapaz",
+      "laventana",
+      "lisbon",
+      "marseille",
+      "miami",
+      "newyork",
+      "orangecounty",
+      "patagonia",
+      "reykjavik",
+      "roatan",
+      "santiago",
+      "seoul",
+      "tokyo"
+    ],
+    "text": "{city}. A long swim down the shoreline, the town sliding past on the right, nothing in your head for once. You come out salt-crusted and better.",
+    "effects": {
+      "mood": 6,
+      "energy": -8
+    }
+  },
+  {
+    "id": "shark",
+    "title": "The shark",
+    "when": "action",
+    "baseChance": 0,
+    "text": "{city}. A long swim down the shoreline, the town sliding past on the right. Then people on the beach are shouting and waving, and it takes a while to understand they are waving at you. Behind you, a fin, keeping pace. You swim to shore faster than you have ever swum anywhere. It follows to the shallows and turns away.",
+    "effects": {
+      "mood": -8,
+      "energy": -12,
+      "unlockAchievement": "shark"
+    }
+  },
+  {
+    "id": "casinonight",
+    "title": "The casino",
+    "when": "action",
+    "baseChance": 0,
+    "text": "{city}. You went for a walk. The walk went past a casino. The casino has air conditioning and no clocks.",
+    "effects": {}
   }
 ]

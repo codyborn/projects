@@ -380,7 +380,16 @@ const CITY: Record<string, Drawer> = {
       // the same pier again half a wrap later so the tile repeats cleanly
       const xc2 = xc + w / 2; for (let y = yT; y < yB; y++) { const t = (y - yT) / (yB - yT); const half = (wT + (wB - wT) * t) / 2; R(ctx, xc2 - half, y, half * 2, 1, (y - yT) % Math.max(2, Math.round(2 + t * 5)) === 0 ? PAL.earth0 : PAL.earth1); } } },
   london: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') buildings(ctx, w, hy, c, win, r, 40, 100, 10, 20, 0.4); else if (L === 'mid') { water(ctx, w, hy - 10, 10, tod, r); const x = Math.floor(w * 0.15); R(ctx, x, hy - 90, 12, 80, c); R(ctx, x + 2, hy - 80, 8, 8, PAL.sun2); R(ctx, x + 4, hy - 98, 4, 8, c); circle(ctx, w / 2 - 60, hy - 60, 40, c); circle(ctx, w / 2 - 60, hy - 60, 36, PAL.night0); for (let a = 0; a < 16; a++) line(ctx, w / 2 - 60, hy - 60, w / 2 - 60 + Math.cos(a / 16 * Math.PI * 2) * 38, hy - 60 + Math.sin(a / 16 * Math.PI * 2) * 38, c); } else { for (let x = 0; x < w; x += 14) { R(ctx, x, hy - 22, 13, 22, PAL.earth1); P(ctx, x + 6, hy - 14, win); P(ctx, x + 6, hy - 8, win); } } },
-  amsterdam: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') buildings(ctx, w, hy, c, win, r, 20, 40, 8, 14, 0.4); else if (L === 'mid') { for (let x = 0; x < w; x += 12) { const h = r.int(30, 50); R(ctx, x, hy - h, 11, h, r.pick([PAL.earth1, PAL.night3, PAL.earth0])); for (let s = 0; s < 4; s++) R(ctx, x + 1 + s, hy - h - 4 + s, 9 - s * 2, 1, c); P(ctx, x + 5, hy - h + 8, win); P(ctx, x + 5, hy - h + 16, win); } } else { water(ctx, w, hy - 12, 12, tod, r); for (let i = 0; i < 6; i++) { const x = r.int(0, w); R(ctx, x, hy - 30, 2, 20, c); R(ctx, x - 5, hy - 30, 12, 2, c); } } },
+  amsterdam: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') buildings(ctx, w, hy, c, win, r, 20, 40, 8, 14, 0.4); else if (L === 'mid') { for (let x = 0; x < w; x += 12) { const h = r.int(30, 50); R(ctx, x, hy - h, 11, h, r.pick([PAL.earth1, PAL.night3, PAL.earth0])); for (let s = 0; s < 4; s++) R(ctx, x + 1 + s, hy - h - 4 + s, 9 - s * 2, 1, c); P(ctx, x + 5, hy - h + 8, win); P(ctx, x + 5, hy - h + 16, win); } } else { water(ctx, w, hy - 12, 12, tod, r); for (let i = 0; i < 6; i++) { const x = r.int(0, w); R(ctx, x, hy - 30, 2, 20, c); R(ctx, x - 5, hy - 30, 12, 2, c); }
+      /* a houseboat moored in the canal: low flat barge, cabin with curtained lit windows, a bike on deck, plant pots, a gangplank to the quay, and its reflection */
+      const bx = Math.floor(w * 0.3), wl = hy - 8, night = tod === 'night';
+      R(ctx, bx - 1, wl - 5, 62, 7, PAL.ink); R(ctx, bx, wl - 4, 60, 5, PAL.night3); R(ctx, bx, wl - 4, 60, 1, PAL.gray1); R(ctx, bx + 2, wl - 1, 56, 1, PAL.white);
+      R(ctx, bx + 8, wl - 17, 40, 13, PAL.earth1); R(ctx, bx + 7, wl - 18, 42, 1, PAL.ink); R(ctx, bx + 6, wl - 19, 44, 2, PAL.red); R(ctx, bx + 26, wl - 23, 3, 5, PAL.gray1);
+      for (let k = 0; k < 4; k++) { const wx = bx + 11 + k * 9; R(ctx, wx, wl - 14, 6, 6, night ? PAL.sun2 : PAL.sun3); R(ctx, wx, wl - 14, 2, 6, PAL.pink); R(ctx, wx + 4, wl - 14, 2, 6, PAL.pink); R(ctx, wx - 1, wl - 15, 8, 1, PAL.ink); }
+      R(ctx, bx + 50, wl - 8, 3, 3, PAL.grass1); R(ctx, bx + 50, wl - 5, 3, 1, PAL.earth0); R(ctx, bx + 55, wl - 9, 3, 4, PAL.grass1); R(ctx, bx + 55, wl - 5, 3, 1, PAL.earth0); P(ctx, bx + 51, wl - 9, PAL.red); P(ctx, bx + 56, wl - 10, PAL.sun2);
+      circle(ctx, bx + 2, wl - 7, 3, PAL.ink); circle(ctx, bx + 2, wl - 7, 1, PAL.night3); circle(ctx, bx + 9, wl - 7, 3, PAL.ink); circle(ctx, bx + 9, wl - 7, 1, PAL.night3); line(ctx, bx + 2, wl - 7, bx + 6, wl - 11, PAL.ink); line(ctx, bx + 6, wl - 11, bx + 9, wl - 7, PAL.ink); R(ctx, bx + 5, wl - 12, 3, 1, PAL.ink);
+      line(ctx, bx + 58, wl - 4, bx + 70, hy + 1, PAL.earth2); line(ctx, bx + 58, wl - 3, bx + 70, hy + 2, PAL.earth2); R(ctx, bx + 62, wl - 6, 1, 3, PAL.gray1); R(ctx, bx + 66, wl - 4, 1, 3, PAL.gray1);
+      for (let y = 0; y < 7; y++) { const rc = y % 2 ? (night ? PAL.night2 : PAL.sea0) : (night ? PAL.night3 : PAL.night3); R(ctx, bx + 2 + (y % 3), wl + 1 + y, 56 - (y % 3) * 2, 1, rc); if (y < 4) for (let k = 0; k < 4; k++) if ((k + y) % 2 === 0) R(ctx, bx + 11 + k * 9 + 1, wl + 1 + y, 4, 1, night ? PAL.sun1 : PAL.sun3); } } },
   brussels: (ctx, w, hy, L, c, win, r) => { if (L === 'far') buildings(ctx, w, hy, c, win, r, 30, 70, 10, 20, 0.4);
     else if (L === 'mid') { let x = r.int(0, 10); while (x < w) { const bw = r.int(26, 44), bh = r.int(40, 70); gothic(ctx, x, hy, bw, bh, c, win, r.chance(0.5)); x += bw + r.int(2, 6); } }
     else { for (let x = 0; x < w; x += 22) { const bh = r.int(20, 30); R(ctx, x, hy - bh, 20, bh, c); for (let s = 0; s < 5; s++) R(ctx, x + s * 2, hy - bh - 3 - s * 3, 20 - s * 4, 3, c); for (let wy = hy - bh + 4; wy < hy - 4; wy += 7) { R(ctx, x + 5, wy + 1, 2, 4, win); P(ctx, x + 6, wy, win); R(ctx, x + 12, wy + 1, 2, 4, win); P(ctx, x + 13, wy, win); } } } },
@@ -436,4 +445,99 @@ export function buildSkyline(scene: Phaser.Scene, cityIdOrRegion: string, tod: T
   return sl;
 }
 export function scrollSkyline(s: Skyline, dx: number) { s.scroll(dx); }
+/* ---------------- the travel transition: a cozy Game Boy style parallax landscape between two cities ---------------- */
+export type TravelTransport = 'flight' | 'train' | 'bus' | 'ferry' | 'car' | 'campervan' | 'trek' | string;
+export interface TravelScape { container: Phaser.GameObjects.Container; vehicle: Phaser.GameObjects.Container; vehicleY: number; update(dt: number): void; setProgress(p: number): void; destroy(): void; }
+/** Cloud blobs on a transparent wrapping canvas. */
+function clouds(ctx: Ctx, w: number, r: ReturnType<typeof rng>, n: number, tod: TimeOfDay, yMin: number, yMax: number, big = false) {
+  const lit = tod === 'day' ? PAL.white : tod === 'night' ? PAL.night3 : PAL.sun3, shade = tod === 'day' ? PAL.gray2 : tod === 'night' ? PAL.night2 : PAL.dusk3;
+  for (let i = 0; i < n; i++) { const x = r.int(0, w), y = r.int(yMin, yMax), cw = r.int(big ? 40 : 22, big ? 90 : 46), ch = Math.max(6, Math.round(cw / 4));
+    for (let k = 0; k < ch; k++) { const t = k / ch; const half = Math.round(cw / 2 * Math.sqrt(1 - Math.pow(t * 2 - 1, 2)) * (k < ch / 2 ? 0.7 + t * 0.6 : 1)); R(ctx, x - half, y - ch / 2 + k, half * 2, 1, k >= ch - 2 ? shade : lit); }
+    for (let b = 0; b < 3; b++) { const bx = x + r.int(-cw / 3, cw / 3), br = r.int(3, Math.max(4, ch / 2 + 2)); circle(ctx, bx, y - ch / 2 - br / 2 + 1, br, lit); } } }
+/** Pixel vehicles: drawn at 1x into a texture, shown at 2x. Frame 2 (if any) is the animation alternate. */
+function vehicleTexture(scene: Phaser.Scene, transport: TravelTransport, tod: TimeOfDay, frame: 0 | 1): string {
+  const key = `tv_${transport}_${tod}_${frame}`; if (scene.textures.exists(key)) return key;
+  const win = tod === 'day' ? PAL.sky2 : PAL.sun3; const W2 = 56, H2 = 26;
+  const cv = makeCanvas(W2, H2, ctx => {
+    switch (transport) {
+      case 'flight': { R(ctx, 6, 12, 40, 6, PAL.white); R(ctx, 46, 13, 8, 4, PAL.gray2); R(ctx, 5, 13, 1, 4, PAL.gray2); R(ctx, 46, 12, 4, 1, PAL.sky2);   /* fuselage, nose, cockpit glass */
+        for (let k = 0; k < 8; k++) R(ctx, 12 + k * 4, 14, 2, 2, win); R(ctx, 10, 6, 6, 7, PAL.red); R(ctx, 8, 5, 10, 2, PAL.red);   /* windows, tail fin */
+        R(ctx, 22, 17, 16, 2, PAL.gray1); R(ctx, 26, 19, 10, 3, PAL.gray1); R(ctx, 28, 22, 6, 2, PAL.gray0); R(ctx, 24, 9, 12, 3, PAL.gray2);   /* wing, engine, top wing */
+        R(ctx, 2, 12, 7, 2, PAL.gray2); if (frame) { P(ctx, 9, 4, PAL.red); P(ctx, 30, 24, PAL.neon); } break; }
+      case 'train': { R(ctx, 2, 8, 50, 12, PAL.red); R(ctx, 2, 8, 50, 3, PAL.white); R(ctx, 48, 6, 6, 14, PAL.red); R(ctx, 2, 20, 50, 2, PAL.ink);
+        for (let k = 0; k < 7; k++) R(ctx, 5 + k * 6, 12, 4, 5, win); R(ctx, 50, 11, 3, 5, win); R(ctx, 26, 8, 1, 12, PAL.ink);   /* lit windows, cab, coach join */
+        for (const wx of [8, 16, 34, 42]) { circle(ctx, wx, 22, 3, PAL.ink); P(ctx, wx + (frame ? 1 : -1), 22, PAL.gray2); } R(ctx, 52, 19, 2, 4, PAL.sun2); break; }
+      case 'bus': case 'car': { R(ctx, 4, 6, 46, 15, PAL.sun2); R(ctx, 4, 6, 46, 2, PAL.white); R(ctx, 4, 21, 46, 2, PAL.ink); for (let k = 0; k < 6; k++) R(ctx, 7 + k * 6, 9, 5, 6, win); R(ctx, 44, 8, 5, 8, win);
+        R(ctx, 6, 17, 42, 1, PAL.sun0); for (const wx of [12, 40]) { circle(ctx, wx, 22, 3, PAL.ink); P(ctx, wx + (frame ? 1 : -1), 22, PAL.gray2); } R(ctx, 50, 17, 2, 3, PAL.sun3); R(ctx, 3, 17, 2, 3, PAL.red); break; }
+      case 'campervan': { R(ctx, 3, 5, 48, 17, PAL.ink); R(ctx, 4, 6, 46, 15, PAL.sun3); R(ctx, 4, 14, 46, 1, PAL.earth3); R(ctx, 30, 6, 1, 15, PAL.earth3);
+        R(ctx, 42, 8, 7, 6, PAL.night2); R(ctx, 44, 9, 4, 2, PAL.sky2); R(ctx, 8, 8, 8, 6, PAL.night2); R(ctx, 19, 8, 8, 6, PAL.night2); if (tod !== 'day') { R(ctx, 9, 9, 6, 4, PAL.sun3); R(ctx, 20, 9, 6, 4, PAL.sun3); }
+        R(ctx, 8, 2, 38, 3, PAL.gray0); for (let k = 0; k < 4; k++) R(ctx, 10 + k * 10, 4, 2, 2, PAL.gray0); R(ctx, 44, 4, 4, 1, PAL.gray1);
+        for (const wx of [12, 40]) { circle(ctx, wx, 22, 3, PAL.ink); P(ctx, wx + (frame ? 1 : -1), 22, PAL.gray2); } R(ctx, 50, 15, 2, 3, PAL.sun3); R(ctx, 3, 15, 2, 3, PAL.red); break; }
+      case 'ferry': { R(ctx, 6, 14, 44, 6, PAL.ink); R(ctx, 7, 13, 42, 5, PAL.white); R(ctx, 6, 19, 44, 2, PAL.red); R(ctx, 12, 7, 30, 6, PAL.white); for (let k = 0; k < 6; k++) R(ctx, 15 + k * 5, 9, 3, 3, win);
+        R(ctx, 26, 2, 5, 5, PAL.sun2); R(ctx, 28, 0, 1, 2, PAL.gray1); R(ctx, 30 + (frame ? 2 : 0), 0, 2, 1, PAL.gray2);   /* funnel, mast, smoke puff */
+        for (let k = 0; k < 6; k++) R(ctx, 0 + k * 2, 21 + (k + frame) % 2, 2, 1, PAL.white); break; }
+      default: { /* trek: a pair of boots, alternating stride */ const a = frame ? 6 : 0;
+        R(ctx, 18 + a, 8, 6, 12, PAL.earth1); R(ctx, 16 + a, 18, 12, 5, PAL.earth0); R(ctx, 16 + a, 22, 13, 2, PAL.ink); R(ctx, 19 + a, 10, 4, 1, PAL.sun2); R(ctx, 19 + a, 13, 4, 1, PAL.sun2);
+        R(ctx, 30 - a, 10, 6, 10, PAL.earth1); R(ctx, 28 - a, 18, 12, 5, PAL.earth0); R(ctx, 28 - a, 22, 13, 2, PAL.ink); R(ctx, 31 - a, 12, 4, 1, PAL.sun2); R(ctx, 31 - a, 15, 4, 1, PAL.sun2);
+        R(ctx, 20, 0, 4, 8, PAL.earth3); R(ctx, 32, 2, 4, 8, PAL.earth3); break; } } });
+  scene.textures.addCanvas(key, cv); return key;
+}
+/** The transition between two cities: dithered sky, drifting clouds, a far layer that slides from the departure skyline to the destination's landmarks, wrapping mid hills and a wrapping near ground that fits the transport, plus a foreground vehicle. */
+export function buildTravelScape(scene: Phaser.Scene, fromCityId: string, toCityId: string, transport: TravelTransport, tod: TimeOfDay, w = 360, h = 640, fromRegion?: Region, toRegion?: Region): TravelScape {
+  const fromKey = resolveSkylineKey(fromCityId, fromRegion), toKey = resolveSkylineKey(toCityId, toRegion);
+  const sil = SIL[tod], win = WIN[tod]; const air = transport === 'flight';
+  const HY_FAR = air ? 330 : 300, HY_MID = air ? 372 : 340, HY_NEAR = 430; const LW = w * 2; const r0 = rng(seedOf(fromKey + toKey));
+  const mk = (name: string, cw: number, ch: number, fn: (ctx: Ctx) => void) => { const k = `travel_${fromKey}_${toKey}_${transport}_${tod}_${name}`; if (!scene.textures.exists(k)) scene.textures.addCanvas(k, makeCanvas(cw, ch, fn)); return k; };
+  /* sky: the departure palette on top blending into the destination's horizon tint; stars at night, sun or moon */
+  const toHot = ['dakhla', 'casablanca', 'lasvegas', 'joshuatree', 'lapaz', 'laventana', 'bangkok', 'chiangmai', 'miami', 'roatan', 'iguazu'].includes(toKey);
+  const toCold = ['iceland', 'scotland', 'kathmandu', 'patagonia', 'innsbruck', 'salzkammergut', 'minakami', 'montana', 'boulder', 'montreal'].includes(toKey);
+  const stops = [...SKY[tod]]; if (tod === 'day') stops.push(toHot ? PAL.sun3 : toCold ? PAL.white : PAL.sky3); else if (tod === 'dusk' || tod === 'dawn') stops.push(toHot ? PAL.sun1 : PAL.dusk3);
+  const skyKey = mk('sky', w, h, ctx => { ditherGradient(ctx, 0, 0, w, HY_FAR + 30, stops); R(ctx, 0, HY_FAR + 30, w, h - HY_FAR - 30, GROUND[tod]);
+    if (tod === 'night' || tod === 'dawn') { const rr = rng(11); for (let i = 0; i < (tod === 'night' ? 80 : 20); i++) P(ctx, rr.int(0, w - 1), rr.int(0, HY_FAR - 60), rr.chance(0.3) ? PAL.white : PAL.gray2); }
+    if (tod === 'dusk' || tod === 'dawn') { circle(ctx, w * 0.72, HY_FAR - 26, 16, PAL.sun3); circle(ctx, w * 0.72, HY_FAR - 26, 12, PAL.sun2); }
+    if (tod === 'night') { circle(ctx, w * 0.72, 110, 14, PAL.sun3); circle(ctx, w * 0.72 + 6, 106, 12, SKY.night[1]); } });
+  /* clouds: two wrapping bands, the lower one bigger and (in a plane) below the aircraft */
+  const cloudHiKey = mk('cloudhi', LW, h, ctx => clouds(ctx, LW, rng(seedOf(fromKey + 'c1')), 7, tod, 40, 150));
+  const cloudLoKey = mk('cloudlo', LW, h, ctx => clouds(ctx, LW, rng(seedOf(toKey + 'c2')), air ? 8 : 4, tod, air ? 200 : 120, air ? 300 : 200, true));
+  /* far: [departure skyline | open country | destination skyline], 3 tiles wide, slid by progress rather than wrapping */
+  const farKey = mk('far', w * 3, h, ctx => { const paint = (key: string, ox: number) => { ctx.save(); ctx.beginPath(); ctx.rect(ox, 0, w, h); ctx.clip(); ctx.translate(ox, 0); (CITY[key] || CITY.boulder)(ctx, w, HY_FAR, 'far', sil[0], win, rng(seedOf(key + 'far')), tod); ctx.restore(); };
+    paint(fromKey, 0); ctx.save(); ctx.beginPath(); ctx.rect(w, 0, w, h); ctx.clip(); ctx.translate(w, 0); mountains(ctx, w, HY_FAR, sil[0], rng(seedOf(fromKey + toKey + 'ridge')), toCold ? 70 : 36, 60, toCold ? PAL.white : undefined); ctx.restore(); paint(toKey, w * 2);
+    R(ctx, 0, HY_FAR, w * 3, HY_MID - HY_FAR + 4, sil[0]); });
+  /* mid: rolling hills with a tree line or low buildings, wrapping */
+  const midKey = mk('mid', LW, h, ctx => { const rr = rng(seedOf(fromKey + toKey + 'mid')); mountains(ctx, LW, HY_MID, sil[1], rr, 26, 50);
+    if (toHot) { for (let i = 0; i < 14; i++) { const x = rr.int(0, LW); R(ctx, x, HY_MID - 10, 2, 10, sil[1]); R(ctx, x - 3, HY_MID - 12, 8, 3, sil[1]); } } else trees(ctx, LW, HY_MID, sil[1], rr, 40);
+    if (!air) for (let i = 0; i < 5; i++) { const x = rr.int(0, LW); R(ctx, x, HY_MID - 14, 12, 14, sil[1]); for (let k = 0; k < 6; k++) R(ctx, x - k + 6, HY_MID - 14 - 6 + k, k * 2, 1, sil[1]); P(ctx, x + 5, HY_MID - 8, win); }
+    R(ctx, 0, HY_MID, LW, HY_NEAR - HY_MID + 4, sil[1]); });
+  /* near: the ground the transport runs on, wrapping */
+  const nearKey = mk('near', LW, h, ctx => { const rr = rng(seedOf(fromKey + toKey + 'near'));
+    /* ground tones by time of day so the foreground reads as land, not a void */
+    const g = tod === 'day' ? (toHot ? PAL.earth3 : PAL.grass1) : tod === 'night' ? PAL.night2 : (toHot ? PAL.earth2 : PAL.grass0), gd = tod === 'day' ? (toHot ? PAL.earth2 : PAL.grass0) : tod === 'night' ? PAL.night1 : PAL.night2, post = tod === 'night' ? PAL.night3 : PAL.earth1;
+    if (air) { clouds(ctx, LW, rr, 10, tod, HY_NEAR - 40, HY_NEAR + 60, true); return; }
+    R(ctx, 0, HY_NEAR, LW, h - HY_NEAR, g); speckle(ctx, 0, HY_NEAR + 4, LW, h - HY_NEAR - 4, gd, 0.06, rr); for (let i = 0; i < LW / 6; i++) R(ctx, rr.int(0, LW), HY_NEAR + rr.int(6, h - HY_NEAR - 6), rr.int(4, 12), 1, gd);
+    if (transport === 'ferry') { const cs = tod === 'night' ? [PAL.night1, PAL.night2, PAL.night3] : tod === 'day' ? [PAL.sea1, PAL.sea2, PAL.sea3] : [PAL.sea0, PAL.dusk2, PAL.sun2]; R(ctx, 0, HY_NEAR - 6, LW, h - HY_NEAR + 6, cs[0]); for (let i = 0; i < LW; i++) R(ctx, rr.int(0, LW), HY_NEAR - 4 + rr.int(0, 60), rr.int(3, 9), 1, cs[1]); for (let x = 0; x < LW; x += rr.int(14, 30)) R(ctx, x, HY_NEAR - 6 + (x % 3), rr.int(4, 10), 1, cs[2]); return; }
+    if (transport === 'train') { R(ctx, 0, HY_NEAR - 2, LW, 2, PAL.earth1); for (let x = 0; x < LW; x += 10) R(ctx, x, HY_NEAR - 3, 6, 4, PAL.earth0); R(ctx, 0, HY_NEAR - 4, LW, 1, PAL.gray2); R(ctx, 0, HY_NEAR + 1, LW, 1, PAL.gray2);
+      for (let x = rr.int(0, 40); x < LW; x += rr.int(60, 110)) { R(ctx, x, HY_NEAR - 30, 3, 30, PAL.earth0); R(ctx, x - 3, HY_NEAR - 30, 9, 2, PAL.earth0); R(ctx, x - 1, HY_NEAR - 33, 5, 3, PAL.gray2); } }
+    else if (transport === 'trek') { for (let x = 0; x < LW; x += 3) { const dy = Math.round(Math.sin(x / 30) * 3); R(ctx, x, HY_NEAR + 8 + dy, 3, 8, PAL.earth2); } for (let i = 0; i < 40; i++) R(ctx, rr.int(0, LW), HY_NEAR + 10 + rr.int(0, 5), 2, 1, PAL.gray1); }
+    else { R(ctx, 0, HY_NEAR + 2, LW, 14, PAL.night2); R(ctx, 0, HY_NEAR + 2, LW, 1, PAL.gray1); R(ctx, 0, HY_NEAR + 16, LW, 1, PAL.gray1); for (let x = 0; x < LW; x += 24) R(ctx, x, HY_NEAR + 9, 12, 1, PAL.sun3); }
+    for (let i = 0; i < LW / 10; i++) { const x = rr.int(0, LW), th = rr.int(2, 6), y = HY_NEAR + (transport === 'trek' ? rr.int(-1, 4) : rr.int(18, 40)); line(ctx, x, y, x + 1, y - th, tod === 'day' ? PAL.grass2 : gd); }
+    for (let x = rr.int(0, 30); x < LW; x += rr.int(40, 80)) { const fy = transport === 'trek' ? HY_NEAR + 20 : HY_NEAR + 24; R(ctx, x, fy - 10, 2, 12, post); R(ctx, x, fy - 8, 40, 1, post); R(ctx, x, fy - 4, 40, 1, post); R(ctx, x, fy + 2, 3, 1, PAL.ink); } });
+  const container = scene.add.container(0, 0);
+  const sky = scene.add.image(0, 0, skyKey).setOrigin(0);
+  const cloudHi = scene.add.tileSprite(0, 0, w, h, cloudHiKey).setOrigin(0), far = scene.add.image(0, 0, farKey).setOrigin(0), cloudLo = scene.add.tileSprite(0, 0, w, h, cloudLoKey).setOrigin(0);
+  const mid = scene.add.tileSprite(0, 0, w, h, midKey).setOrigin(0), near = scene.add.tileSprite(0, 0, w, h, nearKey).setOrigin(0);
+  container.add([sky, cloudHi, far, cloudLo, mid, near]);
+  /* the vehicle: two textures toggled for wheels / blink / stride */
+  const f0 = vehicleTexture(scene, transport, tod, 0), f1 = vehicleTexture(scene, transport, tod, 1);
+  const vehicleY = air ? 190 : transport === 'ferry' ? HY_NEAR + 2 : transport === 'trek' ? HY_NEAR + 2 : HY_NEAR + 4;
+  const vehicle = scene.add.container(-60, vehicleY); const spr = scene.add.image(0, 0, f0).setOrigin(0.5, 1).setScale(2); vehicle.add(spr); container.add(vehicle);
+  let t = 0, blink = 0, progress = 0;
+  const speeds = { cloudHi: 6, cloudLo: air ? 60 : 14, mid: air ? 18 : 40, near: air ? 110 : transport === 'trek' ? 55 : transport === 'ferry' ? 70 : 120 };
+  return { container, vehicle, vehicleY,
+    update(dt) { t += dt / 1000; cloudHi.tilePositionX += speeds.cloudHi * dt / 1000; cloudLo.tilePositionX += speeds.cloudLo * dt / 1000; mid.tilePositionX += speeds.mid * dt / 1000; near.tilePositionX += speeds.near * dt / 1000;
+      blink += dt; if (blink > (air ? 420 : 160)) { blink = 0; spr.setTexture(spr.texture.key === f0 ? f1 : f0); }
+      if (!air && transport !== 'ferry') spr.setY(Math.round(Math.sin(t * 18) * 1)); },
+    setProgress(p) { progress = Math.max(0, Math.min(1, p)); far.setX(-Math.round(progress * w * 2)); },
+    destroy() { container.destroy(true); } };
+}
+
 export const SKYLINE_KEYS = Object.keys(CITY);
