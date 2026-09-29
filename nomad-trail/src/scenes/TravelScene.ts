@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { Audio } from '../audio/synth';
 import type { Leg, Region, MinigameResult } from '../core/types';
 import { PAL, txt } from '../ui/theme';
 import { Sim, Data, getRun, putRun } from '../ui/simBridge';
@@ -9,6 +10,7 @@ export class TravelScene extends Phaser.Scene {
   static KEY = 'Travel'; private scape?: TravelScape; private craft?: Phaser.GameObjects.Container; private moving = true; private t0 = 0;
   constructor() { super(TravelScene.KEY); }
   create(data: { leg: Leg }) {
+    Audio.playLoop('travel'); Audio.playSfx(data.leg.transport === 'flight' ? 'plane' : data.leg.transport === 'train' ? 'train' : 'whoosh');
     this.moving = true; this.cameras.main.fadeIn(200);
     const run = getRun(this); const from = Data.city(run.cityId); const to = Data.city(data.leg.to);
     /* a cozy pixel landscape: the departure skyline slides out on the far layer and the destination's slides in, mid hills and the ground wrap under the vehicle */

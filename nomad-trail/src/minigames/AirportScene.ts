@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { Audio } from '../audio/synth';
 import { PAL } from '../core/palette';
 import { MINIGAME_KEYS, type MinigameLaunch } from '../core/types';
 import { MinigameFrame, Meter, W, H, clamp, normalizeLaunch, panel, txt } from './_shared';
@@ -89,7 +90,7 @@ export class AirportScene extends Phaser.Scene {
   /** Dismiss the card and start the boarding clock (also called by the harness). */
   startRun() {
     if (!this.waiting) return; this.waiting = false; this.card.forEach(o => o.destroy()); this.card = [];
-    this.frame.resumeCap(); this.setupInput(); this.frame.flash(PAL.neon, 60);
+    this.frame.resumeCap(); this.setupInput(); this.frame.flash(PAL.neon, 60); Audio.playSfx('boarding');
   }
 
   // ---------- input ----------
@@ -138,12 +139,12 @@ export class AirportScene extends Phaser.Scene {
     const ok = this.lane === f.correct; this.turning = { dir: this.lane === 0 ? -1 : 1, t: 0, ok, wall: f }; this.obstacles = []; this.fork = undefined; this.runner.setFrame(0);
   }
   private forkPassed() {
-    this.stage++; this.frame.setProgress(`fork ${Math.min(this.stage, 5)}/5`); this.frame.flash(PAL.neon, 40);
+    this.stage++; this.frame.setProgress(`fork ${Math.min(this.stage, 5)}/5`); this.frame.flash(PAL.neon, 40); Audio.playSfx('confirm');
     if (this.stage >= 5) { this.boarding(); return; }
     this.fork = undefined; this.nextForkAt = this.elapsed + FORK_GAP; this.nextObAt = Math.max(this.nextObAt, this.elapsed + 0.8);   // 0.8 s clear window after a wall
   }
   private wrongWay(afterTurn: boolean, label = 'WRONG WAY') {
-    this.wrong++; this.penalty += 3; this.uturn = 1.3; this.frame.shake(160, 0.006); this.frame.flash(PAL.red, 120); this.say(label, PAL.red);
+    this.wrong++; this.penalty += 3; this.uturn = 1.3; Audio.playSfx('cancel'); this.frame.shake(160, 0.006); this.frame.flash(PAL.red, 120); this.say(label, PAL.red);
     this.fork = undefined; this.deadEnd = -1; this.obstacles = []; this.nextForkAt = this.elapsed + (afterTurn ? 1.2 : 1.6); this.nextObAt = this.elapsed + this.uturn + 0.8;
   }
   private say(s: string, color: number) { this.banner?.destroy(); this.banner = txt(this, W / 2, 300, s, 20, color).setDepth(30); this.tweens.add({ targets: this.banner, alpha: 0, y: 270, duration: 900, delay: 300, onComplete: () => { this.banner?.destroy(); this.banner = undefined; } }); }
@@ -175,7 +176,7 @@ export class AirportScene extends Phaser.Scene {
     // motion
     this.stunned = Math.max(0, this.stunned - dt); this.iframes = Math.max(0, this.iframes - dt); this.boost = Math.max(0, this.boost - dt);
     const ramp = 1 + 0.006 * this.elapsed + 0.25 * this.frame.hard; const v = this.speed * ramp * (this.stunned > 0 ? 0.45 : 1) * (this.boost > 0 ? 1.5 : 1);
-    this.dist += v * dt;
+    this.dist += v * dt; if (v > 0 && this.frame.active) Audio.playSfx('step', 320);
     if (this.deadEnd >= 0) { this.deadEnd -= v * 1.4 * dt; if (this.deadEnd <= 0.04) this.wrongWay(true); this.draw(); return; }
     if (this.jumpT >= 0) { this.jumpT += dt / 0.6; if (this.jumpT >= 1) this.jumpT = -1; }
     // spawn: a fork wall appears far ahead and holds at the horizon so the signs can be read, then approaches
@@ -201,9 +202,9 @@ export class AirportScene extends Phaser.Scene {
     const airborne = this.jumpT > 0.2 && this.jumpT < 0.8;
     for (const o of this.obstacles) {
       if (o.z < 0.07 && o.z > -0.02 && o.lane === this.lane && !o.hit && !o.used) {
-        if (o.kind === 'walkway') { o.used = true; this.boost = 1.8; this.frame.flash(PAL.neon, 30); this.say('MOVING WALKWAY', PAL.neon); }
+        if (o.kind === 'walkway') { o.used = true; this.boost = 1.8; this.frame.flash(PAL.neon, 30); Audio.playSfx('powerup'); this.say('MOVING WALKWAY', PAL.neon); }
         else if ((o.kind === 'bag' || o.kind === 'rope') && airborne) { /* cleared */ }
-        else if (this.iframes <= 0) { o.hit = true; this.collisions++; this.penalty += 1.5; this.stunned = 0.7; this.iframes = 1; this.frame.shake(120, 0.005); this.say(o.kind === 'traveller' ? 'SORRY!' : o.kind === 'cart' ? 'CLEANING CART' : 'OOF', PAL.sun1); }
+        else if (this.iframes <= 0) { o.hit = true; this.collisions++; this.penalty += 1.5; this.stunned = 0.7; this.iframes = 1; Audio.playSfx('hurt'); this.frame.shake(120, 0.005); this.say(o.kind === 'traveller' ? 'SORRY!' : o.kind === 'cart' ? 'CLEANING CART' : 'OOF', PAL.sun1); }
       }
     }
     this.obstacles = this.obstacles.filter(o => o.z > -0.15);

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { Audio } from '../audio/synth';
 import { PAL } from '../core/palette';
 import { MINIGAME_KEYS, type MinigameLaunch } from '../core/types';
 import { MinigameFrame, Meter, W, H, clamp, normalizeLaunch, panel, txt } from './_shared';
@@ -28,7 +29,7 @@ export class LaundryScene extends Phaser.Scene {
   private spawn() { const white = this.nextWhite(); const colors = [PAL.red, PAL.sky0, PAL.grass1, PAL.sun0, PAL.dusk2, PAL.sea1]; this.items.push({ x: W / 2, y: 60, vx: 0, white, color: white ? PAL.white : Phaser.Utils.Array.GetRandom(colors), shape: Phaser.Math.Between(0, 2), done: false }); this.total++; }
   /** 1.0 at the start, up to 1.9 once you are sorting well and on a streak. */
   private speedMul() { const rate = this.total > 1 ? this.right / (this.total - 1) : 0; return 1 + 0.9 * rate * Math.min(1, this.streak / 8); }
-  private fling(dir: number) { if (!this.frame.active || this.ended) return; const it = this.items.find(i => !i.done && i.vx === 0); if (!it) return; it.vx = dir * 340; const ok = (dir < 0) === it.white; it.result = ok; it.done = true; if (ok) { this.right++; this.streak++; this.frame.flash(PAL.neon, 30); } else { this.wrong++; this.streak = 0; this.pinkTint = true; this.frame.shake(120, 0.005); this.basketFlash(dir); } this.time.delayedCall(Math.round(190 / this.speedMul()), () => { if (this.frame.active && !this.ended) this.spawn(); }); }
+  private fling(dir: number) { if (!this.frame.active || this.ended) return; const it = this.items.find(i => !i.done && i.vx === 0); if (!it) return; it.vx = dir * 340; const ok = (dir < 0) === it.white; it.result = ok; it.done = true; Audio.playSfx(ok ? 'whoosh' : 'cancel', 50); if (ok) { this.right++; this.streak++; this.frame.flash(PAL.neon, 30); } else { this.wrong++; this.streak = 0; this.pinkTint = true; this.frame.shake(120, 0.005); this.basketFlash(dir); } this.time.delayedCall(Math.round(190 / this.speedMul()), () => { if (this.frame.active && !this.ended) this.spawn(); }); }
   /** Wrong sort: the basket it landed in flashes red for a beat. Nothing else changes colour. */
   private basketFlash(dir: number) {
     const x = dir < 0 ? 20 : W - 150; const r = this.add.rectangle(x + 65, 500, 130, 120, PAL.red, 0.55).setDepth(3);

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { Audio } from '../audio/synth';
 import { PAL } from '../core/palette';
 import { MINIGAME_KEYS, type MinigameLaunch } from '../core/types';
 import { MinigameFrame, Meter, W, H, clamp, normalizeLaunch, panel, txt, pixTexture } from './_shared';
@@ -75,7 +76,7 @@ export class KiteScene extends Phaser.Scene {
     if (!this.frame.active || this.airborne > 0 || this.recover > 0) return;
     if (this.speed < 0.25) { this.hop = 0.3; this.msg.setText('hop').setColor('#b4b9c4'); return; }
     const crest = this.wavePhase() > 0.55; this.hang = (0.5 + this.speed * 1.4) * (crest ? 1.3 : 1); this.airborne = this.hang; this.jumps++;
-    this.msg.setText(crest ? 'BOOST!' : 'AIR').setColor(crest ? '#f7cf6b' : '#f4f1ea'); this.frame.flash(PAL.white, 40);
+    this.msg.setText(crest ? 'BOOST!' : 'AIR').setColor(crest ? '#f7cf6b' : '#f4f1ea'); this.frame.flash(PAL.white, 40); Audio.playSfx(crest ? 'powerup' : 'whoosh', 120);
     for (let i = 0; i < 14; i++) this.spray.push({ x: W / 2 + (Math.random() - 0.5) * 30, y: 470, vx: (Math.random() - 0.5) * 120, vy: -60 - Math.random() * 90, t: 0.6 });
   }
   private step(dt: number) {

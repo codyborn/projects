@@ -45,7 +45,7 @@ export class PassportScene extends Phaser.Scene {
     };
     render();
     let sx = 0; this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { sx = p.x; });
-    this.input.on('pointerup', (p: Phaser.Input.Pointer) => { const dx = p.x - sx; if (Math.abs(dx) > 40) { const np = Phaser.Math.Clamp(this.page + (dx < 0 ? 1 : -1), 0, pages - 1); if (np !== this.page) { this.page = np; Audio.playSfx('whoosh'); render(); } } });
+    this.input.on('pointerup', (p: Phaser.Input.Pointer) => { const dx = p.x - sx; if (Math.abs(dx) > 40) { Audio.playSfx('page'); const np = Phaser.Math.Clamp(this.page + (dx < 0 ? 1 : -1), 0, pages - 1); if (np !== this.page) { this.page = np; Audio.playSfx('whoosh'); render(); } } });
     const close = ptext(this, GAME_W - 24, 24, 'X', PAL.white, 2).setOrigin(0.5).setInteractive({ useHandCursor: true });
     close.on('pointerdown', () => { Audio.playSfx('back'); const cb = this.onClose; const back = this.backKey; this.scene.stop(); if (cb) cb(); else if (back) this.scene.start(back); else this.scene.start('Title'); });
     this.cameras.main.fadeIn(200, 11, 15, 26);

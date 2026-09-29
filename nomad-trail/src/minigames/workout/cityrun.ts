@@ -4,6 +4,7 @@
 // telegraphed: it is Frogger. A hit (or the crossing clock running out) costs a life and puts you back on the kerb; 3 lives. Reach the
 // shop 3 times, each crossing 15% faster, to finish. Score = crossings x 30 + 10 per life left (max 100). READY card and result flow as usual.
 import Phaser from 'phaser';
+import { Audio } from '../../audio/synth';
 import { PAL } from '../../core/palette';
 import { W, clamp } from '../_shared';
 import { Micro } from './micro';
@@ -35,12 +36,12 @@ export class CityRun extends Micro {
     if (this.row === 0) this.arrive();
   }
   private arrive() {
-    this.crossings++; this.busy = true; this.pop(cx(this.col), cy(0) - 24, 'COFFEE!', PAL.sun2); this.ctx.frame.flash(PAL.sun2, 40); this.progress();
+    this.crossings++; this.busy = true; Audio.playSfx('coin'); this.pop(cx(this.col), cy(0) - 24, 'COFFEE!', PAL.sun2); this.ctx.frame.flash(PAL.sun2, 40); this.progress();
     if (this.crossings >= 3) { this.ended = true; this.after(500, () => this.finish(this.scoreNow())); return; }
     this.mult *= 1.15; this.after(600, () => this.respawn());
   }
   private lose(why: string) {
-    if (this.ended) return; this.lives--; this.inv = 1.0; this.busy = true; this.ctx.frame.shake(160, 0.007); this.pop(this.px, this.py - 30, why, PAL.red); this.progress();
+    if (this.ended) return; this.lives--; this.inv = 1.0; this.busy = true; Audio.playSfx('hurt'); this.ctx.frame.shake(160, 0.007); this.pop(this.px, this.py - 30, why, PAL.red); this.progress();
     if (this.lives <= 0) { this.ended = true; this.after(400, () => this.finish(this.scoreNow())); return; }
     this.after(450, () => this.respawn());
   }

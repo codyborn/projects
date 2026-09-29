@@ -7,6 +7,7 @@ import './art';  // registers window.__nomadArt for BootScene
 import cities from './data/cities.json';
 import { launchHarness } from './minigames/devHarness';
 import { installPlayLink } from './playLink';
+import { Audio } from './audio/synth';
 const game = new Phaser.Game({ type: Phaser.AUTO, parent: 'game', width: GAME_W, height: GAME_H, pixelArt: true, roundPixels: true, backgroundColor: PAL.night0,
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH }, physics: { default: 'arcade', arcade: { gravity: { x: 0, y: 900 } } },
   input: { activePointers: 2 }, scene: SCENES });
@@ -18,6 +19,8 @@ window.visualViewport?.addEventListener('resize', refresh); window.visualViewpor
 window.addEventListener('orientationchange', () => setTimeout(refresh, 300));
 game.canvas.addEventListener('touchstart', () => game.scale.updateBounds(), { capture: true, passive: true });
 game.canvas.addEventListener('pointerdown', () => game.scale.updateBounds(), { capture: true });
+/* audio needs a gesture: create / resume the context on every pointer down (cheap once created) */
+const wake = () => Audio.init(); game.canvas.addEventListener('pointerdown', wake, { capture: true }); game.canvas.addEventListener('touchstart', wake, { capture: true, passive: true }); window.addEventListener('keydown', wake);
 installDebug(game);
 if (new URLSearchParams(location.search).has('harness')) game.events.once('ready', () => launchHarness(game));
 installPlayLink(game);   // ?play=... quick play for the review hub

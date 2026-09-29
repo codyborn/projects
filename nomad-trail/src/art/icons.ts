@@ -11,6 +11,22 @@ function tex(scene: Phaser.Scene, key: string, rows: string[], map: Record<strin
 }
 
 export function buildIcons(scene: Phaser.Scene) {
+  tex(scene, 'ico_sound_on', [
+    '...W.....',
+    '..WW..W..',
+    'WWWW.W.W.',
+    'WWWW.W.W.',
+    'WWWW.W.W.',
+    '..WW..W..',
+    '...W.....'], { W: PAL.white });
+  tex(scene, 'ico_sound_off', [
+    '...W.....',
+    '..WW.R.R.',
+    'WWWW..R..',
+    'WWWW.R.R.',
+    'WWWW.....',
+    '..WW.....',
+    '...W.....'], { W: PAL.gray1, R: PAL.red });
   tex(scene, 'ico_drone', [
     '.AAA....AAA...',
     'AAAAA..AAAAA..',

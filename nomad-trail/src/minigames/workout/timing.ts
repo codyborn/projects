@@ -1,3 +1,4 @@
+import { Audio } from '../../audio/synth';
 // Timing micro-games: tap at the right instant.
 import { PAL } from '../../core/palette';
 import { W, clamp } from '../_shared';
@@ -13,7 +14,7 @@ export class PushUp extends Micro {
     const win = 0.09 * this.ctx.window + 0.03; let shrink = 0.9 * this.ctx.speed; let target = 60;
     const rep = () => { this.r = 1; this.live = true; };
     this.onTap(() => { if (!this.live) return; this.live = false; const err = Math.abs(this.r * 160 - target) / target; const ok = err < win * 3;
-      this.results.push(ok ? clamp(1 - err / (win * 3), 0.5, 1) : 0); if (ok) { this.hits++; this.pop(cx, 250, err < win ? 'PERFECT' : 'GOOD'); this.ctx.athlete.pose(2); this.ctx.athlete.bump(); } else { this.pop(cx, 250, 'EARLY', PAL.red); }
+      this.results.push(ok ? clamp(1 - err / (win * 3), 0.5, 1) : 0); if (ok) { this.hits++; Audio.playSfx('blip', 40); this.pop(cx, 250, err < win ? 'PERFECT' : 'GOOD'); this.ctx.athlete.pose(2); this.ctx.athlete.bump(); } else { this.pop(cx, 250, 'EARLY', PAL.red); }
       this.reps++; this.ctx.frame.setProgress(`${this.hits}/${this.total}`); if (this.reps >= this.total) this.after(300, () => this.finish(this.scoreNow())); else { shrink *= 1.12; this.after(350, () => { this.ctx.athlete.pose(1); rep(); }); } });
     this.after(200, rep);
     this.loop(dt => { if (this.live) { this.r -= shrink * dt; if (this.r * 160 < target * 0.55) { this.live = false; this.results.push(0); this.reps++; this.pop(cx, 250, 'LATE', PAL.red); this.ctx.frame.setProgress(`${this.hits}/${this.total}`); if (this.reps >= this.total) this.after(300, () => this.finish(this.scoreNow())); else { shrink *= 1.12; this.after(350, rep); } } }

@@ -61,7 +61,7 @@ export class CarryOnScene extends Phaser.Scene {
     const ctx: ConsoleCtx = {
       scene: this, screen: SCREEN, level: this.level, cityName: this.cityName, hazard: this.hazard, palette: this.palette, climate: this.climate, rng: this.rng,
       difficulty: this.launch.difficulty, hard: this.frame.hard, speed: this.frame.speed, depth: 2, camera: this.gameCam,
-      setHearts: (n, max) => this.drawHearts(n, max), setStatus: (t) => this.statusT.setText(t), flash: (c, ms = 80) => this.gameCam.flash(ms, (c >> 16) & 255, (c >> 8) & 255, c & 255), shake: (ms = 120, k = 0.004) => this.gameCam.shake(ms, k), sfx: (n) => { try { Audio.playSfx(n as any); } catch { /* audio not unlocked yet */ } },
+      setHearts: (n, max) => this.drawHearts(n, max), setStatus: (t) => this.statusT.setText(t), flash: (c, ms = 80) => this.gameCam.flash(ms, (c >> 16) & 255, (c >> 8) & 255, c & 255), shake: (ms = 120, k = 0.004) => this.gameCam.shake(ms, k), sfx: (n) => { try { Audio.playSfx(n as any, 30); } catch { /* audio not unlocked yet */ } },
     };
     this.cart.init(ctx, (r) => { if (!this.frame.active) return; this.frame.finish(r.score, !!r.failed); if (r.detail) txt(this, W / 2, H / 2 + 94, r.detail, 9, PAL.sun2).setDepth(953); });
     this.frame.capSec = this.cart.capSec > 0 ? this.cart.capSec : 24 * 3600; this.frame.scoreNow = () => this.cart?.scoreNow() ?? 0;

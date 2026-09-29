@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { Audio, REGION_LOOP } from '../audio/synth';
 import type { CityAction, MinigameLaunch, MinigameResult, RunState } from '../core/types';
 import { PAL, txt, rect, type Label } from '../ui/theme';
 import { Button } from '../ui/Button';
@@ -28,6 +29,7 @@ export class CityScene extends Phaser.Scene {
     { const name = (city?.name ?? run.cityId).toUpperCase(); const plateW = Math.min(300, Math.max(150, 20 + name.length * 13)); const plate = this.add.graphics().setDepth(2); plate.fillStyle(PAL.night0, 0.82); plate.fillRect(6, 90, plateW, 40); plate.fillStyle(PAL.sun1, 1); plate.fillRect(6, 90, 3, 40); }
     txt(this, 14, 96, (city?.name ?? run.cityId).toUpperCase(), 16, PAL.white).setDepth(3); txt(this, 14, 116, `${city?.country ?? ''} · stay day ${run.stayDays + 1}${Sim.dullKnives(run) ? ' · dull knife' : ''}`, 8, PAL.gray2).setDepth(3);
     try { buildIcons(this); } catch { /* icons are optional */ }
+    Audio.playLoop(REGION_LOOP[city?.region ?? ''] ?? 'americas');
     this.hud = new Hud(this); this.hud.refresh(run);
     this.time.delayedCall(0, () => this.refreshButtons());
     new Panel(this, 12, 244, 336, 118, { fill: PAL.night1, border: PAL.night3 }).setDepth(5); this.logLbl = txt(this, 20, 250, '', 8, PAL.gray2, { wrap: 320 }).setDepth(6); this.refreshLog();
@@ -75,7 +77,7 @@ export class CityScene extends Phaser.Scene {
     // stamp animation
     const stamp = this.add.container(180, 360).setScale(3).setAlpha(0); const sg = this.add.graphics(); const gold = run.stamps[run.cityId] === 'gold'; sg.lineStyle(2, gold ? PAL.sun2 : PAL.red, 1); sg.strokeCircle(0, 0, 26); sg.strokeCircle(0, 0, 22); stamp.add(sg);
     stamp.add([txt(this, 0, -4, (city?.name ?? '').slice(0, 10).toUpperCase(), 8, gold ? PAL.sun2 : PAL.red).setOrigin(0.5) as any, txt(this, 0, 8, `DAY ${run.day}`, 8, gold ? PAL.sun2 : PAL.red).setOrigin(0.5) as any]); stamp.setAngle(-14); parts.push(stamp);
-    this.tweens.add({ targets: stamp, scaleX: 1, scaleY: 1, alpha: 1, duration: 260, ease: 'Quad.In', onComplete: () => this.cameras.main.shake(60, 0.004) });
+    this.tweens.add({ targets: stamp, scaleX: 1, scaleY: 1, alpha: 1, duration: 260, ease: 'Quad.In', onComplete: () => { Audio.playSfx('stamp'); this.cameras.main.shake(60, 0.004) } });
     parts.push(new Button(this, 180, 410, 'SETTLE IN', () => parts.forEach(x => x.destroy()), { w: 200, fill: PAL.sea1 }));
     parts.forEach((x, i) => (x as any).setDepth?.(20 + i));   // above the skyline (depth 1) and the HUD (50 is fine to sit under)
   }
@@ -86,7 +88,7 @@ export class CityScene extends Phaser.Scene {
     if (a === 'work' && Sim.isWeekend(run.day)) { toast(this, 'No work on weekends. Explore, cook, rest.', PAL.sun1, 1400); this.busy = false; this.btns.forEach(b => b.setDisabled(false)); this.refreshWorkBtn(run.day); return; }
     const res = Sim.cityAction(run, a);
     if (res.error) {   // the engine refused (too tired, back injury, delayed suitcase, weekend): say so instead of silently doing nothing
-      toast(this, res.error, PAL.sun1, 1800); this.cameras.main.shake(80, 0.004); this.busy = false; this.btns.forEach(b => b.setDisabled(false)); this.refreshButtons(); return;
+      Audio.playSfx('cancel'); toast(this, res.error, PAL.sun1, 1800); this.cameras.main.shake(80, 0.004); this.busy = false; this.btns.forEach(b => b.setDisabled(false)); this.refreshButtons(); return;
     }
     putRun(this, res.state); this.hud.refresh(res.state); this.refreshLog();
     if (res.state.day !== this.lastDay && this.sky) this.setSky(this.todFor(res.state.day), true);
@@ -105,7 +107,7 @@ export class CityScene extends Phaser.Scene {
       const run = getRun(this); const before = JSON.parse(JSON.stringify(run)) as RunState;
       const finish = (r: MinigameResult) => { if (r.cancelled) { putRun(this, before); this.hud.refresh(before); this.refreshLog(); toast(this, 'Another time.', PAL.gray2, 800); resolve(); return; } const s = Sim.applyMinigameResult(getRun(this), m.key, r); putRun(this, s); this.hud.refresh(s); toast(this, r.failed ? 'that did not go well' : r.perfect ? 'PERFECT' : `score ${Math.round(r.score)}`, r.failed ? PAL.red : PAL.neon); resolve(); };
       if (!this.scene.get(m.key)) { toast(this, `(${m.key} not installed yet)`, PAL.gray2, 900); finish({ score: 50, perfect: false, failed: false }); return; }
-      const launch: MinigameLaunch = { energy: run.energy, difficulty: m.difficulty, payload: m.payload, extraLives: m.extraLives, preview: (r) => Sim.previewMinigame(run, m.key, r), onDone: (r) => { if (this.scene.isActive(m.key) || this.scene.isPaused(m.key)) this.scene.stop(m.key); this.scene.resume(); finish(r); } };
+      const launch: MinigameLaunch = { energy: run.energy, difficulty: m.difficulty, payload: m.payload, extraLives: m.extraLives, preview: (r) => Sim.previewMinigame(run, m.key, r), onDone: (r) => { if (this.scene.isActive(m.key) || this.scene.isPaused(m.key)) this.scene.stop(m.key); this.scene.resume(); Audio.playLoop(REGION_LOOP[Data.city(getRun(this).cityId)?.region ?? ''] ?? 'americas'); finish(r); } };
       launchOnTop(this, m.key, launch); this.scene.pause();
     });
   }

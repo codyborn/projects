@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { Audio } from '../audio/synth';
 import { PAL } from '../core/palette';
 import { MINIGAME_KEYS, type MinigameLaunch, type City } from '../core/types';
 import { MinigameFrame, W, H, clamp, normalizeLaunch, txt, pixTexture } from './_shared';
@@ -133,7 +134,7 @@ export class DroneScene extends Phaser.Scene {
     for (const sh of this.shots) { sh.x += 270 * dt; sh.y += sh.vy * dt; } this.shots = this.shots.filter(sh => sh.x < W + 10);
     // rings
     for (const r of this.rings) { const sx = r.wx - this.scroll; if (r.flash > 0) r.flash -= dt; if (r.state !== 'open') continue; const R = 16 * this.frame.window + 12;
-      if (Math.hypot(sx - this.x, r.y - this.y) < R) { r.state = 'hit'; r.flash = 0.5; this.hits++; this.frame.flash(PAL.white, 40); this.frame.setProgress(`${this.hits}/${this.ringCount} shots`); }
+      if (Math.hypot(sx - this.x, r.y - this.y) < R) { r.state = 'hit'; r.flash = 0.5; this.hits++; this.frame.flash(PAL.white, 40); Audio.playSfx('shutter'); Audio.playSfx('ring'); this.frame.setProgress(`${this.hits}/${this.ringCount} shots`); }
       else if (sx < this.x - 26) { r.state = 'miss'; r.flash = 0.5; this.frame.setProgress(`${this.hits}/${this.ringCount} shots`); } }
     // spawns: hazards paced by level, a power-up every 10 to 14 s (the first one early)
     if (!this.landing) {
@@ -173,12 +174,12 @@ export class DroneScene extends Phaser.Scene {
   }
   private kill(h: Hazard) { h.alive = false; h.spr?.destroy(); }
   private poof(x: number, y: number) { const r = this.add.circle(x, y, 6, PAL.white, 0.9).setDepth(7); this.tweens.add({ targets: r, scale: 2.4, alpha: 0, duration: 220, onComplete: () => r.destroy() }); }
-  private land() { if (this.landing) return; this.landing = true; this.landT = this.t; this.held = false; this.drawBombButton(); }
+  private land() { if (this.landing) return; this.landing = true; Audio.playSfx('land'); this.landT = this.t; this.held = false; this.drawBombButton(); }
   private puff(x: number, y: number) { for (let i = 0; i < 6; i++) { const c = this.add.circle(x - 14 + i * 6, y, 3 + (i % 2) * 2, this.set.groundDark === PAL.ink ? PAL.gray1 : PAL.earth3, 0.8).setDepth(7); this.tweens.add({ targets: c, x: c.x + (i - 2.5) * 10, y: c.y - 8 - (i % 3) * 4, scale: 2, alpha: 0, duration: 500 + i * 40, onComplete: () => c.destroy() }); } }
   private hurt() {
     if (this.iframes > 0) return;
-    if (this.shield > 0) { this.shield = 0; this.iframes = 1.0; this.toast('SHIELD TOOK IT', PAL.sky2); this.frame.flash(PAL.sky2, 60); return; }
-    this.collisions++; this.hearts--; this.iframes = 1.5; this.frame.shake(160, 0.008); this.frame.flash(PAL.red, 60);
+    if (this.shield > 0) { this.shield = 0; this.iframes = 1.0; Audio.playSfx('deflect'); this.toast('SHIELD TOOK IT', PAL.sky2); this.frame.flash(PAL.sky2, 60); return; }
+    this.collisions++; this.hearts--; this.iframes = 1.5; Audio.playSfx('hurt'); this.frame.shake(160, 0.008); this.frame.flash(PAL.red, 60);
     if (this.hearts <= 0) this.crash();
   }
   /** the round BOMB button pinned bottom-right (a little slack so a thumb on the rim still counts) */
@@ -191,15 +192,16 @@ export class DroneScene extends Phaser.Scene {
     for (let i = 0; i < this.bombs; i++) g.fillStyle(PAL.sun2).fillRect(BTN_X - 5, BTN_Y + 3 - i * 8, 10, 6);
     this.btnT?.setText(on ? `BOMB ${this.bombs}` : 'BOMB 0').setColor(on ? '#f4f1ea' : '#6e7484');
   }
-  private bomb() { if (this.bombs <= 0 || this.landing || this.ended || !this.frame.active) return; this.bombs--; this.btnFlash = 1; this.drawBombButton(); this.frame.flash(PAL.white, 120); this.frame.shake(200, 0.01); this.toast(`BATTERY BOMB · ${this.bombs} left`, PAL.white);
+  private bomb() { if (this.bombs <= 0 || this.landing || this.ended || !this.frame.active) return; this.bombs--; this.btnFlash = 1; this.drawBombButton(); Audio.playSfx('bomb'); this.frame.flash(PAL.white, 120); this.frame.shake(200, 0.01); this.toast(`BATTERY BOMB · ${this.bombs} left`, PAL.white);
     for (const h of this.hazards) if (h.alive && this.isBird(h.kind)) { const sx = h.wx - this.scroll; if (sx > -20 && sx < W + 20) { this.poof(sx, h.y); this.kill(h); } } this.hazards = this.hazards.filter(h => h.alive); }
   private collect(kind: PuKind) {
     this.frame.flash(PAL.white, 50);
+    Audio.playSfx(kind === 'heart' ? 'heart' : 'powerup');
     if (kind === 'heart') { if (this.hearts < MAX_HEARTS) { this.hearts++; this.toast('+1 LIFE', PAL.red); } else this.toast('HEARTS FULL', PAL.red); }
     else if (kind === 'double') { this.doubleT = 15; this.toast('DOUBLE SHOT · 15 s', PAL.sun2); }
     else { this.shield = 8; this.toast('SHIELD · 8 s', PAL.sky2); }
   }
-  private crash() { if (this.ended) return; this.ended = true; this.tweens.add({ targets: this.drone, y: this.groundY(this.x) - 4, angle: 70, duration: 600, ease: 'Quad.In', onComplete: () => this.frame.finish(Math.min(45, this.score() * 0.5 + 10), true) }); }
+  private crash() { if (this.ended) return; this.ended = true; Audio.playSfx('crash'); this.tweens.add({ targets: this.drone, y: this.groundY(this.x) - 4, angle: 70, duration: 600, ease: 'Quad.In', onComplete: () => this.frame.finish(Math.min(45, this.score() * 0.5 + 10), true) }); }
   private finishRun(fail: boolean) { if (this.ended) return; this.ended = true; this.frame.finish(this.score(), fail); }
 
   private spawn() {

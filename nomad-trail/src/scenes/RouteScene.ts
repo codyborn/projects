@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { Audio } from '../audio/synth';
 import type { City, Leg } from '../core/types';
 import { PAL, txt, rect, TRANSPORT_GLYPH, MONTHS } from '../ui/theme';
 import { Button } from '../ui/Button';
@@ -69,6 +70,6 @@ export class RouteScene extends Phaser.Scene {
     p.on('pointerup', (ptr: Phaser.Input.Pointer) => { if (this.preview || Math.abs(ptr.downY - ptr.upY) > 12) return; this.go(leg); });
     return p;
   }
-  private go(leg: Leg) { const run = getRun(this); if (run.energy < 10) toast(this, 'Running on fumes. Consider resting first.', PAL.sun1, 1200); this.cameras.main.fadeOut(200, 0, 0, 0); this.time.delayedCall(210, () => this.scene.start('Travel', { leg })); }
+  private go(leg: Leg) { Audio.playSfx('confirm'); const run = getRun(this); if (run.energy < 10) toast(this, 'Running on fumes. Consider resting first.', PAL.sun1, 1200); this.cameras.main.fadeOut(200, 0, 0, 0); this.time.delayedCall(210, () => this.scene.start('Travel', { leg })); }
 }
 export default RouteScene;

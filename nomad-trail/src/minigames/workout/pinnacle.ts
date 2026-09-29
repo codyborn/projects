@@ -9,6 +9,7 @@
        a gust while walking is ~4.5x the standing push, so you stop and hold on. Needle past the edge for 0.6 s = a fall into the fog
        (MISS). The run ends only at the end of the ridge or in the fog. Score = share of time the needle stayed out of the red. */
 import Phaser from 'phaser';
+import { Audio } from '../../audio/synth';
 import { PAL } from '../../core/palette';
 import { W, H, clamp, txt } from '../_shared';
 import { Micro } from './micro';
@@ -128,7 +129,7 @@ export class Pinnacle extends Micro {
     this.total += dt; this.climbT += dt;
     if (this.walking) this.prog = clamp(this.prog + dt / WALK_SEC, 0, 1);
     if (this.warnFrom === 0 && this.gustT <= 0 && this.t + TELEGRAPH >= this.nextG) { this.warnFrom = rng() < 0.5 ? -1 : 1; this.say('WHOOSH'); }
-    if (this.gustT <= 0 && this.t >= this.nextG) { this.gustDir = this.warnFrom || 1; this.warnFrom = 0; this.gustPow = (42 + rng() * 16) * spd * (1.15 - 0.15 * win); this.gustT = 1.0 + rng() * 0.5; this.nextG = this.t + this.gustT + 1.6 + rng() * 2.0 * win; this.ctx.frame.shake(80, 0.002); }
+    if (this.gustT <= 0 && this.t >= this.nextG) { this.gustDir = this.warnFrom || 1; this.warnFrom = 0; Audio.playSfx('whistle'); this.gustPow = (42 + rng() * 16) * spd * (1.15 - 0.15 * win); this.gustT = 1.0 + rng() * 0.5; this.nextG = this.t + this.gustT + 1.6 + rng() * 2.0 * win; this.ctx.frame.shake(80, 0.002); }
     if (this.gustT > 0) this.gustT -= dt;
     const gust = this.gustT > 0; const wind = gust ? this.gustDir * this.gustPow : 0;
     /* drift in px/s: a meander while walking, almost nothing standing; a gust adds ~55 px/s standing and ~250 px/s walking */
@@ -192,11 +193,11 @@ export class Pinnacle extends Micro {
   private summit() {
     this.phase = 'summit'; this.summitT = 0; const sc = this.scoreNow(); this.walking = false; this.ctx.athlete.pose(2); this.ctx.athlete.sprite.setAngle(0); this.ctx.frame.setProgress('SUMMIT');
     const t = this.label(W / 2, 150, 'SUMMIT', 22, PAL.white); this.ctx.scene.tweens.add({ targets: t, scale: { from: 1.6, to: 1 }, duration: 260, ease: 'Back.Out' });
-    this.after(500, () => { if (sc >= 0.9) { this.flag = true; this.ctx.frame.shake(90, 0.003); this.pop(W / 2, 184, 'FLAG PLANTED', PAL.sun2); } else this.pop(W / 2, 184, 'no flag today', PAL.gray2); });
+    this.after(500, () => { if (sc >= 0.9) { this.flag = true; Audio.playSfx('flag'); this.ctx.frame.shake(90, 0.003); this.pop(W / 2, 184, 'FLAG PLANTED', PAL.sun2); } else this.pop(W / 2, 184, 'no flag today', PAL.gray2); });
     this.draw(0); this.after(1900, () => this.finish(sc));
   }
   private fall() {
-    this.phase = 'fall'; const s = this.ctx.scene; const spr = this.ctx.athlete.sprite; this.ctx.frame.shake(200, 0.008); this.ctx.frame.setProgress('FALL');
+    this.phase = 'fall'; Audio.playSfx('whoosh'); const s = this.ctx.scene; const spr = this.ctx.athlete.sprite; this.ctx.frame.shake(200, 0.008); this.ctx.frame.setProgress('FALL');
     s.tweens.add({ targets: spr, y: spr.y + 200, x: spr.x + this.x * 0.8, angle: this.x > 0 ? 160 : -160, alpha: 0, duration: 650, ease: 'Quad.In' });
     this.pop(W / 2, 200, 'INTO THE FOG', PAL.red);
     this.after(720, () => { spr.setAlpha(1); this.finish(Math.min(0.45, this.scoreNow() * 0.4)); });

@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { buildIcons } from '../art/icons';
+import { Audio } from '../audio/synth';
 import STRINGS from '../data/strings.json';
 import { PAL, txt, rect, GAME_W, GAME_H } from '../ui/theme';
 import { Button } from '../ui/Button';
@@ -28,8 +30,9 @@ export class TitleScene extends Phaser.Scene {
     if (saved && saved.phase !== 'ended') { new Button(this, 180, y, `CONTINUE  ·  day ${saved.day}`, () => this.resume(saved), { w: 240, fill: PAL.dusk1 }); y += 56; }
     new Button(this, 180, y, 'NEW RUN', () => this.newRun(!!saved), { w: 240, fill: PAL.sea1 }); y += 56;
     if (saved) { if (this.scene.get('Passport')) { new Button(this, 180, y, 'PASSPORT', () => { this.registry.set('run', saved); this.scene.start('Passport', { back: 'Title' }); }, { w: 240 }); y += 56; } }
-    const mute = new Button(this, 40, 600, settings.muted ? '🔇' : '🔊', () => { settings.muted = !settings.muted; putSettings(this, settings); mute.setLabel(settings.muted ? '🔇' : '🔊'); this.sound.mute = settings.muted; }, { w: 48, h: 44, fill: PAL.night2 });
-    this.sound.mute = settings.muted;
+    buildIcons(this); const spk = this.add.image(40, 600, Audio.muted ? 'ico_sound_off' : 'ico_sound_on').setScale(3).setDepth(5).setInteractive({ useHandCursor: true });
+    spk.on('pointerup', () => { Audio.init(); const m = Audio.toggleMuted(); settings.muted = m; putSettings(this, settings); spk.setTexture(m ? 'ico_sound_off' : 'ico_sound_on'); this.sound.mute = m; if (!m) Audio.playSfx('tap'); });
+    this.sound.mute = Audio.muted; Audio.playLoop('title');
     txt(this, 180, 604, STRINGS.ui.basedOn, 8, PAL.gray1, { align: 'center' }).setOrigin(0.5);
     txt(this, 180, 620, settings.runs ? `Runs ${settings.runs} · Best ${settings.bestScore}` : STRINGS.ui.production, 8, PAL.gray0).setOrigin(0.5);
   }

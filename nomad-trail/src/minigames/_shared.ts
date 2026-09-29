@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { Audio } from '../audio/synth';
 import { PAL, hex } from '../core/palette';
 import { GAME_W, GAME_H, type MinigameLaunch, type MinigameResult } from '../core/types';
 
@@ -106,7 +107,7 @@ export class MinigameFrame {
     const s = this.scene; const add = (o: Phaser.GameObjects.GameObject) => { this.introObjs.push(o); return o; };
     let starting = false;
     const start = () => {
-      if (this.active || this.finished || starting) return; starting = true;
+      if (this.active || this.finished || starting) return; starting = true; Audio.playSfx('confirm'); Audio.playLoop('action');
       this.introObjs.forEach(o => o.destroy()); this.introObjs = [];
       /* the READY tap must not leak into play: wait for the finger to lift, then a short beat, before the game goes live */
       const begin = () => s.time.delayedCall(200, () => {
@@ -142,7 +143,7 @@ export class MinigameFrame {
     if (this.launch.cancellable !== false) {
       const back = add(s.add.rectangle(56, top + ph - 44, 64, 40, PAL.night3).setDepth(902).setStrokeStyle(1, PAL.ink).setInteractive({ useHandCursor: true })) as Phaser.GameObjects.Rectangle;
       add(txt(s, 56, top + ph - 44, 'BACK', 10, PAL.gray2).setDepth(903));
-      back.on('pointerup', () => { if (this.active || this.finished) return; this.finished = true; this.readyHandler = undefined; this.introObjs.forEach(o => o.destroy()); this.introObjs = []; try { this.launch.onDone({ score: 0, perfect: false, failed: false, cancelled: true }); } finally { s.scene.stop(); } });
+      back.on('pointerup', () => { if (this.active || this.finished) return; Audio.playSfx('back'); this.finished = true; this.readyHandler = undefined; this.introObjs.forEach(o => o.destroy()); this.introObjs = []; try { this.launch.onDone({ score: 0, perfect: false, failed: false, cancelled: true }); } finally { s.scene.stop(); } });
     }
     const btn = add(s.add.rectangle(W / 2, top + ph - 44, 180, 48, PAL.sun0).setDepth(902).setStrokeStyle(2, PAL.ink).setInteractive({ useHandCursor: true })) as Phaser.GameObjects.Rectangle;
     add(txt(s, W / 2, top + ph - 44, 'READY', 18, PAL.white).setDepth(903));
@@ -243,7 +244,8 @@ export class MinigameFrame {
     const s = this.scene;
     s.cameras.main.setRotation(0).setZoom(1);
     if (perfect) this.shake(150, 0.003);
-    const result: MinigameResult = { score, perfect, failed, ...(this.resultExtra ?? {}) };   /* e.g. the casino's net money */
+    const result: MinigameResult = { score, perfect, failed, ...(this.resultExtra ?? {}) };
+    Audio.playSfx(perfect ? 'perfect' : failed ? 'fail' : 'win');   /* e.g. the casino's net money */
     let lines: string[] = []; try { lines = this.launch.preview?.(result) ?? []; } catch { lines = []; }   // what the run gets out of this: +5 health, a day passes ...
     this.resultCard(label, color, [`SCORE ${score}`, ...lines.slice(0, 2)], () => { try { this.launch.onDone(result); } finally { s.scene.stop(); } }, opts);
   }

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { Audio } from '../audio/synth';
 import type { City } from '../core/types';
 import { PAL, txt, rect } from '../ui/theme';
 import { Button } from '../ui/Button';
@@ -11,6 +12,7 @@ export class EndScene extends Phaser.Scene {
   static KEY = 'End';
   constructor() { super(EndScene.KEY); }
   async create() {
+    { const k = getRun(this)?.ending?.kind; Audio.playStinger(k === 'win' ? 'winSting' : 'loseSting', 'title'); }
     const run = getRun(this); const end = run.ending ?? Sim.checkEnding(run) ?? { kind: 'quit' as const, text: 'You closed the tab. Fair.', score: Sim.score(run) };
     if (!run.ending) { run.ending = end; run.phase = 'ended'; putRun(this, run); }
     const settings = getSettings(this); const recorded = (run as any).__recorded;

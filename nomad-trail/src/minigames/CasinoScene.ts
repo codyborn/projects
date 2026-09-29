@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { Audio } from '../audio/synth';
 import { PAL } from '../core/palette';
 import { MINIGAME_KEYS, type MinigameLaunch } from '../core/types';
 import { makeRng, hash32, type Rng } from '../core/sim/rng';
@@ -133,15 +134,15 @@ export class CasinoScene extends Phaser.Scene {
     const idx = spinWheel(this.rng); const n = WHEEL[idx]; const step = (Math.PI * 2) / WHEEL.length;
     const cx = 100, cy = 176, R = 70; const turns = 3; const target = -(idx + 0.5) * step;   // wheel rotates so pocket idx ends at angle 0 (3 o'clock); ball settles there
     const a0 = this.wheelA; const ballTurns = 5; const b0 = this.ballA;
-    this.tweens.addCounter({ from: 0, to: 1, duration: 2200, ease: 'Cubic.Out', onUpdate: tw => { const t = tw.getValue() ?? 0; this.wheelA = a0 + t * (turns * Math.PI * 2 + ((target - a0) % (Math.PI * 2))); this.ballA = b0 - t * ballTurns * Math.PI * 2 * 1.0 + t * ((0 - b0) % (Math.PI * 2)); if (t > 0.98) this.ballA = 0; this.drawWheel(cx, cy, R); },
+    this.tweens.addCounter({ from: 0, to: 1, duration: 2200, ease: 'Cubic.Out', onUpdate: tw => { const t = tw.getValue() ?? 0; if (t < 0.92) Audio.playSfx('wheel', 70 + t * 260); this.wheelA = a0 + t * (turns * Math.PI * 2 + ((target - a0) % (Math.PI * 2))); this.ballA = b0 - t * ballTurns * Math.PI * 2 * 1.0 + t * ((0 - b0) % (Math.PI * 2)); if (t > 0.98) this.ballA = 0; this.drawWheel(cx, cy, R); },
       onComplete: () => { this.wheelA = target; this.ballA = 0; this.drawWheel(cx, cy, R); this.settleRoulette(n, staked); } });
     this.setMsg('No more bets.');
   }
   private settleRoulette(n: number, staked: number) {
     const net = rouletteNet(this.bets, n); const back = net + staked; this.bank += back; this.history.push(n); this.lastLbl?.setText('last: ' + this.history.slice(-8).join('  '));
     const c = pocketColor(n); const name = `${n} ${c.toUpperCase()}`;
-    if (net > 0) { this.setMsg(`${name}. You win $${net}.`, PAL.neon); this.frame.flash(PAL.sun2, 60); }
-    else if (net === 0) this.setMsg(`${name}. Push.`); else { this.setMsg(`${name}. The house takes $${-net}.`, PAL.pink); this.frame.shake(120, 0.004); }
+    if (net > 0) { Audio.playSfx(net >= 500 ? 'jackpot' : 'cash'); this.setMsg(`${name}. You win $${net}.`, PAL.neon); this.frame.flash(PAL.sun2, 60); }
+    else if (net === 0) this.setMsg(`${name}. Push.`); else { Audio.playSfx('cancel'); this.setMsg(`${name}. The house takes $${-net}.`, PAL.pink); this.frame.shake(120, 0.004); }
     this.bets = []; this.refreshBets(); this.endRound();
   }
 
@@ -181,7 +182,7 @@ export class CasinoScene extends Phaser.Scene {
   }
   private settleSlots(syms: [Symbol, Symbol, Symbol]) {
     const back = slotReturn(syms); this.bank += back; const net = back - PULL_COST;
-    if (back > PULL_COST) { this.setMsg(`${syms.map(s => s.toUpperCase()).join(' · ')}  ·  +$${net}`, PAL.neon); this.frame.flash(PAL.sun2, 60); this.frame.shake(100, 0.003); }
+    if (back > PULL_COST) { Audio.playSfx(back >= PULL_COST * 15 ? 'jackpot' : 'cash'); this.setMsg(`${syms.map(s => s.toUpperCase()).join(' · ')}  ·  +$${net}`, PAL.neon); this.frame.flash(PAL.sun2, 60); this.frame.shake(100, 0.003); }
     else if (back === PULL_COST) this.setMsg('Two cherries. Stake back.'); else this.setMsg(`${syms.map(s => s.toUpperCase()).join(' · ')}. Nothing.`, PAL.gray1);
     this.endRound();
   }

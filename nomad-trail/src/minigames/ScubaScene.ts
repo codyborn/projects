@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { Audio } from '../audio/synth';
 import { PAL } from '../core/palette';
 import { MINIGAME_KEYS, type MinigameLaunch } from '../core/types';
 import { MinigameFrame, W, H, clamp, normalizeLaunch, panel, txt } from './_shared';
@@ -107,7 +108,7 @@ export class ScubaScene extends Phaser.Scene {
   private fire() {
     if (!this.frame.active || this.ended || this.spear || this.cooldown > 0) return;
     this.updateAim(); const { x: sx, y: sy } = this.gunTip();
-    this.spear = { x: sx, y: sy, ux: this.aimX, uy: this.aimY, gone: 0, sx, sy }; this.cooldown = 0.4;
+    this.spear = { x: sx, y: sy, ux: this.aimX, uy: this.aimY, gone: 0, sx, sy }; this.cooldown = 0.4; Audio.playSfx('spear');
     this.bubbles.push({ x: sx, y: sy, r: 2, vy: 30, wob: this.rand() * 6 });
   }
   /** Harness: where things are (world coordinates). */
@@ -166,10 +167,10 @@ export class ScubaScene extends Phaser.Scene {
     this.touches++; this.invuln = 1.4;
     const ux = (this.dx - L.x) / Math.max(1, dd), uy = (this.dy - L.y) / Math.max(1, dd); this.dvx = ux * 190; this.dvy = uy * 190; this.held = false;
     L.vx = -ux * 40; L.vy = -uy * 40; L.flare = 1; L.calm = 4;
-    this.frame.flash(PAL.red, 120); this.frame.shake(160, 0.008); this.say('SPINES!  -15', PAL.red); this.spark(this.dx, this.dy, PAL.red, 10);
+    Audio.playSfx('hurt'); this.frame.flash(PAL.red, 120); this.frame.shake(160, 0.008); this.say('SPINES!  -15', PAL.red); this.spark(this.dx, this.dy, PAL.red, 10);
   }
   private spearFish(L: Lion) {
-    L.alive = false; L.dead = true; L.hiding = false; L.sprite.setDepth(5).setTexture('sc_lion_dead'); this.speared++;
+    L.alive = false; L.dead = true; L.hiding = false; L.sprite.setDepth(5).setTexture('sc_lion_dead'); this.speared++; Audio.playSfx('coin');
     this.frame.setProgress(`${this.speared}/${this.total} lionfish`); this.say(this.speared === this.total ? 'LAST ONE' : 'SPEARED', PAL.neon); this.spark(L.x, L.y, PAL.neon, 8);
   }
   private spark(x: number, y: number, c: number, n: number) { for (let i = 0; i < n; i++) { const a = this.rand() * 6.3, v = 40 + this.rand() * 60; this.sparks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: 0.3 + this.rand() * 0.3, c }); } }

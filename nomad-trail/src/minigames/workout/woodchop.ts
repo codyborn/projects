@@ -5,6 +5,7 @@
    speeds up every round and after round 4 the period jitters so it cannot be pure rhythm. Split halves stack into a woodpile at the
    side. Score = clean × 100/8 + glancing × 40/8. */
 import Phaser from 'phaser';
+import { Audio } from '../../audio/synth';
 import { PAL } from '../../core/palette';
 import { W, clamp, txt } from '../_shared';
 import { Micro } from './micro';
@@ -50,11 +51,11 @@ export class WoodChop extends Micro {
   private onChop() {
     if (this.phase !== 'swing') return; const a = Math.abs(this.angle); this.phase = 'anim'; this.stuckAngle = this.angle;
     this.ctx.athlete.pose(1);
-    if (a <= CLEAN) { this.clean++; this.crack = false; this.burst(); this.ctx.frame.shake(110, 0.006); this.say('SPLIT!', PAL.neon);
+    if (a <= CLEAN) { this.clean++; this.crack = false; this.burst(); Audio.playSfx('thunk'); this.ctx.frame.shake(110, 0.006); this.say('SPLIT!', PAL.neon);
       this.halves.push({ x: CX - 12, y: BLOCK_Y - 22, vx: -70 - this.ctx.rng() * 40, vy: -120, rot: 0 }, { x: CX + 12, y: BLOCK_Y - 22, vx: 70 + this.ctx.rng() * 40, vy: -120, rot: 0 });
       this.after(520, () => this.nextRound(true)); }
-    else if (a <= GLANCE) { this.glancing++; this.crack = true; this.ctx.frame.shake(70, 0.003); this.say('GLANCING', PAL.sun2); this.after(560, () => this.nextRound(false)); }
-    else { this.misses++; this.crack = false; this.wobble = 1; this.ctx.frame.shake(60, 0.002); this.say('MISS', PAL.red); this.after(600 + 300, () => this.nextRound(false)); }
+    else if (a <= GLANCE) { this.glancing++; this.crack = true; Audio.playSfx('crack'); this.ctx.frame.shake(70, 0.003); this.say('GLANCING', PAL.sun2); this.after(560, () => this.nextRound(false)); }
+    else { this.misses++; this.crack = false; this.wobble = 1; Audio.playSfx('cancel'); this.ctx.frame.shake(60, 0.002); this.say('MISS', PAL.red); this.after(600 + 300, () => this.nextRound(false)); }
     this.ctx.frame.setProgress(`${this.round + 1}/${ROUNDS}`);
   }
   private nextRound(split: boolean) {

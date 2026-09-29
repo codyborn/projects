@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { Audio } from '../../audio/synth';
 // Gesture micro-games: swipes, chains, rhythm, pose matching.
 import { PAL } from '../../core/palette';
 import { W, clamp, pixTexture } from '../_shared';
@@ -12,7 +13,7 @@ export class Curls extends Micro {
   protected begin() {
     const cx = W / 2; this.ctx.athlete.at(cx, 330).pose(0).show(true); this.ttl = (1.25 * this.ctx.window + 0.45) / this.ctx.speed;
     const spawn = () => { this.side = this.ctx.rng() < 0.5 ? -1 : 1; this.life = this.ttl; };
-    const resolve = (ok: boolean) => { if (ok) { this.hits++; this.pop(cx + this.side * 90, 250, 'CURL'); this.ctx.athlete.pose(2); } else { this.misses++; this.pop(cx, 250, 'MISS', PAL.red); this.ctx.frame.shake(100, 0.004); }
+    const resolve = (ok: boolean) => { Audio.playSfx(ok ? 'blip' : 'cancel', 60); if (ok) { this.hits++; this.pop(cx + this.side * 90, 250, 'CURL'); this.ctx.athlete.pose(2); } else { this.misses++; this.pop(cx, 250, 'MISS', PAL.red); this.ctx.frame.shake(100, 0.004); }
       this.side = 0; this.ttl *= 0.9; this.ctx.frame.setProgress(`${this.hits}/${this.need}`); if (this.hits + this.misses >= this.need) this.after(300, () => this.finish(this.scoreNow())); else this.after(280, () => { this.ctx.athlete.pose(0); spawn(); }); };
     this.onSwipe((dir, p) => { if (this.side === 0 || dir !== 'up') return; const s = p.x < W / 2 ? -1 : 1; resolve(s === this.side); });
     this.key('keydown-LEFT', () => { if (this.side) resolve(this.side === -1); }); this.key('keydown-RIGHT', () => { if (this.side) resolve(this.side === 1); });
@@ -42,7 +43,7 @@ export class Burpee extends Micro {
   private cue() { const cur = this.chain[this.i]; const poses: Record<string, 0 | 1 | 2 | 3> = { down: 1, hold: 3, up: 2 }; if (cur) { this.ctx.athlete.pose(poses[cur]); const rep = this.hint().rep; this.ctx.frame.setHint(cur === 'down' ? `${rep}/5 DROP: swipe DOWN` : cur === 'hold' ? `${rep}/5 PLANK: hold 0.6 s` : `${rep}/5 JUMP: swipe UP`); } }
   private step(ok: boolean) {
     const cx = W / 2;
-    if (ok) { this.hits++; this.pop(cx, 250, 'YES'); this.ctx.athlete.bump(); } else { this.pop(cx, 250, 'NOPE', PAL.red); this.ctx.frame.shake(100, 0.004); }
+    Audio.playSfx(ok ? 'blip' : 'cancel', 60); if (ok) { this.hits++; this.pop(cx, 250, 'YES'); this.ctx.athlete.bump(); } else { this.pop(cx, 250, 'NOPE', PAL.red); this.ctx.frame.shake(100, 0.004); }
     this.i++; this.consumed = true; this.life = this.ttl; this.holdT = 0; this.ctx.frame.setProgress(`${this.hits}/15 clean`);
     if (this.i >= this.chain.length) this.after(300, () => this.finish(this.scoreNow())); else this.cue();
   }

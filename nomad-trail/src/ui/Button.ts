@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { Audio } from '../audio/synth';
 import { PAL, txt, type Label, type Size } from './theme';
 export interface ButtonOpts { w?: number; h?: number; fill?: number; fillDown?: number; textColor?: number; size?: Size; disabled?: boolean; icon?: string; iconKey?: string; }   /* iconKey: a registered pixel texture drawn left of the label */
 /** Pixel bevel button, min 44px tall, squash tween on press. */
@@ -15,7 +16,7 @@ export class Button extends Phaser.GameObjects.Container {
     // rectangle must start at (0, 0) to cover the whole button. A centered rect only covers the top-left quarter.
     this.setInteractive(new Phaser.Geom.Rectangle(0, 0, this.opts.w, this.opts.h), Phaser.Geom.Rectangle.Contains);
     this.on('pointerdown', () => { if (this._disabled) return; this.draw(true); scene.tweens.add({ targets: this, scaleX: 0.96, scaleY: 0.92, duration: 60, yoyo: true }); });
-    this.on('pointerup', () => { if (this._disabled) return; this.draw(false); onTap(); });
+    this.on('pointerup', () => { if (this._disabled) return; this.draw(false); Audio.playSfx('tap', 40); onTap(); });
     this.on('pointerout', () => this.draw(false));
     if (o.disabled) this.setDisabled(true);
     scene.add.existing(this);

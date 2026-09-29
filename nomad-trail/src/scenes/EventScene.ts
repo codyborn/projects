@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { Audio } from '../audio/synth';
 import type { Effects, GameEvent } from '../core/types';
 import { PAL, txt, hex } from '../ui/theme';
 import { Button } from '../ui/Button';
@@ -12,6 +13,7 @@ export class EventScene extends Phaser.Scene {
   static KEY = 'Event';
   constructor() { super(EventScene.KEY); }
   create(data: { eventId: string; onDone: () => void }) {
+    Audio.playSfx('page'); Audio.duck(true); this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => Audio.duck(false));
     this.scene.bringToTop();
     // The otter is petted before it is described: run the tank scene first, then the aftermath card.
     if (data.eventId === 'otter' && !(data as any).__petted && this.scene.get('Otter')) {

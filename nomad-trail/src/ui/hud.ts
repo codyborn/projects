@@ -3,6 +3,8 @@ import type { RunState, Item } from '../core/types';
 import { PAL, txt, type Label, MONTHS, SAFE_TOP } from './theme';
 import { Bar } from './Bar';
 import { Sim, Data } from './simBridge';
+import { Audio } from '../audio/synth';
+import { buildIcons } from '../art/icons';
 /** Top HUD strip used by CityScene and RouteScene. Call refresh(state) after each change. */
 export class Hud extends Phaser.GameObjects.Container {
   private day: Label; private money: Label; private bars: Record<'health' | 'energy' | 'mood', Bar>; private clothes: Label; private weight: Label; private badges: Label;
@@ -13,7 +15,10 @@ export class Hud extends Phaser.GameObjects.Container {
     this.money = txt(scene, 352, 5, '', 10, PAL.neon).setOrigin(1, 0); this.add(this.money as any);
     this.bars = { health: new Bar(scene, 8, 24, 'HEALTH', 104), energy: new Bar(scene, 128, 24, 'ENERGY', 104), mood: new Bar(scene, 248, 24, 'MOOD', 104) };
     Object.values(this.bars).forEach(b => this.add(b));
-    this.clothes = txt(scene, 352, 48, '', 8, PAL.gray2).setOrigin(1, 0); this.add(this.clothes as any);
+    this.clothes = txt(scene, 330, 48, '', 8, PAL.gray2).setOrigin(1, 0); this.add(this.clothes as any);
+    /* sound toggle, bottom-right of the strip; the whole game mutes through Audio */
+    buildIcons(scene); const spk = scene.add.image(345, 52, Audio.muted ? 'ico_sound_off' : 'ico_sound_on').setScale(2).setInteractive({ useHandCursor: true }); this.add(spk);
+    spk.on('pointerup', () => { const m = Audio.toggleMuted(); spk.setTexture(m ? 'ico_sound_off' : 'ico_sound_on'); if (!m) Audio.playSfx('tap'); });
     this.weight = txt(scene, 8, 48, '', 8, PAL.gray2); this.add(this.weight as any);
     this.badges = txt(scene, 180, 48, '', 8, PAL.sun1).setOrigin(0.5, 0); this.add(this.badges as any);
     this.setDepth(50); scene.add.existing(this);

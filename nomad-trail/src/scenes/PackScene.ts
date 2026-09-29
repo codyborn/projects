@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { Audio } from '../audio/synth';
 import { itemIcon } from '../art/sprites';
 import type { Item, PackedItem } from '../core/types';
 import { PAL, txt, rect, type Label, clamp } from '../ui/theme';
@@ -177,7 +178,8 @@ export class PackScene extends Phaser.Scene {
   /** Tap-to-pack: first-fit (unrotated, then rotated), tile flies from the card into its slot. */
   private packFromCard(it: Item, fromX: number, fromY: number) {
     const slot = this.firstFit(it);
-    if (!slot) { this.cameras.main.shake(90, 0.005); toast(this, 'No room. Take something out.', PAL.red, 1100); return; }
+    if (!slot) { Audio.playSfx('cancel'); this.cameras.main.shake(90, 0.005); toast(this, 'No room. Take something out.', PAL.red, 1100); return; }
+    Audio.playSfx('lock');
     const p = this.place(it, slot.x, slot.y, slot.rot, false); const tx = p.obj.x, ty = p.obj.y;
     p.obj.setPosition(fromX - (p.obj.width || CELL) / 2, fromY); p.obj.setScale(0.5); p.obj.setDepth(150); this.animating = true;
     this.tweens.add({ targets: p.obj, x: tx, y: ty, scaleX: 1, scaleY: 1, duration: 260, ease: 'Cubic.Out', onComplete: () => { p.obj.setDepth(0); this.animating = false; this.cameras.main.shake(40, 0.003); } });
@@ -230,7 +232,7 @@ export class PackScene extends Phaser.Scene {
     return p;
   }
   private unpack(p: Placed) {
-    const it = Data.item(p.id)!; this.mark(p, false); this.placed = this.placed.filter(x => x !== p);
+    const it = Data.item(p.id)!; this.mark(p, false); this.placed = this.placed.filter(x => x !== p); Audio.playSfx('pop');
     this.tweens.add({ targets: p.obj, y: TRAY_Y + 40, alpha: 0, scaleX: 0.6, scaleY: 0.6, duration: 220, ease: 'Quad.In', onComplete: () => p.obj.destroy() });
     this.setCat(groupOf(it)); this.renderTray(); this.refreshWeights(); toast(this, `${it.name} back on the floor`, PAL.gray2, 700);
   }

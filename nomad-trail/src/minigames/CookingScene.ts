@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { Audio } from '../audio/synth';
 import { PAL } from '../core/palette';
 import { MINIGAME_KEYS, type Dish, type DishStep, type MinigameLaunch } from '../core/types';
 import { MinigameFrame, Meter, W, H, clamp, normalizeLaunch, panel, txt } from './_shared';
@@ -96,7 +97,7 @@ export class CookingScene extends Phaser.Scene {
   private endStep(acc: number) {
     this.cleanup.forEach(f => f()); this.cleanup = []; this.stepTimer?.remove(); this.work.clear();
     const dbg = (this.launch.payload as any)?.debugAccuracy; if (typeof dbg === 'number') acc = dbg;   // harness only
-    acc = clamp(acc, 0, 1); this.accuracies.push(acc);
+    acc = clamp(acc, 0, 1); this.accuracies.push(acc); Audio.playSfx(acc < 0.5 ? 'cancel' : acc > 0.85 ? 'coin' : 'confirm');
     const g = this.add.graphics().setDepth(6); g.fillStyle(acc > 0.85 ? PAL.neon : acc > 0.5 ? PAL.sun2 : PAL.red).fillCircle(W / 2, 330, 4);
     txt(this, W / 2, 360, acc > 0.85 ? 'great' : acc > 0.5 ? 'ok' : 'sloppy', 11, acc > 0.85 ? PAL.neon : acc > 0.5 ? PAL.sun2 : PAL.red).setDepth(6).setName('fb');
     if (acc < 0.5) this.frame.shake();
@@ -175,7 +176,7 @@ export class CookingScene extends Phaser.Scene {
     } });
     const rhythm = () => { if (tapTimes.length < 3) return 1; const gaps = tapTimes.slice(1).map((t, i) => t - tapTimes[i]); const m = gaps.reduce((a, b) => a + b, 0) / gaps.length; const sd = Math.sqrt(gaps.reduce((a, g) => a + (g - m) ** 2, 0) / gaps.length); return clamp(1 - Math.max(0, sd / Math.max(1, m) - 0.06) * 1.5, 0, 1); };   // 6% jitter is free, then evenness falls off
     const acc = () => (cuts / need) * (0.7 + 0.3 * rhythm());
-    const handler = () => { if (cuts >= need) return; tapTimes.push(this.time.now); hops[cuts] = 1; cuts++; drop = 1; this.frame.flash(PAL.white, 20); if (cuts >= need) this.time.delayedCall(250, () => this.endStep(acc())); };
+    const handler = () => { if (cuts >= need) return; tapTimes.push(this.time.now); hops[cuts] = 1; cuts++; drop = 1; this.frame.flash(PAL.white, 20); Audio.playSfx('chop', 40); if (cuts >= need) this.time.delayedCall(250, () => this.endStep(acc())); };
     this.frame.onTap(handler);
     (this as any).cook = { kind: 'chop', hint: () => ({ cuts, need, nextX: cutX(Math.min(cuts, need - 1)) }), tap: handler };
     this.stepTimer = this.time.delayedCall(need * 700 / this.frame.speed + 1500, () => this.endStep(acc()));
@@ -206,7 +207,7 @@ export class CookingScene extends Phaser.Scene {
     };
     const finishStroke = () => {
       if (travel < STROKE) return; travel = 0; const lx = lineX(); if (Math.abs(fx - lx) > COUNT_TOL) return;                                                   // knife off the ingredient line: no cut
-      strokes++; this.frame.flash(PAL.white, 15);
+      strokes++; this.frame.flash(PAL.white, 15); Audio.playSfx('chop', 60);
       if (strokes >= 3) {
         const meanDev = devN ? devSum / devN : 0; const a = clamp(1 - Math.max(0, meanDev - 4) / 28, 0, 1); accs.push(a);
         const pts = cur.length >= 2 ? cur : [{ y: y0, dx: 0 }, { y: y1, dx: 0 }]; pts.sort((p, q) => p.y - q.y);
@@ -255,7 +256,7 @@ export class CookingScene extends Phaser.Scene {
       this.work.fillStyle(PAL.neon, 0.25).fillRect(W / 2 - 60, 490 - 120 - 14, 120, 28);
       (this.work as any).ph = ph;
     } });
-    const h = () => { tries++; const ph = (this.work as any).ph as number; if (ph > 1 - win) { hits++; this.frame.flash(PAL.neon, 40); this.meter.set(hits / need); } else this.frame.shake(60, 0.002); if (hits >= need) this.endStep(hits / tries); };
+    const h = () => { tries++; const ph = (this.work as any).ph as number; if (ph > 1 - win) { hits++; this.frame.flash(PAL.neon, 40); Audio.playSfx('blip', 40); this.meter.set(hits / need); } else this.frame.shake(60, 0.002); if (hits >= need) this.endStep(hits / tries); };
     this.frame.onTap(h);
     this.stepTimer = this.time.delayedCall(need * 1700 + 1500, () => this.endStep(hits / Math.max(tries, need) * 0.8));
     this.cleanup.push(() => { tick.remove(); this.removeTap(h); });
@@ -347,7 +348,7 @@ export class CookingScene extends Phaser.Scene {
       const x = 60 + prog * (W - 120); this.work.fillStyle(PAL.earth3).fillRect(60, 455, Math.max(0, x - 60), 26); this.work.fillStyle(PAL.ink).fillCircle(x, 466, 22); this.work.fillStyle(PAL.white).fillCircle(x, 466, 17); this.work.fillStyle(PAL.red).fillCircle(x, 466, 6); for (let i = 0; i < rolls; i++) this.work.fillStyle(PAL.neon).fillRect(40 + i * 14, 500, 10, 4); this.meter.set(rolls / need); };
     draw();
     const down = (p: Phaser.Input.Pointer) => { downX = p.x; }; const move = (p: Phaser.Input.Pointer) => { if (!p.isDown || downX < 0) return; prog = clamp((p.x - downX) / 160, 0, 1); draw(); };
-    const up = (p: Phaser.Input.Pointer) => { if (!this.frame.active || downX < 0) return; if (p.x - downX > 60) { rolls++; this.frame.flash(PAL.neon, 30); } prog = 0; downX = -1; draw(); if (rolls >= need) this.endStep(1); };
+    const up = (p: Phaser.Input.Pointer) => { if (!this.frame.active || downX < 0) return; if (p.x - downX > 60) { rolls++; this.frame.flash(PAL.neon, 30); Audio.playSfx('knead', 60); } prog = 0; downX = -1; draw(); if (rolls >= need) this.endStep(1); };
     this.input.on('pointerdown', down); this.input.on('pointermove', move); this.input.on('pointerup', up); const kb = this.input.keyboard; const key = () => { rolls++; draw(); if (rolls >= need) this.endStep(1); }; kb?.on('keydown-RIGHT', key);
     this.stepTimer = this.time.delayedCall(need * 1300 / this.frame.speed + 1500, () => this.endStep(rolls / need));
     this.cleanup.push(() => { this.input.off('pointerdown', down); this.input.off('pointermove', move); this.input.off('pointerup', up); kb?.off('keydown-RIGHT', key); });
@@ -378,7 +379,7 @@ export class CookingScene extends Phaser.Scene {
       if (jolt > 0.2) { this.work.fillStyle(PAL.white, jolt); this.work.fillRect(cx - 40, cy - 30, 8, 3).fillRect(cx + 32, cy - 30, 8, 3).fillRect(cx - 44, cy + 10, 8, 3).fillRect(cx + 36, cy + 10, 8, 3); }   // motion lines
       if (mode === 'shake') { this.work.fillStyle(PAL.neon, 0.9); for (let k = 0; k < 3; k++) this.work.fillRect(cx - 70 - k * 8, cy - 4 + k * 3, 4, 8 - k * 2).fillRect(cx + 66 + k * 8, cy - 4 + k * 3, 4, 8 - k * 2); }
       this.meter.set(count / need); } });
-    const shake = (dir: number) => { if (!this.frame.active || count >= need) return; count++; last = dir; tilt = dir; jolt = 1; this.frame.flash(PAL.sky2, 25); if (count >= need) this.endStep(1); };
+    const shake = (dir: number) => { if (!this.frame.active || count >= need) return; count++; last = dir; tilt = dir; jolt = 1; this.frame.flash(PAL.sky2, 25); Audio.playSfx('whoosh', 80); if (count >= need) this.endStep(1); };
     const swing = (dir: number) => { if (mode === 'shake') return; if (dir !== last) shake(dir); else this.frame.shake(50, 0.002); };
     this.motion.onShake = dir => { if (mode !== 'swipe') shake(dir); };
     let downX = 0; const down = (p: Phaser.Input.Pointer) => { downX = p.x; }; const up = (p: Phaser.Input.Pointer) => { const dx = p.x - downX; swing(Math.abs(dx) > 20 ? (dx < 0 ? -1 : 1) : (p.x < W / 2 ? -1 : 1)); };
@@ -397,7 +398,7 @@ export class CookingScene extends Phaser.Scene {
     draw();
     const near = (q: { x: number; y: number }, p: Phaser.Input.Pointer) => Math.hypot(p.x - q.x, p.y - q.y) < R;
     const down = (p: Phaser.Input.Pointer) => { if (near(pts[0], p)) { tracing = true; wp = 1; draw(p.x, p.y); } };
-    const move = (p: Phaser.Input.Pointer) => { if (!tracing || !p.isDown) return; if (wp < pts.length && near(pts[wp], p)) { wp++; this.frame.flash(PAL.neon, 20); } draw(p.x, p.y); if (wp >= pts.length) { tracing = false; folds++; wp = 0; draw(); if (folds >= need) this.endStep(1); } };
+    const move = (p: Phaser.Input.Pointer) => { if (!tracing || !p.isDown) return; if (wp < pts.length && near(pts[wp], p)) { wp++; this.frame.flash(PAL.neon, 20); Audio.playSfx('blip', 60); } draw(p.x, p.y); if (wp >= pts.length) { tracing = false; folds++; wp = 0; draw(); if (folds >= need) this.endStep(1); } };
     const up = () => { if (tracing) { tracing = false; wp = 0; this.frame.shake(50, 0.002); draw(); } };
     this.input.on('pointerdown', down); this.input.on('pointermove', move); this.input.on('pointerup', up); const kb = this.input.keyboard; const key = () => { folds++; draw(); if (folds >= need) this.endStep(1); }; kb?.on('keydown-DOWN', key);
     this.stepTimer = this.time.delayedCall(need * 2200 / this.frame.speed + 1500, () => this.endStep(folds / need));

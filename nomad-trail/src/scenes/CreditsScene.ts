@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { Audio } from '../audio/synth';
 import { PAL, txt } from '../ui/theme';
 import { getRun, Data } from '../ui/simBridge';
 import creditsJson from '../data/credits.json';
@@ -15,7 +16,7 @@ export class CreditsScene extends Phaser.Scene {
   constructor() { super(CreditsScene.KEY); }
   init(d?: { next?: string; back?: string; onClose?: () => void }) { this.nextKey = d?.next ?? d?.back; this.onClose = d?.onClose; this.done = false; }
   create() {
-    this.cameras.main.setBackgroundColor(PAL.night0);
+    this.cameras.main.setBackgroundColor(PAL.night0); Audio.playLoop('title');
     const run = getRun(this);
     const fired = run?.eventsFired ?? [];
     /* fall back to the log titles for saves made before eventsFired existed */
