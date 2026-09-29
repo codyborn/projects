@@ -165,7 +165,9 @@ export class MinigameFrame {
     this.hudProg = txt(s, W - 8, 13, '', 10, PAL.neon, 'right').setDepth(801);
   }
   setProgress(t: string) { this.hudProg?.setText(t); }
-  setTimer(t: string) { this.hudTimer?.setText(t); }
+  setTimer(t: string) { this.hudTimer?.setText(t).setFontSize(10); }
+  /** A one-line control hint in the HUD strip's centre slot for the whole game (hold-type micros): smaller so it clears the progress text. */
+  setHint(t: string) { this.hudTimer?.setText(t).setFontSize(8); }
   shake(ms = 120, intensity = 0.004) { this.scene.cameras.main.shake(ms, intensity); }
   flash(color: number = PAL.red, ms = 80) { this.scene.cameras.main.flash(ms, (color >> 16) & 255, (color >> 8) & 255, color & 255); }
 
@@ -209,7 +211,7 @@ export class MinigameFrame {
     s.tweens.add({ targets: l, scale: { from: 1.6, to: 1 }, duration: 250, ease: 'Back.Out' }); s.tweens.add({ targets: btn, scaleX: 1.03, scaleY: 1.06, yoyo: true, repeat: -1, duration: 700 });
     opts.keep?.forEach(o => (o as any).setDepth?.(954));
     let fired = false; const go = () => { if (fired) return; fired = true; this.continueHandler = undefined; kb?.off('keydown-SPACE', go); kb?.off('keydown-ENTER', go); onContinue(); };
-    btn.on('pointerdown', go); const kb = s.input.keyboard; s.time.delayedCall(150, () => { if (!fired) { kb?.once('keydown-SPACE', go); kb?.once('keydown-ENTER', go); } });   // ignore the key that ended the game
+    btn.on('pointerup', go); const kb = s.input.keyboard; s.time.delayedCall(150, () => { if (!fired) { kb?.once('keydown-SPACE', go); kb?.once('keydown-ENTER', go); } });   /* pointerup: the finger has already lifted when the scene below appears */   // ignore the key that ended the game
     this.continueHandler = go; return objs;
   }
   private continueHandler?: () => void;

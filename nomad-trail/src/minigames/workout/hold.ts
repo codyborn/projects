@@ -10,7 +10,7 @@ export class Plank extends Micro {
   readonly id = 'plank'; readonly word = META.plank.word; readonly instr = META.plank.instr; readonly durationSec = META.plank.durationSec;
   private holding = false; private px = 0; private m = 0; private v = 0; private inBand = 0; private total = 0; private meter = 1;
   protected begin() {
-    const cx = W / 2, cy = 380; const band = 0.16 * this.ctx.window + 0.06;
+    const cx = W / 2, cy = 380; const band = 0.16 * this.ctx.window + 0.06; this.ctx.frame.setHint('HOLD · drag left/right');
     const map = { o: PAL.earth3, h: PAL.earth0, s: PAL.sun0, p: PAL.night3, k: PAL.ink };
     const key = pixTexture(this.ctx.scene, 'ath_plank_top', [
       '.oo......oo.', '.oo......oo.', '.ss.hhhh.ss.', '.ss.hhhhhhss.'.slice(0, 12), '.sshhhhhhss.', '.sshhhhhhss.', '.ss.hhhh.ss.', '.sssssssss..', '..ssssssss..', '..ssssssss..', '..ssssssss..', '..ssssssss..', '..ssssssss..',
@@ -39,7 +39,7 @@ export class Squat extends Micro {
   readonly id = 'squat'; readonly word = META.squat.word; readonly instr = META.squat.instr; readonly durationSec = META.squat.durationSec;
   private depth = 0; private holding = false; private reps = 0; private need = 4; private scores: number[] = []; private bandW = 0.22;
   protected begin() {
-    const cx = W / 2; this.ctx.athlete.at(cx, 330).pose(0).show(true); this.bandW = 0.2 * this.ctx.window + 0.08; const bandC = 0.7;
+    const cx = W / 2; this.ctx.athlete.at(cx, 330).pose(0).show(true); this.bandW = 0.2 * this.ctx.window + 0.08; const bandC = 0.7; this.ctx.frame.setHint('HOLD · let go in the green');
     const release = () => { if (!this.holding) return; this.holding = false; const err = Math.abs(this.depth - bandC); const ok = err < this.bandW / 2; this.scores.push(ok ? clamp(1 - err / (this.bandW / 2), 0.5, 1) : 0);
       this.pop(cx, 220, ok ? (err < this.bandW / 6 ? 'DEEP' : 'GOOD') : this.depth < bandC ? 'SHALLOW' : 'TOO DEEP', ok ? PAL.neon : PAL.red); this.reps++; this.bandW *= 0.8; this.ctx.frame.setProgress(`${this.scores.filter(s => s > 0).length}/${this.need}`);
       if (this.reps >= this.need) this.after(400, () => this.finish(this.scoreNow())); };
@@ -55,15 +55,28 @@ export class Squat extends Micro {
 export class Stretch extends Micro {
   readonly id = 'stretch'; readonly word = META.stretch.word; readonly instr = META.stretch.instr; readonly durationSec = META.stretch.durationSec;
   private pos = 0; private last = 0; private jerks = 0; private passes = 0; private need = 2; private dir = 1; private speed = 0; private holding = false;
+  /** harness: where the slider is and which way the pass goes */
+  hint() { return { pos: this.pos, dir: this.dir, passes: this.passes, jerks: this.jerks, holding: this.holding }; }
+  press(x: number) { this.holding = true; this.last = x; }
+  release() { this.holding = false; }
+  move(x: number) {
+    if (!this.holding) return; const dx = x - this.last; this.last = x; this.speed = Math.abs(dx) / 0.016;
+    if (this.speed > this.limit) { this.jerks++; this.pop(W / 2, 200, 'TOO FAST', PAL.red); this.ctx.frame.shake(100, 0.004); this.pos = clamp(this.pos - this.dir * 0.3, 0, 1); return; }   // a jerk costs 30% of the pass, not the whole slider
+    this.pos = clamp(this.pos + dx / (W - 80), 0, 1);
+    if ((this.dir > 0 && this.pos >= 1) || (this.dir < 0 && this.pos <= 0)) { this.passes++; this.dir *= -1; this.pop(W / 2, 200, 'AHH'); this.ctx.frame.setProgress(`${this.passes}/${this.need}`); if (this.passes >= this.need) this.after(300, () => this.finish(this.scoreNow())); }
+  }
+  private limit = 160;
   protected begin() {
-    const y = 250; this.ctx.athlete.at(W / 2, 380).pose(3).show(true); const limit = 160 * (0.6 + 0.4 * this.ctx.window) * (1 / this.ctx.speed);
-    this.on('pointerdown', (p: any) => { this.holding = true; this.last = p.x; }); this.on('pointerup', () => { this.holding = false; });
-    this.on('pointermove', (p: any) => { if (!this.holding) return; const dx = p.x - this.last; this.last = p.x; this.speed = Math.abs(dx) / 0.016; if (Math.abs(dx) / 0.016 > limit) { this.jerks++; this.pop(W / 2, 200, 'TOO FAST', PAL.red); this.ctx.frame.shake(100, 0.004); this.pos = this.dir > 0 ? 0 : 1; return; }
-      this.pos = clamp(this.pos + dx / (W - 80), 0, 1); if ((this.dir > 0 && this.pos >= 1) || (this.dir < 0 && this.pos <= 0)) { this.passes++; this.dir *= -1; this.pop(W / 2, 200, 'AHH'); this.ctx.frame.setProgress(`${this.passes}/${this.need}`); if (this.passes >= this.need) this.after(300, () => this.finish(this.scoreNow())); } });
+    const y = 250; this.ctx.athlete.at(W / 2, 380).pose(3).show(true); this.limit = 160 * (0.6 + 0.4 * this.ctx.window) * (1 / this.ctx.speed); this.ctx.frame.setHint('DRAG slowly · lifting pauses');
+    this.on('pointerdown', (p: any) => this.press(p.x)); this.on('pointerup', () => this.release()); this.on('pointermove', (p: any) => this.move(p.x));
     this.key('keydown-RIGHT', () => { this.pos = clamp(this.pos + 0.08, 0, 1); }); this.key('keydown-LEFT', () => { this.pos = clamp(this.pos - 0.08, 0, 1); });
-    this.loop(dt => { this.speed *= 0.8; void dt; this.g.clear(); this.backdrop(430, 450); const x0 = 40, w = W - 80; this.g.fillStyle(PAL.ink).fillRect(x0, y, w, 12); this.g.fillStyle(PAL.sea2).fillRect(x0, y, this.pos * w, 12); this.g.fillStyle(PAL.white).fillRect(x0 + this.pos * w - 5, y - 6, 10, 24);
+    this.loop(dt => { this.speed *= 0.8;
+      // lifting the finger does NOT reset the stretch: the slider slips back toward the start of this pass at 25%/s until you press again
+      if (!this.holding && this.passes < this.need) { const start = this.dir > 0 ? 0 : 1; this.pos = start + (this.pos - start) * Math.max(0, 1 - 0.25 * dt); }
+      this.g.clear(); this.backdrop(430, 450); const x0 = 40, w = W - 80; this.g.fillStyle(PAL.ink).fillRect(x0, y, w, 12); this.g.fillStyle(this.holding ? PAL.sea2 : PAL.sea1).fillRect(x0, y, this.pos * w, 12); this.g.fillStyle(PAL.white).fillRect(x0 + this.pos * w - 5, y - 6, 10, 24);
       this.g.fillStyle(PAL.gray2).fillTriangle(this.dir > 0 ? W - 30 : 30, y + 6, this.dir > 0 ? W - 44 : 44, y - 2, this.dir > 0 ? W - 44 : 44, y + 14);
-      const f = clamp(this.speed / limit, 0, 1); this.g.fillStyle(PAL.ink).fillRect(x0, 300, w, 8); this.g.fillStyle(f > 0.85 ? PAL.red : f > 0.6 ? PAL.sun1 : PAL.neon).fillRect(x0, 300, w * f, 8); this.ctx.athlete.sprite.scaleX = 1 + this.pos * 0.25; });
+      const f = clamp(this.speed / this.limit, 0, 1); this.g.fillStyle(PAL.ink).fillRect(x0, 300, w, 8); this.g.fillStyle(f > 0.85 ? PAL.red : f > 0.6 ? PAL.sun1 : PAL.neon).fillRect(x0, 300, w * f, 8); this.ctx.athlete.sprite.scaleX = 1 + this.pos * 0.25;
+      if (!this.holding) this.ctx.frame.setProgress(`${this.passes}/${this.need} · paused`); else this.ctx.frame.setProgress(`${this.passes}/${this.need}`); });
   }
   protected scoreNow() { return clamp(this.passes / this.need - this.jerks * 0.25, 0, 1); }
   destroy() { this.ctx.athlete.sprite.scaleX = 1; super.destroy(); }
@@ -74,6 +87,7 @@ export class BalanceBoard extends Micro {
   readonly id = 'balance'; readonly word = META.balance.word; readonly instr = META.balance.instr; readonly durationSec = META.balance.durationSec;
   private x = 0; private v = 0; private gust = 0; private gustT = 0; private nextG = 0.6; private off = 0; private total = 0; private hL = false; private hR = false;
   protected begin() {
+    this.ctx.frame.setHint('HOLD left/right vs gusts');
     const cx = W / 2, cy = 330; this.ctx.athlete.at(cx, cy - 30).pose(0).show(true);
     this.on('pointerdown', (p: any) => { this.hL = p.x < W / 2; this.hR = !this.hL; }); this.on('pointermove', (p: any) => { if (p.isDown) { this.hL = p.x < W / 2; this.hR = !this.hL; } }); this.on('pointerup', () => { this.hL = this.hR = false; });
     this.key('keydown-LEFT', () => { this.hL = true; }); this.key('keyup-LEFT', () => { this.hL = false; }); this.key('keydown-RIGHT', () => { this.hR = true; }); this.key('keyup-RIGHT', () => { this.hR = false; });

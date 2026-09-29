@@ -44,12 +44,20 @@ export function playRun(seed: number, style: PackStyle, opts: { start?: string; 
     if (s.phase === 'route') {
       const legs = Sim.availableLegs(s); if (!legs.length) { s.phase = 'ended'; s.ending = { kind: 'quit', text: 'dead end', score: 0 }; break; }
       const home = legs.find(l => l.home);
-      const pick = home && (smart || rng.chance(0.7)) ? home : (smart ? smartLeg(legs.filter(l => !l.home), s) ?? legs[0] : weightedLeg(legs, s, rng));
+      /* the corridor: after a few cities on this continent a player moves to the next one when a leg offers it */
+      const hereCont = Sim.CITY[s.cityId].region; const contOf = (r: string) => ({ northamerica: 'NA', mexico: 'NA', southamerica: 'SA', europe: 'EU', alps: 'EU', africa: 'AF', asia: 'AS', himalaya: 'AS' } as Record<string, string>)[r];
+      const onThisCont = s.visited.filter(id => contOf(Sim.CITY[id]?.region ?? '') === contOf(hereCont)).length;
+      const stepLegs = legs.filter(l => !l.home && contOf(l.city.region) !== contOf(hereCont));
+      const wantStep = onThisCont >= (smart ? 3 : 4) && stepLegs.length && (smart || rng.chance(0.8));
+      const pool = wantStep ? stepLegs : legs;
+      const pick = home && (smart || rng.chance(0.7)) ? home : (smart ? smartLeg(pool.filter(l => !l.home), s) ?? pool[0] : weightedLeg(pool, s, rng));
       const r = Sim.travelTo(s, pick.to); r.events.forEach(e => (events[e.id] = (events[e.id] ?? 0) + 1)); s = r.state; continue;
     }
     if (s.phase === 'city') {
       const city = Sim.CITY[s.cityId];
-      const target = Math.max(city.minStay, city.suggestedStay + rng.int(-3, 3));
+      /* a player watches the days-left counter: with continents still to cross, stays shrink toward the minimum as the year runs down */
+      const contsLeft = Math.max(0, 4 - Sim.continentsVisited(s).length); const daysLeft = 365 - s.day; const pace = contsLeft > 0 ? daysLeft / (contsLeft * 4 + 4) : Math.max(4, daysLeft / 4);   /* about 5 cities per continent at the start, then head home */
+      const target = Math.max(city.minStay, Math.min(city.suggestedStay + rng.int(-3, 3), Math.round(pace)));
       let action: CityAction;
       if (s.stayDays >= target) action = smart && s.stayDays === Math.ceil(target) && !Sim.hasFlag(s, 'roomchecked') && !Sim.hasTag(s, 'organizer') ? 'checkroom' : 'moveon';
       else if (s.cleanClothes <= (smart ? 1 : 0)) action = 'laundry';

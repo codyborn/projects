@@ -48,7 +48,7 @@ if (q.get('auto') === '1') {
     ...(['bands', 'boulder', 'ferrata', 'trailrun', 'hike', 'swim', 'yoga', 'surf', 'ski', 'bogus'] as const).map(a => ({ key: MINIGAME_KEYS.workout, energy: a === 'hike' ? 30 : 100, payload: { activity: a, city: 'Test', day: 7 } })),
     { key: MINIGAME_KEYS.workout, energy: 100, payload: { activity: 'trailrun', city: 'newyork', day: 5 } }, { key: MINIGAME_KEYS.workout, energy: 100, extraLives: 1, payload: { activity: 'bands', city: 'newyork', plan: ['cityrun'] } }, { key: MINIGAME_KEYS.workout, energy: 40, payload: { activity: 'bands', city: 'tokyo', plan: ['cityrun'] } },
     ...[0.95, 0.7, 0.4, 0.1].map(debugAccuracy => ({ key: MINIGAME_KEYS.cooking, energy: 100, payload: { dish: (dishesJson as any[]).find(d => d.id === 'ramen'), cityName: 'tokyo', debugAccuracy } })),
-    ...['pushup', 'plank', 'jumprope', 'curls', 'burpee', 'squat', 'sprint', 'stretch', 'boulderbeta', 'dyno', 'riverstones', 'swimbreath', 'balance', 'pose', 'runner', 'pace', 'cityrun'].map(id => ({ key: MINIGAME_KEYS.workout, energy: 100, payload: { activity: 'bands', city: 'Solo', plan: [id] } })),
+    ...['pushup', 'plank', 'jumprope', 'curls', 'burpee', 'squat', 'sprint', 'stretch', 'boulderbeta', 'dyno', 'riverstones', 'swimbreath', 'balance', 'pose', 'runner', 'cityrun'].map(id => ({ key: MINIGAME_KEYS.workout, energy: 100, payload: { activity: 'bands', city: 'Solo', plan: [id] } })),
     ...(['bands', 'boulder', 'ferrata', 'trailrun', 'hike', 'swim', 'yoga'] as const).map(a => ({ key: MINIGAME_KEYS.workout, energy: 100, extraLives: 1, payload: { activity: a, city: 'Boots', day: 3 } })),
     { key: MINIGAME_KEYS.carryon, energy: 100, payload: { game: 'tetris', city: 'lisbon', cityName: 'Lisbon', seed: 11 } }, ...([['laventana', 'hot', 'gust'], ['tokyo', 'temperate', 'otter'], ['innsbruck', 'alpine', 'rock'], ['dakhla', 'hot', 'gust'], ['iguazu', 'hot', 'mosquito'], ['reykjavik', 'cold', 'ice']] as const).map(([id, climate, hazard], i) => ({ key: MINIGAME_KEYS.drone, energy: i % 2 ? 40 : 100, payload: { city: { id, name: id, climate, hazard }, cityName: id, seed: 20 + i, level: 1 + (i % 3) } })),
     ...[1, 2, 3].map(seed => ({ key: MINIGAME_KEYS.carryon, energy: 100, payload: { game: 'carryon', city: 'innsbruck', cityName: 'Innsbruck', hazard: (['rock', 'otter', 'snow'] as const)[seed - 1], seed, climate: 'alpine' } })),
@@ -207,22 +207,25 @@ if (q.get('auto') === '1') {
     if (q.get('fast') === '1') { game.loop.stop(); let t = performance.now(); setInterval(() => { for (let k = 0; k < 6; k++) { t += 16.67; drive(); game.loop.step(t); } }, 0); } else setInterval(drive, 16);
   });
 } else if (q.get('cityrun')) {
-  // city run checks: 'safe' = scripted lane-dodge through hint()/act() (sidestep blockers, jump low, duck signs); 'random' = random arrow keys
-  // through the Pad's keyboard path; 'none' = no input at all (reports when the first hit landed). All press READY and CONTINUE.
+  // city run (Frogger) checks: 'safe' = scripted crossing through hint()/act() that only hops into a lane clear for the hop; 'random' = random
+  // arrow keys through the Pad; 'none' = no input (the crossing clock takes the 3 lives). All press READY and CONTINUE.
   MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
   game.events.once('ready', () => {
-    const mode = q.get('cityrun')!; const t0 = performance.now(); let calls = 0; let firstHitAt: number | undefined; let lastCur: any;
-    const launch: MinigameLaunch = { energy: 100, difficulty: 0.5, payload: { activity: 'trailrun', city: 'newyork', day: 5, plan: ['cityrun'] }, onDone: (res) => { calls++; out.textContent = JSON.stringify({ mode, res, secs: (performance.now() - t0) / 1000, hits: lastCur?.hits, dodged: lastCur?.dodged, ranSecs: lastCur?.t, firstHitAt, calls, errors }); document.title = 'CITYRUN_DONE'; } };
+    const mode = q.get('cityrun')!; const t0 = performance.now(); let calls = 0; let lastCur: any; let firstLossAt: number | undefined; let lostLives = 0;
+    const launch: MinigameLaunch = { energy: 100, difficulty: 0.5, payload: { activity: 'trailrun', city: q.get('city') || 'newyork', day: Number(q.get('day') || 5), plan: ['cityrun'] }, onDone: (res) => { calls++; out.textContent = JSON.stringify({ mode, res, secs: (performance.now() - t0) / 1000, lives: lastCur?.lives, crossings: lastCur?.crossings, lostLives, firstLossAt, ranSecs: lastCur?.t, calls, errors }); document.title = 'CITYRUN_DONE'; } };
     game.scene.start(MINIGAME_KEYS.workout, launch); const scene: any = game.scene.getScene(MINIGAME_KEYS.workout);
     const key = (kc: number) => { window.dispatchEvent(new KeyboardEvent('keydown', { keyCode: kc, which: kc } as any)); setTimeout(() => window.dispatchEvent(new KeyboardEvent('keyup', { keyCode: kc, which: kc } as any)), 30); };
     const drive = () => { if (!scene.scene.isActive()) return; if (!scene.frame?.active) { scene.frame?.ready?.(); return; } const cur = scene.current; if (!cur || cur.id !== 'cityrun') return; lastCur = cur;
-      if (cur.hits > 0 && firstHitAt === undefined) firstHitAt = cur.t;
+      if (3 - cur.lives > lostLives) { lostLives = 3 - cur.lives; if (firstLossAt === undefined) firstLossAt = cur.t; }
       if (mode === 'random') { if (Math.random() < 0.12) key([37, 38, 39, 40][Math.floor(Math.random() * 4)]); return; }
       if (mode !== 'safe') return;
-      const h = cur.hint(); const mine = h.obs.filter((o: any) => o.col === h.col && o.dy > -10 && o.dy < 170).sort((a: any, b: any) => a.dy - b.dy)[0]; if (!mine) return;
-      const clear = (c: number) => c >= 0 && c < 5 && !h.obs.some((o: any) => o.col === c && o.dy > -30 && o.dy < 240) && !h.warns.some((w: any) => w.col === c);
-      if (mine.low) { if (mine.dy < 60 && !h.jumping) cur.act('up'); } else if (mine.high) { if (mine.dy < 60 && !h.ducking) cur.act('down'); }
-      else if (mine.dy < 150) { if (clear(h.col - 1)) cur.act('left'); else if (clear(h.col + 1)) cur.act('right'); else if (mine.dy < 60) cur.act(h.col > 0 ? 'left' : 'right'); } };
+      const h = cur.hint(); if (h.hopping) return; const x = 20 + h.col * 40;
+      const laneClear = (row: number, col: number, secs: number) => { const L = h.lanes.find((l: any) => l.row === row); if (!L) return true; const px = 20 + col * 40; const v = L.speed * L.dir;
+        return L.cars.every((c: any) => { const a0 = c.x, a1 = c.x + c.w, b0 = c.x + v * secs, b1 = c.x + c.w + v * secs; const lo = Math.min(a0, b0) - 14, hi = Math.max(a1, b1) + 14; return hi < px || lo > px; }); };
+      if (laneClear(h.row - 1, h.col, 0.55)) { cur.act('up'); return; }                       // the tile above stays clear for the hop and a beat after: go
+      if (!laneClear(h.row, h.col, 0.35)) {                                                     // something is about to hit us here: sidestep or drop back
+        if (h.col > 0 && laneClear(h.row, h.col - 1, 0.55)) cur.act('left'); else if (h.col < 8 && laneClear(h.row, h.col + 1, 0.55)) cur.act('right'); else if (laneClear(h.row + 1, h.col, 0.55)) cur.act('down'); }
+      void x; };
     if (q.get('fast') === '1') { game.loop.stop(); let t = performance.now(); setInterval(() => { for (let k = 0; k < 6; k++) { t += 16.67; drive(); game.loop.step(t); } }, 0); } else setInterval(drive, 16);
   });
 } else if (q.get('yoga')) {

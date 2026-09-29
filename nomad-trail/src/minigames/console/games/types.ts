@@ -5,7 +5,7 @@ import type { Pad } from '../input';
 
 export type ConsoleGameId = 'carryon' | 'tetris';
 
-export interface ConsoleResult { score: number; perfect?: boolean; failed?: boolean; }
+export interface ConsoleResult { score: number; perfect?: boolean; failed?: boolean; /** one short line under the score on the result card (e.g. the tidiness bonus) */ detail?: string; }
 
 export interface ConsoleCtx {
   scene: Phaser.Scene;

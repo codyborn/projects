@@ -73,7 +73,7 @@ export class WorkoutScene extends Phaser.Scene {
     const begin = () => {
       if (this.frame.finished) return; this.current = micro; this.athlete.show(true).pose(0); this.athlete.sprite.setDepth(4).setPosition(W / 2, 330);
       const flash = txt(this, W / 2, H / 2, 'GO', 30, PAL.neon).setDepth(750); this.tweens.add({ targets: flash, alpha: 0, scale: 1.8, duration: 260, onComplete: () => flash.destroy() });
-      const ctx: MicroCtx = { scene: this, frame: this.frame, speed: 1, window: this.frame.window, hard: this.frame.hard, rng: this.rng, athlete: this.athlete };
+      const ctx: MicroCtx = { scene: this, frame: this.frame, speed: 1, window: this.frame.window, hard: this.frame.hard, rng: this.rng, athlete: this.athlete, city: this.city };
       const dur = micro.durationSec * 1000; const t0 = this.time.now;
       this.countdown = this.add.graphics().setDepth(802);
       const tick = this.time.addEvent({ delay: 50, loop: true, callback: () => { const f = clamp(1 - (this.time.now - t0) / dur, 0, 1); this.countdown!.clear(); this.countdown!.fillStyle(PAL.ink).fillRect(0, 26, W, 6); this.countdown!.fillStyle(f > 0.3 ? PAL.neon : PAL.red).fillRect(0, 26, W * f, 6); } });

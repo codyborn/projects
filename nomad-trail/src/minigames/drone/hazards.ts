@@ -24,7 +24,7 @@ export function makeHazard(kind: HazardKind, wx: number, groundY: number, rng: (
     case 'toucan': h.y = 90 + rng() * 240; h.a = 30 + rng() * 40; break;                      // sine amplitude
     case 'steam': h.y = 80 + rng() * 280; break;
     case 'dust': h.y = groundY; h.a = 70 + rng() * 50 + 10 * level; break;                      // column height
-    case 'kiteline': h.y = groundY; h.a = 60 + rng() * 90; break;                              // kite altitude (screen y = a)
+    case 'kiteline': h.y = groundY; h.a = 300 + rng() * 80; break;                             // kite canopy at screen y 300..380: low over the beach, the drone climbs over it
     case 'crane': h.y = groundY; h.a = 90 + rng() * 60; h.b = rng() < 0.5 ? -1 : 1; break;      // top y, arm side
     case 'laundry': h.y = groundY; h.a = 24 + rng() * 22; break;                               // line height above roof
     case 'cliff': h.y = groundY; h.a = 90 + rng() * 70 + 10 * level; break;                     // column height

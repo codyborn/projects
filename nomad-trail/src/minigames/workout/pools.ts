@@ -16,9 +16,8 @@ export const META: Record<string, MicroMeta> = {
   swimbreath:  { name: 'Swim Breathing', word: 'STROKE!',  instr: "Tap LEFT, RIGHT, LEFT... When the bubble appears, DON'T tap: breathe.", durationSec: 8 },
   balance:     { name: 'Balance Board', word: 'STEADY!',   instr: 'Hold LEFT or RIGHT to lean against the gusts. Stay centred.', durationSec: 7 },
   pose:        { name: 'Yoga',          word: 'YOGA!',     instr: 'Scroll the wheel on the right to the pose the shadow shows: Downward Dog, Cobra, Warrior II or Plank. Hold it half a second.', durationSec: 8 },
-  cityrun:     { name: 'City Run',      word: 'DODGE!',    instr: 'Five lanes. D-PAD LEFT / RIGHT to change lane, UP to jump bags and cones, DOWN to duck under signs. Swipes work too. A blinking ! shows where the next hazard comes from.', durationSec: 25 },
+  cityrun:     { name: 'City Run',      word: 'HOP!',      instr: 'Frogger. D-PAD to hop one square: cross the traffic, rest on the median, reach the coffee shop. 3 lives, 3 coffees; each crossing is faster. Swipes work too.', durationSec: 28 },
   runner:      { name: 'Trail Run',     word: 'RUN!',      instr: 'TAP to jump the rocks. Press and HOLD to duck under the branches; let go and you jump.', durationSec: 8 },
-  pace:        { name: 'Pace',          word: 'PACE!',     instr: 'Hold to walk. Keep the marker in the green band. Too fast and you get dizzy.', durationSec: 8 },
   woodchop:    { name: 'Wood Chop',     word: 'CHOP!',     instr: 'The axe swings left and right over the block. SWIPE DOWN (or tap) when it points straight down, inside the green zone, to split the round clean. Eight rounds; it gets faster.', durationSec: 22 },
   pinnacle:    { name: 'The In Pinn',   word: 'STEADY!',   instr: 'HOLD anywhere to walk. TILT the phone left / right to balance (or tap the halves). When the fog streaks and the arrow appear: STOP. Wind while walking is almost impossible to balance. Reach the end of the ridge. Or fall.', durationSec: 3600 },
 };
@@ -27,7 +26,7 @@ export const POOLS: Partial<Record<ActivityId, string[]>> = {
   bands: ['pushup', 'plank', 'jumprope', 'curls', 'burpee', 'squat', 'sprint', 'stretch'],   // hotel room: the eight
   boulder: ['boulderbeta', 'dyno'],
   trailrun: ['runner', 'riverstones'],
-  hike: ['sprint', 'stretch', 'riverstones', 'pace', 'balance'],
+  hike: ['sprint', 'stretch', 'riverstones', 'balance'],
   swim: ['swimbreath'],
   yoga: ['balance', 'pose'], surf: ['balance', 'pose'], ski: ['balance', 'pose'],
 };

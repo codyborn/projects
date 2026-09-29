@@ -1,4 +1,4 @@
-// Shortened versions of the original trail-run and hike pace games as 8-second micro-games.
+// The trail-run micro-game (the hike pace meter was removed in round 10).
 import { PAL } from '../../core/palette';
 import { W, clamp } from '../_shared';
 import { Micro } from './micro';
@@ -41,20 +41,4 @@ export class Runner extends Micro {
       this.ctx.frame.setProgress(`${this.cleared} clear · ${this.hits} hit`); if (this.t >= this.durationSec) this.finish(this.scoreNow()); });
   }
   protected scoreNow() { return clamp((this.cleared - this.hits) / Math.max(4, this.cleared + this.hits), 0, 1); }
-}
-
-/** PACE: hold to walk uphill; keep the pace marker in the green. Too fast = dizzy. 8 s. */
-export class Pace extends Micro {
-  readonly id = 'pace'; readonly word = META.pace.word; readonly instr = META.pace.instr; readonly durationSec = META.pace.durationSec;
-  private pace = 0; private holding = false; private inBand = 0; private total = 0; private dizzy = 0; private dizzyEvents = 0;
-  protected begin() {
-    const band: [number, number] = [0.42 - 0.08 * (1 - this.ctx.window), 0.66 + 0.06 * this.ctx.window]; this.ctx.athlete.at(W / 2, 400).pose(0).show(true);
-    this.onHold(() => { this.holding = true; }, () => { this.holding = false; });
-    this.loop(dt => { this.pace = clamp(this.pace + (this.holding ? 0.9 * this.ctx.speed : -0.7) * dt * (1 + 0.4 * this.ctx.hard), 0, 1); this.total += dt; const ok = this.pace >= band[0] && this.pace <= band[1]; if (ok) this.inBand += dt; if (this.pace > band[1]) this.dizzy += dt; else this.dizzy = Math.max(0, this.dizzy - dt * 2);
-      if (this.dizzy > 1) { this.dizzyEvents++; this.dizzy = 0; this.pace = 0.1; this.ctx.frame.shake(250, 0.008); this.pop(W / 2, 200, 'DIZZY', PAL.red); }
-      this.g.clear(); this.g.fillStyle(PAL.sky2).fillRect(0, 26, W, 614); for (let i = 0; i < 6; i++) { const y = 560 - ((i * 90 + this.total * 45 * this.pace * 10) % 540); this.g.fillStyle(i % 2 ? PAL.earth2 : PAL.earth1).fillRect(0, y, W, 4); } this.g.fillStyle(PAL.white).fillTriangle(W / 2 - 90, 220, W / 2, 90, W / 2 + 90, 220);
-      const x0 = 40, w = W - 80; this.g.fillStyle(PAL.ink).fillRect(x0, 500, w, 12); this.g.fillStyle(PAL.grass1, 0.6).fillRect(x0 + band[0] * w, 500, (band[1] - band[0]) * w, 12); this.g.fillStyle(ok ? PAL.neon : this.pace > band[1] ? PAL.red : PAL.sun2).fillRect(x0 + this.pace * w - 3, 494, 6, 24);
-      this.ctx.athlete.sprite.y = 400 + Math.sin(this.total * (4 + this.pace * 8)) * 2 * this.pace; this.ctx.frame.setProgress(ok ? 'GOOD PACE' : this.pace > band[1] ? 'TOO FAST' : 'WALK'); if (this.total >= this.durationSec) this.finish(this.scoreNow()); });
-  }
-  protected scoreNow() { return clamp(this.inBand / (this.durationSec * 0.7) - this.dizzyEvents * 0.3, 0, 1); }
 }

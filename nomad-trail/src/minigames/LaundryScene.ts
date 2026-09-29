@@ -18,7 +18,7 @@ export class LaundryScene extends Phaser.Scene {
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { this.downX = p.x; });
     this.input.on('pointerup', (p: Phaser.Input.Pointer) => { const dx = p.x - this.downX; if (Math.abs(dx) > 25) this.fling(dx < 0 ? -1 : 1); else this.fling(p.x < W / 2 ? -1 : 1); });
     this.input.keyboard?.on('keydown-LEFT', () => this.fling(-1)); this.input.keyboard?.on('keydown-RIGHT', () => this.fling(1));
-    this.dur = this.launch.payload?.kit ? 13 : 20; this.frame.capSec = this.dur + 2; this.frame.scoreNow = () => { const base = this.total > 1 ? (this.right / (this.total - 1)) * 100 : 0; return this.pinkTint ? Math.min(base, 60) : base; };
+    this.dur = this.launch.payload?.kit ? 7 : 10; this.frame.capSec = this.dur + 2;   // round 10: half the old 20 / 13 s, same socks per second this.frame.scoreNow = () => { const base = this.total > 1 ? (this.right / (this.total - 1)) * 100 : 0; return this.pinkTint ? Math.min(base, 60) : base; };
     this.frame.intro((this.launch.payload?.kit ? 'Sink wash with the laundry kit: a short sort, no day lost. ' : '') + 'Whites to the LEFT basket, colours to the RIGHT. Swipe or tap a side. Sort a sock wrong and the laundry comes back pink.', () => { this.tick = this.time.addEvent({ delay: 16, loop: true, callback: () => this.step(0.016) }); this.spawn(); });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.tick?.remove());
   }

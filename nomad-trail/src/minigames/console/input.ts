@@ -45,9 +45,10 @@ export class Pad {
     const L = this.layout; const keys = new Set<PadKey>();
     const dx = p.x - L.dpad.x, dy = p.y - L.dpad.y; const dd = Math.hypot(dx, dy);
     if (dd <= L.dpad.r) {
+      // 4-way: only the dominant axis registers, so a thumb resting low on the RIGHT arm never also soft-drops (Pack-Tris "drops on rotate" bug)
       const dead = 10;
-      if (Math.abs(dx) > dead && Math.abs(dx) >= Math.abs(dy) * 0.5) keys.add(dx < 0 ? 'left' : 'right');
-      if (Math.abs(dy) > dead && Math.abs(dy) >= Math.abs(dx) * 0.5) keys.add(dy < 0 ? 'up' : 'down');
+      if (Math.abs(dx) > dead && Math.abs(dx) >= Math.abs(dy)) keys.add(dx < 0 ? 'left' : 'right');
+      else if (Math.abs(dy) > dead) keys.add(dy < 0 ? 'up' : 'down');
     }
     if (Math.hypot(p.x - L.a.x, p.y - L.a.y) <= L.a.r) keys.add('a');
     if (Math.hypot(p.x - L.b.x, p.y - L.b.y) <= L.b.r) keys.add('b');

@@ -467,13 +467,6 @@
         "timezones": 17
       },
       {
-        "to": "tokyo",
-        "transport": "flight",
-        "days": 2,
-        "energy": 38,
-        "timezones": 17
-      },
-      {
         "to": "seoul",
         "transport": "flight",
         "days": 2,
@@ -3315,13 +3308,6 @@
         "days": 1,
         "energy": 8,
         "timezones": 0
-      },
-      {
-        "to": "lasvegas",
-        "transport": "flight",
-        "days": 2,
-        "energy": 38,
-        "timezones": 17
       }
     ],
     "blurb": "Three weeks of convenience stores, alleys, animal cafes and trains that apologize for being early.",

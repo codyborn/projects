@@ -46,7 +46,7 @@ export class CityScene extends Phaser.Scene {
     this.btns.forEach(b => b.setDepth(10));   /* above the vista (depth 1), which is rebuilt on day changes and would otherwise cover them */
     txt(this, 180, 620, '1 action = 1 day · work = puzzle, then Mon-Fri', 8, PAL.gray0).setOrigin(0.5).setDepth(5);
     this.refreshWorkBtn(run.day);
-    if (data.arrived) this.arrivalCard();
+    if (data.arrived) { this.arrivalCard(); (this.sys.settings.data as any).arrived = false; }   /* STAY / BACK restart the scene without data; do not welcome the player twice */
   }
   // ---- the vista cycles day → dusk → night → dawn as days pass, crossfading between skylines ----
   private sky?: any; private skyUpd?: (t: number, dt: number) => void;

@@ -13,6 +13,8 @@ export interface SimApi {
   dullKnives(state: RunState): boolean;
   hasItem(state: RunState, id: string): boolean;
   hasTag(state: RunState, tag: string): boolean;
+  /** where the route corridor goes after this continent (undefined before the first leg) */
+  nextContinent(state: RunState): string | undefined;
   /** result-card lines for a mini-game outcome ("+5 health · +7 mood", "a day passes") */
   previewMinigame(state: RunState, key: string, result: MinigameResult): string[];
   setPack(state: RunState, packed: PackedItem[]): { ok: boolean; errors: string[]; weights: { checked: number; backpack?: number } };
@@ -48,6 +50,7 @@ export const Sim: SimApi = {
   dullKnives: (state) => E.dullKnives(state),
   hasItem: (state, id) => E.hasItem(state, id),
   hasTag: (state, tag) => E.hasTag(state, tag as any),
+  nextContinent: (state) => E.nextContinent(state),
   previewMinigame: (state, key, result) => E.previewMinigame(state, key, result),
   setPack: (state, packed) => { const r = E.setPack(state, packed); if (r.ok && r.state) Object.assign(state, r.state); return { ok: r.ok, errors: r.errors, weights: r.weights }; },
   availableLegs: (state) => E.availableLegs(state),

@@ -8,6 +8,7 @@ export interface MicroCtx {
   /** speed multiplier for this micro-game (x1.0 → x1.3 → x1.6) */ speed: number;
   /** timing window scalar from the frame (1 generous .. 0.35 tight) */ window: number;
   hard: number; rng: () => number; athlete: Athlete;
+  /** city id, for city-flavoured games (a tram in Lisbon's City Run) */ city?: string;
 }
 export type MicroDone = (score01: number) => void;
 

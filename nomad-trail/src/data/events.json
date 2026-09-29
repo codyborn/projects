@@ -324,7 +324,7 @@
     "title": "The laundromat",
     "text": "The laundromat in {city} returns everything except one sock and your favourite t-shirt. Neither is ever seen again.",
     "when": "action",
-    "baseChance": 0.05,
+    "baseChance": 0,
     "effects": {
       "mood": -4
     }

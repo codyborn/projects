@@ -10,24 +10,24 @@
   "art": "pool"
  },
  {
-  "id": "ten-nodes",
-  "title": "Ten nodes",
-  "prompt": "Ten validator nodes are running on battery in the office. Before leaving you shut two of them down. Later a colleague shuts down one more. The rest run all night. In the morning, how many nodes still have battery?",
+  "id": "ten-laptops",
+  "title": "Ten laptops",
+  "prompt": "Ten laptops sit on the office table on battery, all running the test suite. Before leaving you close two of them. Later a colleague closes one more. The rest run all night. In the morning, how many laptops still have battery?",
   "kind": "number",
   "answer": 3,
-  "hint": "What happens to a node that runs on battery all night?",
-  "explain": "3. The seven that kept running drained flat. Only the three that were shut down still have charge.",
-  "art": "chain"
+  "hint": "What happens to a laptop that runs on battery all night?",
+  "explain": "3. The seven that kept running drained flat. Only the three that were closed still have charge.",
+  "art": "code"
  },
  {
-  "id": "pool-halves",
-  "title": "Splitting the pool work",
-  "prompt": "Two engineers must migrate 10 pools. They split the list in half and start at opposite ends. Ana migrates 1 pool an hour, Ben migrates 2. When both are done, what percent of the pools did Ana migrate?",
+  "id": "port-halves",
+  "title": "Splitting the port",
+  "prompt": "Two engineers must port 10 modules to the new framework. They split the list in half and start at opposite ends. Ana ports 1 module an hour, Ben ports 2. When both are done, what percent of the modules did Ana port?",
   "kind": "number",
   "answer": 50,
   "hint": "Who decided how many pools each person does? Read the second sentence.",
-  "explain": "50 percent. They split the list in half before starting. Speed never came into it; Ben just finished first.",
-  "art": "pool"
+  "explain": "50 percent. They split the list in half before starting. Speed never came into it; Ben just finished first and went for coffee.",
+  "art": "code"
  },
  {
   "id": "last-letter",
@@ -46,14 +46,14 @@
   "art": "whiteboard"
  },
  {
-  "id": "copies-of-a-tx",
-  "title": "The transaction that copied itself",
-  "prompt": "A bug makes one transaction copy itself every minute: 1, then 2, then 4, and so on. After 60 minutes the block is full. After how many minutes was the block half full?",
+  "id": "doubling-log",
+  "title": "The doubling log",
+  "prompt": "A bug makes one log line copy itself every minute: 1 line, then 2, then 4, and so on. After 60 minutes the disk is full. After how many minutes was the disk half full?",
   "kind": "number",
   "answer": 59,
   "hint": "It doubles every minute. Go backwards from full.",
-  "explain": "59. If it doubles each minute, half full is one minute before full. It looked fine for nearly an hour.",
-  "art": "chain"
+  "explain": "59. If it doubles each minute, half full is one minute before full. The disk looked fine for nearly an hour and then it did not.",
+  "art": "code"
  },
  {
   "id": "wallet-and-case",
@@ -82,7 +82,7 @@
   "art": "whiteboard"
  },
  {
-  "id": "block-doubles",
+  "id": "pool-half-itself",
   "title": "Half of itself",
   "prompt": "A trader asks how much ETH the pool holds. The answer: 'As much as your wallet, plus half of the pool itself.' Your wallet holds 22 ETH. How much ETH is in the pool?",
   "kind": "number",
@@ -92,9 +92,9 @@
   "art": "pool"
  },
  {
-  "id": "breaking-the-bar",
-  "title": "Breaking the token bar",
-  "prompt": "A UNI-branded chocolate bar is a sheet of 30 squares. Each break splits one piece into two along the lines. How many breaks to get 30 single squares?",
+  "id": "chocolate-bar",
+  "title": "Breaking the bar",
+  "prompt": "A chocolate bar from the corner shop is a sheet of 30 squares. Each break splits one piece in two along the lines. How many breaks to get 30 single squares?",
   "kind": "number",
   "answer": 29,
   "hint": "Every break adds exactly one piece. You start with 1 piece and want 30.",
@@ -180,13 +180,13 @@
   "art": "chain"
  },
  {
-  "id": "light-block",
-  "title": "The light block",
-  "prompt": "Eight blocks of data look identical, but one is missing a transaction and is lighter. A scale compares two groups at a time. What is the fewest weighings that always finds the light one?",
+  "id": "light-coin",
+  "title": "The light coin",
+  "prompt": "Eight commemorative UNI coins from the merch table look identical, but one is a fake and slightly lighter. A balance scale compares two groups at a time. What is the fewest weighings that always finds the fake?",
   "kind": "number",
   "answer": 2,
-  "hint": "Do not weigh 4 against 4. Leave some blocks off the scale.",
-  "explain": "2. Weigh 3 against 3. If they balance, weigh the two left over. If not, take the lighter three and weigh 1 against 1.",
+  "hint": "Do not weigh 4 against 4. Leave some coins off the scale.",
+  "explain": "2. Weigh 3 against 3. If they balance, weigh the two left over. If not, take the lighter three and weigh 1 against 1; the one left out is the fake if those balance.",
   "art": "chain"
  },
  {
@@ -206,9 +206,9 @@
   "art": "whiteboard"
  },
  {
-  "id": "wallet-in-hole",
+  "id": "ball-in-hole",
   "title": "Down the hole",
-  "prompt": "Your hardware wallet rolls into a deep, narrow hole in solid rock with a bend halfway down. Nothing can reach it. What gets it out?",
+  "prompt": "The foam unicorn from the merch table rolls into a deep, narrow hole in solid rock with a bend halfway down. Nothing can reach it. What gets it out?",
   "kind": "choice",
   "choices": [
    "Water",
@@ -217,8 +217,8 @@
    "A vacuum"
   ],
   "answer": 0,
-  "hint": "A small plastic thing in water does what?",
-  "explain": "Water. Fill the hole and the wallet floats up. Then buy a lanyard.",
+  "hint": "A light foam toy in water does what?",
+  "explain": "Water. Fill the hole and the foam unicorn floats up. Then keep it off the ledge.",
   "art": "whiteboard"
  },
  {
@@ -280,13 +280,13 @@
   "art": "whiteboard"
  },
  {
-  "id": "sinking-node",
-  "title": "The dying node",
-  "prompt": "The old node dies in exactly 20 minutes with 15 pools still on it. The migration job carries 5 pools per trip but one slot must always hold the operator, who rides back for the next batch. A one-way trip takes 4 minutes. How many pools can you save?",
+  "id": "dying-server",
+  "title": "The dying server",
+  "prompt": "The old server dies in exactly 20 minutes with 15 services still on it. The migration job carries 5 at a time, but one slot must always hold the operator, who rides back for the next batch. A one-way trip takes 4 minutes. How many services can you save?",
   "kind": "number",
   "answer": 13,
   "hint": "Trips leave at minute 0, 8 and 16. The last one does not need to come back.",
-  "explain": "13. Trips at minutes 0 and 8 each carry 4 pools plus the operator; the trip at minute 16 never returns so all 5 slots carry pools. 4 + 4 + 5.",
+  "explain": "13. Trips at minutes 0 and 8 each carry 4 services plus the operator; the trip at minute 16 never returns so all 5 slots carry services. 4 + 4 + 5.",
   "art": "chain"
  },
  {

@@ -111,22 +111,47 @@ const fallbackFlight = (s: RunState, here: City, c: City, home: boolean): Availa
   return { to: c.id, transport: 'flight', days: tz > 6 ? 2 : 1, energy: (home ? 18 : 22) + Math.floor(tz / 3) * 4, timezones: tz, city: c, home };
 };
 /** Legs on offer: forward progress first (most ahead at the top), at most one near-sideways option, nothing more than 20 degrees backwards. */
+/** The high-level route: east goes North America → South America → Europe → Africa → Asia → home; west is the reverse.
+ *  A leg is allowed when it stays on the current continent or steps to the next one in the sequence. */
+export const CORRIDOR: Continent[] = ['North America', 'South America', 'Europe', 'Africa', 'Asia'];
+export function corridorAllows(s: RunState, to: City): boolean {
+  if (directionUndecided(s) || to.id === s.startCity) return true;
+  const seq = s.direction === 'west' ? [CORRIDOR[0], ...CORRIDOR.slice(1).reverse()] : CORRIDOR;
+  const cur = CONTINENT_OF[CITY[s.cityId].region], next = CONTINENT_OF[to.region];
+  const i = seq.indexOf(cur); if (i < 0) return true;
+  return next === cur || next === seq[(i + 1) % seq.length];
+}
+/** The continent the corridor points to next (undefined before the direction is set or when the next stop is home). */
+export function nextContinent(s: RunState): Continent | undefined {
+  if (directionUndecided(s)) return undefined;
+  const seq = s.direction === 'west' ? [CORRIDOR[0], ...CORRIDOR.slice(1).reverse()] : CORRIDOR;
+  const i = seq.indexOf(CONTINENT_OF[CITY[s.cityId].region]); if (i < 0) return undefined;
+  return seq[(i + 1) % seq.length];
+}
 export function availableLegs(s: RunState): AvailableLeg[] {
+  const raw = legsUnfiltered(s);
+  const ok = raw.filter(l => l.home || corridorAllows(s, l.city));
+  return ok.some(o => !o.home) || !raw.some(o => !o.home) ? ok : raw;   /* never strand the player: if the corridor leaves nothing, show everything */
+}
+function legsUnfiltered(s: RunState): AvailableLeg[] {
   const here = CITY[s.cityId]; const month = monthOf(s.day);
-  let out: AvailableLeg[] = [];
+  let out: AvailableLeg[] = []; const seen = new Set<string>();
   for (const l of here.legs) {
     const to = CITY[l.to]; if (!to) continue;
-    if (!directionUndecided(s) && aheadOf(s, here, to) < -20) continue;  // no backtracks (both ways are open before the first leg)
+    const step = !directionUndecided(s) && CONTINENT_OF[to.region] !== CONTINENT_OF[here.region] && corridorAllows(s, to);   /* the next continent is always forward, whatever the longitude says (Morocco sits west of Munich) */
+    if (!directionUndecided(s) && !step && aheadOf(s, here, to) < -20) continue;  // no backtracks (both ways are open before the first leg)
     if (l.months && !l.months.includes(monthOf(s.day + l.days))) continue;
     if (l.to === s.startCity && !homeUnlocked(s)) continue;         // no early return
     if (l.to !== s.startCity && s.visited.includes(l.to)) continue; // no revisits: the trail only goes forward
+    if (seen.has(l.to)) continue; seen.add(l.to);                    // one card per city even if the data lists a leg twice
     out.push({ ...l, city: to, home: l.to === s.startCity });
   }
   // Dead end (every neighbour already visited): you can always fly. Offer the 3 nearest unvisited cities ahead.
   if (!out.some(o => !o.home)) {
-    const cands = CITIES.filter(c => c.id !== s.cityId && !s.visited.includes(c.id) && c.id !== s.startCity)
-      .map(c => ({ c, ahead: aheadOf(s, here, c) }))
-      .filter(x => directionUndecided(s) || x.ahead > -20).sort((a, b) => Math.abs(a.ahead) - Math.abs(b.ahead)).slice(0, 3);
+    const pool0 = CITIES.filter(c => c.id !== s.cityId && !s.visited.includes(c.id) && c.id !== s.startCity); const pool1 = pool0.filter(c => corridorAllows(s, c));
+    const cands = (pool1.length ? pool1 : pool0)
+      .map(c => ({ c, ahead: aheadOf(s, here, c), step: !directionUndecided(s) && CONTINENT_OF[c.region] !== CONTINENT_OF[here.region] && corridorAllows(s, c) }))
+      .filter(x => directionUndecided(s) || x.step || x.ahead > -20).sort((a, b) => Math.abs(a.ahead) - Math.abs(b.ahead)).slice(0, 3);
     for (const { c } of cands) {
       const l = c.legs.find(l => l.months); if (l && !l.months!.includes(month)) continue;
       out.push(fallbackFlight(s, here, c, false));
@@ -136,7 +161,7 @@ export function availableLegs(s: RunState): AvailableLeg[] {
   // Giant leaps: always offer up to two long-haul flights (5,000 km+, the most forward progress) at superlinear fares.
   if (!directionUndecided(s)) {
     const have = new Set(out.map(o => o.to));
-    const leaps = CITIES.filter(c => c.id !== s.cityId && !s.visited.includes(c.id) && c.id !== s.startCity && !have.has(c.id) && km(here, c) >= 5000 && aheadOf(s, here, c) >= 20)
+    const leaps = CITIES.filter(c => c.id !== s.cityId && !s.visited.includes(c.id) && c.id !== s.startCity && !have.has(c.id) && km(here, c) >= 5000 && corridorAllows(s, c) && (aheadOf(s, here, c) >= 20 || CONTINENT_OF[c.region] !== CONTINENT_OF[here.region]))
       .filter(c => { const l = c.legs.find(l => l.months); return !(l && !l.months!.includes(month)); })
       .sort((a, b) => aheadOf(s, here, b) - aheadOf(s, here, a)).slice(0, 2);
     for (const c of leaps) { const f = fallbackFlight(s, here, c, false); if (s.money >= fareFor(here, f) * 1.5) out.push({ ...f, energy: f.energy + 8, longHaul: true } as LongHaulLeg); }   // only if you saved up
@@ -145,7 +170,7 @@ export function availableLegs(s: RunState): AvailableLeg[] {
   // rank: home flight first when available, then by forward progress; keep at most one sideways (< 8 degrees ahead) option; long hauls last
   out.sort((a, b) => Number(b.home) - Number(a.home) || Number(!!(a as any).longHaul) - Number(!!(b as any).longHaul) || aheadOf(s, here, b.city) - aheadOf(s, here, a.city));
   let sideways = 0;
-  out = out.filter(o => { if (o.home || (o as any).longHaul || aheadOf(s, here, o.city) >= 8) return true; return sideways++ < 1; });
+  out = out.filter(o => { if (o.home || (o as any).longHaul || aheadOf(s, here, o.city) >= 8 || CONTINENT_OF[o.city.region] !== CONTINENT_OF[here.region]) return true; return sideways++ < 1; });
   return out;
 }
 
@@ -216,7 +241,7 @@ function tickDay(s: RunState, rng: Rng, opts: { rest?: boolean; work?: boolean }
   s.energy += 5 + (lodging?.energyPerDay ?? 0) + (opts.rest ? 0 : 0);
   s.mood += (lodging?.moodPerDay ?? 0) - 1;
   // slow wear: the year itself is the opponent. Routine (training, cooking, supplements) pushes back.
-  s.health -= 0.15 + s.day * 0.0024 + (s.energy < 40 ? (opts.work ? 0.15 : 0.35) : 0) + (hasTag(s, 'fitness') ? 0 : 0.2);   /* wear nudged up when the event rate went to 0.65 */   /* a laptop week indoors wears less than a tired day out */
+  s.health -= 0.18 + s.day * 0.0024 + (s.energy < 40 ? (opts.work ? 0.15 : 0.35) : 0) + (hasTag(s, 'fitness') ? 0 : 0.2);   /* wear nudged up when the event rate went to 0.65 */   /* a laptop week indoors wears less than a tired day out */
   if (coffeePacked(s)) { s.energy += 15; s.mood += 2; s.coffeeMornings += 1; }
   if (s.sickDays > 0) { s.sickDays -= 1; s.health -= 4; s.energy -= 5; }
   if (s.backInjuryDays > 0) s.backInjuryDays -= 1;
@@ -373,6 +398,7 @@ export function applyMinigameResult(state: RunState, key: string, result: Miniga
       const kit = hasTag(s, 'laundry'); const bonus = result.perfect ? 3 : score >= 0.8 ? 2 : score >= 0.6 ? 1 : 0;
       if (!kit) events = tickDay(s, rng); s.energy = clamp(s.energy + rw.energy, 0, energyCap(s));
       s.cleanClothes = rw.clothes ?? s.cleanClothes; s.mood = clamp(s.mood + rw.mood, 0, 100);
+      if (!kit && !result.failed && rng.chance(0.08)) events.push(forceEvent(s, 'laundrylost', rng));   /* the laundromat eats a sock now and then, only when you actually went */
       if (result.failed) { unlock(s, 'pinkshirts'); s.log.push({ day: s.day, city: s.cityId, text: tpl(kit ? STR.log.laundryKitBad : STR.log.laundryBad, { days: s.cleanClothes }) }); }
       else { s.log.push({ day: s.day, city: s.cityId, text: tpl(kit ? STR.log.laundryKit : bonus ? STR.log.laundryGreat : STR.log.laundryOk, { days: s.cleanClothes }) }); }
       break; }
@@ -461,7 +487,7 @@ export function pendingChoices(s: RunState): { id: string; title: string; text: 
 
 export const Sim = {
   GRID, TOTAL_DAYS, HOME_CITY, HOME_MIN_CONTINENTS, HOME_PROGRESS_DEG, CONTINENTS_ALL, START_MONEY, OVERDRAFT, WORK_PAY, CITIES, CITY, ITEM, DISH, LEVEL_BY_CITY,
-  createRun, validatePack, setPack, bagWeight, weightRatio, totalWeight, coffeePacked, bundles, hasTag, hasFlag, hasItem, dullKnives, minigameRewards, previewMinigame, workDaysAhead, isOutdoorsy,
+  createRun, validatePack, setPack, bagWeight, weightRatio, totalWeight, coffeePacked, bundles, hasTag, hasFlag, hasItem, dullKnives, minigameRewards, previewMinigame, workDaysAhead, corridorAllows, nextContinent, isOutdoorsy,
   shelfPack, buildPack, randomPack, idsWeight, weekdayOf, isWeekend, nextWorkdays, fareFor, directionUndecided, setDirection,
   availableLegs, travelTo, cityAction, applyMinigameResult, resolveChoice, pendingChoices, checkEnding, score, progress, homeUnlocked, homeRequirements, continentsVisited, endingCause, monthOf,
   visibleAchievements, energyCap, accessibleItems,

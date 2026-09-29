@@ -28,6 +28,7 @@ export class RouteScene extends Phaser.Scene {
     ALL.forEach((name, i) => { const lit = visited.has(name); const x0 = 116 + i * cw; rect(this, x0, 292, cw - 4, 16, lit ? PAL.night3 : PAL.night1, lit ? PAL.neon : PAL.night3); txt(this, x0 + (cw - 4) / 2, 300, short[name] ?? name.slice(0, 4).toUpperCase(), 8, lit ? PAL.neon : PAL.gray0).setOrigin(0.5); });
     const legs = Sim.availableLegs(run); const m = Sim.monthOf(run.day);
     txt(this, 12, 322, this.preview ? 'FROM HERE YOU COULD GO' : legs.length ? 'NEXT STOP' : 'NO ROUTES THIS MONTH', 10, PAL.sun2);
+    { const nc = Sim.nextContinent(run); if (nc && legs.length) txt(this, 348, 324, `then ${nc}`, 8, PAL.gray2).setOrigin(1, 0); }   /* the corridor: where the trail goes after this continent */
     txt(this, 348, 322, `${MONTHS[m - 1]} · day ${run.day}`, 8, PAL.gray2).setOrigin(1, 0);
     const listC = this.add.container(0, 0); const mask = this.make.graphics({}); mask.fillRect(0, 336, 360, 246); listC.setMask(mask.createGeometryMask());
     legs.forEach((leg, i) => listC.add(this.card(leg, 12, 340 + i * 62)));
