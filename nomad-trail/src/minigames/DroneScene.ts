@@ -8,7 +8,8 @@ import { makeHazard, boxes, cableY, plumeUp, plumeWarn, MOVER_SPEED, ZONES, type
 /**
  * DRONE FLIGHT: the side game for the drone kit. The landscape scrolls right to left; the drone flies through photo rings
  * (the shots the traveller wants) while dodging what lives in that landscape. One thumb: HOLD anywhere to climb, RELEASE to sink,
- * No horizontal control: the drone holds a fixed x a third in from the left and the world scrolls toward it. DOUBLE-TAP drops a battery bomb (2 per flight) that clears every bird on screen.
+ * No horizontal control: the drone holds a fixed x a third in from the left and the world scrolls toward it. A round BOMB button pinned bottom-right
+ * (56 px, battery icon + count) drops a battery bomb (2 per flight) that clears every bird on screen; tapping it is not a HOLD. The rest of the screen is the HOLD zone.
  * The camera fires forward by itself and knocks birds out of the way. SPACE or UP = hold, B/X = bomb on desktop.
  * Lives: 3 hearts (up to 5). A hit costs a heart and 10 points, then 1.5 s of blinking invulnerability. Hearts at 0 = crash (FAILED).
  * Power-ups drift down the lane every 10 to 14 s: HEART (+1 life), DOUBLE SHOT (two shots at once for 15 s), SHIELD (absorbs one hit, 8 s).
@@ -19,6 +20,7 @@ import { makeHazard, boxes, cableY, plumeUp, plumeWarn, MOVER_SPEED, ZONES, type
  */
 const BASE = H - 64;                 // ground baseline (screen y)
 const MAX_HEARTS = 5;
+const BTN_R = 28, BTN_X = W - 40, BTN_Y = H - 44;   // the BOMB button, pinned bottom-right
 type PuKind = 'heart' | 'double' | 'shield';
 interface Ring { wx: number; y: number; state: 'open' | 'hit' | 'miss'; flash: number; }
 interface Pickup { kind: PuKind; wx: number; y: number; t: number; alive: boolean; }
@@ -31,7 +33,7 @@ export class DroneScene extends Phaser.Scene {
   x = 120; y = 260; vy = 0; held = false;
   private rings: Ring[] = []; private hazards: Hazard[] = []; private pickups: Pickup[] = []; private shots: Shot[] = []; private spawnT = 0; private puT = 0; private lastStaticWx = -1e9; private rng!: () => number;
   hits = 0; collisions = 0; hearts = 3; bombs = 2; private shield = 0; private doubleT = 0; private fireT = 0; private iframes = 0; private padWx = 3000; private ended = false; private puffed = false; private landing = false; private anim = 0; private landT = 0;
-  private keyUp = false; private mistK = 0; private lastTap = -1; private toastUntil = 0;
+  private keyUp = false; private mistK = 0; private toastUntil = 0; private btnG!: Phaser.GameObjects.Graphics; private btnT?: Phaser.GameObjects.Text; private btnFlash = 0;
   constructor() { super(MINIGAME_KEYS.drone); }
 
   init(data: any) {
@@ -42,7 +44,7 @@ export class DroneScene extends Phaser.Scene {
     let s = (this.seed * 9301 + this.level * 49297) >>> 0; this.rng = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
     this.scroll = 0; this.t = 0; this.x = 120; this.y = 260; this.vy = 0; this.held = false; this.rings = []; this.hazards = []; this.pickups = []; this.shots = []; this.spawnT = 2.2; this.puT = 5; this.lastStaticWx = -1e9;
     this.hits = 0; this.collisions = 0; this.hearts = 3; this.bombs = 2; this.shield = 0; this.doubleT = 0; this.fireT = 0; this.iframes = 0; this.ended = false; this.puffed = false; this.landing = false; this.anim = 0; this.landT = 0;
-    this.keyUp = false; this.mistK = 0; this.lastTap = -1; this.toastUntil = 0;
+    this.keyUp = false; this.mistK = 0; this.toastUntil = 0; this.btnFlash = 0;
   }
 
   get ringCount() { return 6 + 2 * this.level; }
@@ -58,6 +60,7 @@ export class DroneScene extends Phaser.Scene {
     const first = 420, gap = Math.max(150, (this.padWx - 300 - first) / (this.ringCount - 1)); for (let i = 0; i < this.ringCount; i++) { const wx = Math.round(first + i * gap); const gy = BASE - terrainH(this.set.terrain, wx, this.seed); this.rings.push({ wx, y: 80 + this.rng() * (gy - 140), state: 'open', flash: 0 }); }
     this.frame.hud(); this.frame.setProgress(`0/${this.ringCount} shots`); this.frame.setTimer(`${this.metersLeft()} m to the pad`);
     this.toastT = txt(this, W / 2, 62, '', 12, PAL.sun2).setDepth(20).setAlpha(0);
+    this.btnG = this.add.graphics().setDepth(30); this.btnT = txt(this, BTN_X, BTN_Y + 14, '', 9, PAL.white).setDepth(31); this.drawBombButton();
     this.frame.scoreNow = () => this.score();
     this.frame.intro(`${this.cityName.toUpperCase()} · ${this.set.name}. Fly through ${this.ringCount} photo rings to the landing pad. ${this.set.tagline}.`, () => this.startRun(),
       { height: 500, title: `Drone flight · level ${this.level}`, extra: (s, add) => {
@@ -65,7 +68,7 @@ export class DroneScene extends Phaser.Scene {
         const ic = s.add.graphics(); add(ic);
         const row = (y: number, draw: () => void, label: string) => { ic.fillStyle(PAL.night3).fillRect(34, y - 16, 36, 32); draw(); add(txt(s, 80, y, label, 9, PAL.white, 'left')); };
         row(top + 168, () => { ic.fillStyle(PAL.neon).fillCircle(52, top + 168, 7); ic.fillStyle(PAL.night3).fillCircle(52, top + 168, 3); ic.fillStyle(PAL.neon).fillTriangle(52, top + 155, 47, top + 162, 57, top + 162); }, 'HOLD to climb · RELEASE to sink');
-        row(top + 208, () => { ic.fillStyle(PAL.white).fillRect(44, top + 206, 8, 2).fillRect(56, top + 206, 8, 2); ic.fillStyle(PAL.sun2).fillRect(48, top + 214, 4, 4).fillRect(56, top + 214, 4, 4); }, 'auto shots · DOUBLE-TAP = battery bomb (2)');
+        row(top + 208, () => { ic.fillStyle(PAL.white).fillRect(44, top + 206, 8, 2).fillRect(56, top + 206, 8, 2); ic.fillStyle(PAL.sun2).fillRect(48, top + 214, 4, 4).fillRect(56, top + 214, 4, 4); }, 'auto shots · BOMB button = battery bomb (2)');
         row(top + 248, () => { for (let i = 0; i < 3; i++) { ic.fillStyle(PAL.red).fillRect(40 + i * 9, top + 245, 6, 5).fillRect(41 + i * 9, top + 250, 4, 2).fillRect(42 + i * 9, top + 252, 2, 1); } }, '3 hearts · a hit = -1 heart, -10 points');
         row(top + 328, () => { ic.fillStyle(PAL.sun2).fillRect(40, top + 334, 24, 4); ic.fillStyle(PAL.ink).fillRect(48, top + 328, 8, 6); ic.fillStyle(PAL.white).fillRect(50, top + 329, 4, 4); }, 'fly to the LANDING PAD at the end of the course');
         row(top + 288, () => { ic.fillStyle(PAL.red).fillRect(38, top + 284, 8, 7); ic.fillStyle(PAL.sun2).fillRect(49, top + 284, 7, 7); ic.fillStyle(PAL.sky2).fillRect(59, top + 284, 7, 7); }, 'HEART +1 life · DOUBLE SHOT 15 s · SHIELD 1 hit');
@@ -87,7 +90,7 @@ export class DroneScene extends Phaser.Scene {
   /** Dismiss the card and fly (harness calls this through frame.ready()). */
   private startRun() {
     this.time.delayedCall(60, () => {
-      this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { if (p.y < 30) return; const now = this.time.now; if (this.lastTap > 0 && now - this.lastTap < 300) { this.bomb(); this.lastTap = -1; } else this.lastTap = now; this.held = true; });
+      this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { if (p.y < 30) return; if (this.onBombButton(p.x, p.y)) { this.bomb(); return; } this.held = true; });   // the button is not a HOLD
       this.input.on('pointerup', () => { this.held = false; });
       const kb = this.input.keyboard;
       kb?.on('keydown-UP', () => { this.keyUp = true; }); kb?.on('keyup-UP', () => { this.keyUp = false; }); kb?.on('keydown-SPACE', () => { this.keyUp = true; }); kb?.on('keyup-SPACE', () => { this.keyUp = false; });
@@ -98,7 +101,7 @@ export class DroneScene extends Phaser.Scene {
   /** Harness hooks */
   press() { this.held = true; }
   release() { this.held = false; }
-  hint() { const next = this.rings.find(r => r.state === 'open' && r.wx - this.scroll > this.x - 20); return { x: this.x, y: this.y, vy: this.vy, next: next ? { x: next.wx - this.scroll, y: next.y } : null, hits: this.hits, collisions: this.collisions, hearts: this.hearts, bombs: this.bombs, shield: this.shield, double: this.doubleT, landing: this.landing, metersLeft: this.metersLeft(), set: this.set.id, pickups: this.pickups.filter(p => p.alive).map(p => ({ kind: p.kind, x: p.wx - this.scroll, y: p.y })), hazards: this.hazards.filter(h => h.solid).flatMap(h => boxes(h, h.wx - this.scroll)) }; }
+  hint() { const next = this.rings.find(r => r.state === 'open' && r.wx - this.scroll > this.x - 20); return { x: this.x, y: this.y, vy: this.vy, next: next ? { x: next.wx - this.scroll, y: next.y } : null, hits: this.hits, collisions: this.collisions, hearts: this.hearts, bombs: this.bombs, held: this.held, button: { x: BTN_X, y: BTN_Y, r: BTN_R }, shield: this.shield, double: this.doubleT, landing: this.landing, metersLeft: this.metersLeft(), set: this.set.id, pickups: this.pickups.filter(p => p.alive).map(p => ({ kind: p.kind, x: p.wx - this.scroll, y: p.y })), hazards: this.hazards.filter(h => h.solid).flatMap(h => boxes(h, h.wx - this.scroll)) }; }
   score() { return clamp((this.hits / this.ringCount) * 100 - 10 * this.collisions, 0, 100); }
   update(_t: number, dt: number) { this.frame.update(dt); }
 
@@ -114,6 +117,7 @@ export class DroneScene extends Phaser.Scene {
     if (!this.landing) this.scroll += this.v * dt;
     if (this.shield > 0) this.shield -= dt; if (this.doubleT > 0) this.doubleT -= dt;
     if (this.toastT && this.toastUntil > 0 && this.t > this.toastUntil - 0.4) { this.toastT.setAlpha(Math.max(0, (this.toastUntil - this.t) / 0.4)); }
+    if (this.btnFlash > 0) { this.btnFlash = Math.max(0, this.btnFlash - dt * 3); this.drawBombButton(); }
     // physics
     const sluggish = this.mistK > 0 ? 0.55 : 1;
     this.vy += (holding ? -500 : 360) * dt * sluggish; this.vy = clamp(this.vy, -165, 165);
@@ -169,7 +173,7 @@ export class DroneScene extends Phaser.Scene {
   }
   private kill(h: Hazard) { h.alive = false; h.spr?.destroy(); }
   private poof(x: number, y: number) { const r = this.add.circle(x, y, 6, PAL.white, 0.9).setDepth(7); this.tweens.add({ targets: r, scale: 2.4, alpha: 0, duration: 220, onComplete: () => r.destroy() }); }
-  private land() { if (this.landing) return; this.landing = true; this.landT = this.t; this.held = false; }
+  private land() { if (this.landing) return; this.landing = true; this.landT = this.t; this.held = false; this.drawBombButton(); }
   private puff(x: number, y: number) { for (let i = 0; i < 6; i++) { const c = this.add.circle(x - 14 + i * 6, y, 3 + (i % 2) * 2, this.set.groundDark === PAL.ink ? PAL.gray1 : PAL.earth3, 0.8).setDepth(7); this.tweens.add({ targets: c, x: c.x + (i - 2.5) * 10, y: c.y - 8 - (i % 3) * 4, scale: 2, alpha: 0, duration: 500 + i * 40, onComplete: () => c.destroy() }); } }
   private hurt() {
     if (this.iframes > 0) return;
@@ -177,7 +181,17 @@ export class DroneScene extends Phaser.Scene {
     this.collisions++; this.hearts--; this.iframes = 1.5; this.frame.shake(160, 0.008); this.frame.flash(PAL.red, 60);
     if (this.hearts <= 0) this.crash();
   }
-  private bomb() { if (this.bombs <= 0 || this.landing || this.ended || !this.frame.active) return; this.bombs--; this.frame.flash(PAL.white, 120); this.frame.shake(200, 0.01); this.toast(`BATTERY BOMB · ${this.bombs} left`, PAL.white);
+  /** the round BOMB button pinned bottom-right (a little slack so a thumb on the rim still counts) */
+  onBombButton(x: number, y: number) { return Math.hypot(x - BTN_X, y - BTN_Y) <= BTN_R + 6; }
+  private drawBombButton() {
+    const g = this.btnG; g.clear(); const on = this.bombs > 0 && !this.landing && !this.ended; const f = this.btnFlash;
+    g.fillStyle(PAL.ink, 0.85).fillCircle(BTN_X, BTN_Y, BTN_R); g.lineStyle(2, on ? PAL.sun2 : PAL.gray0, 1).strokeCircle(BTN_X, BTN_Y, BTN_R - 1); if (f > 0) g.fillStyle(PAL.white, f * 0.6).fillCircle(BTN_X, BTN_Y, BTN_R);
+    // battery icon: body, cap, charge bars for the bombs left
+    const c = on ? PAL.sun2 : PAL.gray0; g.fillStyle(c).fillRect(BTN_X - 9, BTN_Y - 13, 18, 22); g.fillRect(BTN_X - 4, BTN_Y - 17, 8, 4); g.fillStyle(PAL.ink).fillRect(BTN_X - 7, BTN_Y - 11, 14, 18);
+    for (let i = 0; i < this.bombs; i++) g.fillStyle(PAL.sun2).fillRect(BTN_X - 5, BTN_Y + 3 - i * 8, 10, 6);
+    this.btnT?.setText(on ? `BOMB ${this.bombs}` : 'BOMB 0').setColor(on ? '#f4f1ea' : '#6e7484');
+  }
+  private bomb() { if (this.bombs <= 0 || this.landing || this.ended || !this.frame.active) return; this.bombs--; this.btnFlash = 1; this.drawBombButton(); this.frame.flash(PAL.white, 120); this.frame.shake(200, 0.01); this.toast(`BATTERY BOMB · ${this.bombs} left`, PAL.white);
     for (const h of this.hazards) if (h.alive && this.isBird(h.kind)) { const sx = h.wx - this.scroll; if (sx > -20 && sx < W + 20) { this.poof(sx, h.y); this.kill(h); } } this.hazards = this.hazards.filter(h => h.alive); }
   private collect(kind: PuKind) {
     this.frame.flash(PAL.white, 50);
@@ -229,7 +243,6 @@ export class DroneScene extends Phaser.Scene {
     { const px = this.padWx - this.scroll; if (px > -40 && px < W + 40) this.pad(px, BASE - terrainH(S.terrain, this.padWx, seed)); }
     // HUD extras: hearts (empty slots up to 3, extras only while held), bombs, double-shot timer, course progress
     for (let i = 0; i < Math.max(3, this.hearts); i++) { const on = i < this.hearts; const hx = 10 + i * 13, hy = 32; g.fillStyle(on ? PAL.red : PAL.gray0).fillRect(hx, hy, 3, 3).fillRect(hx + 4, hy, 3, 3).fillRect(hx - 1, hy + 2, 9, 3).fillRect(hx + 1, hy + 5, 5, 2).fillRect(hx + 3, hy + 7, 1, 1); }
-    for (let i = 0; i < this.bombs; i++) { g.fillStyle(PAL.sun2).fillRect(84 + i * 10, 32, 6, 8); g.fillStyle(PAL.ink).fillRect(86 + i * 10, 30, 2, 2); }
     if (this.doubleT > 0) { g.fillStyle(PAL.sun2, 0.9).fillRect(112, 34, Math.round(40 * this.doubleT / 15), 4); g.fillStyle(PAL.white).fillRect(112, 30, 8, 2).fillRect(112, 40, 8, 2); }
     { const prog = clamp((this.scroll + this.x - 120) / (this.padWx - 120), 0, 1); g.fillStyle(PAL.ink).fillRect(W - 86, 30, 78, 8); g.fillStyle(PAL.night3).fillRect(W - 85, 31, 76, 6); g.fillStyle(PAL.neon).fillRect(W - 85, 31, Math.round(76 * prog), 6); g.fillStyle(PAL.sun2).fillRect(W - 12, 29, 3, 10); }
   }

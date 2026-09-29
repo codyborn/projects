@@ -1,6 +1,6 @@
 /* THE INACCESSIBLE PINNACLE (Sgùrr Dearg, Skye): the Highlands hike. Three beats, no clock.
    (1) Intro: a skyline-style pixel scene of the In Pinn (dithered sky, far ridge silhouette, the blade in flat tones with 1 px highlights,
-       scree and grass tufts, the small climber) with the description laid out on a dark band; tap or 6 s.
+       scree and grass tufts, the small climber) with the description laid out on a dark band; tap to continue.
    (2) The READY card, one control per line with an icon, like the kite game.
    (3) The game, third person from behind: the ridge is a lane with cliff edges dropping into fog on both sides; it widens as you go
        (a 40 px blade at the start, a 200 px plateau at the end). HOLD anywhere to walk, release to stop. Balance is a needle: it
@@ -16,7 +16,7 @@ import { META } from './pools';
 import { TiltReader } from '../motion';
 import { makeCanvas, ditherGradient, R, speckle, rng as pxRng } from '../../art/pixel';
 
-const INTRO_SEC = 6, TELEGRAPH = 0.7, FALL_HOLD = 0.6, EDGE = 100, RED = 68, WALK_SEC = 14, TAP_MS = 180;
+const TELEGRAPH = 0.7, FALL_HOLD = 0.6, EDGE = 100, RED = 68, WALK_SEC = 14, TAP_MS = 180;
 const VX = W / 2, VY = 214, ATH_Y = 486, LANE_NEAR_Y = H;
 const V = (pts: { x: number; y: number }[]) => pts.map(q => new Phaser.Math.Vector2(q.x, q.y));
 const INTRO_TITLE = 'THE INACCESSIBLE PINNACLE';
@@ -29,7 +29,7 @@ export class Pinnacle extends Micro {
   private phase: 'intro' | 'card' | 'climb' | 'summit' | 'fall' = 'intro';
   private x = 0; private meander = 0; private lastTap = 0; private prog = 0; private red = 0; private total = 0; private overT = 0; private walking = false; private downAt = 0; private downSide = 0; private pendingWalk = false;
   private gustDir = 0; private gustT = 0; private gustPow = 0; private nextG = 2.2; private warnFrom = 0; private whoosh?: Phaser.GameObjects.Text;
-  private introObjs: Phaser.GameObjects.GameObject[] = []; private introT = 0; private fog!: Phaser.GameObjects.Graphics; private climbT = 0; private flag = false;
+  private introObjs: Phaser.GameObjects.GameObject[] = []; private introT = 0; private summitT = 0; private fog!: Phaser.GameObjects.Graphics; private climbT = 0; private flag = false;
   private tiltR = new TiltReader(2, 12);
 
   /** harness */
@@ -55,7 +55,7 @@ export class Pinnacle extends Micro {
     this.fog = this.add(sc.add.graphics().setDepth(7));
     this.buildIntro();
     this.ctx.frame.setProgress(''); this.ctx.frame.setTimer('');
-    this.loop(dt => { if (this.phase === 'intro') this.tickIntro(dt); else if (this.phase === 'climb') this.tickClimb(dt); });
+    this.loop(dt => { if (this.phase === 'intro') this.tickIntro(dt); else if (this.phase === 'climb') this.tickClimb(dt); else if (this.phase === 'summit') { this.summitT += dt; this.t += 0; this.draw(0); } });
   }
 
   /* ---------- beat 1: the intro scene, drawn the way the city skylines are ---------- */
@@ -92,9 +92,9 @@ export class Pinnacle extends Micro {
     add(sc.add.rectangle(W / 2, H - 116, W, 170, PAL.night0, 0.82).setDepth(5));
     add(txt(sc, W / 2, H - 186, INTRO_TITLE, 12, PAL.sun3).setDepth(6));
     INTRO_LINES.forEach((ln, i) => add(txt(sc, W / 2, H - 160 + i * 18, ln, 9, i === INTRO_LINES.length - 1 ? PAL.sun2 : PAL.gray2).setDepth(6)));
-    add(txt(sc, W / 2, H - 48, 'tap to continue', 8, PAL.gray1).setDepth(6));
+    const hint = add(txt(sc, W / 2, H - 48, 'tap to continue', 8, PAL.gray1).setDepth(6)); sc.tweens.add({ targets: hint, alpha: 0.35, yoyo: true, repeat: -1, duration: 700 });
   }
-  private tickIntro(dt: number) { this.introT += dt; if (this.introT >= INTRO_SEC) this.showCard(); }
+  private tickIntro(dt: number) { this.introT += dt; }   /* the intro waits for the tap (SPACE on desktop); no auto-advance */
 
   /* ---------- beat 2: the READY card, one control per line ---------- */
   private showCard() {
@@ -143,10 +143,24 @@ export class Pinnacle extends Micro {
     if (this.overT >= FALL_HOLD) { this.fall(); return; }
     if (this.prog >= 1) this.summit();
   }
+  /** The goal on screen: the top of the blade with its cairn and pole, small on the horizon at the start, scaling up and coming down the
+   *  screen toward the climber as progress grows; in the last 10% it sits right in front of them. */
+  private summitPos() { const p = this.prog; const e = p * p * (3 - 2 * p); return { x: VX, y: VY + 6 + (ATH_Y - 58 - VY - 6) * e, s: 0.3 + 1.7 * e }; }
+  private drawSummit(g: Phaser.GameObjects.Graphics) {
+    const { x, y, s } = this.summitPos();
+    /* the blade's top behind the cairn, then the cairn (three courses of stones) and the pole */
+    g.fillStyle(PAL.night3).fillTriangle(x - 30 * s, y + 6, x, y - 34 * s, x + 30 * s, y + 6); g.fillStyle(PAL.gray0, 0.35).fillTriangle(x, y - 34 * s, x + 4 * s, y - 26 * s, x + 30 * s, y + 6);
+    const course = (yy: number, w: number, c: number) => { g.fillStyle(c).fillRect(x - w / 2, yy - 6 * s, w, 6 * s); g.fillStyle(PAL.gray0, 0.5).fillRect(x - w / 2 + 2 * s, yy - 6 * s, 3 * s, 2 * s); };
+    course(y, 30 * s, PAL.night2); course(y - 6 * s, 22 * s, PAL.night3); course(y - 12 * s, 12 * s, PAL.night2);
+    g.fillStyle(PAL.gray0).fillRect(x - 1 * s, y - 46 * s, Math.max(1, 2 * s), 34 * s);
+    if (this.flag) g.fillStyle(PAL.red).fillTriangle(x + 1 * s, y - 46 * s, x + 22 * s, y - 40 * s, x + 1 * s, y - 32 * s);
+  }
   private say(s: string) { this.whoosh?.destroy(); const t = this.label(W / 2, 176, s, 12, PAL.white); this.whoosh = t; this.ctx.scene.tweens.add({ targets: t, alpha: 0, y: 160, duration: 700, delay: 300, onComplete: () => t.destroy() }); }
   private draw(wind: number) {
     const g = this.g; g.clear(); const f = this.fog; f.clear(); const p = this.prog; const half = this.laneHalf();
+    const pull = this.phase === 'summit' ? clamp(this.summitT / 1.2, 0, 1) : 0;   /* the summit beat: fog pulls back, the far ridge appears */
     g.fillStyle(PAL.gray1).fillRect(0, 26, W, H - 26); g.fillStyle(PAL.gray2, 0.75).fillRect(0, 26, W, VY - 26);
+    if (pull > 0) { g.fillStyle(PAL.gray0, 0.9 * pull); for (let px = 0; px < W; px += 2) { const y = VY - 30 + Math.round(Math.sin(px / 41) * 16 + Math.sin(px / 13 + 1) * 5); g.fillRect(px, y, 2, VY + 40 - y); } g.fillStyle(PAL.night3, 0.8 * pull); for (let px = 0; px < W; px += 2) { const y = VY - 8 + Math.round(Math.sin(px / 29 + 2) * 10 + Math.sin(px / 9) * 3); g.fillRect(px, y, 2, VY + 40 - y); } }
     /* the lane in perspective: the far end narrows to the vanishing point, the near end is `half` wide at the athlete's row and widens as the ridge does */
     const nearHalf = half * (LANE_NEAR_Y - VY) / (ATH_Y - VY); const farHalf = 3 + p * 6;
     const lane = [{ x: VX - nearHalf, y: LANE_NEAR_Y }, { x: VX - farHalf, y: VY }, { x: VX + farHalf, y: VY }, { x: VX + nearHalf, y: LANE_NEAR_Y }];
@@ -158,9 +172,8 @@ export class Pinnacle extends Micro {
     /* scrolling cross-lines carry the walking motion */
     for (let i = 0; i < 12; i++) { const k = ((i / 12 + p * 6) % 1); const kk = k * k; const y = VY + (LANE_NEAR_Y - VY) * kk; const hw = farHalf + (nearHalf - farHalf) * kk; g.fillStyle(PAL.gray0, 0.3 + 0.4 * k).fillRect(VX - hw, y, hw * 2, 2); }
     /* fog banks beyond the edges */
-    for (let k = 0; k < 6; k++) { const yy = VY + 40 + k * 68 + Math.sin(this.t * 0.8 + k) * 6; const kk = (yy - VY) / (LANE_NEAR_Y - VY); const hw = farHalf + (nearHalf - farHalf) * kk * kk; const drift = Math.sin(this.t * 0.5 + k * 2) * 14; f.fillStyle(PAL.white, 0.18).fillRoundedRect(-30 + drift, yy, Math.max(0, VX - hw + 4), 30, 14); f.fillStyle(PAL.white, 0.18).fillRoundedRect(VX + hw - 4 - drift, yy + 20, W, 30, 14); }
-    /* the flag at the far end once it is planted */
-    if (this.flag) { const fx = VX + half * 0.5, fy = ATH_Y - 24; g.fillStyle(PAL.gray0).fillRect(fx, fy - 46, 2, 46); g.fillStyle(PAL.red).fillTriangle(fx + 2, fy - 46, fx + 24, fy - 38, fx + 2, fy - 30); }
+    for (let k = 0; k < 6; k++) { const yy = VY + 40 + k * 68 + Math.sin(this.t * 0.8 + k) * 6; const kk = (yy - VY) / (LANE_NEAR_Y - VY); const hw = farHalf + (nearHalf - farHalf) * kk * kk; const drift = Math.sin(this.t * 0.5 + k * 2) * 14; const back = pull * 170; f.fillStyle(PAL.white, 0.18 * (1 - 0.6 * pull)).fillRoundedRect(-30 + drift - back, yy, Math.max(0, VX - hw + 4), 30, 14); f.fillStyle(PAL.white, 0.18 * (1 - 0.6 * pull)).fillRoundedRect(VX + hw - 4 - drift + back, yy + 20, W, 30, 14); }
+    this.drawSummit(g);
     /* the athlete from behind, leaning with the needle; the lean shows against the lane's width */
     const lean = this.x / EDGE; this.ctx.athlete.at(VX + lean * half * 0.8, ATH_Y + (this.walking ? Math.sin(this.t * 14) * 2 : 0)); this.ctx.athlete.sprite.setAngle(lean * 20); this.ctx.athlete.pose(this.walking ? (Math.floor(this.t * 6) % 2 ? 3 : 0) : 0);
     /* balance needle and progress */
@@ -177,9 +190,10 @@ export class Pinnacle extends Micro {
     const tiltLive = this.tiltR.state === 'yes'; this.ctx.frame.setProgress(this.overT > 0 ? 'LEAN BACK!' : strong ? (this.walking ? 'STOP!' : 'HOLD ON') : this.walking ? 'WALKING' : tiltLive ? 'HOLD TO WALK · TILT' : 'HOLD TO WALK');
   }
   private summit() {
-    this.phase = 'summit'; const sc = this.scoreNow(); this.walking = false; this.ctx.athlete.pose(2); this.ctx.athlete.sprite.setAngle(0); this.ctx.frame.setProgress('THE PLATEAU');
-    if (sc >= 0.9) { this.flag = true; this.pop(W / 2, 150, 'SUMMIT FLAG', PAL.sun2); } else this.pop(W / 2, 150, 'MADE IT', PAL.neon);
-    this.draw(0); this.after(900, () => this.finish(sc));
+    this.phase = 'summit'; this.summitT = 0; const sc = this.scoreNow(); this.walking = false; this.ctx.athlete.pose(2); this.ctx.athlete.sprite.setAngle(0); this.ctx.frame.setProgress('SUMMIT');
+    const t = this.label(W / 2, 150, 'SUMMIT', 22, PAL.white); this.ctx.scene.tweens.add({ targets: t, scale: { from: 1.6, to: 1 }, duration: 260, ease: 'Back.Out' });
+    this.after(500, () => { if (sc >= 0.9) { this.flag = true; this.ctx.frame.shake(90, 0.003); this.pop(W / 2, 184, 'FLAG PLANTED', PAL.sun2); } else this.pop(W / 2, 184, 'no flag today', PAL.gray2); });
+    this.draw(0); this.after(1900, () => this.finish(sc));
   }
   private fall() {
     this.phase = 'fall'; const s = this.ctx.scene; const spr = this.ctx.athlete.sprite; this.ctx.frame.shake(200, 0.008); this.ctx.frame.setProgress('FALL');

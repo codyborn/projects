@@ -69,9 +69,9 @@ export class ScubaScene extends Phaser.Scene {
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { if (this.frame.active && !this.ended && p.x >= bx - 46 && p.x <= bx + 46 && p.y >= by - 13 && p.y <= by + 13) this.surface(); });
     this.mini = this.add.graphics().setDepth(812).setScrollFactor(0);
     this.frame.scoreNow = () => this.score();
-    this.frame.intro(`${this.cityName}. Lionfish are eating the reef. Explore it, spear every one, and never touch the spines.`, () => this.startDive(), { height: 356, extra: (s, add) => {
-      const top = H / 2 - 178; const lines: [string, number][] = [['HOLD: swim toward your finger and aim', PAL.neon], ['RELEASE: fire the spear (short range)', PAL.neon], ['Shoot LEVEL at the body; spines deflect', PAL.sun2], ['Touch a spine: -15 and a nasty recoil', PAL.pink], [`No clock. ${this.total} lionfish somewhere on this reef.`, PAL.gray2], ['The map and arrow point to the nearest. SURFACE ends the dive.', PAL.gray2]];
-      lines.forEach(([ln, c], i) => add(txt(s, W / 2, top + 112 + i * 20, ln, i > 3 ? 9 : 10, c)));
+    this.frame.intro(`${this.cityName}. Lionfish are eating the reef.`, () => this.startDive(), { height: 356, extra: (s, add) => {
+      const top = H / 2 - 178; const lines: [string, number][] = [[`Spear all ${this.total} lionfish on this reef`, PAL.white], ['HOLD: swim toward your finger and aim', PAL.neon], ['RELEASE: fire the spear (short range)', PAL.neon], ['Shoot LEVEL at the body; spines deflect', PAL.sun2], ['Touch a spine: -15 and a nasty recoil', PAL.pink], ['Map and arrow point to the nearest. SURFACE ends the dive.', PAL.gray2]];
+      lines.forEach(([ln, c], i) => add(txt(s, W / 2, top + 96 + i * 22, ln, i === 0 ? 12 : i === 5 ? 9 : 10, c)));
     } });
     this.pinScreen(800);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.tick?.remove());
@@ -103,7 +103,7 @@ export class ScubaScene extends Phaser.Scene {
   /** End the dive early with the current score (the SURFACE button, S key, harness). */
   surface() { if (!this.frame.active || this.ended) return; this.say('SURFACING', PAL.sky3); this.end(); }
   private updateAim() { const ax = this.targetX - this.dx, ay = this.targetY - this.dy; const l = Math.hypot(ax, ay); if (l > 4) { this.aimX = ax / l; this.aimY = ay / l; if (Math.abs(ax) > 6) this.facing = ax < 0 ? -1 : 1; } }
-  private gunTip() { return { x: this.dx + this.facing * 30, y: this.dy + 6 }; }
+  private gunTip() { return { x: this.dx + this.facing * 30, y: this.dy + 9 }; }
   private fire() {
     if (!this.frame.active || this.ended || this.spear || this.cooldown > 0) return;
     this.updateAim(); const { x: sx, y: sy } = this.gunTip();
@@ -123,8 +123,8 @@ export class ScubaScene extends Phaser.Scene {
     if (this.held) { this.updateAim(); const ax = this.targetX - this.dx, ay = this.targetY - this.dy; const l = Math.hypot(ax, ay); if (l > KEEP) { this.dvx += (ax / l * SWIM_V - this.dvx) * Math.min(1, dt * 4); this.dvy += (ay / l * SWIM_V - this.dvy) * Math.min(1, dt * 4); } else { this.dvx *= 0.9; this.dvy *= 0.9; } }
     else { this.dvx *= 1 - Math.min(1, dt * 2.2); this.dvy *= 1 - Math.min(1, dt * 2.2); }
     this.dx = clamp(this.dx + this.dvx * dt, 44, WW - 44); this.dy = clamp(this.dy + this.dvy * dt + Math.sin(this.t * 1.6) * 0.12, HUD_H + 40, SAND_Y - 24);
-    this.finT += dt * (1 + Math.hypot(this.dvx, this.dvy) / 40); this.diver.setTexture(Math.floor(this.finT * 3) % 2 ? 'sc_diver1' : 'sc_diver0').setPosition(this.dx, this.dy).setFlipX(this.facing < 0).setAlpha(this.invuln > 0 && Math.floor(this.t * 12) % 2 ? 0.35 : 1);
-    if (this.rand() < dt * 2.2) this.bubbles.push({ x: this.dx + this.facing * 30, y: this.dy + 2, r: 1 + this.rand() * 2.5, vy: 26 + this.rand() * 24, wob: this.rand() * 6 });
+    this.finT += dt * (1 + Math.hypot(this.dvx, this.dvy) / 40); this.diver.setTexture('sc_diver' + [0, 1, 2, 1][Math.floor(this.finT * 5) % 4]).setPosition(this.dx, this.dy).setFlipX(this.facing < 0).setAlpha(this.invuln > 0 && Math.floor(this.t * 12) % 2 ? 0.35 : 1);
+    if (this.rand() < dt * 2.2) this.bubbles.push({ x: this.dx + this.facing * 30, y: this.dy + 3, r: 1 + this.rand() * 2.5, vy: 26 + this.rand() * 24, wob: this.rand() * 6 });
     /* reef fish */
     for (const f of this.reef) { if (!f.alive) continue; f.ph += dt * 1.3; f.x = f.bx + Math.sin(f.ph * 0.7) * 34 * f.dir; f.y = f.by + Math.sin(f.ph * 1.7) * 9; const away = Math.hypot(f.x - this.dx, f.y - this.dy); if (away < 60) { f.bx += (f.x - this.dx) / away * 40 * dt; f.by += (f.y - this.dy) / away * 40 * dt; } f.bx = clamp(f.bx, 20, WW - 100); f.by = clamp(f.by, HUD_H + 40, SAND_Y - 30); f.sprite.setPosition(f.x, f.y).setFlipX(Math.cos(f.ph * 0.7) * f.dir < 0); }
     /* lionfish */
