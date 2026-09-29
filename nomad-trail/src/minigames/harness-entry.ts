@@ -127,7 +127,7 @@ if (q.get('auto') === '1') {
   MINIGAME_SCENES.forEach(S => game.scene.add(new S().sys.settings.key, S as any, false));
   game.events.once('ready', () => {
     const mode = q.get('gate')!; const t0 = performance.now(); let calls = 0;
-    const launch: MinigameLaunch = { energy: 100, difficulty: 0.5, payload: { gate: q.get('g') || 'B56' }, onDone: (res) => { calls++; out.textContent = JSON.stringify({ mode, res, secs: (performance.now() - t0) / 1000, calls, errors }); document.title = 'GATE_DONE'; } };
+    const launch: MinigameLaunch = { energy: 100, difficulty: 0.5, payload: { gate: q.get('g') || 'B56' }, onDone: (res) => { calls++; out.textContent = JSON.stringify({ mode, res, secs: (performance.now() - t0) / 1000, popMin: Number(scene.popMin.toFixed(2)), collisions: scene.collisions, wrong: scene.wrong, calls, errors }); document.title = 'GATE_DONE'; } };
     game.scene.start(MINIGAME_KEYS.airport, launch); const scene: any = game.scene.getScene(MINIGAME_KEYS.airport);
     // the scripted player reads scene.hint() once per virtual frame and presses arrow keys (real key events through Phaser's keyboard plugin)
     const key = (kc: number) => { window.dispatchEvent(new KeyboardEvent('keydown', { keyCode: kc, which: kc } as any)); window.dispatchEvent(new KeyboardEvent('keyup', { keyCode: kc, which: kc } as any)); };

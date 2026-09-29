@@ -59,7 +59,7 @@ export class Dyno extends Micro {
   protected scoreNow() { return clamp(this.catches / this.need - this.misses * 0.15, 0, 1); }
 }
 
-/** RIVER STONES: stones bob; tap to jump when the next one is at its highest. 5 stones. */
+/** RIVER STONES: stones bob; tap to jump when the next one lights up. 5 stones. */
 export class RiverStones extends Micro {
   readonly id = 'riverstones'; readonly word = META.riverstones.word; readonly instr = META.riverstones.instr; readonly durationSec = META.riverstones.durationSec;
   private idx = 0; private wet = 0; private phases: number[] = []; private jumping = false;

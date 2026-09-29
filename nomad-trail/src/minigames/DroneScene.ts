@@ -262,7 +262,20 @@ export class DroneScene extends Phaser.Scene {
   private prop(kind: PropKind, x: number, y: number, slot: number) {
     const g = this.g; const r = h32(slot, 77);
     switch (kind) {
-      case 'palm': { const hgt = 34 + r * 16; g.fillStyle(PAL.earth1).fillRect(x - 2, y - hgt, 4, hgt); g.fillStyle(PAL.grass1); for (let i = 0; i < 5; i++) { const a = -0.3 + i * 0.35 + Math.sin(this.t + slot) * 0.04; g.fillTriangle(x, y - hgt, x + Math.cos(a) * 22 - 4, y - hgt + Math.sin(a) * 14 + 6, x + Math.cos(a) * 22 + 4, y - hgt + Math.sin(a) * 14); } g.fillStyle(PAL.earth2).fillCircle(x, y - hgt + 2, 3); break; }
+      case 'palm': {   // full crown: 7 fronds all the way round the trunk top, drooping, with coconuts; matches the skyline palms
+        const hgt = 38 + r * 18; const lean = (r > 0.5 ? 1 : -1) * (3 + r * 4); const sway = Math.sin(this.t * 1.2 + slot) * 0.05;
+        g.fillStyle(PAL.earth1); for (let k = 0; k < hgt; k += 3) { const lx = x + lean * (k / hgt) * (k / hgt); g.fillRect(lx - 3, y - k - 3, 6, 3); }   // thick trunk, curving into the lean
+        g.fillStyle(PAL.earth0); for (let k = 6; k < hgt; k += 9) { const lx = x + lean * (k / hgt) * (k / hgt); g.fillRect(lx - 3, y - k, 6, 1); }         // rings
+        const cx = x + lean, cy = y - hgt - 2; const n = 7;
+        for (let i = 0; i < n; i++) {
+          const a = Math.PI + (i + 0.5) * (Math.PI / n) + sway;              // 7 directions across the upper half circle, left to right
+          const len = 20 + (i % 2) * 5; const tipX = cx + Math.cos(a) * len, tipY = cy + Math.sin(a) * len * 0.55 + 10;   // fronds arch out then droop
+          const midX = cx + Math.cos(a) * len * 0.5, midY = cy + Math.sin(a) * len * 0.5 * 0.55 - 4;
+          g.fillStyle(i % 2 ? PAL.grass0 : PAL.grass1).fillTriangle(cx, cy - 2, midX + Math.sin(a) * 4, midY, tipX, tipY).fillTriangle(cx, cy + 2, midX - Math.sin(a) * 4, midY, tipX, tipY);
+          g.fillStyle(PAL.grass2).fillTriangle(cx, cy, midX, midY - 2, tipX, tipY - 1);
+        }
+        g.fillStyle(PAL.grass0).fillCircle(cx, cy, 4); g.fillStyle(PAL.earth0).fillRect(cx - 4, cy + 2, 3, 3).fillRect(cx + 1, cy + 3, 3, 3).fillRect(cx - 1, cy + 5, 3, 3);   // crown heart and three coconuts
+        break; }
       case 'umbrella': g.fillStyle(PAL.gray1).fillRect(x - 1, y - 18, 2, 18); g.fillStyle(r > 0.5 ? PAL.red : PAL.sky1).fillTriangle(x - 12, y - 14, x + 12, y - 14, x, y - 22); break;
       case 'boat': g.fillStyle(PAL.white).fillRect(x - 8, y - 4, 16, 4); g.fillStyle(PAL.earth1).fillRect(x - 1, y - 16, 2, 12); g.fillStyle(PAL.sun3).fillTriangle(x + 1, y - 16, x + 9, y - 6, x + 1, y - 6); break;
       case 'cactus': { const hgt = 26 + r * 22; g.fillStyle(PAL.grass0).fillRect(x - 3, y - hgt, 6, hgt).fillRect(x - 11, y - hgt * 0.6, 8, 4).fillRect(x - 11, y - hgt * 0.6 - 10, 4, 12).fillRect(x + 3, y - hgt * 0.5, 8, 4).fillRect(x + 7, y - hgt * 0.5 - 8, 4, 10); break; }

@@ -1,4 +1,4 @@
-// PACK-TRIS: pack the suitcase. A 10x16 well; the tetrominoes are luggage (shirt, shoes, charger coil, camera, book, socks).
+// PACK-TRIS: pack the suitcase. A 10x16 well, plain coloured tetrominoes (the original skin); the FRAGILE piece is drawn as glass and labelled in red.
 // D-pad left/right, DOWN held = soft drop (~10x gravity), A / B rotate. No hard drop, no clock.
 // Flavour: a FRAGILE wine bottle every 6th piece (land on it before its row clears and it shatters: −1 line, the column above drops);
 // a ZIPPER pull every 5 lines (bottom row removed, everything drops, speed steps up); a rare BATTERY (clears a 3x3 blast where it locks);
@@ -6,6 +6,7 @@
 import Phaser from 'phaser';
 import { PAL } from '../../../core/palette';
 import { clamp } from '../../_shared';
+import { hex } from '../../../core/palette';
 import type { Pad } from '../input';
 import type { ConsoleCtx, ConsoleGame, ConsoleResult } from './types';
 
@@ -19,8 +20,8 @@ const SHAPES: Record<string, number[][][]> = {
   J: [[[0, 0], [0, 1], [1, 1], [2, 1]], [[1, 0], [2, 0], [1, 1], [1, 2]], [[0, 1], [1, 1], [2, 1], [2, 2]], [[1, 0], [1, 1], [0, 2], [1, 2]]],
   L: [[[2, 0], [0, 1], [1, 1], [2, 1]], [[1, 0], [1, 1], [1, 2], [2, 2]], [[0, 1], [1, 1], [2, 1], [0, 2]], [[0, 0], [1, 0], [1, 1], [1, 2]]],
 };
-/** what each tetromino is packed as */
-const ITEM: Record<string, { name: string; color: number }> = { I: { name: 'CHARGER', color: PAL.gray2 }, O: { name: 'CAMERA', color: PAL.night3 }, T: { name: 'SHIRT', color: PAL.sky2 }, S: { name: 'BOOK', color: PAL.dusk3 }, Z: { name: 'SOCKS', color: PAL.grass2 }, J: { name: 'LEFT SHOE', color: PAL.earth2 }, L: { name: 'RIGHT SHOE', color: PAL.earth3 } };
+/** cell colours (the original skin) */
+const COLORS: Record<string, number> = { I: PAL.sky1, O: PAL.sun1, T: PAL.dusk3, S: PAL.grass2, Z: PAL.red, J: PAL.sea2, L: PAL.earth2 };
 const NAMES = Object.keys(SHAPES);
 interface Cell { k: string; f?: number; b?: boolean }
 interface Piece { k: string; r: number; x: number; y: number; f?: number; b?: boolean }
@@ -42,10 +43,11 @@ export class TetrisGame implements ConsoleGame {
     this.objs.push(s.add.rectangle(ctx.screen.centerX, ctx.screen.centerY, ctx.screen.width, ctx.screen.height, ctx.palette[0]).setDepth(ctx.depth));
     this.g = s.add.graphics().setDepth(ctx.depth + 2); this.objs.push(this.g); this.fx = s.add.graphics().setDepth(ctx.depth + 4); this.objs.push(this.fx);
     const tx = this.ox + COLS * CELL + 16; const mono = (y: number, txt: string, color: string, name?: string) => { const t = s.add.text(tx, y, txt, { fontFamily: 'monospace', fontSize: '10px', color }).setDepth(ctx.depth + 3); if (name) t.setName(name); this.objs.push(t); return t; };
-    mono(this.oy + 6, 'NEXT', '#b4b9c4'); mono(this.oy + 66, '', '#b4b9c4', 'tt_item'); mono(this.oy + 96, '', '#f7cf6b', 'tt_lines'); mono(this.oy + 150, 'LID: keep the\npile under\nthe line', '#6f7b8f');
+    mono(this.oy + 6, 'NEXT', '#b4b9c4'); mono(this.oy + 66, '', hex(PAL.red), 'tt_item'); mono(this.oy + 96, '', '#f7cf6b', 'tt_lines'); mono(this.oy + 150, 'LID: keep the\npile under\nthe line', '#6f7b8f');
+    const tag = s.add.text(this.ox - 5, this.oy + 10, 'FRAGILE', { fontFamily: 'monospace', fontSize: '9px', color: hex(PAL.red) }).setOrigin(1, 0).setDepth(ctx.depth + 3).setName('tt_tag').setVisible(false); this.objs.push(tag); s.tweens.add({ targets: tag, alpha: 0.4, yoyo: true, repeat: -1, duration: 500 });
     this.next = this.makePiece(); this.spawn(); ctx.setHearts(0, 0); this.hud();
   }
-  private hud() { (this.ctx.scene.children.getByName('tt_lines') as Phaser.GameObjects.Text | null)?.setText(`LINES  ${this.lines} / ${GOAL}\nLEVEL  ${this.level + 1}\nZIP in ${Math.max(0, this.nextZip - this.lines)}`); (this.ctx.scene.children.getByName('tt_item') as Phaser.GameObjects.Text | null)?.setText(this.next.f ? 'FRAGILE!\nwine bottle' : this.next.b ? 'BATTERY\n3x3 blast' : ITEM[this.next.k].name); this.ctx.setStatus(this.lines >= GOAL ? 'CLOSE THE LID' : `${this.lines}/${GOAL}`); }
+  private hud() { (this.ctx.scene.children.getByName('tt_lines') as Phaser.GameObjects.Text | null)?.setText(`LINES  ${this.lines} / ${GOAL}\nLEVEL  ${this.level + 1}\nZIP in ${Math.max(0, this.nextZip - this.lines)}`); const item = this.ctx.scene.children.getByName('tt_item') as Phaser.GameObjects.Text | null; item?.setText(this.next.f ? 'FRAGILE' : this.next.b ? 'BATTERY' : '').setColor(this.next.f ? hex(PAL.red) : hex(PAL.sun2)); (this.ctx.scene.children.getByName('tt_tag') as Phaser.GameObjects.Text | null)?.setVisible(!!this.cur.f); this.ctx.setStatus(this.lines >= GOAL ? 'CLOSE THE LID' : `${this.lines}/${GOAL}`); }
   private draw() { if (!this.bag.length) { this.bag = NAMES.slice(); for (let i = this.bag.length - 1; i > 0; i--) { const j = Math.floor(this.ctx.rng() * (i + 1)); [this.bag[i], this.bag[j]] = [this.bag[j], this.bag[i]]; } } return this.bag.pop()!; }
   /** the next piece: a fragile bottle every 6th, a rare battery, else a bag draw */
   private makePiece(): Piece { this.pieces++; if (this.pieces % FRAGILE_EVERY === 0) return { k: 'I', r: 0, x: 3, y: 0, f: ++this.fid }; if (this.pieces > 4 && this.pieces - this.lastBattery > 8 && this.ctx.rng() < 0.1) { this.lastBattery = this.pieces; return { k: 'O', r: 0, x: 3, y: 0, b: true }; } return { k: this.draw(), r: 0, x: 3, y: 0 }; }
@@ -113,19 +115,13 @@ export class TetrisGame implements ConsoleGame {
 
   // ---- drawing: each cell is a slice of its luggage item
   private block(x: number, y: number, cell: Cell, ghost = false) {
-    const g = this.g; const px = this.ox + x * CELL, py = this.oy + y * CELL; const col = cell.f ? PAL.grass1 : cell.b ? PAL.sun2 : ITEM[cell.k].color;
+    const g = this.g; const px = this.ox + x * CELL, py = this.oy + y * CELL; const col = cell.f ? PAL.sky3 : cell.b ? PAL.sun2 : COLORS[cell.k];
     if (ghost) { g.lineStyle(1, col, 0.5).strokeRect(px + 2, py + 2, CELL - 4, CELL - 4); return; }
-    g.fillStyle(PAL.ink).fillRect(px, py, CELL, CELL); g.fillStyle(col).fillRect(px + 1, py + 1, CELL - 2, CELL - 2); g.fillStyle(PAL.white, 0.2).fillRect(px + 2, py + 2, CELL - 4, 2);
-    if (cell.f) { g.fillStyle(PAL.white, 0.9).fillRect(px + 4, py + 5, 8, 6); g.fillStyle(PAL.red).fillRect(px + 6, py + 6, 4, 4); g.fillStyle(PAL.earth3).fillRect(px + 7, py + 1, 2, 3); return; }   // label + cork
-    if (cell.b) { g.fillStyle(PAL.ink).fillRect(px + 8, py + 3, 3, 5).fillRect(px + 5, py + 7, 6, 2).fillRect(px + 6, py + 9, 3, 5); return; }   // lightning bolt
-    switch (cell.k) {
-      case 'T': g.fillStyle(PAL.white, 0.5).fillRect(px + 3, py + 8, CELL - 6, 1); g.fillStyle(PAL.ink, 0.5).fillRect(px + 6, py + 3, 4, 2); break;                 // fold + collar
-      case 'J': case 'L': g.fillStyle(PAL.white).fillRect(px + 4, py + 5, 2, 2).fillRect(px + 9, py + 5, 2, 2).fillRect(px + 4, py + 9, 2, 2).fillRect(px + 9, py + 9, 2, 2); g.fillStyle(PAL.ink, 0.5).fillRect(px + 1, py + CELL - 4, CELL - 2, 3); break;   // laces + sole
-      case 'I': g.fillStyle(PAL.ink, 0.6).fillRect(px + 4, py + 2, 1, CELL - 4).fillRect(px + 8, py + 2, 1, CELL - 4).fillRect(px + 12, py + 2, 1, CELL - 4); break;   // coiled cable
-      case 'O': g.fillStyle(PAL.gray1).fillRect(px + 4, py + 4, 8, 8); g.fillStyle(PAL.ink).fillRect(px + 6, py + 6, 4, 4); g.fillStyle(PAL.red).fillRect(px + 11, py + 2, 2, 2); break;   // lens + record light
-      case 'S': g.fillStyle(PAL.white, 0.7).fillRect(px + 3, py + 4, CELL - 6, 1).fillRect(px + 3, py + 7, CELL - 6, 1).fillRect(px + 3, py + 10, CELL - 6, 1); break;   // pages
-      case 'Z': g.fillStyle(PAL.white, 0.6).fillRect(px + 1, py + 5, CELL - 2, 2).fillRect(px + 1, py + 10, CELL - 2, 2); break;   // sock stripes
-    }
+    if (cell.f) {   // glass: pale translucent fill, white highlight edge, a small shine
+      g.fillStyle(PAL.ink).fillRect(px, py, CELL, CELL); g.fillStyle(PAL.night0).fillRect(px + 1, py + 1, CELL - 2, CELL - 2); g.fillStyle(PAL.sky3, 0.45).fillRect(px + 1, py + 1, CELL - 2, CELL - 2);
+      g.fillStyle(PAL.white, 0.9).fillRect(px + 1, py + 1, CELL - 2, 1).fillRect(px + 1, py + 1, 1, CELL - 2); g.fillStyle(PAL.white).fillRect(px + 3, py + 3, 3, 2).fillRect(px + 3, py + 5, 2, 1); g.fillStyle(PAL.white, 0.35).fillRect(px + CELL - 4, py + CELL - 6, 1, 3); return; }
+    g.fillStyle(PAL.ink).fillRect(px, py, CELL, CELL); g.fillStyle(col).fillRect(px + 1, py + 1, CELL - 2, CELL - 2); g.fillStyle(PAL.white, 0.25).fillRect(px + 2, py + 2, CELL - 4, 2); g.fillStyle(PAL.ink, 0.35).fillRect(px + 2, py + CELL - 4, CELL - 4, 2); g.fillStyle(PAL.ink, 0.5).fillRect(px + 6, py + 7, 4, 2);
+    if (cell.b) g.fillStyle(PAL.ink).fillRect(px + 8, py + 3, 3, 5).fillRect(px + 5, py + 7, 6, 2).fillRect(px + 6, py + 9, 3, 5);   // lightning bolt
   }
   private render() {
     const g = this.g; g.clear(); g.fillStyle(PAL.ink).fillRect(this.ox - 2, this.oy - 2, COLS * CELL + 4, ROWS * CELL + 4); g.fillStyle(PAL.night0).fillRect(this.ox, this.oy, COLS * CELL, ROWS * CELL);
@@ -137,8 +133,8 @@ export class TetrisGame implements ConsoleGame {
     if (!this.ended) { let gy = c.y; while (!this.collides(c.x, gy + 1, c.r)) gy++; for (const [x, y] of this.cells(c.k, c.r, c.x, gy)) if (y >= 0) this.block(x, y, cell, true); }
     for (const [x, y] of this.cells(c.k, c.r, c.x, c.y)) if (y >= 0) this.block(x, y, cell);
     // next preview
-    const nx = this.ox + COLS * CELL + 16, ny = this.oy + 20; g.fillStyle(PAL.night0).fillRect(nx - 2, ny - 2, 4 * 10 + 4, 4 * 10 + 4); const ncol = this.next.f ? PAL.grass1 : this.next.b ? PAL.sun2 : ITEM[this.next.k].color;
-    for (const [x, y] of SHAPES[this.next.k][0]) { g.fillStyle(PAL.ink).fillRect(nx + x * 10, ny + y * 10, 10, 10); g.fillStyle(ncol).fillRect(nx + x * 10 + 1, ny + y * 10 + 1, 8, 8); }
+    const nx = this.ox + COLS * CELL + 16, ny = this.oy + 20; g.fillStyle(PAL.night0).fillRect(nx - 2, ny - 2, 4 * 10 + 4, 4 * 10 + 4); const ncol = this.next.f ? PAL.sky3 : this.next.b ? PAL.sun2 : COLORS[this.next.k];
+    for (const [x, y] of SHAPES[this.next.k][0]) { const qx = nx + x * 10, qy = ny + y * 10; g.fillStyle(PAL.ink).fillRect(qx, qy, 10, 10); if (this.next.f) { g.fillStyle(PAL.night0).fillRect(qx + 1, qy + 1, 8, 8); g.fillStyle(PAL.sky3, 0.45).fillRect(qx + 1, qy + 1, 8, 8); g.fillStyle(PAL.white, 0.9).fillRect(qx + 1, qy + 1, 8, 1).fillRect(qx + 1, qy + 1, 1, 8); g.fillStyle(PAL.white).fillRect(qx + 3, qy + 3, 2, 1); } else g.fillStyle(ncol).fillRect(qx + 1, qy + 1, 8, 8); }
   }
   scoreNow() { return (this.lines / GOAL) * 70; }
   destroy() { const kill = (o?: { destroy: () => void }) => { try { if (o && (o as any).scene) o.destroy(); } catch { /* gone */ } }; this.objs.forEach(kill); }

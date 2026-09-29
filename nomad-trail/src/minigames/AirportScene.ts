@@ -17,7 +17,7 @@ import { genFork, genDoors } from './gateForks';
  * Payload: { gate?: string } like 'B56'. Boarding closes 60 s after READY. Score: 100 − 8 per wrong turn − 1 per collision (−4 each beyond two).
  */
 type ObKind = 'traveller' | 'bag' | 'rope' | 'cart' | 'walkway';
-interface Ob { kind: ObKind; lane: number; z: number; hit?: boolean; used?: boolean; }
+interface Ob { kind: ObKind; lane: number; z: number; hit?: boolean; used?: boolean; /** elapsed at spawn; reached = passed the runner's depth (pop-in metric) */ spawnAt: number; reached?: boolean; }
 interface Fork { z: number; hold: number; left: string; right: string; correct: number; doors?: string[]; resolved?: boolean; }
 const HORIZON = 210, FLOOR = 560, VX = W / 2;
 const LANE_NEAR = 96, LANE_FAR = 12;
@@ -29,6 +29,7 @@ export class AirportScene extends Phaser.Scene {
   private gateLetter = 'B'; private gateNum = 56;
   lane = 1; private laneX = 0; private jumpT = -1; private speed = 0.5; private boost = 0; private dist = 0; private elapsed = 0;
   private obstacles: Ob[] = []; private fork?: Fork; private stage = 0; private nextForkAt = FIRST_FORK; private nextObAt = 1.0;
+  /** harness: the shortest time any obstacle took from spawning to reaching the runner (pop-in check, should stay ≥ 1.4 s) */ popMin = Infinity;
   private wrong = 0; private collisions = 0; private penalty = 0; private stunned = 0; private iframes = 0; private ended = false; private uturn = 0;
   /** waiting = instruction card up; turning = the 90° sweep; deadEnd = the wall after a wrong turn (z), -1 when none */
   waiting = true; private turning?: { dir: number; t: number; ok: boolean; wall?: Fork; swapped?: boolean }; private deadEnd = -1; private ox = 0;
@@ -43,7 +44,7 @@ export class AirportScene extends Phaser.Scene {
     this.gateLetter = m ? m[1] : 'B'; this.gateNum = m ? clamp(parseInt(m[2], 10), 1, 99) : 56;
     this.lane = 1; this.jumpT = -1; this.dist = 0; this.elapsed = 0; this.obstacles = []; this.fork = undefined; this.stage = 0; this.nextForkAt = FIRST_FORK; this.nextObAt = 1.0;
     this.wrong = 0; this.collisions = 0; this.penalty = 0; this.stunned = 0; this.iframes = 0; this.ended = false; this.uturn = 0; this.boost = 0; this.runT = 0;
-    this.waiting = true; this.turning = undefined; this.deadEnd = -1; this.ox = 0; this.card = [];
+    this.waiting = true; this.turning = undefined; this.deadEnd = -1; this.ox = 0; this.card = []; this.popMin = Infinity;
   }
   get gate() { return `${this.gateLetter}${this.gateNum}`; }
 
@@ -107,8 +108,10 @@ export class AirportScene extends Phaser.Scene {
     const f = this.fork; const live = this.obstacles.filter(o => !o.hit && !o.used && o.z < 0.34);
     const blocker = (ln: number) => live.filter(o => o.lane === ln && (o.kind === 'traveller' || o.kind === 'cart')).sort((a, b) => a.z - b.z)[0];
     const target = f ? f.correct : this.lane; let lane = target;
-    if (blocker(target) && (!f || f.z > 0.22)) {   // the lane we want has a person or a cart coming: sidestep to a free neighbour, come back for the wall
-      const alts = [target - 1, target + 1].filter(l => l >= 0 && l <= 2 && !blocker(l)); if (alts.length) lane = alts.includes(this.lane) ? this.lane : alts[0]; }
+    if (blocker(target) && (!f || f.z > 0.22)) {   // the lane we want has a person or a cart coming: sidestep to the neighbour whose own blocker is farthest, come back for the wall
+      const room = (l: number) => { const b = blocker(l); return b ? b.z : Infinity; };
+      const alts = [target - 1, target + 1].filter(l => l >= 0 && l <= 2).sort((a, b) => room(b) - room(a) || (a === this.lane ? -1 : b === this.lane ? 1 : 0));
+      if (alts.length && room(alts[0]) > room(target)) lane = alts[0]; }
     const near = live.filter(o => o.lane === this.lane).sort((a, b) => a.z - b.z)[0];
     const jump = !!near && lane === this.lane && (near.kind === 'bag' || near.kind === 'rope') && near.z < 0.14 && this.jumpT < 0;
     return { lane, jump };
@@ -137,11 +140,11 @@ export class AirportScene extends Phaser.Scene {
   private forkPassed() {
     this.stage++; this.frame.setProgress(`fork ${Math.min(this.stage, 5)}/5`); this.frame.flash(PAL.neon, 40);
     if (this.stage >= 5) { this.boarding(); return; }
-    this.fork = undefined; this.nextForkAt = this.elapsed + FORK_GAP;
+    this.fork = undefined; this.nextForkAt = this.elapsed + FORK_GAP; this.nextObAt = Math.max(this.nextObAt, this.elapsed + 0.8);   // 0.8 s clear window after a wall
   }
   private wrongWay(afterTurn: boolean, label = 'WRONG WAY') {
     this.wrong++; this.penalty += 3; this.uturn = 1.3; this.frame.shake(160, 0.006); this.frame.flash(PAL.red, 120); this.say(label, PAL.red);
-    this.fork = undefined; this.deadEnd = -1; this.obstacles = []; this.nextForkAt = this.elapsed + (afterTurn ? 1.2 : 1.6);
+    this.fork = undefined; this.deadEnd = -1; this.obstacles = []; this.nextForkAt = this.elapsed + (afterTurn ? 1.2 : 1.6); this.nextObAt = this.elapsed + this.uturn + 0.8;
   }
   private say(s: string, color: number) { this.banner?.destroy(); this.banner = txt(this, W / 2, 300, s, 20, color).setDepth(30); this.tweens.add({ targets: this.banner, alpha: 0, y: 270, duration: 900, delay: 300, onComplete: () => { this.banner?.destroy(); this.banner = undefined; } }); }
   private boarding() {
@@ -177,14 +180,23 @@ export class AirportScene extends Phaser.Scene {
     if (this.jumpT >= 0) { this.jumpT += dt / 0.6; if (this.jumpT >= 1) this.jumpT = -1; }
     // spawn: a fork wall appears far ahead and holds at the horizon so the signs can be read, then approaches
     if (!this.fork && this.elapsed >= this.nextForkAt && this.stage < 5) this.fork = this.makeFork();
-    // obstacles keep coming while a wall is still far (they step out from its base), so the approach is not an empty corridor; none once it is close
-    if ((!this.fork || this.fork.z > 0.5) && this.elapsed >= this.nextObAt) {
-      const kinds: ObKind[] = ['traveller', 'traveller', 'bag', 'bag', 'rope', 'cart', 'walkway']; const kind = Phaser.Utils.Array.GetRandom(kinds); const lane = Phaser.Math.Between(0, 2); const z0 = this.fork ? Math.min(1, this.fork.z - 0.03) : 1;
-      if (!this.obstacles.some(o => o.z > z0 - 0.2)) this.obstacles.push({ kind, lane, z: z0 });
-      this.nextObAt = this.elapsed + clamp(0.87 / (ramp * this.frame.speed), 0.47, 1.07);   // round 10: 1.5x the obstacles; one lane each, so every gap stays passable
+    // obstacles always spawn at the horizon (never mid-corridor, never behind an approaching wall), drawn at 30% size so they are visible from the first frame.
+    // Fairness rules: (a) nothing spawns that would reach the runner inside the last 1.2 s before a wall arrives; (b) in any 0.6 s slice of corridor at
+    // most two lanes are blocked (a walkway never blocks); (c) 0.35 depth between obstacles in one lane; 1.5x round-9 density otherwise.
+    const vPlan = this.speed * ramp;
+    if (this.elapsed >= this.nextObAt && (!this.fork || this.fork.z >= 0.97)) {
+      const z0 = 1; const reach = z0 / vPlan; const wallT = this.fork ? this.fork.hold + this.fork.z / FORK_APPROACH : Infinity;
+      if (reach <= wallT - 1.2) {
+        const kinds: ObKind[] = ['traveller', 'traveller', 'bag', 'bag', 'rope', 'cart', 'walkway']; const kind = Phaser.Utils.Array.GetRandom(kinds);
+        const blocked = new Set(this.obstacles.filter(o => o.kind !== 'walkway' && !o.hit && Math.abs(o.z - z0) < 0.6 * vPlan).map(o => o.lane));
+        const lanes = Phaser.Utils.Array.Shuffle([0, 1, 2]).filter(l => (kind === 'walkway' || new Set([...blocked, l]).size <= 2) && !this.obstacles.some(o => o.lane === l && Math.abs(o.z - z0) < 0.35));
+        if (lanes.length) { this.obstacles.push({ kind, lane: lanes[0], z: z0, spawnAt: this.elapsed }); this.nextObAt = this.elapsed + clamp(0.87 / (ramp * this.frame.speed), 0.47, 1.07); }
+        else this.nextObAt = this.elapsed + 0.15;   // every lane busy at this depth: try again shortly
+      } else this.nextObAt = this.elapsed + 0.15;
     }
-    // advance
-    for (const o of this.obstacles) o.z -= v * dt;
+    // advance (a walkway boost speeds the floor 1.5x but obstacles only 1.2x, so nothing arrives faster than the eye can track)
+    const vObs = this.speed * ramp * (this.stunned > 0 ? 0.45 : 1) * (this.boost > 0 ? 1.2 : 1);
+    for (const o of this.obstacles) { o.z -= vObs * dt; if (!o.reached && o.z <= 0.03) { o.reached = true; this.popMin = Math.min(this.popMin, this.elapsed - o.spawnAt); } }
     if (this.fork) { if (this.fork.hold > 0) this.fork.hold -= dt; else this.fork.z -= FORK_APPROACH * dt; }   // fixed approach: 2 s hold + 3.3 s of travel = 5+ s of reading
     const airborne = this.jumpT > 0.2 && this.jumpT < 0.8;
     for (const o of this.obstacles) {
@@ -225,7 +237,7 @@ export class AirportScene extends Phaser.Scene {
     // obstacles far → near (nothing beyond a wall)
     const obs = [...this.obstacles].filter(o => !f || o.z < f.z).sort((a, b) => b.z - a.z);
     for (const o of obs) {
-      if (o.z < -0.02) continue; const z = clamp(o.z, 0, 1), s = this.scaleAt(z), x = this.laneScreenX(o.lane, z), y = this.screenY(z); const a = o.hit ? 0.35 : 1;
+      if (o.z < -0.02) continue; const z = clamp(o.z, 0, 1), s = 0.3 + 0.7 * Math.pow(1 - z, 1.4), x = this.laneScreenX(o.lane, z), y = this.screenY(z); const a = o.hit ? 0.35 : 1;   // obstacles: 30% at the horizon so they never pop in
       switch (o.kind) {
         case 'traveller': { g.fillStyle(PAL.night0, a).fillRect(x - 9 * s, y - 56 * s, 18 * s, 56 * s); g.fillStyle(PAL.earth3, a).fillRect(x - 6 * s, y - 68 * s, 12 * s, 12 * s); g.fillStyle(PAL.dusk2, a).fillRect(x - 12 * s, y - 50 * s, 6 * s, 24 * s); g.fillStyle(PAL.gray0, a).fillRect(x + 12 * s, y - 26 * s, 14 * s, 26 * s); break; }
         case 'bag': { g.fillStyle(PAL.ink, a).fillRect(x - 15 * s, y - 22 * s, 30 * s, 22 * s); g.fillStyle(PAL.red, a).fillRect(x - 13 * s, y - 20 * s, 26 * s, 18 * s); g.fillStyle(PAL.ink, a).fillRect(x - 12 * s, y - 2 * s, 6 * s, 3 * s); g.fillStyle(PAL.ink, a).fillRect(x + 6 * s, y - 2 * s, 6 * s, 3 * s); break; }

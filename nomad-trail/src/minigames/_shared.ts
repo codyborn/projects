@@ -15,6 +15,7 @@ export function normalizeLaunch(data: any): MinigameLaunch {
     extraLives: typeof d.extraLives === 'number' ? Math.max(0, Math.floor(d.extraLives)) : 0,
     onDone: typeof d.onDone === 'function' ? d.onDone : () => {},
     preview: typeof d.preview === 'function' ? d.preview : undefined,
+    cancellable: d.cancellable,
   };
 }
 
@@ -137,6 +138,12 @@ export class MinigameFrame {
     const t2 = add(txt(s, W / 2, top + 52, instruction, 11, PAL.gray2).setDepth(902)) as Phaser.GameObjects.Text; t2.setOrigin(0.5, 0).setWordWrapWidth(W - 72).setAlign('center');
     if (opts.extra) opts.extra(s, o => { (o as any).setDepth?.(902); add(o); });
     if (this.hard > 0.3) add(txt(s, W / 2, top + ph - 78, 'low energy: everything feels slower', 9, PAL.pink).setDepth(902));
+    /* changed your mind: BACK cancels the activity; the city restores the state from before the tap */
+    if (this.launch.cancellable !== false) {
+      const back = add(s.add.rectangle(56, top + ph - 44, 64, 40, PAL.night3).setDepth(902).setStrokeStyle(1, PAL.ink).setInteractive({ useHandCursor: true })) as Phaser.GameObjects.Rectangle;
+      add(txt(s, 56, top + ph - 44, 'BACK', 10, PAL.gray2).setDepth(903));
+      back.on('pointerup', () => { if (this.active || this.finished) return; this.finished = true; this.readyHandler = undefined; this.introObjs.forEach(o => o.destroy()); this.introObjs = []; try { this.launch.onDone({ score: 0, perfect: false, failed: false, cancelled: true }); } finally { s.scene.stop(); } });
+    }
     const btn = add(s.add.rectangle(W / 2, top + ph - 44, 180, 48, PAL.sun0).setDepth(902).setStrokeStyle(2, PAL.ink).setInteractive({ useHandCursor: true })) as Phaser.GameObjects.Rectangle;
     add(txt(s, W / 2, top + ph - 44, 'READY', 18, PAL.white).setDepth(903));
     s.tweens.add({ targets: btn, scaleX: 1.04, scaleY: 1.06, yoyo: true, repeat: -1, duration: 600 });

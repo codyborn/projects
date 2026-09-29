@@ -11,7 +11,7 @@ export interface ConsoleCtx {
   scene: Phaser.Scene;
   /** screen rectangle on the phone (world origin is screen.x, screen.y) */
   screen: Phaser.Geom.Rectangle;
-  level: ArcadeLevel; cityName: string; hazard: Hazard; palette: [number, number, number];
+  level: ArcadeLevel; cityName: string; hazard: Hazard; palette: [number, number, number]; /** engine climate id when known (hot / temperate / rainy → bed bugs, alpine / cold → ticks) */ climate?: string;
   rng: () => number; difficulty: number; hard: number; speed: number;
   /** depth base for game objects (bezel sits above) */ depth: number;
   /** the screen's own camera: viewport = screen, scroll starts at (screen.x, screen.y) so screen coords are identity; scrolling games move scrollX */ camera: Phaser.Cameras.Scene2D.Camera;

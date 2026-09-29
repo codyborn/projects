@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { CityAction, MinigameLaunch, MinigameResult } from '../core/types';
+import type { CityAction, MinigameLaunch, MinigameResult, RunState } from '../core/types';
 import { PAL, txt, rect, type Label } from '../ui/theme';
 import { Button } from '../ui/Button';
 import { Panel, dimmer } from '../ui/Panel';
@@ -8,11 +8,11 @@ import { toast } from '../ui/Toast';
 import { Sim, Data, getRun, putRun } from '../ui/simBridge';
 import { launchOnTop } from '../ui/overlay';
 import { buildIcons } from '../art/icons';
-const ACTIONS: { a: CityAction | 'map'; label: string; icon: string; tip: string }[] = [
-  { a: 'work', label: 'WORK WEEK', icon: '💻', tip: 'a remote day' }, { a: 'explore', label: 'EXPLORE', icon: '🧭', tip: 'mood up, mild risk' },
-  { a: 'train', label: 'WORK OUT', icon: '🏋', tip: 'stay fit' }, { a: 'cook', label: 'COOK', icon: '🍳', tip: 'local dish' },
-  { a: 'rest', label: 'REST', icon: '🛏', tip: 'energy up' }, { a: 'laundry', label: 'LAUNDRY', icon: '🧺', tip: 'a day, clean clothes' },
-  { a: 'map', label: 'MAP', icon: '🌍', tip: 'where you are' }, { a: 'moveon', label: 'MOVE ON', icon: '✈', tip: 'pick the next city' } ];
+const ACTIONS: { a: CityAction | 'map'; label: string; tip: string }[] = [
+  { a: 'work', label: 'WORK WEEK', tip: 'a remote day' }, { a: 'explore', label: 'EXPLORE', tip: 'mood up, mild risk' },
+  { a: 'train', label: 'WORK OUT', tip: 'stay fit' }, { a: 'cook', label: 'COOK', tip: 'local dish' },
+  { a: 'rest', label: 'REST', tip: 'energy up' }, { a: 'laundry', label: 'LAUNDRY', tip: 'a day, clean clothes' },
+  { a: 'map', label: 'MAP', tip: 'where you are' }, { a: 'moveon', label: 'MOVE ON', tip: 'pick the next city' } ];
 /** City: arrival card, HUD, day actions, log. Launches mini-games, Coffee, Event as overlays and pauses itself. */
 export class CityScene extends Phaser.Scene {
   static KEY = 'City'; private hud!: Hud; private logLbl!: Label; private busy = false; private lastDay = -1; private btns: Button[] = []; private btnActs: (CityAction | 'map')[] = [];
@@ -41,10 +41,10 @@ export class CityScene extends Phaser.Scene {
         else { const sd = side[0]; this.btns.push(new Button(this, x, y, sd.label, () => this.act(sd.a), { w: 160, h: 48, size: 12, iconKey: sd.key, fill: PAL.night2 })); this.btnActs.push(sd.a); }
         return;
       }
-      this.btns.push(new Button(this, x, y, act.label, () => this.act(act.a), { w: 160, h: 48, size: 12, icon: act.icon, iconKey: act.a === 'map' ? 'ico_map' : undefined, fill: act.a === 'moveon' ? PAL.sea0 : PAL.night2 })); this.btnActs.push(act.a);
+      this.btns.push(new Button(this, x, y, act.label, () => this.act(act.a), { w: 160, h: 48, size: 12, iconKey: act.a === 'map' ? 'ico_map' : undefined, fill: act.a === 'moveon' ? PAL.sea0 : PAL.night2 })); this.btnActs.push(act.a);
     });
     this.btns.forEach(b => b.setDepth(10));   /* above the vista (depth 1), which is rebuilt on day changes and would otherwise cover them */
-    txt(this, 180, 620, '1 action = 1 day · work = puzzle, then Mon-Fri', 8, PAL.gray0).setOrigin(0.5).setDepth(5);
+    txt(this, 180, 620, '1 action = 1 day · work week = 5 days', 8, PAL.gray0).setOrigin(0.5).setDepth(5);
     this.refreshWorkBtn(run.day);
     if (data.arrived) { this.arrivalCard(); (this.sys.settings.data as any).arrived = false; }   /* STAY / BACK restart the scene without data; do not welcome the player twice */
   }
@@ -102,7 +102,8 @@ export class CityScene extends Phaser.Scene {
   private refreshWorkBtn(day: number) { const b = this.btns[0]; if (!b) return; const wk = Sim.isWeekend(day); b.setLabel(wk ? 'WEEKEND' : 'WORK WEEK'); b.setAlpha(wk ? 0.55 : 1); }
   private minigame(m: { key: string; payload?: any; difficulty: number; extraLives?: number }) {
     return new Promise<void>(resolve => {
-      const run = getRun(this); const finish = (r: MinigameResult) => { const s = Sim.applyMinigameResult(getRun(this), m.key, r); putRun(this, s); this.hud.refresh(s); toast(this, r.failed ? 'that did not go well' : r.perfect ? 'PERFECT' : `score ${Math.round(r.score)}`, r.failed ? PAL.red : PAL.neon); resolve(); };
+      const run = getRun(this); const before = JSON.parse(JSON.stringify(run)) as RunState;
+      const finish = (r: MinigameResult) => { if (r.cancelled) { putRun(this, before); this.hud.refresh(before); this.refreshLog(); toast(this, 'Another time.', PAL.gray2, 800); resolve(); return; } const s = Sim.applyMinigameResult(getRun(this), m.key, r); putRun(this, s); this.hud.refresh(s); toast(this, r.failed ? 'that did not go well' : r.perfect ? 'PERFECT' : `score ${Math.round(r.score)}`, r.failed ? PAL.red : PAL.neon); resolve(); };
       if (!this.scene.get(m.key)) { toast(this, `(${m.key} not installed yet)`, PAL.gray2, 900); finish({ score: 50, perfect: false, failed: false }); return; }
       const launch: MinigameLaunch = { energy: run.energy, difficulty: m.difficulty, payload: m.payload, extraLives: m.extraLives, preview: (r) => Sim.previewMinigame(run, m.key, r), onDone: (r) => { if (this.scene.isActive(m.key) || this.scene.isPaused(m.key)) this.scene.stop(m.key); this.scene.resume(); finish(r); } };
       launchOnTop(this, m.key, launch); this.scene.pause();

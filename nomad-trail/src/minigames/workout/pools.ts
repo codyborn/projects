@@ -12,7 +12,7 @@ export const META: Record<string, MicroMeta> = {
   stretch:     { name: 'Stretch',       word: 'EASY!',     instr: 'Drag the slider all the way across. Slowly. Jerks fail it.', hint: 'DRAG slowly - lifting pauses', durationSec: 8 },
   boulderbeta: { name: 'Boulder Beta',  word: 'MEMORISE!', instr: 'Watch the holds light up. Then tap them back in the same order before your grip runs out.', hint: 'WATCH, then TAP the holds', durationSec: 9 },
   dyno:        { name: 'Dyno',          word: 'CATCH!',    instr: 'Tap at the top of the swing to catch the next hold.', hint: 'TAP at the top of the swing', durationSec: 8 },
-  riverstones: { name: 'River Stones',  word: 'HOP!',      instr: 'Tap when the next stone is at its highest.', hint: 'TAP at the stone peak', durationSec: 8 },
+  riverstones: { name: 'River Stones',  word: 'HOP!',      instr: 'Tap when the next stone lights up.', hint: 'TAP when the stone is lit', durationSec: 8 },
   swimbreath:  { name: 'Swim Breathing', word: 'STROKE!',  instr: "Tap LEFT, RIGHT, LEFT... When the bubble appears, DON'T tap: breathe.", hint: 'TAP L, R, L - not on the bubble', durationSec: 8 },
   balance:     { name: 'Balance Board', word: 'STEADY!',   instr: 'Hold LEFT or RIGHT to lean against the gusts. Stay centred.', hint: 'HOLD left/right vs gusts', durationSec: 7 },
   pose:        { name: 'Yoga',          word: 'YOGA!',     instr: 'Scroll the wheel on the right to the pose the shadow shows: Downward Dog, Cobra, Warrior II or Plank. Hold it half a second.', hint: 'SCROLL the wheel - hold it', durationSec: 8 },

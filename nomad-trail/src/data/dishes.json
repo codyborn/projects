@@ -12,19 +12,23 @@
   "steps": [
    {
     "kind": "shake",
-    "count": 6
+    "count": 6,
+    "what": "key lime filling"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "filling into the crust"
    },
    {
     "kind": "chop",
-    "count": 5
+    "count": 5,
+    "what": "lime"
    },
    {
     "kind": "plate",
-    "count": 2
+    "count": 2,
+    "what": "stone crab"
    }
   ],
   "health": 8,
@@ -44,19 +48,23 @@
   "steps": [
    {
     "kind": "slice",
-    "count": 3
+    "count": 3,
+    "what": "pickles"
    },
    {
     "kind": "fold",
-    "count": 2
+    "count": 2,
+    "what": "sandwich"
    },
    {
     "kind": "grill",
-    "count": 1
+    "count": 1,
+    "what": "pressed sandwich"
    },
    {
     "kind": "dice",
-    "count": 3
+    "count": 3,
+    "what": "ham"
    }
   ],
   "health": 6,
@@ -74,19 +82,23 @@
   "steps": [
    {
     "kind": "knead",
-    "count": 10
+    "count": 10,
+    "what": "dough"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "sauce"
    },
    {
     "kind": "season",
-    "count": 4
+    "count": 4,
+    "what": "mozzarella"
    },
    {
     "kind": "grill",
-    "count": 1
+    "count": 1,
+    "what": "slice"
    }
   ],
   "health": 4,
@@ -105,19 +117,23 @@
   "steps": [
    {
     "kind": "slice",
-    "count": 3
+    "count": 3,
+    "what": "bagel"
    },
    {
     "kind": "fold",
-    "count": 2
+    "count": 2,
+    "what": "lox"
    },
    {
     "kind": "plate",
-    "count": 3
+    "count": 3,
+    "what": "bagel"
    },
    {
     "kind": "season",
-    "count": 3
+    "count": 3,
+    "what": "capers"
    }
   ],
   "health": 6,
@@ -136,19 +152,23 @@
   "steps": [
    {
     "kind": "dice",
-    "count": 4
+    "count": 4,
+    "what": "potato"
    },
    {
     "kind": "grill",
-    "count": 1
+    "count": 1,
+    "what": "pork"
    },
    {
     "kind": "simmer",
-    "count": 4
+    "count": 4,
+    "what": "stew"
    },
    {
     "kind": "season",
-    "count": 3
+    "count": 3,
+    "what": "green chile"
    }
   ],
   "health": 10,
@@ -167,19 +187,23 @@
   "steps": [
    {
     "kind": "knead",
-    "count": 8
+    "count": 8,
+    "what": "bun"
    },
    {
     "kind": "grill",
-    "count": 1
+    "count": 1,
+    "what": "bison patty"
    },
    {
     "kind": "flip",
-    "count": 3
+    "count": 3,
+    "what": "patty"
    },
    {
     "kind": "plate",
-    "count": 3
+    "count": 3,
+    "what": "burger"
    }
   ],
   "health": 9,
@@ -198,19 +222,23 @@
   "steps": [
    {
     "kind": "shake",
-    "count": 5
+    "count": 5,
+    "what": "batter"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "batter"
    },
    {
     "kind": "flip",
-    "count": 3
+    "count": 3,
+    "what": "pancake"
    },
    {
     "kind": "plate",
-    "count": 2
+    "count": 2,
+    "what": "pancakes"
    }
   ],
   "health": 5,
@@ -226,19 +254,23 @@
   "steps": [
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "gravy"
    },
    {
     "kind": "plate",
-    "count": 3
+    "count": 3,
+    "what": "plate"
    },
    {
     "kind": "skewer",
-    "count": 4
+    "count": 4,
+    "what": "shrimp"
    },
    {
     "kind": "stir",
-    "count": 2
+    "count": 2,
+    "what": "mac and cheese"
    }
   ],
   "health": 2,
@@ -257,19 +289,23 @@
   "steps": [
    {
     "kind": "dice",
-    "count": 4
+    "count": 4,
+    "what": "onion"
    },
    {
     "kind": "grill",
-    "count": 1
+    "count": 1,
+    "what": "tomato"
    },
    {
     "kind": "simmer",
-    "count": 5
+    "count": 5,
+    "what": "chili"
    },
    {
     "kind": "season",
-    "count": 4
+    "count": 4,
+    "what": "cumin"
    }
   ],
   "health": 8,
@@ -289,19 +325,23 @@
   "steps": [
    {
     "kind": "grill",
-    "count": 1
+    "count": 1,
+    "what": "white fish"
    },
    {
     "kind": "chop",
-    "count": 5
+    "count": 5,
+    "what": "cabbage"
    },
    {
     "kind": "fold",
-    "count": 2
+    "count": 2,
+    "what": "tortilla"
    },
    {
     "kind": "season",
-    "count": 3
+    "count": 3,
+    "what": "lime crema"
    }
   ],
   "health": 9,
@@ -319,19 +359,23 @@
   "steps": [
    {
     "kind": "chop",
-    "count": 6
+    "count": 6,
+    "what": "fries"
    },
    {
     "kind": "skewer",
-    "count": 3
+    "count": 3,
+    "what": "cheese curds"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "gravy"
    },
    {
     "kind": "simmer",
-    "count": 3
+    "count": 3,
+    "what": "gravy"
    }
   ],
   "health": 3,
@@ -351,19 +395,23 @@
   "steps": [
    {
     "kind": "grill",
-    "count": 1
+    "count": 1,
+    "what": "pork"
    },
    {
     "kind": "chop",
-    "count": 4
+    "count": 4,
+    "what": "pineapple"
    },
    {
     "kind": "fold",
-    "count": 2
+    "count": 2,
+    "what": "tortilla"
    },
    {
     "kind": "season",
-    "count": 3
+    "count": 3,
+    "what": "cilantro"
    }
   ],
   "health": 9,
@@ -383,23 +431,28 @@
   "steps": [
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "crema"
    },
    {
     "kind": "flip",
-    "count": 3
+    "count": 3,
+    "what": "white fish"
    },
    {
     "kind": "chop",
-    "count": 4
+    "count": 4,
+    "what": "cabbage"
    },
    {
     "kind": "fold",
-    "count": 2
+    "count": 2,
+    "what": "tortilla"
    },
    {
     "kind": "plate",
-    "count": 2
+    "count": 2,
+    "what": "tacos"
    }
   ],
   "health": 9,
@@ -418,19 +471,23 @@
   "steps": [
    {
     "kind": "dice",
-    "count": 4
+    "count": 4,
+    "what": "conch"
    },
    {
     "kind": "simmer",
-    "count": 5
+    "count": 5,
+    "what": "coconut milk"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "plantain"
    },
    {
     "kind": "plate",
-    "count": 2
+    "count": 2,
+    "what": "sopa de caracol"
    }
   ],
   "health": 9,
@@ -449,19 +506,23 @@
   "steps": [
    {
     "kind": "knead",
-    "count": 8
+    "count": 8,
+    "what": "flour tortilla"
    },
    {
     "kind": "flip",
-    "count": 2
+    "count": 2,
+    "what": "egg"
    },
    {
     "kind": "fold",
-    "count": 2
+    "count": 2,
+    "what": "tortilla"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "beans"
    }
   ],
   "health": 7,
@@ -481,19 +542,23 @@
   "steps": [
    {
     "kind": "slice",
-    "count": 3
+    "count": 3,
+    "what": "onion"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "lime juice"
    },
    {
     "kind": "shake",
-    "count": 4
+    "count": 4,
+    "what": "fish and lime"
    },
    {
     "kind": "season",
-    "count": 3
+    "count": 3,
+    "what": "chili"
    }
   ],
   "health": 10,
@@ -512,19 +577,23 @@
   "steps": [
    {
     "kind": "grill",
-    "count": 1
+    "count": 1,
+    "what": "hot dog"
    },
    {
     "kind": "chop",
-    "count": 3
+    "count": 3,
+    "what": "tomato"
    },
    {
     "kind": "slice",
-    "count": 2
+    "count": 2,
+    "what": "avocado"
    },
    {
     "kind": "plate",
-    "count": 3
+    "count": 3,
+    "what": "completo"
    }
   ],
   "health": 3,
@@ -543,19 +612,23 @@
   "steps": [
    {
     "kind": "season",
-    "count": 5
+    "count": 5,
+    "what": "salt"
    },
    {
     "kind": "grill",
-    "count": 1
+    "count": 1,
+    "what": "beef"
    },
    {
     "kind": "flip",
-    "count": 2
+    "count": 2,
+    "what": "beef"
    },
    {
     "kind": "chop",
-    "count": 4
+    "count": 4,
+    "what": "chimichurri"
    }
   ],
   "health": 10,
@@ -575,19 +648,23 @@
   "steps": [
    {
     "kind": "knead",
-    "count": 8
+    "count": 8,
+    "what": "dough"
    },
    {
     "kind": "dice",
-    "count": 3
+    "count": 3,
+    "what": "onion"
    },
    {
     "kind": "fold",
-    "count": 3
+    "count": 3,
+    "what": "empanada"
    },
    {
     "kind": "flip",
-    "count": 2
+    "count": 2,
+    "what": "beef"
    }
   ],
   "health": 7,
@@ -606,19 +683,23 @@
   "steps": [
    {
     "kind": "roll",
-    "count": 3
+    "count": 3,
+    "what": "pastry"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "custard"
    },
    {
     "kind": "stir",
-    "count": 2
+    "count": 2,
+    "what": "egg yolks"
    },
    {
     "kind": "grill",
-    "count": 1
+    "count": 1,
+    "what": "pastel de nata"
    }
   ],
   "health": 4,
@@ -638,19 +719,23 @@
   "steps": [
    {
     "kind": "chop",
-    "count": 6
+    "count": 6,
+    "what": "potato"
    },
    {
     "kind": "shake",
-    "count": 4
+    "count": 4,
+    "what": "salt cod"
    },
    {
     "kind": "stir",
-    "count": 3
+    "count": 3,
+    "what": "eggs"
    },
    {
     "kind": "plate",
-    "count": 2
+    "count": 2,
+    "what": "bacalhau"
    }
   ],
   "health": 9,
@@ -670,23 +755,28 @@
   "steps": [
    {
     "kind": "dice",
-    "count": 4
+    "count": 4,
+    "what": "peppers"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "stock"
    },
    {
     "kind": "simmer",
-    "count": 5
+    "count": 5,
+    "what": "rice"
    },
    {
     "kind": "skewer",
-    "count": 3
+    "count": 3,
+    "what": "shrimp"
    },
    {
     "kind": "plate",
-    "count": 2
+    "count": 2,
+    "what": "paella"
    }
   ],
   "health": 9,
@@ -705,19 +795,23 @@
   "steps": [
    {
     "kind": "chop",
-    "count": 6
+    "count": 6,
+    "what": "potato"
    },
    {
     "kind": "shake",
-    "count": 5
+    "count": 5,
+    "what": "olive oil"
    },
    {
     "kind": "flip",
-    "count": 2
+    "count": 2,
+    "what": "tortilla"
    },
    {
     "kind": "plate",
-    "count": 2
+    "count": 2,
+    "what": "tortilla"
    }
   ],
   "health": 8,
@@ -736,19 +830,23 @@
   "steps": [
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "batter"
    },
    {
     "kind": "dice",
-    "count": 3
+    "count": 3,
+    "what": "potato"
    },
    {
     "kind": "grill",
-    "count": 1
+    "count": 1,
+    "what": "cod"
    },
    {
     "kind": "shake",
-    "count": 4
+    "count": 4,
+    "what": "chips"
    }
   ],
   "health": 6,
@@ -768,23 +866,28 @@
   "steps": [
    {
     "kind": "season",
-    "count": 4
+    "count": 4,
+    "what": "beef"
    },
    {
     "kind": "grill",
-    "count": 1
+    "count": 1,
+    "what": "beef"
    },
    {
     "kind": "slice",
-    "count": 3
+    "count": 3,
+    "what": "potatoes"
    },
    {
     "kind": "simmer",
-    "count": 3
+    "count": 3,
+    "what": "gravy"
    },
    {
     "kind": "plate",
-    "count": 3
+    "count": 3,
+    "what": "roast"
    }
   ],
   "health": 9,
@@ -803,19 +906,23 @@
   "steps": [
    {
     "kind": "chop",
-    "count": 3
+    "count": 3,
+    "what": "shallots"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "white wine"
    },
    {
     "kind": "simmer",
-    "count": 4
+    "count": 4,
+    "what": "mussels"
    },
    {
     "kind": "shake",
-    "count": 3
+    "count": 3,
+    "what": "pot"
    }
   ],
   "health": 8,
@@ -833,19 +940,23 @@
   "steps": [
    {
     "kind": "chop",
-    "count": 6
+    "count": 6,
+    "what": "potato"
    },
    {
     "kind": "flip",
-    "count": 2
+    "count": 2,
+    "what": "fries"
    },
    {
     "kind": "shake",
-    "count": 4
+    "count": 4,
+    "what": "fries"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "andalouse sauce"
    }
   ],
   "health": 3,
@@ -863,19 +974,23 @@
   "steps": [
    {
     "kind": "knead",
-    "count": 8
+    "count": 8,
+    "what": "dough"
    },
    {
     "kind": "roll",
-    "count": 2
+    "count": 2,
+    "what": "dough"
    },
    {
     "kind": "flip",
-    "count": 2
+    "count": 2,
+    "what": "waffle"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "caramel"
    }
   ],
   "health": 3,
@@ -895,19 +1010,23 @@
   "steps": [
    {
     "kind": "chop",
-    "count": 5
+    "count": 5,
+    "what": "fennel"
    },
    {
     "kind": "simmer",
-    "count": 5
+    "count": 5,
+    "what": "rockfish"
    },
    {
     "kind": "season",
-    "count": 4
+    "count": 4,
+    "what": "saffron"
    },
    {
     "kind": "plate",
-    "count": 3
+    "count": 3,
+    "what": "bouillabaisse"
    }
   ],
   "health": 10,
@@ -927,19 +1046,23 @@
   "steps": [
    {
     "kind": "dice",
-    "count": 5
+    "count": 5,
+    "what": "eggplant"
    },
    {
     "kind": "plate",
-    "count": 3
+    "count": 3,
+    "what": "vegetables"
    },
    {
     "kind": "simmer",
-    "count": 4
+    "count": 4,
+    "what": "ratatouille"
    },
    {
     "kind": "season",
-    "count": 3
+    "count": 3,
+    "what": "herbs"
    }
   ],
   "health": 10,
@@ -958,19 +1081,23 @@
   "steps": [
    {
     "kind": "chop",
-    "count": 5
+    "count": 5,
+    "what": "turnip"
    },
    {
     "kind": "simmer",
-    "count": 4
+    "count": 4,
+    "what": "haggis"
    },
    {
     "kind": "knead",
-    "count": 6
+    "count": 6,
+    "what": "tatties"
    },
    {
     "kind": "plate",
-    "count": 3
+    "count": 3,
+    "what": "haggis, neeps and tatties"
    }
   ],
   "health": 7,
@@ -989,19 +1116,23 @@
   "steps": [
    {
     "kind": "chop",
-    "count": 4
+    "count": 4,
+    "what": "potato"
    },
    {
     "kind": "simmer",
-    "count": 4
+    "count": 4,
+    "what": "cod"
    },
    {
     "kind": "stir",
-    "count": 3
+    "count": 3,
+    "what": "bechamel"
    },
    {
     "kind": "plate",
-    "count": 2
+    "count": 2,
+    "what": "plokkfiskur"
    }
   ],
   "health": 8,
@@ -1019,19 +1150,23 @@
   "steps": [
    {
     "kind": "dice",
-    "count": 4
+    "count": 4,
+    "what": "lamb"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "stock"
    },
    {
     "kind": "simmer",
-    "count": 5
+    "count": 5,
+    "what": "soup"
    },
    {
     "kind": "season",
-    "count": 3
+    "count": 3,
+    "what": "herbs"
    }
   ],
   "health": 9,
@@ -1049,19 +1184,23 @@
   "steps": [
    {
     "kind": "simmer",
-    "count": 3
+    "count": 3,
+    "what": "weisswurst"
    },
    {
     "kind": "roll",
-    "count": 2
+    "count": 2,
+    "what": "pretzel"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "sweet mustard"
    },
    {
     "kind": "plate",
-    "count": 3
+    "count": 3,
+    "what": "breakfast"
    }
   ],
   "health": 5,
@@ -1081,23 +1220,28 @@
   "steps": [
    {
     "kind": "shake",
-    "count": 5
+    "count": 5,
+    "what": "batter"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "batter"
    },
    {
     "kind": "flip",
-    "count": 3
+    "count": 3,
+    "what": "pancake"
    },
    {
     "kind": "dice",
-    "count": 3
+    "count": 3,
+    "what": "plum jam"
    },
    {
     "kind": "season",
-    "count": 3
+    "count": 3,
+    "what": "sugar"
    }
   ],
   "health": 5,
@@ -1117,19 +1261,23 @@
   "steps": [
    {
     "kind": "slice",
-    "count": 3
+    "count": 3,
+    "what": "onion"
    },
    {
     "kind": "knead",
-    "count": 8
+    "count": 8,
+    "what": "bread"
    },
    {
     "kind": "grill",
-    "count": 1
+    "count": 1,
+    "what": "knoedel"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "broth"
    }
   ],
   "health": 9,
@@ -1149,19 +1297,23 @@
   "steps": [
    {
     "kind": "dice",
-    "count": 4
+    "count": 4,
+    "what": "apricots"
    },
    {
     "kind": "season",
-    "count": 4
+    "count": 4,
+    "what": "lamb"
    },
    {
     "kind": "simmer",
-    "count": 5
+    "count": 5,
+    "what": "tagine"
    },
    {
     "kind": "plate",
-    "count": 2
+    "count": 2,
+    "what": "tagine"
    }
   ],
   "health": 10,
@@ -1180,19 +1332,23 @@
   "steps": [
    {
     "kind": "stir",
-    "count": 3
+    "count": 3,
+    "what": "harissa"
    },
    {
     "kind": "chop",
-    "count": 5
+    "count": 5,
+    "what": "vegetables"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "broth"
    },
    {
     "kind": "plate",
-    "count": 3
+    "count": 3,
+    "what": "couscous"
    }
   ],
   "health": 9,
@@ -1212,23 +1368,28 @@
   "steps": [
    {
     "kind": "dice",
-    "count": 4
+    "count": 4,
+    "what": "vegetables"
    },
    {
     "kind": "grill",
-    "count": 1
+    "count": 1,
+    "what": "beef"
    },
    {
     "kind": "plate",
-    "count": 3
+    "count": 3,
+    "what": "rice"
    },
    {
     "kind": "flip",
-    "count": 2
+    "count": 2,
+    "what": "egg"
    },
    {
     "kind": "stir",
-    "count": 2
+    "count": 2,
+    "what": "gochujang"
    }
   ],
   "health": 10,
@@ -1247,19 +1408,23 @@
   "steps": [
    {
     "kind": "grill",
-    "count": 1
+    "count": 1,
+    "what": "pork belly"
    },
    {
     "kind": "flip",
-    "count": 4
+    "count": 4,
+    "what": "pork belly"
    },
    {
     "kind": "fold",
-    "count": 2
+    "count": 2,
+    "what": "lettuce wrap"
    },
    {
     "kind": "season",
-    "count": 3
+    "count": 3,
+    "what": "garlic"
    }
   ],
   "health": 8,
@@ -1279,19 +1444,23 @@
   "steps": [
    {
     "kind": "simmer",
-    "count": 4
+    "count": 4,
+    "what": "coconut milk"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "curry paste"
    },
    {
     "kind": "chop",
-    "count": 4
+    "count": 4,
+    "what": "shallots"
    },
    {
     "kind": "plate",
-    "count": 3
+    "count": 3,
+    "what": "khao soi"
    }
   ],
   "health": 9,
@@ -1311,23 +1480,28 @@
   "steps": [
    {
     "kind": "chop",
-    "count": 4
+    "count": 4,
+    "what": "peanuts"
    },
    {
     "kind": "stir",
-    "count": 3
+    "count": 3,
+    "what": "noodles"
    },
    {
     "kind": "flip",
-    "count": 3
+    "count": 3,
+    "what": "shrimp"
    },
    {
     "kind": "skewer",
-    "count": 3
+    "count": 3,
+    "what": "egg"
    },
    {
     "kind": "season",
-    "count": 3
+    "count": 3,
+    "what": "tamarind"
    }
   ],
   "health": 8,
@@ -1346,19 +1520,23 @@
   "steps": [
    {
     "kind": "knead",
-    "count": 8
+    "count": 8,
+    "what": "dough"
    },
    {
     "kind": "dice",
-    "count": 3
+    "count": 3,
+    "what": "ginger"
    },
    {
     "kind": "fold",
-    "count": 3
+    "count": 3,
+    "what": "dumpling"
    },
    {
     "kind": "simmer",
-    "count": 3
+    "count": 3,
+    "what": "dim sum"
    }
   ],
   "health": 8,
@@ -1377,19 +1555,23 @@
   "steps": [
    {
     "kind": "roll",
-    "count": 3
+    "count": 3,
+    "what": "wonton"
    },
    {
     "kind": "fold",
-    "count": 2
+    "count": 2,
+    "what": "wonton"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "broth"
    },
    {
     "kind": "simmer",
-    "count": 3
+    "count": 3,
+    "what": "noodles"
    }
   ],
   "health": 8,
@@ -1409,19 +1591,23 @@
   "steps": [
    {
     "kind": "knead",
-    "count": 8
+    "count": 8,
+    "what": "noodles"
    },
    {
     "kind": "simmer",
-    "count": 5
+    "count": 5,
+    "what": "broth"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "broth"
    },
    {
     "kind": "plate",
-    "count": 3
+    "count": 3,
+    "what": "ramen"
    }
   ],
   "health": 9,
@@ -1441,19 +1627,23 @@
   "steps": [
    {
     "kind": "shake",
-    "count": 4
+    "count": 4,
+    "what": "rice"
    },
    {
     "kind": "roll",
-    "count": 3
+    "count": 3,
+    "what": "roll"
    },
    {
     "kind": "slice",
-    "count": 3
+    "count": 3,
+    "what": "tuna"
    },
    {
     "kind": "plate",
-    "count": 2
+    "count": 2,
+    "what": "sushi"
    }
   ],
   "health": 9,
@@ -1472,19 +1662,23 @@
   "steps": [
    {
     "kind": "knead",
-    "count": 8
+    "count": 8,
+    "what": "buckwheat dough"
    },
    {
     "kind": "roll",
-    "count": 3
+    "count": 3,
+    "what": "dough"
    },
    {
     "kind": "slice",
-    "count": 3
+    "count": 3,
+    "what": "scallion"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "dashi"
    }
   ],
   "health": 8,
@@ -1504,19 +1698,23 @@
   "steps": [
    {
     "kind": "simmer",
-    "count": 5
+    "count": 5,
+    "what": "lentils"
    },
    {
     "kind": "season",
-    "count": 4
+    "count": 4,
+    "what": "cumin"
    },
    {
     "kind": "pour",
-    "count": 1
+    "count": 1,
+    "what": "dal"
    },
    {
     "kind": "plate",
-    "count": 3
+    "count": 3,
+    "what": "dal bhat"
    }
   ],
   "health": 10,
@@ -1536,19 +1734,23 @@
   "steps": [
    {
     "kind": "knead",
-    "count": 8
+    "count": 8,
+    "what": "dough"
    },
    {
     "kind": "dice",
-    "count": 3
+    "count": 3,
+    "what": "onion"
    },
    {
     "kind": "fold",
-    "count": 4
+    "count": 4,
+    "what": "momo"
    },
    {
     "kind": "simmer",
-    "count": 3
+    "count": 3,
+    "what": "chili sauce"
    }
   ],
   "health": 8,

@@ -902,5 +902,20 @@
     "baseChance": 0,
     "text": "{city}. You went for a walk. The walk went past a casino. The casino has air conditioning and no clocks.",
     "effects": {}
+  },
+  {
+    "id": "batpoop",
+    "title": "The pillow",
+    "when": "day",
+    "baseChance": 0.06,
+    "requiresCities": [
+      "bozeman"
+    ],
+    "text": "{city}. You wake to a scattering of small dark pellets on the pillow, next to your face. Not seeds. The cabin has a resident in the rafters, and the resident has a routine. You sleep with a hat on for the rest of the week.",
+    "effects": {
+      "mood": -5,
+      "energy": -4,
+      "unlockAchievement": "batpoop"
+    }
   }
 ]

@@ -1,6 +1,7 @@
 // COIN COLLECTOR (game id 'carryon', scene key 'CarryOn' kept for the engine): a side-scrolling platformer course 6 to 8 screens wide.
 // Reach the flag at the end; coins along the way are extra. D-pad moves, A jumps (variable height), DOWN drops through thin ledges.
-// The city's hazard patrols the platforms (stomp it or jump it), pits respawn you at the last safe ground, water levels swell slowly.
+// Ticks and bed bugs patrol the platforms (stomp them from above), the city's own hazards (rocks, pigeons, mosquitoes, water, gusts) stay,
+// pits respawn you at the last safe ground, water levels swell slowly.
 // Score: reached the flag ? 60 + 40 × coins/total : 30 × progress. 90 s cap shown as a thin bar.
 import Phaser from 'phaser';
 import { PAL } from '../../../core/palette';
@@ -10,12 +11,15 @@ import { clamp, pixTexture } from '../../_shared';
 import type { Pad } from '../input';
 import type { ConsoleCtx, ConsoleGame, ConsoleResult } from './types';
 
-interface Mover { spr: Phaser.GameObjects.Rectangle; vx: number; vy: number; kind: Hazard; t: number; x0: number; y0: number; dir: number; alive: boolean; w: number; h: number; }
+type Critter = 'tick' | 'bug';
+interface Mover { spr: Phaser.GameObjects.Rectangle | Phaser.GameObjects.Sprite; vx: number; vy: number; kind: Hazard | 'critter'; critter?: Critter; t: number; x0: number; y0: number; dir: number; alive: boolean; w: number; h: number; }
+/** hazards that keep their own sprite / behaviour; every other city gets critters on its spawners */
+const OWN_SPRITE: Hazard[] = ['rock', 'pigeon', 'mosquito', 'wave', 'gust'];
 const CAP = 90, RAMP_AT = 60;
 
 export class CarryOnGame implements ConsoleGame {
   readonly id = 'carryon' as const; readonly name = 'COIN COLLECTOR'; readonly controls = ['D-PAD  move · DOWN drop through thin ledges', 'A      jump (hold for higher)', 'START  pause']; readonly capSec = CAP; readonly timerBar = true;
-  get instructions() { return `Reach the flag. Coins are extra. Dodge or stomp the ${this.level?.hazard || 'hazard'}s. D-pad moves, A jumps, DOWN drops through thin ledges.`; }
+  get instructions() { const hz = this.level?.hazard; const own = hz && OWN_SPRITE.includes(hz) && hz !== 'wave' && hz !== 'gust'; return `Reach the flag. Coins are extra. Stomp the bugs${own ? `, dodge the ${hz}s` : ''}. D-pad moves, A jumps, DOWN drops through thin ledges.`; }
   private ctx!: ConsoleCtx; private done!: (r: ConsoleResult) => void; private level!: ArcadeLevel; private ox = 0; private oy = 0; private cols = 23; private rows = 20;
   private player!: Phaser.Physics.Arcade.Sprite; private solids!: Phaser.Physics.Arcade.StaticGroup; private oneways!: Phaser.Physics.Arcade.StaticGroup; private movingPlats!: Phaser.Physics.Arcade.Group;
   private coins: Phaser.GameObjects.Image[] = []; private spikes: Phaser.Geom.Rectangle[] = []; private movers: Mover[] = []; private spawners: { x: number; y: number }[] = [];
@@ -68,24 +72,34 @@ export class CarryOnGame implements ConsoleGame {
     pixTexture(s, 'co_mover', ['AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', 'ABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBA', 'ABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBA', 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', '....A....................A......', '....A....................A......', '...AAA..................AAA.....', '................................'], { A: PAL.ink, B: PAL.sky1 });
     pixTexture(s, 'co_coin', ['..AAAA..', '.ABBBBA.', 'ABBCCBBA', 'ABCDDCBA', 'ABCDDCBA', 'ABBCCBBA', '.ABBBBA.', '..AAAA..'], { A: PAL.ink, B: PAL.sun1, C: PAL.sun2, D: PAL.white });
     pixTexture(s, 'co_flag', ['AAAAAAAAAAAAAA', 'ABBBBBBBBBBBBA', 'ABBCCCBBBBBBA.', 'ABBCDCBBBBBA..', 'ABBCCCBBBBA...', 'ABBBBBBBBBBA..', 'ABBBBBBBBBBBA.', 'AAAAAAAAAAAAAA'], { A: PAL.ink, B: PAL.red, C: PAL.sun2, D: PAL.white });
+    // critters: TICK (round dark body, red dot, eight tiny legs, waddles) and BED BUG (flat segmented brown oval, antennae, scuttles)
+    const K = { A: PAL.ink, B: PAL.night0, R: PAL.red, L: PAL.gray1, E: PAL.earth2, F: PAL.earth1, W: PAL.white };
+    pixTexture(s, 'co_tick0', ['....AAAA....', '..AABBBBAA..', '.ABBBBBBBBA.', '.ABBBRRBBBA.', '.ABBBRRBBBA.', '..AABBBBAA..', 'L..L.AA.L..L', '.L.L....L.L.'], K);
+    pixTexture(s, 'co_tick1', ['....AAAA....', '..AABBBBAA..', '.ABBBBBBBBA.', '.ABBBRRBBBA.', '.ABBBRRBBBA.', '..AABBBBAA..', '.L.L.AA.L.L.', 'L..L....L..L'], K);
+    pixTexture(s, 'co_tick_sq', ['AAAAAAAAAAAA', 'ABBBBRRBBBBA', 'LAAAAAAAAAAL'], K);
+    pixTexture(s, 'co_bug0', ['...........L.L', '..AAAAAAAA.AA.', '.AEEEFEEEFAEA.', 'AEEEEFEEEEFEEA', 'AEEEEFEEEEFEEA', '.AEEEFEEEFAA..', '..L.L..L.L....', '.L...L....L...'], K);
+    pixTexture(s, 'co_bug1', ['..........L..L', '..AAAAAAAA.AA.', '.AEEEFEEEFAEA.', 'AEEEEFEEEEFEEA', 'AEEEEFEEEEFEEA', '.AEEEFEEEFAA..', '.L.L..L.L.....', '..L...L....L..'], K);
+    pixTexture(s, 'co_bug_sq', ['AAAAAAAAAAAAAA', 'AEEEFEEEFEEEFA', 'LAAAAAAAAAAAAL'], K);
     pixTexture(s, 'co_spike', ['.....A......A...', '....ABA....ABA..', '...ABBBA..ABBBA.', '..ABBBBBAABBBBBA', '.AAAAAAAAAAAAAAA'], { A: PAL.ink, B: PAL.gray2 });
     pixTexture(s, 'co_player', ['..AAAAAA..', '.ABBBBBBA.', '.ABCCBCCA.', '.ABBBBBBA.', '..ADDDDA..', '.AEEEEEEA.', 'AEEFFFFEEA', 'AEEFFFFEEA', '.AEEEEEEA.', '..AGGGGA..', '..AG..GA..', '..AG..GA..', '..AA..AA..', '.AHA..AHA.', '..........'], { A: PAL.ink, B: PAL.earth3, C: PAL.ink, D: PAL.earth1, E: PAL.sun0, F: PAL.sun1, G: PAL.night3, H: PAL.gray2 });
   }
 
+  /** which critter a spawner gets: climate first, then the hazard's setting, else alternate */
+  private critterFor(i: number): Critter {
+    const cl = this.ctx.climate; if (cl) return ['hot', 'rainy', 'temperate'].includes(cl) ? 'bug' : 'tick';
+    const hz = this.level.hazard; if (['tuktuk', 'tram', 'crowd', 'mosquito', 'pigeon'].includes(hz)) return 'bug'; if (['otter', 'yak', 'snow', 'ice', 'rock'].includes(hz)) return 'tick';
+    return i % 2 ? 'bug' : 'tick';
+  }
   private spawnHazards() {
     const hz = this.level.hazard; const s = this.ctx.scene; const D = this.ctx.depth;
-    const mk = (x: number, y: number, w: number, h: number, color: number, kind: Hazard, vx = 0): Mover => { const spr = s.add.rectangle(x, y, w, h, color).setStrokeStyle(1, PAL.ink).setDepth(D + 5); const m: Mover = { spr, vx, vy: 0, kind, t: this.ctx.rng() * 10, x0: x, y0: y, dir: 1, alive: true, w, h }; this.movers.push(m); this.objs.push(spr); return m; };
+    const box = (x: number, y: number, w: number, h: number, color: number, kind: Hazard, vx = 0): Mover => { const spr = s.add.rectangle(x, y, w, h, color).setStrokeStyle(1, PAL.ink).setDepth(D + 5); const m: Mover = { spr, vx, vy: 0, kind, t: this.ctx.rng() * 10, x0: x, y0: y, dir: 1, alive: true, w, h }; this.movers.push(m); this.objs.push(spr); return m; };
+    const critter = (x: number, y: number, c: Critter, spd: number) => { const spr = s.add.sprite(x, this.groundBelow(x, y) - (c === 'tick' ? 5 : 4), c === 'tick' ? 'co_tick0' : 'co_bug0').setDepth(D + 5); const m: Mover = { spr, vx: spd * (c === 'tick' ? 0.7 : 1.1), vy: 0, kind: 'critter', critter: c, t: this.ctx.rng() * 10, x0: x, y0: y, dir: this.ctx.rng() < 0.5 ? -1 : 1, alive: true, w: c === 'tick' ? 10 : 12, h: c === 'tick' ? 8 : 6 }; this.movers.push(m); this.objs.push(spr); return m; };
     const pts = this.spawners.length ? this.spawners : [{ x: this.ox + TILE * 30, y: this.oy + TILE * 2 }]; const spd = 30 + 30 * this.ctx.difficulty;
-    switch (hz) {
-      case 'otter': pts.forEach(p => mk(p.x, this.groundBelow(p.x, p.y) - 6, 14, 10, PAL.earth2, hz, spd)); break;
-      case 'mosquito': pts.forEach(p => { mk(p.x, p.y - 20, 6, 4, PAL.gray1, hz, spd); }); break;
-      case 'tuktuk': pts.forEach(p => mk(p.x, this.groundBelow(p.x, p.y) - 8, 22, 14, PAL.sun2, hz, spd * 1.6)); break;
-      case 'tram': pts.forEach(p => mk(p.x, this.groundBelow(p.x, p.y) - 8, 44, 14, PAL.sun0, hz, spd * 1.2)); break;
-      case 'crowd': pts.forEach(p => { for (let i = 0; i < 2; i++) mk(p.x + i * 14, this.groundBelow(p.x, p.y) - 7, 8, 13, PAL.dusk2, hz, spd * 0.6); }); break;
-      case 'yak': pts.forEach(p => mk(p.x, this.groundBelow(p.x, p.y) - 9, 26, 16, PAL.earth0, hz, spd * 0.7)); break;
-      case 'pigeon': pts.forEach(p => mk(p.x, p.y - 30, 10, 6, PAL.gray2, hz, spd * 1.3)); break;
-      default: pts.forEach(p => mk(p.x, this.groundBelow(p.x, p.y) - 6, 14, 10, PAL.gray1, 'otter', spd * 0.8)); break;   // environmental hazards still get a slow walker so platforms are not empty
-    }
+    pts.forEach((p, i) => {
+      if (hz === 'mosquito' && i % 2 === 0) { box(p.x, p.y - 20, 6, 4, PAL.gray1, hz, spd); return; }
+      if (hz === 'pigeon' && i % 2 === 0) { box(p.x, p.y - 30, 10, 6, PAL.gray2, hz, spd * 1.3); return; }
+      critter(p.x, p.y, this.critterFor(i), spd);   // every other city: the platforms belong to the bugs
+    });
     if (hz === 'wave') this.waterY = this.oy + this.rows * TILE - TILE * 1.5;
   }
   private groundBelow(x: number, y: number) { const cx = Math.floor((x - this.ox) / TILE); let cy = Math.floor((y - this.oy) / TILE); while (cy < this.rows - 1 && (this.level.tiles[cy + 1][cx] || '.') !== '#') cy++; return this.oy + (cy + 1) * TILE; }
@@ -143,14 +157,16 @@ export class CarryOnGame implements ConsoleGame {
       if (!m.alive) continue; const sp = m.spr; if (Math.abs(sp.x - this.player.x) > S.width * 1.2) continue;   // only the nearby stretch is simulated
       m.t += dt;
       switch (m.kind) {
-        case 'otter': case 'tuktuk': case 'tram': case 'crowd': case 'yak': { const v = (m.kind === 'yak' ? (Math.abs(this.player.x - sp.x) < 80 ? m.vx * 2.2 : m.vx) : m.vx) * rp; sp.x += v * m.dir * dt; const ahead = sp.x + (m.w / 2 + 2) * m.dir; if (this.isSolidAt(ahead, sp.y) || !this.isSolidAt(ahead, sp.y + m.h / 2 + 4)) m.dir *= -1; break; }   // patrol: turn at walls and ledge ends
+        case 'critter': { sp.x += m.vx * rp * m.dir * dt; const ahead = sp.x + (m.w / 2 + 2) * m.dir; if (this.isSolidAt(ahead, sp.y) || !this.isSolidAt(ahead, sp.y + m.h / 2 + 4)) m.dir *= -1; const spr = sp as Phaser.GameObjects.Sprite; spr.setFlipX(m.dir < 0); spr.setTexture(`co_${m.critter}${Math.floor(m.t * (m.critter === 'tick' ? 6 : 10)) % 2}`); break; }   // patrol: turn at walls and ledge ends, waddle / scuttle
         case 'mosquito': { const hx = Math.sign(this.player.x - sp.x), hy = Math.sign(this.player.y - sp.y); sp.x += (hx * 18 * rp + Math.sin(m.t * 6) * 30) * dt; sp.y += (hy * 14 * rp + Math.cos(m.t * 5) * 30) * dt; sp.x = clamp(sp.x, m.x0 - 120, m.x0 + 120); sp.y = clamp(sp.y, this.oy + TILE, this.oy + this.rows * TILE - TILE); break; }
         case 'pigeon': { sp.x += m.vx * rp * m.dir * dt; sp.y = m.y0 + Math.sin(m.t * 1.6) * 40; if (Math.abs(sp.x - m.x0) > 100) m.dir *= -1; break; }
         case 'rock': { m.vy += 500 * rp * dt; sp.y += m.vy * dt; if (this.isSolidAt(sp.x, sp.y + 7)) { m.alive = false; s.tweens.add({ targets: sp, alpha: 0, scale: 1.6, duration: 150, onComplete: () => sp.destroy() }); } break; }
         default: break;
       }
       if (m.alive && Phaser.Geom.Intersects.RectangleToRectangle(pr, new Phaser.Geom.Rectangle(sp.x - m.w / 2, sp.y - m.h / 2, m.w, m.h))) {
-        if (m.kind !== 'rock' && body.velocity.y > 60 && this.player.y + 4 < sp.y) { m.alive = false; this.stats.stomps++; body.setVelocityY(-220); this.ctx.sfx('pop'); s.tweens.add({ targets: sp, scaleY: 0.2, alpha: 0, duration: 180, onComplete: () => sp.destroy() }); }   // stomp
+        if (m.kind !== 'rock' && body.velocity.y > 60 && this.player.y + 4 < sp.y) { m.alive = false; this.stats.stomps++; body.setVelocityY(-220); this.ctx.sfx('pop');   // stomp: squash frame, then fade
+          if (m.kind === 'critter') { const spr = sp as Phaser.GameObjects.Sprite; spr.setTexture(`co_${m.critter}_sq`); spr.y += 2; s.tweens.add({ targets: spr, alpha: 0, duration: 450, delay: 120, onComplete: () => spr.destroy() }); }
+          else s.tweens.add({ targets: sp, scaleY: 0.2, alpha: 0, duration: 180, onComplete: () => sp.destroy() }); }
         else if (this.iframes <= 0) this.hurt(Math.sign(this.player.x - sp.x) || 1);
       }
     }

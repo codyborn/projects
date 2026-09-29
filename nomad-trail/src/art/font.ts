@@ -118,7 +118,9 @@ export function fitText(s: string, fontKey: string): string {
   for (const c of s) {
     if (c === '\n' || (table[c] && FONT_CHARS.includes(c))) { out += c; continue; }
     const base = c.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    out += base && table[base] ? base : (table[c] ? c : '?');
+    if (base && table[base]) { out += base; continue; }
+    if (table[c]) { out += c; continue; }
+    if (/[\p{L}\p{N}]/u.test(c)) out += '?';   /* an unknown letter or digit still needs a placeholder; emoji and symbols just vanish */
   }
   return out;
 }

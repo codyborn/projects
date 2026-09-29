@@ -7,6 +7,7 @@
 //   ?game=carryon&hazard=wave&water=1       samples the water line: grace before it moves, time to peak, rise rate
 //   ?game=carryon&bot=1&seed=N              a hold-RIGHT bot that jumps at walls, pits, spikes and hazards: must reach the flag (add &god=1 to make it invulnerable)
 //   ?game=carryon&noinput=1                 nothing pressed: must end by death or the 90 s cap, onDone once
+//   ?game=carryon&critter=1                 scripted: drop onto a critter (stomp kills it and bounces), then walk into one (contact costs a heart)
 //   &rt=1                                   real-time loop (for screenshots)   &autostart=0  leave the title card up
 import Phaser from 'phaser';
 import { GAME_W, GAME_H, MINIGAME_KEYS, type MinigameLaunch } from '../../core/types';
@@ -84,6 +85,16 @@ game.events.once('ready', () => {
           if (!grounded && b.velocity.y > 0) { const u = tA(0, 6); if (u === '#' || u === '-' || u === 'C' || u === 'M') pad.cur.right = false; } }
         orig(dt, pad); }; }, 50);
     Object.defineProperty(extra, 'bot', { get: () => { const s = sc(); const c = s?.cart; return { ...log, reachedFlag: c?.stats?.reachedFlag, hearts: c?.hearts, coins: `${c?.collected}/${c?.total}`, progress: +(c?.progress ?? 0).toFixed(2), stomps: c?.stats?.stomps, pits: c?.stats?.pits, playSeconds: +(c?.t ?? 0).toFixed(1), screens: s?.level?.tiles?.[0]?.length / 23, families: s?.level?.families?.join(',') }; } }); }
+  if (q.get('critter') === '1') { const run = setInterval(() => { const s = sc(); const c = s?.cart; if (!c || !s.started || !c.player) return; clearInterval(run); const R: any = {};
+      const crits = c.movers.filter((m: any) => m.kind === 'critter'); R.critters = crits.length; R.kinds = [...new Set(crits.map((m: any) => m.critter))]; R.textures = ['co_tick0', 'co_tick1', 'co_tick_sq', 'co_bug0', 'co_bug1', 'co_bug_sq'].every(k => s.textures.exists(k));
+      if (crits.length < 2) { finish('CRITTER_DONE', { critter: { ...R, note: 'need 2 critters' } }); return; }
+      // 1. stomp: park the player 24 px above the first critter, falling; capture the frame the stomp lands
+      const a = crits[0]; const p = c.player; const b = p.body; let bounceVy: number | null = null; const orig = c.update.bind(c); c.update = (dt: number, pad: any) => { const before = c.stats.stomps; orig(dt, pad); if (c.stats.stomps > before && bounceVy === null) bounceVy = Math.round(b.velocity.y); };
+      const heartsBefore = c.hearts; c.iframes = 0; p.setPosition(a.spr.x, a.spr.y - 24); b.setVelocity(0, 200); c.camX = a.spr.x - 150;
+      setTimeout(() => { R.stomp = { stomps: c.stats.stomps, critterDead: !a.alive, squashTexture: a.spr.texture?.key, bounceVy, heartsAfterStomp: c.hearts };
+        // 2. contact: walk into the second critter at its own height
+        const k = crits[1]; c.iframes = 0; c.hearts = 3; b.setAllowGravity(true); p.setPosition(k.spr.x - 14, k.spr.y - 2); b.setVelocity(0, 0);
+        setTimeout(() => { R.contact = { heartsBefore: 3, heartsAfter: c.hearts, critterAlive: k.alive }; finish('CRITTER_DONE', { critter: R }); }, 250); }, 250); }, 100); void 0; }
   const payload = q.get('drop') === '1' ? { game: 'carryon', level: DROP_LEVEL, city: 'droptest', cityName: 'Drop Test' } : { game: q.get('game') || 'tetris', city: q.get('city') || 'lisbon', cityName: q.get('cityName') || 'Lisbon', hazard: (q.get('hazard') || 'pigeon') as any, seed: Number(q.get('seed') || 5) };
   game.scene.start(MINIGAME_KEYS.carryon, { energy: 100, difficulty: Number(q.get('diff') || 0.5), payload,
     onDone: (r) => { calls++; const rs = (window as any).__resultSeen; out.textContent = JSON.stringify({ virtualSeconds: game.getTime() / 1000, wall: (performance.now() - t0) / 1000, calls, result: r, cardSeenAt: (window as any).__cardSeenVirtual, resultSeenVirtual: rs?.virtual, heldWallMs: rs ? Math.round(performance.now() - rs.wall) : null, ...(extra.soft ? { soft: extra.soft } : {}), ...(extra.bot ? { bot: extra.bot } : {}), errors }); document.title = 'STALL_DONE'; } } as MinigameLaunch);

@@ -47,7 +47,7 @@ export interface Effects { health?: number; energy?: number; mood?: number; days
   bagLocked?: number; wheelBroken?: boolean; backInjury?: number; sick?: number; unlockAchievement?: string; money?: number; cleanClothes?: 'full'; }   /* money: dollars in or out; cleanClothes 'full': a laundromat restocks every clean day */
 export interface Dish { id: string; name: string; city: string; ingredients: string[]; steps: DishStep[]; health: number; mood: number; art?: string; }  // art: key into the dish art table (defaults to id)
 export type DishStepKind = 'chop' | 'slice' | 'stir' | 'flip' | 'season' | 'pour' | 'knead' | 'grill' | 'dice' | 'roll' | 'simmer' | 'shake' | 'fold' | 'plate' | 'skewer';
-export type DishStep = { kind: DishStepKind; count: number; };
+export type DishStep = { kind: DishStepKind; count: number; what?: string; };   /* what: the thing the step acts on ('pineapple'), shown as 'Chop the pineapple' */
 export interface ArcadeLevel { city: string; hazard: Hazard; palette: [number, number, number]; tiles: string[]; stampPieces: number; parTime: number; }
 
 // ---------- Run state (saved to localStorage) ----------
@@ -72,8 +72,8 @@ export type CityAction = 'work' | 'explore' | 'train' | 'cook' | 'rest' | 'laund
 
 // ---------- Mini-game contract ----------
 // Every mini-game is a Phaser scene started with MinigameLaunch and MUST call launch.onDone(result) exactly once, then stop itself.
-export interface MinigameLaunch { energy: number; difficulty: number; payload?: any; extraLives?: number; onDone: (r: MinigameResult) => void; preview?: (r: MinigameResult) => string[]; }   // preview: result-card lines for what this outcome confers (+5 health ...)  // extraLives: hiking boots etc.
-export interface MinigameResult { score: number; perfect: boolean; failed: boolean; money?: number; }
+export interface MinigameLaunch { energy: number; difficulty: number; payload?: any; extraLives?: number; onDone: (r: MinigameResult) => void; preview?: (r: MinigameResult) => string[]; cancellable?: boolean; }   // cancellable: false hides BACK on the READY card (forced games like the gate dash). preview: result-card lines for what this outcome confers (+5 health ...)  // extraLives: hiking boots etc.
+export interface MinigameResult { score: number; perfect: boolean; failed: boolean; money?: number; cancelled?: boolean; }   /* cancelled: the player backed out on the READY card; nothing is applied */
 export const MINIGAME_KEYS = { cooking: 'Cooking', workout: 'Workout', carryon: 'CarryOn', kite: 'Kite', airport: 'Airport', laundry: 'Laundry', drone: 'Drone', work: 'Work', scuba: 'Scuba', casino: 'Casino' } as const;
 /** Casino payload: { money: number; cityName: string; seed: number }; result.money = signed net change in dollars. */
 /** Scuba payload: { city: string; cityName: string; seed: number } -> score = lionfish speared / total x 100, minus 15 per spine touch; failed under 50. */

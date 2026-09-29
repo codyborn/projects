@@ -10,8 +10,19 @@ import json, re, sys, os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, 'src', 'data')
 NOTE = '/Users/cody.born/Documents/Obsidian Vault/Travel/Nomad/Nomad Trail Copy.md'
-J = lambda n: json.load(open(os.path.join(DATA, n), encoding='utf-8'))
-def W(n, d): json.dump(d, open(os.path.join(DATA, n), 'w', encoding='utf-8'), indent=1, ensure_ascii=False); open(os.path.join(DATA, n), 'a').write('\n')
+def J(n):
+    d = json.load(open(os.path.join(DATA, n), encoding='utf-8'))
+    if n == 'dishes.json':
+        for row in d: row['stepText'] = [f"{st['kind']}: {st.get('what', '')}".rstrip(': ') for st in row['steps']]
+    return d
+def W(n, d):
+    if n == 'dishes.json':
+        for row in d:
+            texts = row.pop('stepText', None)
+            if texts:
+                for st, line in zip(row['steps'], texts):
+                    k, _, w = line.partition(':'); st['what'] = w.strip() or st.get('what')
+    json.dump(d, open(os.path.join(DATA, n), 'w', encoding='utf-8'), indent=1, ensure_ascii=False); open(os.path.join(DATA, n), 'a').write('\n')
 enc = lambda v: (' | '.join(v) if isinstance(v, list) else str(v)).replace('\n', '\\n')
 dec = lambda s: s.replace('\\n', '\n')
 
@@ -25,7 +36,7 @@ SPECS = [
   'Work-week puzzles (Professor Layton style, Uniswap engineering). Keep choices as 4 lines; the answer index lives in the JSON.'),
  ('Bundles', 'items.json', 'id', [('name', 'name', False), ('label', 'label', False), ('desc', 'desc', False), ('benefits', 'benefits', True)],
   'Packing cards. `name` is the card title, `label` the tile text (short), `benefits` the lines shown on the card (separate with ` | `).'),
- ('Dishes', 'dishes.json', 'id', [('name', 'name', False), ('ingredients', 'ingredients', True)],
+ ('Dishes', 'dishes.json', 'id', [('name', 'name', False), ('ingredients', 'ingredients', True), ('steps', 'stepText', True)],
   'Cooking mini-game. Ingredients are shown under the dish name.'),
 ]
 

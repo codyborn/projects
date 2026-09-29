@@ -20,7 +20,7 @@ export interface ConsolePayload { game?: ConsoleGameId; level?: ArcadeLevel; cit
 
 export class CarryOnScene extends Phaser.Scene {
   private frame!: MinigameFrame; private launch!: MinigameLaunch; private pad!: Pad; private cart?: ConsoleGame; private gameId: ConsoleGameId = 'carryon';
-  private level!: ArcadeLevel; private cityName = ''; private hazard: Hazard = 'pigeon'; private palette: [number, number, number] = [PAL.night2, PAL.night3, PAL.gray1]; private rng: () => number = Math.random; private family?: LevelFamily;
+  private level!: ArcadeLevel; private cityName = ''; private hazard: Hazard = 'pigeon'; private palette: [number, number, number] = [PAL.night2, PAL.night3, PAL.gray1]; private rng: () => number = Math.random; private family?: LevelFamily; private climate?: string;
   private padG!: Phaser.GameObjects.Graphics; private heartsG!: Phaser.GameObjects.Graphics; private statusT!: Phaser.GameObjects.Text; private pauseT?: Phaser.GameObjects.Text; private ledT = 0; private led!: Phaser.GameObjects.Arc;
   private paused = false; private started = false; private lastPad = ''; private titleCard?: Phaser.GameObjects.Container;
 
@@ -32,7 +32,7 @@ export class CarryOnScene extends Phaser.Scene {
     const rawLevel: ArcadeLevel | undefined = Array.isArray((raw as any).tiles) ? (raw as unknown as ArcadeLevel) : (raw.level && Array.isArray(raw.level.tiles) ? raw.level : undefined);
     this.gameId = isConsoleGameId(raw.game) ? raw.game : 'carryon';
     const cityId = raw.city || rawLevel?.city || 'somewhere'; this.cityName = raw.cityName || (rawLevel && rawLevel.city !== 'generic' ? rawLevel.city : '') || cityId;
-    this.hazard = raw.hazard || rawLevel?.hazard || 'pigeon';
+    this.hazard = raw.hazard || rawLevel?.hazard || 'pigeon'; this.climate = raw.climate;
     const seed = typeof raw.seed === 'number' ? raw.seed : hashSeed(`${cityId}|${this.gameId}`);
     this.rng = levelRng(seed);
     // level: a valid hand-built level is a template for its city; otherwise (or when a seed asks for variety) generate one
@@ -59,7 +59,7 @@ export class CarryOnScene extends Phaser.Scene {
     // render order: the screen camera first, then the main camera (transparent) on top, so title / pause / result cards cover the screen
     const cams = this.cameras.cameras; cams.splice(cams.indexOf(this.cameras.main), 1); cams.push(this.cameras.main); this.cameras.main.transparent = true;
     const ctx: ConsoleCtx = {
-      scene: this, screen: SCREEN, level: this.level, cityName: this.cityName, hazard: this.hazard, palette: this.palette, rng: this.rng,
+      scene: this, screen: SCREEN, level: this.level, cityName: this.cityName, hazard: this.hazard, palette: this.palette, climate: this.climate, rng: this.rng,
       difficulty: this.launch.difficulty, hard: this.frame.hard, speed: this.frame.speed, depth: 2, camera: this.gameCam,
       setHearts: (n, max) => this.drawHearts(n, max), setStatus: (t) => this.statusT.setText(t), flash: (c, ms = 80) => this.gameCam.flash(ms, (c >> 16) & 255, (c >> 8) & 255, c & 255), shake: (ms = 120, k = 0.004) => this.gameCam.shake(ms, k), sfx: (n) => { try { Audio.playSfx(n as any); } catch { /* audio not unlocked yet */ } },
     };

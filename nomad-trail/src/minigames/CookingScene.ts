@@ -16,6 +16,9 @@ const STEP_TEXT: Record<DishStep['kind'], string> = {
   plate: 'DRAG each garnish onto its spot', skewer: 'TAP as each piece crosses the skewer',
 };
 
+/** 'Chop the pineapple' rather than 'CHOP!': the step's `what` names the ingredient when the data has it. */
+const STEP_VERB: Record<string, string> = { chop: 'Chop', slice: 'Slice', dice: 'Dice', stir: 'Stir', simmer: 'Simmer', pour: 'Pour', flip: 'Flip', grill: 'Grill', skewer: 'Skewer', knead: 'Knead', roll: 'Roll', fold: 'Fold', season: 'Season', shake: 'Shake', plate: 'Plate' };
+export function stepLabel(st: { kind: string; what?: string }): string { const v = STEP_VERB[st.kind] ?? st.kind; if (!st.what) return `${v}!`; const w = st.what.startsWith('the ') ? st.what : `the ${st.what}`; return `${v} ${w}`; }
 /** Cooking-Mama style: a dish is a sequence of micro-tasks. Score = mean accuracy. */
 export class CookingScene extends Phaser.Scene {
   private frame!: MinigameFrame; private launch!: MinigameLaunch; private dish!: Dish; private cityLabel = ''; private dull = false;
@@ -108,7 +111,7 @@ export class CookingScene extends Phaser.Scene {
     }
     const st = this.dish.steps[this.stepIdx];
     this.frame.setProgress(`STEP ${this.stepIdx + 1}/${this.dish.steps.length}`);
-    this.stepText.setText(`${st.kind.toUpperCase()}!`); this.hint.setText(STEP_TEXT[st.kind]);
+    this.stepText.setText(stepLabel(st).toUpperCase()); this.hint.setText(STEP_TEXT[st.kind]);
     const table: Record<DishStep['kind'], () => void> = { chop: () => this.stepChop(st), slice: () => this.stepSlice(st), stir: () => this.stepStir(st), flip: () => this.stepFlip(st), season: () => this.stepSeason(st), pour: () => this.stepPour(st), knead: () => this.stepKnead(st),
       grill: () => this.stepGrill(st), dice: () => this.stepDice(st), roll: () => this.stepRoll(st), simmer: () => this.stepSimmer(st), shake: () => this.stepShake(st), fold: () => this.stepFold(st), plate: () => this.stepPlate(st), skewer: () => this.stepSkewer(st) };
     (table[st.kind] ?? table.season)();
