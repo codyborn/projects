@@ -45,7 +45,13 @@ export const pullReels = (rng: Rng): [number, number, number] => [rng.int(0, REE
 /** Exact expected return per dollar by enumerating every stop combination. */
 export function slotRTP(): number { let tot = 0; const n = REEL.length; for (const a of REEL) for (const b of REEL) for (const c of REEL) tot += slotReturn([a, b, c], 1); return tot / (n * n * n); }
 /** Paytable lines for the felt. */
-export const PAYTABLE_LINES = [`7 7 7  ×${PAY3.seven}`, `UNI ×3  ×${PAY3.uni}`, `BAR ×3  ×${PAY3.bar}`, `☕ ×3  ×${PAY3.coffee}`, `🍒 ×3  ×${PAY3.cherry}  ·  🍒 🍒  ×1`];
+/* three short rows, no emoji: the pixel font has no glyphs for them and they silently vanished, leaving
+   the numbers looking like gibberish on the machine */
+export const PAYTABLE_LINES = [
+  `777 x${PAY3.seven}    UNI x${PAY3.uni}`,
+  `BAR x${PAY3.bar}    CUP x${PAY3.coffee}`,
+  `CHERRY x${PAY3.cherry}    2 CHERRY = stake back`,
+];
 
 /* ---------- Session ---------- */
 export const MAX_ROUNDS = 12;

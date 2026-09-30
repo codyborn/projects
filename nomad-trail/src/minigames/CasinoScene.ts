@@ -161,10 +161,9 @@ export class CasinoScene extends Phaser.Scene {
       return [-1, 0, 1].map(k => { const img = this.L(new Phaser.GameObjects.Image(this, x, 194 + k * 48, 'cs_' + REEL[(this.reelPos[r] + k + REEL.length) % REEL.length])); img.setMask(gm); return img; });
     });
     this.L(this.add_rect(W / 2, 194, W - 72, 2, PAL.sun2).setStrokeStyle(0));
-    this.L(txt(this, W / 2, 268, PAYTABLE_LINES.slice(0, 3).join('   '), 8, PAL.sun3, { align: 'center' }).setOrigin(0.5)); this.L(txt(this, W / 2, 282, PAYTABLE_LINES.slice(3).join('   '), 8, PAL.sun3, { align: 'center' }).setOrigin(0.5));
+    PAYTABLE_LINES.forEach((line, i) => this.L(txt(this, W / 2, 255 + i * 11, line, 8, PAL.sun3, { align: 'center' }).setOrigin(0.5)));
     const pull = this.L(this.add_rect(W / 2, 336, 200, 48, PAL.sun0)); pull.setInteractive({ useHandCursor: true }); pull.on('pointerdown', () => this.pull());
     this.L(txt(this, W / 2, 336, `PULL  $${PULL_COST}`, 14, PAL.white, { align: 'center' }).setOrigin(0.5));
-    this.L(txt(this, W / 2, 392, 'three of a kind pays; two cherries return the stake', 8, PAL.gray1, { align: 'center' }).setOrigin(0.5));
   }
   private setReel(r: number, pos: number) { this.reelPos[r] = ((pos % REEL.length) + REEL.length) % REEL.length; this.reelImgs[r]?.forEach((img, i) => img.setTexture('cs_' + REEL[(this.reelPos[r] + (i - 1) + REEL.length) % REEL.length])); }
   /** One pull of the slots. */
