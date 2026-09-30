@@ -2,7 +2,7 @@
  * and a noise channel for drums. Loops are data: strings of 16th-step tokens per channel. Scheduling runs a little ahead of the
  * clock so loops are seamless. Note tokens: "C5", "F#4", "Bb3"; "." rest; "-" hold the previous note one more step. Drum tokens:
  * "k" kick, "s" snare, "h" hat, "." rest. */
-export type LoopName = 'title' | 'americas' | 'mexico' | 'europe' | 'alps' | 'africa' | 'asia' | 'himalaya' | 'travel' | 'action' | 'none';
+export type LoopName = 'title' | 'americas' | 'mexico' | 'europe' | 'alps' | 'africa' | 'asia' | 'himalaya' | 'travel' | 'action' | 'outdoor' | 'none';   /* outdoor: open-air workouts (climbing, ferrata, hikes, kite) */
 export type Stinger = 'winSting' | 'loseSting';
 export interface Loop { bpm: number; p1: string; p2: string; wave: string; drums: string; duty1?: number; duty2?: number; vol?: number; }
 /** Global tempo factor (Cody found the first pass too busy; everything runs at 80%). */
@@ -28,7 +28,7 @@ export function parseChannel(s: string): ({ midi: number; len: number } | null)[
 
 /* ---- the loops (8 or 16 bars of 16 steps) ---- */
 const rep = (s: string, n: number) => Array(n).fill(s.trim()).join(' ');
-export const LOOPS: Record<Exclude<LoopName, 'none'>, Loop> = {
+export const LOOPS: Record<Exclude<LoopName, 'none' | 'outdoor'>, Loop> & { readonly outdoor: Loop } = {
   /* warm and cozy: D major, gentle arpeggios, a slow walking bass */
   title: { bpm: 104, duty1: 0.25, duty2: 0.5,
     p1: rep('D5 - F#5 - A5 - F#5 - D5 - A4 - D5 - F#5 -', 2) + ' ' + rep('B4 - D5 - F#5 - D5 - B4 - G4 - B4 - D5 -', 2) + ' ' + rep('A4 - C#5 - E5 - C#5 - A4 - E4 - A4 - C#5 -', 2) + ' ' + rep('G4 - B4 - D5 - B4 - G4 - D4 - G4 - B4 -', 2),
@@ -89,6 +89,8 @@ export const LOOPS: Record<Exclude<LoopName, 'none'>, Loop> = {
     p2: rep('E4 . . E4 . . E4 . E4 . . E4 . . E4 .', 4) + ' ' + rep('C4 . . C4 . . C4 . D4 . . D4 . . B3 .', 4),
     wave: rep('E2 - E2 - E2 - E2 - E2 - E2 - D2 - D2 -', 4) + ' ' + rep('C2 - C2 - C2 - C2 - D2 - D2 - B1 - B1 -', 4),
     drums: rep('k . h . s . h . k . h . s . h .', 8) },
+  /* the outdoor slot's tracker reading borrows the action loop; the intended pick is a file (8-Bit Cave Loop) */
+  get outdoor(): Loop { return this.action; },
 };
 /** A calmer reading of every loop: no second pulse, the lead thinned (every other note rests), drums down to a soft kick. */
 export function calmOf(l: Loop): Loop {
@@ -161,7 +163,7 @@ export class Tracker {
 /* ---- music candidates: two tracker readings and two public-domain tracks per slot ---- */
 import ogaJson from './oga_tracks.json';
 export type MusicSlot = Exclude<LoopName, 'none'> | Stinger;
-export const MUSIC_SLOTS: MusicSlot[] = ['title', 'americas', 'mexico', 'europe', 'alps', 'africa', 'asia', 'himalaya', 'travel', 'action', 'winSting', 'loseSting'];
+export const MUSIC_SLOTS: MusicSlot[] = ['title', 'americas', 'mexico', 'europe', 'alps', 'africa', 'asia', 'himalaya', 'travel', 'action', 'outdoor', 'winSting', 'loseSting'];
 export type MusicCandidate = { id: string; label: string; kind: 'tracker'; loop: Loop } | { id: string; label: string; kind: 'file'; file: string; title: string; author: string; url: string; bytes: number };
 const OGA = ogaJson as Record<string, { id: string; slug: string; title: string; author: string; url: string; file: string; bytes: number }[]>;
 export const MUSIC_CANDIDATES: Record<MusicSlot, MusicCandidate[]> = Object.fromEntries(MUSIC_SLOTS.map(s => {

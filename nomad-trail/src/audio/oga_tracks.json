@@ -238,5 +238,25 @@
    "file": "audio/drama-drama-drama.mp3",
    "bytes": 54477
   }
+ ],
+ "outdoor": [
+  {
+   "id": "outdoor.oga.8-bit-cave-loop",
+   "slug": "8-bit-cave-loop",
+   "title": "8-Bit Cave Loop",
+   "author": "Wolfgang_",
+   "url": "https://opengameart.org/content/8-bit-cave-loop",
+   "file": "audio/8-bit-cave-loop.mp3",
+   "bytes": 360549
+  },
+  {
+   "id": "outdoor.oga.free-run-8-bitish",
+   "slug": "free-run-8-bitish",
+   "title": "Free Run [8 bit(ish)]",
+   "author": "TAD",
+   "url": "https://opengameart.org/content/free-run-8-bitish",
+   "file": "audio/free-run-8-bitish.mp3",
+   "bytes": 360549
+  }
  ]
 }

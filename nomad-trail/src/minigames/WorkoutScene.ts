@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { OUTDOOR_ACTIVITIES } from '../core/sim/consts';
 import { PAL } from '../core/palette';
 import { MINIGAME_KEYS, type ActivityId, type MinigameLaunch } from '../core/types';
 import { MinigameFrame, Meter, W, H, clamp, normalizeLaunch, panel, txt } from './_shared';
@@ -31,7 +32,7 @@ export class WorkoutScene extends Phaser.Scene {
   }
 
   create() {
-    this.frame = new MinigameFrame(this, this.launch, TITLES[this.activity] || 'Workout');
+    this.frame = new MinigameFrame(this, this.launch, TITLES[this.activity] || 'Workout'); if (OUTDOOR_ACTIVITIES.has(this.activity)) this.frame.musicLoop = 'outdoor';   /* open-air workouts get the outdoor loop */
     this.cameras.main.setBackgroundColor(PAL.night1);
     this.g = this.add.graphics().setDepth(3);
     this.meter = new Meter(this, 40, 600, W - 80, 8);

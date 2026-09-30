@@ -13,7 +13,7 @@ const SFX_WHERE: Record<SfxName, string> = {
 };
 const MUSIC_WHERE: Record<MusicSlot, string> = {
   title: 'title screen, credits roll', americas: 'North + South American cities', mexico: 'Mexico, Roatán', europe: 'European cities', alps: 'Innsbruck, Hallstatt, Munich', africa: 'Casablanca, Dakhla', asia: 'Tokyo, Seoul, Bangkok, Hong Kong', himalaya: 'Kathmandu, Minakami',
-  travel: 'the travel transition', action: 'every mini-game', winSting: 'run won (End screen)', loseSting: 'run lost (End screen)',
+  travel: 'the travel transition', action: 'indoor mini-games (cooking, laundry, puzzles, console, casino, drone, scuba)', outdoor: 'open-air workouts: climbing, ferrata, hikes, the Pinnacle, kite', winSting: 'run won (End screen)', loseSting: 'run lost (End screen)',
 };
 
 class Lab {
