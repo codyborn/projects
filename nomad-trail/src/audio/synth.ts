@@ -29,7 +29,7 @@ class FilePlayer {
     return p;
   }
   async play(file: string, loop: boolean, onEnd?: () => void) {
-    const tok = ++this.token; this.stop();
+    this.stop(); const tok = ++this.token;   /* stop() bumps the token too, so claim ours after it or the guard below always fires */
     try { const buf = await this.load(file); if (tok !== this.token) return; const s = this.ctx.createBufferSource(); s.buffer = buf; s.loop = loop; s.connect(this.out); s.onended = () => { if (this.src === s) this.src = undefined; if (!loop) onEnd?.(); }; s.start(); this.src = s; }
     catch { onEnd?.(); }
   }

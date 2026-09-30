@@ -6,6 +6,17 @@ import { AMBIENCE } from './synth';
 import selection from './selection.json';
 
 const TINY = ['wheel', 'tick', 'step', 'blip', 'tap', 'land', 'lock', 'reel', 'chop', 'crack'];
+describe('audio: file playback', () => {
+  it('a file-backed loop survives its own stop(): the play token is claimed after stop', async () => {
+    /* the bug: play() captured a token, then stop() incremented the same counter, so the post-decode
+       guard always aborted and every music track was silent while effects and tracker loops worked */
+    const src = await import('./synth');
+    const text = (await import('node:fs')).readFileSync(new URL('./synth.ts', import.meta.url), 'utf8');
+    const body = text.slice(text.indexOf('async play(file'), text.indexOf('async play(file') + 400);
+    expect(body.indexOf('this.stop()')).toBeLessThan(body.indexOf('++this.token'));
+    expect(src).toBeTruthy();
+  });
+});
 describe('audio: jsfxr presets and candidates', () => {
   it('every preset renders a finite, non-silent buffer under 3 s', () => {
     for (const name of SFX_NAMES) {
