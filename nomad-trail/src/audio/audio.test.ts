@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { existsSync } from 'node:fs';
 import { SFX_NAMES, renderSamples, renderDef, SFX_CANDIDATES, sfxDefById, sfxCandidateById, PRESETS, SFX_TRIM, SFX_BANDS, QUIET_SFX, LOUD_SFX, bandOf, type SfxName } from './sfx';
 import oga from './oga_tracks.json';
-import { LOOPS, STINGERS, parseChannel, midiOf, MUSIC_CANDIDATES, MUSIC_SLOTS, musicById, calmOf } from './tracker';
+import { LOOPS, STINGERS, parseChannel, midiOf, MUSIC_CANDIDATES, MUSIC_SLOTS, musicById, calmOf, trackerLevel, MUSIC_REFERENCE_DB } from './tracker';
 import { AMBIENCE } from './synth';
 import selection from './selection.json';
 
@@ -55,6 +55,21 @@ describe('audio: jsfxr presets and candidates', () => {
     expect(lufs.length, 'every track carries a measured loudness').toBe(tracks.length);
     expect(Math.max(...lufs) - Math.min(...lufs), 'loudness spread across the library').toBeLessThanOrEqual(1.5);
     for (const t of tracks) expect(t.tp!, `${t.id} true peak`).toBeLessThanOrEqual(-1.5);
+  });
+  it('every tracker candidate is levelled to the same band as the shipped files', () => {
+    const off: string[] = [];
+    for (const slot of MUSIC_SLOTS) for (const c of MUSIC_CANDIDATES[slot]) {
+      if (c.kind !== 'tracker') continue;
+      const lvl = trackerLevel(c.id);
+      expect(lvl, `${c.id} has a measured level (run tools/measure_music.mjs + gen_tracker_gain.mjs)`).toBeDefined();
+      expect(c.gain, `${c.id} gain`).toBeGreaterThan(0);
+      expect(c.gain, `${c.id} gain is a sane boost`).toBeLessThanOrEqual(8);
+      const allowed = c.id === 'tetris.tracker.korobeiniki' ? 1.5 + 1.0 : 1.5;   /* the Pack-Tris theme sits a dB above the band */
+      if (Math.abs(lvl! - MUSIC_REFERENCE_DB) > allowed) off.push(`${c.id} ${(lvl! - MUSIC_REFERENCE_DB).toFixed(1)} dB off`);
+    }
+    expect(off, 'tracker loops within 1.5 dB of the file reference').toEqual([]);
+    expect(trackerLevel('tetris.tracker.korobeiniki')!, 'Korobeiniki sits at the top of the band')
+      .toBeGreaterThan(MUSIC_REFERENCE_DB + 0.5);
   });
   it('four rendered candidates per effect plus any recorded ones, stable ids', () => {
     for (const name of SFX_NAMES) {

@@ -1,166 +1,170 @@
 {
- "title.tracker.calm": {
-  "rms": -33.8,
-  "gain": 1.787
- },
- "title.tracker.melodic": {
-  "rms": -32.2,
-  "gain": 1.488
- },
- "americas.tracker.calm": {
-  "rms": -34,
-  "gain": 1.82
- },
- "americas.tracker.melodic": {
-  "rms": -32.4,
-  "gain": 1.523
- },
- "mexico.tracker.calm": {
-  "rms": -36.6,
-  "gain": 2.451
- },
- "mexico.tracker.melodic": {
-  "rms": -34.6,
-  "gain": 1.954
- },
- "europe.tracker.calm": {
-  "rms": -33.9,
-  "gain": 1.795
- },
- "europe.tracker.melodic": {
-  "rms": -32.1,
-  "gain": 1.469
- },
- "alps.tracker.calm": {
-  "rms": -36.4,
-  "gain": 2.416
- },
- "alps.tracker.melodic": {
-  "rms": -34.3,
-  "gain": 1.9
- },
- "africa.tracker.calm": {
-  "rms": -33.7,
-  "gain": 1.773
- },
- "africa.tracker.melodic": {
-  "rms": -32.1,
-  "gain": 1.474
- },
- "asia.tracker.calm": {
-  "rms": -33.7,
-  "gain": 1.769
- },
- "asia.tracker.melodic": {
-  "rms": -32.3,
-  "gain": 1.498
- },
- "himalaya.tracker.calm": {
-  "rms": -34.1,
-  "gain": 1.849
- },
- "himalaya.tracker.melodic": {
-  "rms": -32.9,
-  "gain": 1.615
- },
- "travel.tracker.calm": {
-  "rms": -32.7,
-  "gain": 1.564
- },
- "travel.tracker.melodic": {
-  "rms": -32.2,
-  "gain": 1.491
- },
- "action.tracker.calm": {
-  "rms": -34.3,
-  "gain": 1.884
- },
- "action.tracker.melodic": {
-  "rms": -33,
-  "gain": 1.632
- },
- "outdoor.tracker.calm": {
-  "rms": -34.2,
-  "gain": 1.879
- },
- "outdoor.tracker.melodic": {
-  "rms": -33,
-  "gain": 1.631
- },
- "indoor.tracker.calm": {
-  "rms": -33.7,
-  "gain": 1.77
- },
- "indoor.tracker.melodic": {
-  "rms": -32.2,
-  "gain": 1.477
- },
- "water.tracker.calm": {
-  "rms": -33.8,
-  "gain": 1.775
- },
- "water.tracker.melodic": {
-  "rms": -32.1,
-  "gain": 1.467
- },
- "drone.tracker.calm": {
-  "rms": -33.8,
-  "gain": 1.781
- },
- "drone.tracker.melodic": {
-  "rms": -32.3,
-  "gain": 1.501
- },
- "cooking.tracker.calm": {
-  "rms": -33.9,
-  "gain": 1.795
- },
- "cooking.tracker.melodic": {
-  "rms": -32.3,
-  "gain": 1.507
- },
- "coffee.tracker.calm": {
-  "rms": -33.9,
-  "gain": 1.795
- },
- "coffee.tracker.melodic": {
-  "rms": -33.3,
-  "gain": 1.675
- },
- "credits.tracker.calm": {
-  "rms": -33.2,
-  "gain": 1.656
- },
- "credits.tracker.melodic": {
-  "rms": -32.3,
-  "gain": 1.505
- },
- "tetris.tracker.calm": {
-  "rms": -33.7,
-  "gain": 1.763
- },
- "tetris.tracker.melodic": {
-  "rms": -32.1,
-  "gain": 1.462
- },
- "tetris.tracker.korobeiniki": {
-  "rms": -32.3,
-  "gain": 1.676
- },
- "winSting.tracker.calm": {
-  "rms": -35.4,
-  "gain": 2.145
- },
- "winSting.tracker.melodic": {
-  "rms": -33.3,
-  "gain": 1.691
- },
- "loseSting.tracker.calm": {
-  "rms": -34.1,
-  "gain": 1.85
- },
- "loseSting.tracker.melodic": {
-  "rms": -32.9,
-  "gain": 1.61
+ "reference": -28.8,
+ "note": "rms is the candidate measured on the music bus at unity gain (tools/measure_music.mjs); gain lifts it to the reference, which is the shipped files average measured the same way. tetris.tracker.korobeiniki sits 1 dB above.",
+ "candidates": {
+  "title.tracker.calm": {
+   "rms": -33.8,
+   "gain": 1.787
+  },
+  "title.tracker.melodic": {
+   "rms": -32.2,
+   "gain": 1.488
+  },
+  "americas.tracker.calm": {
+   "rms": -34,
+   "gain": 1.82
+  },
+  "americas.tracker.melodic": {
+   "rms": -32.4,
+   "gain": 1.523
+  },
+  "mexico.tracker.calm": {
+   "rms": -36.6,
+   "gain": 2.451
+  },
+  "mexico.tracker.melodic": {
+   "rms": -34.6,
+   "gain": 1.954
+  },
+  "europe.tracker.calm": {
+   "rms": -33.9,
+   "gain": 1.795
+  },
+  "europe.tracker.melodic": {
+   "rms": -32.1,
+   "gain": 1.469
+  },
+  "alps.tracker.calm": {
+   "rms": -36.4,
+   "gain": 2.416
+  },
+  "alps.tracker.melodic": {
+   "rms": -34.3,
+   "gain": 1.9
+  },
+  "africa.tracker.calm": {
+   "rms": -33.7,
+   "gain": 1.773
+  },
+  "africa.tracker.melodic": {
+   "rms": -32.1,
+   "gain": 1.474
+  },
+  "asia.tracker.calm": {
+   "rms": -33.7,
+   "gain": 1.769
+  },
+  "asia.tracker.melodic": {
+   "rms": -32.3,
+   "gain": 1.498
+  },
+  "himalaya.tracker.calm": {
+   "rms": -34.1,
+   "gain": 1.849
+  },
+  "himalaya.tracker.melodic": {
+   "rms": -32.9,
+   "gain": 1.615
+  },
+  "travel.tracker.calm": {
+   "rms": -32.7,
+   "gain": 1.564
+  },
+  "travel.tracker.melodic": {
+   "rms": -32.2,
+   "gain": 1.491
+  },
+  "action.tracker.calm": {
+   "rms": -34.3,
+   "gain": 1.884
+  },
+  "action.tracker.melodic": {
+   "rms": -33,
+   "gain": 1.632
+  },
+  "outdoor.tracker.calm": {
+   "rms": -34.2,
+   "gain": 1.879
+  },
+  "outdoor.tracker.melodic": {
+   "rms": -33,
+   "gain": 1.631
+  },
+  "indoor.tracker.calm": {
+   "rms": -33.7,
+   "gain": 1.77
+  },
+  "indoor.tracker.melodic": {
+   "rms": -32.2,
+   "gain": 1.477
+  },
+  "water.tracker.calm": {
+   "rms": -33.8,
+   "gain": 1.775
+  },
+  "water.tracker.melodic": {
+   "rms": -32.1,
+   "gain": 1.467
+  },
+  "drone.tracker.calm": {
+   "rms": -33.8,
+   "gain": 1.781
+  },
+  "drone.tracker.melodic": {
+   "rms": -32.3,
+   "gain": 1.501
+  },
+  "cooking.tracker.calm": {
+   "rms": -33.9,
+   "gain": 1.795
+  },
+  "cooking.tracker.melodic": {
+   "rms": -32.3,
+   "gain": 1.507
+  },
+  "coffee.tracker.calm": {
+   "rms": -33.9,
+   "gain": 1.795
+  },
+  "coffee.tracker.melodic": {
+   "rms": -33.3,
+   "gain": 1.675
+  },
+  "credits.tracker.calm": {
+   "rms": -33.2,
+   "gain": 1.656
+  },
+  "credits.tracker.melodic": {
+   "rms": -32.3,
+   "gain": 1.505
+  },
+  "tetris.tracker.calm": {
+   "rms": -33.7,
+   "gain": 1.763
+  },
+  "tetris.tracker.melodic": {
+   "rms": -32.1,
+   "gain": 1.462
+  },
+  "tetris.tracker.korobeiniki": {
+   "rms": -32.3,
+   "gain": 1.676
+  },
+  "winSting.tracker.calm": {
+   "rms": -35.4,
+   "gain": 2.145
+  },
+  "winSting.tracker.melodic": {
+   "rms": -33.3,
+   "gain": 1.691
+  },
+  "loseSting.tracker.calm": {
+   "rms": -34.1,
+   "gain": 1.85
+  },
+  "loseSting.tracker.melodic": {
+   "rms": -32.9,
+   "gain": 1.61
+  }
  }
 }
