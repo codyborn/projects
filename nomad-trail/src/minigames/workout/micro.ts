@@ -65,6 +65,37 @@ export class Athlete {
     ];
     this.sprite = scene.add.image(x, y, this.poses[0]).setDepth(5);
   }
+  /** Side-on run cycle for the trail runner, built on first use. All six frames are a full 12 x 16 box so the figure never shifts
+   *  between states: 0-3 = the cycle (alternating legs, opposite arm swing, a hair flick, the torso a row higher on the passing frames),
+   *  4 = jump (tucked, arms up), 5 = duck (low, leaning forward). Jeans are sky0, not the night3 of the poses, so the legs read against
+   *  the night3 mountains behind the trail. */
+  private runs?: string[];
+  runFrame(i: number) {
+    if (!this.runs) {
+      const map = { o: PAL.earth3, h: PAL.earth0, s: PAL.sun0, p: PAL.sky0, k: PAL.ink };
+      const pad = (r: string) => (r + '............').slice(0, 12);
+      const BLANK = '............';
+      const HEAD = (flick: boolean) => [flick ? '...hhhhh....' : '..hhhhh.....', '..hhoooo....', '...hoooo....', '....oo......'];
+      const ARMS: Record<string, string[]> = {
+        fwd:  ['..sssss.....', 'o.sssss.oo..', '.osssss.o...', '..sssss.....'],
+        mid:  ['..sssss.....', '.osssss.o...', '.osssss.o...', '..sssss.....'],
+        back: ['..sssss.....', '.osssss.o...', 'o.sssss.oo..', '..sssss.....'],
+      };
+      const LEGS: Record<string, string[]> = {
+        splitA: ['..pppppp....', '..pp..ppp...', '.pp....pp...', 'pp......pp..', 'kk.......kk.'],
+        pass:   ['..pppppp....', '...pppp.....', '...pp.pp....', '...pp..pp...', '...kk...kk..'],
+        splitB: ['..pppppp....', '..ppp..pp...', '..pp....pp..', '.pp......pp.', '.kk......kk.'],
+        pass2:  ['..pppppp....', '...pppp.....', '..pp.pp.....', '..pp..pp....', '..kk..kk....'],
+      };
+      const frame = (flick: boolean, arm: string, legs: string) => [BLANK, BLANK, BLANK, ...HEAD(flick), ...ARMS[arm], ...LEGS[legs]].map(pad);
+      const JUMP = [BLANK, '...hhhhh....', '..hhoooo....', '...hoooo....', 'o...oo...o..', 'o.sssss..o..', '.osssss.o...', '..sssss.....', '..pppppp....', '..pp..pp....', '.pp....pp...', '.kk....kk...', BLANK, BLANK, BLANK, BLANK].map(pad);
+      const DUCK = [BLANK, BLANK, BLANK, BLANK, BLANK, BLANK, BLANK, '....hhhhh...', '...hhoooo.o.', '..ssssssoo..', '.osssssss...', '..pppppp....', '.pppp.ppp...', 'pp.....pp...', 'kk......kk..', BLANK].map(pad);
+      const P = (rows: string[], key: string) => pixTexture(this.scene, key, rows, map, 4);
+      this.runs = [P(frame(false, 'fwd', 'splitA'), 'ath_run0'), P(frame(true, 'mid', 'pass'), 'ath_run1'), P(frame(false, 'back', 'splitB'), 'ath_run2'), P(frame(true, 'mid', 'pass2'), 'ath_run3'), P(JUMP, 'ath_run_jump'), P(DUCK, 'ath_run_duck')];
+    }
+    if (this.sprite.scene && this.sprite.active) this.sprite.setTexture(this.runs[clamp(i, 0, 5) | 0]);
+    return this;
+  }
   pose(i: 0 | 1 | 2 | 3) { if (this.sprite.scene && this.sprite.active) this.sprite.setTexture(this.poses[i]); return this; }   // no-op once the sprite is destroyed (scene shutdown)
   at(x: number, y: number) { this.sprite.setPosition(x, y); return this; }
   show(v: boolean) { this.sprite.setVisible(v); return this; }
