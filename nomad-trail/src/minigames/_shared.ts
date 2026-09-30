@@ -28,6 +28,7 @@ export function panel(scene: Phaser.Scene, x: number, y: number, w: number, h: n
   g.fillStyle(fill).fillRect(x + 1, y + 1, w - 2, h - 2);
   g.fillStyle(light).fillRect(x + 1, y + 1, w - 2, 1).fillRect(x + 1, y + 1, 1, h - 2);
   g.fillStyle(dark).fillRect(x + 1, y + h - 2, w - 2, 1).fillRect(x + w - 2, y + 1, 1, h - 2);
+  (g as any).__rect = { x, y, w, h };   /* layout audit reads this to check its contents fit */
   return g;
 }
 
@@ -145,13 +146,20 @@ export class MinigameFrame {
     if (opts.extra) opts.extra(s, o => { (o as any).setDepth?.(902); add(o); });
     if (this.hard > 0.3) add(txt(s, W / 2, top + ph - 78, 'low energy: everything feels slower', 9, PAL.pink).setDepth(902));
     /* changed your mind: BACK cancels the activity; the city restores the state from before the tap */
-    if (this.launch.cancellable !== false) {
-      const back = add(s.add.rectangle(56, top + ph - 44, 64, 40, PAL.night3).setDepth(902).setStrokeStyle(1, PAL.ink).setInteractive({ useHandCursor: true })) as Phaser.GameObjects.Rectangle;
-      add(txt(s, 56, top + ph - 44, 'BACK', 10, PAL.gray2).setDepth(903));
+    /* BACK and READY are one centred group: widths + gap, then split either side of the card's midline */
+    const canBack = this.launch.cancellable !== false;
+    const backW = 74, readyW = 170, gap = 14;
+    const groupW = canBack ? backW + gap + readyW : readyW;
+    const left = W / 2 - groupW / 2;
+    const backX = left + backW / 2, readyX = canBack ? left + backW + gap + readyW / 2 : W / 2;
+    const btnY = top + ph - 44;
+    if (canBack) {
+      const back = add(s.add.rectangle(backX, btnY, backW, 44, PAL.night3).setDepth(902).setStrokeStyle(1, PAL.ink).setInteractive({ useHandCursor: true })) as Phaser.GameObjects.Rectangle;
+      add(txt(s, backX, btnY, 'BACK', 10, PAL.gray2).setDepth(903));
       back.on('pointerup', () => { if (this.active || this.finished) return; Audio.playSfx('back'); this.finished = true; this.readyHandler = undefined; this.introObjs.forEach(o => o.destroy()); this.introObjs = []; try { this.launch.onDone({ score: 0, perfect: false, failed: false, cancelled: true }); } finally { s.scene.stop(); } });
     }
-    const btn = add(s.add.rectangle(W / 2, top + ph - 44, 180, 48, PAL.sun0).setDepth(902).setStrokeStyle(2, PAL.ink).setInteractive({ useHandCursor: true })) as Phaser.GameObjects.Rectangle;
-    add(txt(s, W / 2, top + ph - 44, 'READY', 18, PAL.white).setDepth(903));
+    const btn = add(s.add.rectangle(readyX, btnY, readyW, 44, PAL.sun0).setDepth(902).setStrokeStyle(2, PAL.ink).setInteractive({ useHandCursor: true })) as Phaser.GameObjects.Rectangle;
+    add(txt(s, readyX, btnY, 'READY', 18, PAL.white).setDepth(903));
     s.tweens.add({ targets: btn, scaleX: 1.04, scaleY: 1.06, yoyo: true, repeat: -1, duration: 600 });
     let fired = false; const go = () => { if (fired) return; fired = true; this.readyHandler = undefined; start(); };
     btn.on('pointerdown', go); const kb = s.input.keyboard; kb?.once('keydown-SPACE', go); kb?.once('keydown-ENTER', go);

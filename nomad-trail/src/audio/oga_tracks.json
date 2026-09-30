@@ -9,7 +9,9 @@
    "file": "audio/return-of-the-8bit-era.mp3",
    "bytes": 360549,
    "source": "Pixabay",
-   "licence": "Pixabay Content License"
+   "licence": "Pixabay Content License",
+   "lufs": -19.0,
+   "tp": -6.4
   },
   {
    "id": "title.oga.dreamtune",
@@ -18,9 +20,11 @@
    "author": "Fupi",
    "url": "https://opengameart.org/content/dreamtune",
    "file": "audio/dreamtune.mp3",
-   "bytes": 353421,
+   "bytes": 353205,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.2,
+   "tp": -2.1
   },
   {
    "id": "title.oga.exploring-town",
@@ -31,7 +35,9 @@
    "file": "audio/exploring-town.mp3",
    "bytes": 360549,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.0,
+   "tp": -6.2
   }
  ],
  "americas": [
@@ -42,9 +48,11 @@
    "author": "Wolfgang_",
    "url": "https://opengameart.org/content/8-bit-theme-moving-right-along",
    "file": "audio/8-bit-theme-moving-right-along.mp3",
-   "bytes": 256653,
+   "bytes": 256437,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.1,
+   "tp": -4.0
   },
   {
    "id": "americas.oga.free-run-8-bitish",
@@ -55,7 +63,9 @@
    "file": "audio/free-run-8-bitish.mp3",
    "bytes": 360549,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.2,
+   "tp": -3.5
   }
  ],
  "mexico": [
@@ -66,9 +76,11 @@
    "author": "Centurion_of_war",
    "url": "https://opengameart.org/content/dance-field",
    "file": "audio/dance-field.mp3",
-   "bytes": 329661,
+   "bytes": 329445,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.1,
+   "tp": -3.8
   },
   {
    "id": "mexico.oga.digital-bananas",
@@ -77,9 +89,11 @@
    "author": "Locomule",
    "url": "https://opengameart.org/content/digital-bananas",
    "file": "audio/digital-bananas.mp3",
-   "bytes": 280197,
+   "bytes": 279981,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.0,
+   "tp": -4.4
   }
  ],
  "europe": [
@@ -92,7 +106,9 @@
    "file": "audio/chiptune-medieval-the-bards-tale.mp3",
    "bytes": 360549,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.0,
+   "tp": -4.4
   },
   {
    "id": "europe.oga.chiptune-medieval-the-old-tower-inn",
@@ -103,7 +119,9 @@
    "file": "audio/chiptune-medieval-the-old-tower-inn.mp3",
    "bytes": 360549,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.0,
+   "tp": -4.0
   }
  ],
  "alps": [
@@ -116,7 +134,9 @@
    "file": "audio/chiptune-medieval-minstrel-dance.mp3",
    "bytes": 360549,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -18.9,
+   "tp": -5.5
   },
   {
    "id": "alps.oga.chippy-melody-1",
@@ -125,9 +145,11 @@
    "author": "Centurion_of_war",
    "url": "https://opengameart.org/content/chippy-melody-1",
    "file": "audio/chippy-melody-1.mp3",
-   "bytes": 154269,
+   "bytes": 153837,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.1,
+   "tp": -4.2
   }
  ],
  "africa": [
@@ -138,9 +160,11 @@
    "author": "Wolfgang_",
    "url": "https://opengameart.org/content/desert-theme-8bit-chiptune-theme",
    "file": "audio/desert-theme-8bit-chiptune-theme.mp3",
-   "bytes": 238941,
+   "bytes": 238725,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.1,
+   "tp": -4.4
   },
   {
    "id": "africa.oga.egyptian-fortress-boss",
@@ -151,7 +175,9 @@
    "file": "audio/egyptian-fortress-boss.mp3",
    "bytes": 360549,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.0,
+   "tp": -7.9
   }
  ],
  "asia": [
@@ -164,7 +190,9 @@
    "file": "audio/chipnese.mp3",
    "bytes": 360549,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.1,
+   "tp": -3.8
   },
   {
    "id": "asia.oga.ch-ay-na",
@@ -173,9 +201,11 @@
    "author": "Spring Spring",
    "url": "https://opengameart.org/content/ch-ay-na",
    "file": "audio/ch-ay-na.mp3",
-   "bytes": 352989,
+   "bytes": 352557,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.0,
+   "tp": -4.6
   }
  ],
  "himalaya": [
@@ -188,7 +218,9 @@
    "file": "audio/fields-of-ice.mp3",
    "bytes": 360549,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.0,
+   "tp": -3.4
   },
   {
    "id": "himalaya.oga.8-bit-cave-loop",
@@ -199,7 +231,9 @@
    "file": "audio/8-bit-cave-loop.mp3",
    "bytes": 360549,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.0,
+   "tp": -4.4
   }
  ],
  "travel": [
@@ -212,7 +246,9 @@
    "file": "audio/best-game-console.mp3",
    "bytes": 360549,
    "source": "Pixabay",
-   "licence": "Pixabay Content License"
+   "licence": "Pixabay Content License",
+   "lufs": -19.0,
+   "tp": -4.4
   },
   {
    "id": "travel.oga.catchy",
@@ -223,7 +259,9 @@
    "file": "audio/catchy.mp3",
    "bytes": 360549,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.2,
+   "tp": -2.5
   },
   {
    "id": "travel.oga.freddie-friday-loop",
@@ -232,9 +270,11 @@
    "author": "iamoneabe",
    "url": "https://opengameart.org/content/freddie-friday-loop",
    "file": "audio/freddie-friday-loop.mp3",
-   "bytes": 337005,
+   "bytes": 336573,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.0,
+   "tp": -5.7
   }
  ],
  "action": [
@@ -247,7 +287,9 @@
    "file": "audio/my-8bit-hero.mp3",
    "bytes": 360549,
    "source": "Pixabay",
-   "licence": "Pixabay Content License"
+   "licence": "Pixabay Content License",
+   "lufs": -19.1,
+   "tp": -6.2
   },
   {
    "id": "action.oga.8-bit-battle-loop",
@@ -256,9 +298,11 @@
    "author": "Wolfgang_",
    "url": "https://opengameart.org/content/8-bit-battle-loop",
    "file": "audio/8-bit-battle-loop.mp3",
-   "bytes": 160533,
+   "bytes": 160101,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.0,
+   "tp": -4.6
   },
   {
    "id": "action.oga.chiptune-battle-music",
@@ -269,7 +313,9 @@
    "file": "audio/chiptune-battle-music.mp3",
    "bytes": 360549,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.1,
+   "tp": -4.1
   }
  ],
  "winSting": [
@@ -282,7 +328,9 @@
    "file": "audio/8-bit-victory-loop.mp3",
    "bytes": 54477,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.1,
+   "tp": -6.1
   },
   {
    "id": "winSting.oga.bonus-round-8bit",
@@ -293,7 +341,9 @@
    "file": "audio/bonus-round-8bit.mp3",
    "bytes": 54477,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.0,
+   "tp": -5.9
   }
  ],
  "loseSting": [
@@ -306,7 +356,9 @@
    "file": "audio/continue.mp3",
    "bytes": 54477,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.1,
+   "tp": -3.5
   },
   {
    "id": "loseSting.oga.drama-drama-drama",
@@ -317,7 +369,9 @@
    "file": "audio/drama-drama-drama.mp3",
    "bytes": 54477,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.1,
+   "tp": -5.4
   }
  ],
  "outdoor": [
@@ -330,7 +384,9 @@
    "file": "audio/8-bit-cave-loop.mp3",
    "bytes": 360549,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.0,
+   "tp": -4.4
   },
   {
    "id": "outdoor.oga.free-run-8-bitish",
@@ -341,7 +397,9 @@
    "file": "audio/free-run-8-bitish.mp3",
    "bytes": 360549,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.2,
+   "tp": -3.5
   }
  ],
  "drone": [
@@ -354,7 +412,9 @@
    "file": "audio/fun-with-my-8bit-game.mp3",
    "bytes": 360549,
    "source": "Pixabay",
-   "licence": "Pixabay Content License"
+   "licence": "Pixabay Content License",
+   "lufs": -19.0,
+   "tp": -5.6
   }
  ],
  "water": [
@@ -367,7 +427,9 @@
    "file": "audio/game-8bit-on.mp3",
    "bytes": 360549,
    "source": "Pixabay",
-   "licence": "Pixabay Content License"
+   "licence": "Pixabay Content License",
+   "lufs": -19.0,
+   "tp": -5.8
   }
  ],
  "cooking": [
@@ -380,7 +442,9 @@
    "file": "audio/console-of-my-dreams.mp3",
    "bytes": 360549,
    "source": "Pixabay",
-   "licence": "Pixabay Content License"
+   "licence": "Pixabay Content License",
+   "lufs": -19.0,
+   "tp": -4.4
   }
  ],
  "coffee": [
@@ -393,7 +457,9 @@
    "file": "audio/retro-arcade-game-music.mp3",
    "bytes": 360549,
    "source": "Pixabay",
-   "licence": "Pixabay Content License"
+   "licence": "Pixabay Content License",
+   "lufs": -19.0,
+   "tp": -4.6
   }
  ],
  "credits": [
@@ -406,7 +472,9 @@
    "file": "audio/retro-8bit-happy.mp3",
    "bytes": 360549,
    "source": "Pixabay",
-   "licence": "Pixabay Content License"
+   "licence": "Pixabay Content License",
+   "lufs": -19.0,
+   "tp": -4.4
   }
  ],
  "indoor": [
@@ -419,7 +487,9 @@
    "file": "audio/moms-workout-cd.mp3",
    "bytes": 360549,
    "source": "OpenGameArt",
-   "licence": "CC0 1.0"
+   "licence": "CC0 1.0",
+   "lufs": -19.2,
+   "tp": -3.2
   }
  ]
 }

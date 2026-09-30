@@ -1,7 +1,7 @@
 /* Standalone player for the review hub's Sound Lab (built by tools/vite.soundlab.ts into trail/review/soundlab.js).
  * Exposes window.__soundlab: the catalog of candidates per slot and a tiny player that shares the game's audio code. */
-import { SFX_CANDIDATES, renderDef, type SfxName } from '../src/audio/sfx';
-import { MUSIC_CANDIDATES, MUSIC_SLOTS, Tracker, musicById, type MusicSlot } from '../src/audio/tracker';
+import { SFX_CANDIDATES, renderDef, trimmedSamples, SFX_TRIM, bandOf, type SfxName } from '../src/audio/sfx';
+import { MUSIC_CANDIDATES, MUSIC_SLOTS, Tracker, musicById, trackerRms, type MusicSlot } from '../src/audio/tracker';
 import { AMBIENCE } from '../src/audio/synth';
 import selection from '../src/audio/selection.json';
 
@@ -48,11 +48,23 @@ class Lab {
     const s = this.ctx.createBufferSource(); s.buffer = buf; s.loop = !id.includes('Sting'); s.connect(this.master!); s.onended = () => { if (this.src === s) { this.src = undefined; this.playing = null; } }; s.start(); this.src = s; return true;
   }
 }
+/** Gated RMS in dBFS, the same measure tools/measure_sfx.ts uses, so the lab agrees with the build-time numbers. */
+function rmsDb(s: Float32Array): number {
+  let peak = 0; for (let i = 0; i < s.length; i++) peak = Math.max(peak, Math.abs(s[i]));
+  const gate = Math.max(peak * 0.02, 1e-4); let sum = 0, n = 0;
+  for (let i = 0; i < s.length; i++) if (Math.abs(s[i]) >= gate) { sum += s[i] * s[i]; n++; }
+  return 20 * Math.log10((n ? Math.sqrt(sum / n) : 0) || 1e-9);
+}
+/** Averaged, because jsfxr re-randomises noise on every render. */
+function sfxLevel(id: string, passes = 5): number {
+  let acc = 0; for (let i = 0; i < passes; i++) acc += Math.pow(10, rmsDb(trimmedSamples(id).samples) / 20);
+  return 20 * Math.log10(acc / passes || 1e-9);
+}
 const lab = new Lab();
 (window as any).__soundlab = {
   catalog: {
-    sfx: (Object.keys(SFX_CANDIDATES) as SfxName[]).map(slot => ({ slot, where: SFX_WHERE[slot], candidates: SFX_CANDIDATES[slot].map(c => ({ id: c.id, label: c.label })) })),
-    music: MUSIC_SLOTS.map(slot => ({ slot, where: MUSIC_WHERE[slot], candidates: MUSIC_CANDIDATES[slot].map(c => ({ id: c.id, label: c.label, kind: c.kind, ...(c.kind === 'file' ? { url: c.url, bytes: c.bytes } : {}) })) })),
+    sfx: (Object.keys(SFX_CANDIDATES) as SfxName[]).map(slot => ({ slot, where: SFX_WHERE[slot], band: bandOf(slot), trim: SFX_TRIM[slot], candidates: SFX_CANDIDATES[slot].map(c => ({ id: c.id, label: c.label, level: c.file ? `file x${c.gain ?? 1}` : `${sfxLevel(c.id).toFixed(1)} dBFS` })) })),
+    music: MUSIC_SLOTS.map(slot => ({ slot, where: MUSIC_WHERE[slot], candidates: MUSIC_CANDIDATES[slot].map(c => ({ id: c.id, label: c.label, kind: c.kind, level: c.kind === 'file' ? `${c.lufs?.toFixed(1) ?? '?'} LUFS` : `${trackerRms(c.loop).toFixed(1)} dBFS est`, ...(c.kind === 'file' ? { url: c.url, bytes: c.bytes, licence: c.licence } : {}) })) })),
   },
   defaults: selection,
   playAmbience: (on: boolean) => lab.playAmbience(on), ambience: { id: 'ambience.wind', label: AMBIENCE.wind.label, where: 'a quiet bed under the Pinnacle and the water games', url: AMBIENCE.wind.url, licence: AMBIENCE.wind.licence },

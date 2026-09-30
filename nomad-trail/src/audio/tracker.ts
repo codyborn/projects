@@ -240,16 +240,28 @@ export type MusicSlot = Exclude<LoopName, 'none'> | Stinger;
 export const MUSIC_SLOTS: MusicSlot[] = ['title', 'americas', 'mexico', 'europe', 'alps', 'africa', 'asia', 'himalaya', 'travel', 'action', 'outdoor', 'indoor', 'water', 'drone', 'cooking', 'coffee', 'credits', 'tetris', 'winSting', 'loseSting'];
 /** Slots whose list gets an extra hand-written arrangement beyond calm / melodic. */
 const EXTRA_TRACKER: Partial<Record<MusicSlot, { id: string; label: string; loop: Loop }[]>> = { tetris: [{ id: 'tetris.tracker.korobeiniki', label: 'tracker · Korobeiniki', loop: KOROBEINIKI }] };
-export type MusicCandidate = { id: string; label: string; kind: 'tracker'; loop: Loop } | { id: string; label: string; kind: 'file'; file: string; title: string; author: string; url: string; bytes: number; source?: string; licence?: string };
-const OGA = ogaJson as Record<string, { id: string; slug: string; title: string; author: string; url: string; file: string; bytes: number; source?: string; licence?: string }[]>;
+export type MusicCandidate = { id: string; label: string; kind: 'tracker'; loop: Loop } | { id: string; label: string; kind: 'file'; file: string; title: string; author: string; url: string; bytes: number; source?: string; licence?: string; lufs?: number; tp?: number };
+const OGA = ogaJson as Record<string, { id: string; slug: string; title: string; author: string; url: string; file: string; bytes: number; source?: string; licence?: string; lufs?: number; tp?: number }[]>;
 export const MUSIC_CANDIDATES: Record<MusicSlot, MusicCandidate[]> = Object.fromEntries(MUSIC_SLOTS.map(s => {
   const base: Loop = (s in LOOPS ? LOOPS[s as keyof typeof LOOPS] : STINGERS[s as Stinger]);
   const list: MusicCandidate[] = [
     { id: `${s}.tracker.calm`, label: 'tracker · calm', kind: 'tracker', loop: calmOf(base) },
     { id: `${s}.tracker.melodic`, label: 'tracker · melodic', kind: 'tracker', loop: base },
     ...(EXTRA_TRACKER[s] ?? []).map(e => ({ id: e.id, label: e.label, kind: 'tracker' as const, loop: e.loop })),
-    ...(OGA[s] ?? []).map(o => ({ id: o.id, label: `${o.title} · ${o.author}`, kind: 'file' as const, file: o.file, title: o.title, author: o.author, url: o.url, bytes: o.bytes, source: o.source, licence: o.licence })),
+    ...(OGA[s] ?? []).map(o => ({ id: o.id, label: `${o.title} · ${o.author}`, kind: 'file' as const, file: o.file, title: o.title, author: o.author, url: o.url, bytes: o.bytes, source: o.source, licence: o.licence, lufs: o.lufs, tp: o.tp })),
   ];
   return [s, list];
 })) as Record<MusicSlot, MusicCandidate[]>;
+/** Rough RMS of a tracker loop in dBFS, from note density and the fixed channel amplitudes. An estimate, not a measurement:
+ *  the synth is generated live, so there is no file to run through a meter. */
+export function trackerRms(l: Loop): number {
+  const step = 60 / (l.bpm * TEMPO) / 4;
+  const chans: [ReturnType<typeof parseChannel>, number][] = [[parseChannel(l.p1), 0.09], [parseChannel(l.p2), 0.045], [parseChannel(l.wave), 0.13]];
+  const steps = Math.max(...chans.map(([c]) => c.length), l.drums.trim().split(/\s+/).length);
+  let energy = 0;
+  for (const [ch, amp] of chans) for (const ev of ch) if (ev) energy += (amp * 0.707) ** 2 * ev.len * step;   /* 0.707: RMS of a periodic wave at that amplitude */
+  for (const d of l.drums.trim().split(/\s+/)) { const a = d === 'k' ? 0.16 : d === 's' ? 0.06 : d === 'h' ? 0.025 : 0; if (a) energy += (a * 0.707) ** 2 * 0.1; }
+  const total = steps * step; const rms = Math.sqrt(energy / total) * (l.vol ?? 1);
+  return 20 * Math.log10(rms || 1e-9);
+}
 export function musicById(id: string): MusicCandidate | undefined { const slot = id.split('.')[0] as MusicSlot; return MUSIC_CANDIDATES[slot]?.find(c => c.id === id); }

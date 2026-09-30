@@ -1,8 +1,9 @@
 # Audio attribution
 
 Music and recorded effects shipped in `public/audio/` (served at `/trail/audio/`). Licences were read from each source page at
-download time (OpenGameArt on 2026-09-30, Pixabay on 2026-09-30). Everything was trimmed, down-mixed to mono and re-encoded to
-MP3 (48 kbps, 32 kHz; the jet at 64 kbps) for size; no other changes. Total 9.5 MB across 36 files.
+download time (OpenGameArt on 2026-09-30, Pixabay on 2026-09-30). Everything was trimmed, down-mixed to mono and re-encoded to MP3 (48 kbps, 32 kHz; the jet at 64 kbps) for size, then
+loudness-matched: every music file is two-pass `loudnorm`-ed to **-19.0 LUFS integrated** with a limiter holding the
+decoded true peak at or below -1.5 dBTP, so no track is louder than another. Total 9.5 MB across 36 files.
 
 CC0 requires no attribution and the Pixabay Content License requires none either, but the authors deserve the credit.
 **CC-BY 3.0 does require it**: the jet takeoff and the wind loop below are used under CC-BY 3.0 and are credited here and in
@@ -48,6 +49,12 @@ the game's credits data.
 | Jet engine takeoff | dklon | [OpenGameArt](https://opengameart.org/content/jet-engine-takeoff) | CC-BY 3.0 | `plane` sound effect **picked** | `audio/jet-takeoff.mp3` (20 KB, first 2.5 s, played at 0.35 gain) |
 | Wind Loop | AntumDeluge (from InspectorJ) | [OpenGameArt](https://opengameart.org/content/wind-loop) | CC-BY 3.0 | ambience bed under the Pinnacle and the water games | `audio/wind-loop.mp3` (70 KB, 13 s, crossfaded loop) |
 | Wind Loop (excerpt) | AntumDeluge (from InspectorJ) | [OpenGameArt](https://opengameart.org/content/wind-loop) | CC-BY 3.0 | `whistle` sound-effect candidate (not picked) | `audio/wind-gust.mp3` (8 KB, 1.4 s) |
+
+## Levels
+
+Music sits at -19.0 LUFS (spread 0.3 LUFS across the library). The generated effects are trimmed by `SFX_TRIM` in
+`src/audio/sfx.ts` into three bands measured as gated RMS: quiet repeaters -23 dBFS, ordinary effects -17 dBFS, big one-offs
+-15 dBFS. `npx tsx tools/measure_sfx.ts` prints the measurements and `npx tsx tools/gen_sfx_trim.ts` regenerates the trims.
 
 ## Sound effects
 

@@ -71,7 +71,7 @@ export class ScubaScene extends Phaser.Scene {
     this.mini = this.add.graphics().setDepth(812).setScrollFactor(0);
     this.frame.scoreNow = () => this.score();
     this.frame.intro(`${this.cityName}. Lionfish are eating the reef.`, () => this.startDive(), { height: 356, extra: (s, add) => {
-      const top = H / 2 - 178; const lines: [string, number][] = [[`Spear all ${this.total} lionfish on this reef`, PAL.white], ['HOLD: swim toward your finger and aim', PAL.neon], ['RELEASE: fire the spear (short range)', PAL.neon], ['Shoot LEVEL at the body; spines deflect', PAL.sun2], ['Touch a spine: -15 and a nasty recoil', PAL.pink], ['Map and arrow point to the nearest. SURFACE ends the dive.', PAL.gray2]];
+      const top = H / 2 - 178; const lines: [string, number][] = [[`Spear all ${this.total} lionfish on this reef`, PAL.white], ['HOLD: swim toward your finger and aim', PAL.neon], ['RELEASE: fire the spear (short range)', PAL.neon], ['Shoot LEVEL at the body; spines deflect', PAL.sun2], ['Touch a spine: -15 and a nasty recoil', PAL.pink], ['Map and arrow find the nearest. SURFACE ends the dive.', PAL.gray2]];
       lines.forEach(([ln, c], i) => add(txt(s, W / 2, top + 96 + i * 22, ln, i === 0 ? 12 : i === 5 ? 9 : 10, c)));
     } });
     this.pinScreen(800);

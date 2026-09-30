@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { existsSync } from 'node:fs';
-import { SFX_NAMES, renderSamples, renderDef, SFX_CANDIDATES, sfxDefById, sfxCandidateById } from './sfx';
+import { SFX_NAMES, renderSamples, renderDef, SFX_CANDIDATES, sfxDefById, sfxCandidateById, PRESETS, SFX_TRIM, SFX_BANDS, QUIET_SFX, LOUD_SFX, bandOf, type SfxName } from './sfx';
+import oga from './oga_tracks.json';
 import { LOOPS, STINGERS, parseChannel, midiOf, MUSIC_CANDIDATES, MUSIC_SLOTS, musicById, calmOf } from './tracker';
 import { AMBIENCE } from './synth';
 import selection from './selection.json';
@@ -27,6 +28,33 @@ describe('audio: jsfxr presets and candidates', () => {
          noise makes the exact peak vary a little between renders */
       expect(peak, name).toBeGreaterThan(TINY.includes(name) ? 0.01 : 0.05); expect(r.samples.length / r.sampleRate, name).toBeLessThan(3);
     }
+  });
+  it('every preset sits inside its loudness band after the trim', () => {
+    /* jsfxr re-randomises noise on each render, so average a few passes before judging. */
+    const rms = (n: SfxName, passes = 9) => {
+      let acc = 0;
+      for (let i = 0; i < passes; i++) {
+        const s = renderDef(PRESETS[n]).samples; let peak = 0;
+        for (let i2 = 0; i2 < s.length; i2++) peak = Math.max(peak, Math.abs(s[i2]));
+        const gate = Math.max(peak * 0.02, 1e-4); let sum = 0, cnt = 0;
+        for (let i2 = 0; i2 < s.length; i2++) if (Math.abs(s[i2]) >= gate) { sum += s[i2] * s[i2]; cnt++; }
+        acc += cnt ? Math.sqrt(sum / cnt) : 0;
+      }
+      return 20 * Math.log10((acc / passes) * (SFX_TRIM[n] ?? 1) || 1e-9);
+    };
+    const off: string[] = [];
+    for (const n of SFX_NAMES) { const d = rms(n) - bandOf(n); if (Math.abs(d) > 2) off.push(`${n} ${d.toFixed(1)} dB from ${bandOf(n)}`); }
+    expect(off, 'every effect within 2 dB of its band').toEqual([]);
+    for (const n of QUIET_SFX) expect(bandOf(n), n).toBe(SFX_BANDS.quiet);
+    for (const n of LOUD_SFX) expect(bandOf(n), n).toBe(SFX_BANDS.loud);
+    expect(Object.keys(SFX_TRIM).sort()).toEqual([...SFX_NAMES].sort());
+  });
+  it('the shipped music is levelled to one target with legal peaks', () => {
+    const tracks = Object.values(oga).flat() as { id: string; lufs?: number; tp?: number }[];
+    const lufs = tracks.map(t => t.lufs!).filter(v => typeof v === 'number');
+    expect(lufs.length, 'every track carries a measured loudness').toBe(tracks.length);
+    expect(Math.max(...lufs) - Math.min(...lufs), 'loudness spread across the library').toBeLessThanOrEqual(1.5);
+    for (const t of tracks) expect(t.tp!, `${t.id} true peak`).toBeLessThanOrEqual(-1.5);
   });
   it('four rendered candidates per effect plus any recorded ones, stable ids', () => {
     for (const name of SFX_NAMES) {

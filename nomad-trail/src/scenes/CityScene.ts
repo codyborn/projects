@@ -70,15 +70,15 @@ export class CityScene extends Phaser.Scene {
   }
   private refreshLog() { const run = getRun(this); this.logLbl.setText(run.log.slice(-3).map(l => { const t = `d${l.day} ${l.text}`; return t.length > 78 ? t.slice(0, 76) + '…' : t; }).join('\n')); }
   private arrivalCard() {
-    const run = getRun(this); const city = Data.city(run.cityId); const dim = dimmer(this, 0.6); const p = new Panel(this, 24, 180, 312, 260, { fill: PAL.night1, border: PAL.sun2 });
+    const run = getRun(this); const city = Data.city(run.cityId); const dim = dimmer(this, 0.6); const p = new Panel(this, 24, 180, 312, 296, { fill: PAL.night1, border: PAL.sun2 });
     const parts: Phaser.GameObjects.GameObject[] = [dim, p];
     parts.push(txt(this, 180, 200, 'WELCOME TO', 8, PAL.gray2).setOrigin(0.5) as any, txt(this, 180, 222, (city?.name ?? run.cityId).toUpperCase(), 20, PAL.white).setOrigin(0.5) as any, txt(this, 180, 244, city?.country ?? '', 10, PAL.gray2).setOrigin(0.5) as any);
     parts.push(txt(this, 180, 300, city?.blurb ?? '', 10, PAL.sun3, { align: 'center', wrap: 270 }).setOrigin(0.5) as any);
     // stamp animation
-    const stamp = this.add.container(180, 360).setScale(3).setAlpha(0); const sg = this.add.graphics(); const gold = run.stamps[run.cityId] === 'gold'; sg.lineStyle(2, gold ? PAL.sun2 : PAL.red, 1); sg.strokeCircle(0, 0, 26); sg.strokeCircle(0, 0, 22); stamp.add(sg);
-    stamp.add([txt(this, 0, -4, (city?.name ?? '').slice(0, 10).toUpperCase(), 8, gold ? PAL.sun2 : PAL.red).setOrigin(0.5) as any, txt(this, 0, 8, `DAY ${run.day}`, 8, gold ? PAL.sun2 : PAL.red).setOrigin(0.5) as any]); stamp.setAngle(-14); parts.push(stamp);
+    const stamp = this.add.container(180, 362).setScale(2.2).setAlpha(0); const sg = this.add.graphics(); const gold = run.stamps[run.cityId] === 'gold'; sg.lineStyle(2, gold ? PAL.sun2 : PAL.red, 1); sg.strokeCircle(0, 0, 36); sg.strokeCircle(0, 0, 32); stamp.add(sg);   /* wide enough for the city name to sit inside the ring */
+    stamp.add([txt(this, 0, -9, (city?.name ?? '').slice(0, 9).toUpperCase(), 8, gold ? PAL.sun2 : PAL.red).setOrigin(0.5) as any, txt(this, 0, 11, `DAY ${run.day}`, 8, gold ? PAL.sun2 : PAL.red).setOrigin(0.5) as any]); stamp.setAngle(-14); parts.push(stamp);
     this.tweens.add({ targets: stamp, scaleX: 1, scaleY: 1, alpha: 1, duration: 260, ease: 'Quad.In', onComplete: () => { Audio.playSfx('stamp'); this.cameras.main.shake(60, 0.004) } });
-    parts.push(new Button(this, 180, 410, 'SETTLE IN', () => parts.forEach(x => x.destroy()), { w: 200, fill: PAL.sea1 }));
+    parts.push(new Button(this, 180, 442, 'SETTLE IN', () => parts.forEach(x => x.destroy()), { w: 200, fill: PAL.sea1 }));
     parts.forEach((x, i) => (x as any).setDepth?.(20 + i));   // above the skyline (depth 1) and the HUD (50 is fine to sit under)
   }
   private act(a: CityAction | 'map') {

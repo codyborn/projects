@@ -58,7 +58,7 @@ export class CarryOnGame implements ConsoleGame {
     this.windStreaks = s.add.graphics().setDepth(D + 5).setScrollFactor(0); this.objs.push(this.windStreaks);
     this.water = s.add.rectangle(this.ox + LW / 2, S.bottom + 200, LW, 400, PAL.sea1, 0.75).setDepth(D + 7).setVisible(this.level.hazard === 'wave'); this.objs.push(this.water);
     this.bar = s.add.graphics().setDepth(D + 9).setScrollFactor(0); this.objs.push(this.bar);
-    this.coinT = s.add.text(S.width - 8, 6, '', { fontFamily: 'monospace', fontSize: '10px', color: '#f7cf6b' }).setOrigin(1, 0).setDepth(D + 9).setScrollFactor(0); this.objs.push(this.coinT);
+    this.coinT = s.add.text(S.width - 14, 6, '', { fontFamily: 'monospace', fontSize: '10px', color: '#f7cf6b' }).setOrigin(1, 0).setDepth(D + 9).setScrollFactor(0); this.objs.push(this.coinT);
     this.spawnHazards(); this.ctx.setHearts(this.hearts, 3); this.status();
     this.camX = this.ox; this.ctx.camera.setScroll(this.camX, this.oy);
   }

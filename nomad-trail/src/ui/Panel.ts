@@ -7,6 +7,7 @@ export class Panel extends Phaser.GameObjects.Container {
     super(scene, x, y); this.w = w; this.h = h; this.g = scene.add.graphics(); this.add(this.g);
     const g = this.g; g.fillStyle(PAL.ink, 1); g.fillRect(2, 3, w, h); g.fillStyle(opts.fill ?? PAL.night1, opts.alpha ?? 1); g.fillRect(0, 0, w, h);
     g.lineStyle(1, opts.border ?? PAL.gray1, 1); g.strokeRect(0.5, 0.5, w - 1, h - 1); g.lineStyle(1, PAL.white, 0.12); g.strokeRect(1.5, 1.5, w - 3, h - 3);
+    (this as any).__rect = { x: 0, y: 0, w, h };   /* layout audit reads this to check its contents fit */
     scene.add.existing(this);
   }
 }

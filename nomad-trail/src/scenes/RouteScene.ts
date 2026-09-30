@@ -31,13 +31,13 @@ export class RouteScene extends Phaser.Scene {
     txt(this, 12, 322, this.preview ? 'FROM HERE YOU COULD GO' : legs.length ? 'NEXT STOP' : 'NO ROUTES THIS MONTH', 10, PAL.sun2);
     { const nc = Sim.nextContinent(run); if (nc && legs.length) txt(this, 348, 324, `then ${nc}`, 8, PAL.gray2).setOrigin(1, 0); }   /* the corridor: where the trail goes after this continent */
     txt(this, 348, 322, `${MONTHS[m - 1]} · day ${run.day}`, 8, PAL.gray2).setOrigin(1, 0);
-    const listC = this.add.container(0, 0); const mask = this.make.graphics({}); mask.fillRect(0, 336, 360, 246); listC.setMask(mask.createGeometryMask());
+    const listC = this.add.container(0, 0); (listC as any).__scroll = true; const mask = this.make.graphics({}); mask.fillRect(0, 336, 360, 246); listC.setMask(mask.createGeometryMask());   /* __scroll: the list is clipped and drag-scrolled, so its cards are meant to run past the fold */
     legs.forEach((leg, i) => listC.add(this.card(leg, 12, 340 + i * 62)));
     const total = legs.length * 62; if (total > 246) { const z = this.add.zone(180, 459, 360, 246).setInteractive({ draggable: true }); let sy = 0, s0 = 0; z.on('pointerdown', (p: any) => { s0 = p.y; }); z.on('drag', (p: any) => { const ny = Phaser.Math.Clamp(sy + (p.y - s0), -(total - 246), 0); listC.y = ny; }); z.on('dragend', () => { sy = listC.y; }); z.setDepth(-1); }
     if (!legs.length) { new Button(this, 180, 400, 'WAIT A WEEK HERE', () => { for (let i = 0; i < 7; i++) Sim.cityAction(run, 'rest'); putRun(this, run); this.scene.restart(); }, { w: 240, fill: PAL.dusk0 }); txt(this, 180, 440, 'Some legs only open in season (treks, campervans, Oktoberfest).', 8, PAL.gray2, { align: 'center', wrap: 300 }).setOrigin(0.5); }
     rect(this, 0, 582, 360, 58, PAL.night0).setDepth(5); rect(this, 0, 582, 360, 1, PAL.night3).setDepth(5);
-    new Button(this, 60, 614, this.preview ? '← BACK' : '← STAY', () => this.scene.start('City'), { w: 100, h: 44, size: 10, fill: PAL.night2 }).setDepth(6);
-    if (this.scene.get('Passport')) new Button(this, 300, 614, 'PASSPORT', () => this.scene.start('Passport', { back: 'Route' }), { w: 100, h: 44, size: 10, fill: PAL.night2 }).setDepth(6);
+    new Button(this, 68, 614, this.preview ? '← BACK' : '← STAY', () => this.scene.start('City'), { w: 100, h: 44, size: 10, fill: PAL.night2 }).setDepth(6);
+    if (this.scene.get('Passport')) new Button(this, 292, 614, 'PASSPORT', () => this.scene.start('Passport', { back: 'Route' }), { w: 100, h: 44, size: 10, fill: PAL.night2 }).setDepth(6);
   }
   private project(lat: number, lon: number, lon0: number, cx: number, cy: number, R: number) {
     const la = Phaser.Math.DegToRad(lat), lo = Phaser.Math.DegToRad(lon - lon0), la0 = Phaser.Math.DegToRad(18);
@@ -62,7 +62,14 @@ export class RouteScene extends Phaser.Scene {
     const glyph = TRANSPORT_GLYPH[leg.transport] ?? '·';
     p.add(txt(this, 10, 8, `${glyph}  ${c?.name ?? leg.to}${c?.hero ? ' ★' : ''}`, 12, PAL.white) as any);
     if ((leg as any).longHaul) p.add(txt(this, 200, 12, 'LONG HAUL', 8, PAL.pink) as any);
-    p.add(txt(this, 10, 30, `${c?.country ?? ''} · ${leg.days}d · energy −${leg.energy}${leg.timezones ? ` · ${Math.abs(leg.timezones)}h lag` : ''}${leg.months ? ' · in season' : ''}`, 8, PAL.gray2) as any);
+    /* keep the detail line clear of the fare / GO column on the right: drop the optional bits, then trim */
+    const bits = [`${leg.days}d`, `energy −${leg.energy}`];
+    if (leg.timezones) bits.push(`${Math.abs(leg.timezones)}h lag`);
+    if (leg.months) bits.push('in season');
+    let sub = [c?.country ?? '', ...bits].join(' · ');
+    while (sub.length > 32 && bits.length > 2) { bits.pop(); sub = [c?.country ?? '', ...bits].join(' · '); }
+    if (sub.length > 32) sub = sub.slice(0, 31) + '…';
+    p.add(txt(this, 10, 30, sub, 8, PAL.gray2) as any);
     if (typeof fare === 'number') p.add(txt(this, 326, 12, `$${Math.round(fare)}`, 8, PAL.sun2).setOrigin(1, 0.5) as any);
     if (!this.preview) p.add(txt(this, 326, 36, 'GO →', 12, PAL.neon).setOrigin(1, 0.5) as any);
     p.setSize(336, 56); p.setInteractive(new Phaser.Geom.Rectangle(168, 28, 336, 56), Phaser.Geom.Rectangle.Contains);

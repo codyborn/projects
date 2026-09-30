@@ -27,6 +27,7 @@ export function installDebug(game: Phaser.Game) {
   const api = {
     ready: false, game, sim: null as any,
     scene: (key: string) => game.scene.getScene(key),
+    audio: Audio,   /* the live engine, so a test can tap the music bus with an AnalyserNode */
     goto: go,
     state: run,
     hasSave: () => !!SimMod?.load?.(),

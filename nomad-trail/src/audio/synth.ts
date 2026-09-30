@@ -20,12 +20,24 @@ const MASTER = 0.6;
 const BASE_URL: string = (import.meta as any).env?.BASE_URL ?? '/';
 
 /** Plays a decoded file through the music gain, looping or once; fades like the tracker loops. */
+/** Encoded bytes for every audio file, shared by all players. ~350 KB a track, so prefetching the whole
+ *  soundtrack costs a few MB; decoded PCM is ~8 MB a minute, so that stays on demand and bounded. */
+const BYTES = new Map<string, Promise<ArrayBuffer>>();
+export function prefetchAudio(file: string): Promise<ArrayBuffer> {
+  let p = BYTES.get(file);
+  if (!p) { p = fetch(BASE_URL + file).then(r => r.arrayBuffer()); BYTES.set(file, p.catch(() => { BYTES.delete(file); throw new Error('fetch failed'); })); }
+  return p;
+}
 class FilePlayer {
-  private src?: AudioBufferSourceNode; private cache = new Map<string, Promise<AudioBuffer>>(); private token = 0;
+  private src?: AudioBufferSourceNode; private cache = new Map<string, Promise<AudioBuffer>>(); private order: string[] = []; private token = 0;
   constructor(private ctx: AudioContext, private out: AudioNode) {}
   private load(file: string) {
     let p = this.cache.get(file);
-    if (!p) { p = fetch(BASE_URL + file).then(r => r.arrayBuffer()).then(b => this.ctx.decodeAudioData(b)); this.cache.set(file, p); }
+    if (!p) {
+      p = prefetchAudio(file).then(b => this.ctx.decodeAudioData(b.slice(0)));   /* slice: decodeAudioData detaches the buffer */
+      this.cache.set(file, p); this.order.push(file);
+      while (this.order.length > 3) { const drop = this.order.shift()!; if (drop !== file) this.cache.delete(drop); }   /* decoded PCM is heavy; keep the last few */
+    }
     return p;
   }
   async play(file: string, loop: boolean, onEnd?: () => void) {
@@ -65,6 +77,22 @@ class AudioEngine {
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && this.ctx?.state === 'suspended') this.ctx.resume().catch(() => {}); });
     if (this.loop !== 'none') this.startCandidate(this.candidateFor(this.loop));
     if (this.amb !== 'none') this.playAmbience(this.amb, true);
+    this.warm();
+  }
+  /** Pull the rest of the soundtrack down in the background so a scene change never waits on the network.
+   *  One at a time, current loop last (it is already loading), and skipped on a metered or slow connection. */
+  private warmed = false;
+  warm() {
+    if (this.warmed) return; this.warmed = true;
+    const conn = (navigator as unknown as { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+    if (conn?.saveData || /^(slow-)?2g$/.test(conn?.effectiveType ?? '')) return;
+    const files: string[] = [];
+    const cur = this.candidateFor(this.loop); const curFile = cur?.kind === 'file' ? cur.file : undefined;
+    for (const id of Object.values(this.selection.music)) { const c = musicById(id); if (c?.kind === 'file' && c.file !== curFile) files.push(c.file); }
+    for (const id of Object.values(this.selection.sfx)) { const c = sfxCandidateById(id); if (c?.file) files.push(c.file); }
+    let i = 0;
+    const next = () => { const f = files[i++]; if (!f) return; prefetchAudio(f).catch(() => {}).then(() => window.setTimeout(next, 150)); };
+    window.setTimeout(next, 800);   /* let the first track and the scene settle first */
   }
   /** Fetch + decode a clip once (recorded effects, ambience beds). */
   private clip(file: string) {

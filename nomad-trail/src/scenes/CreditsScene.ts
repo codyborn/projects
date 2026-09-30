@@ -24,7 +24,7 @@ export class CreditsScene extends Phaser.Scene {
     const ids = Array.from(new Set(fired.length ? fired : (run?.log ?? []).map(l => Data.events.find(e => l.text.startsWith(e.title + ':'))?.id).filter((x): x is string => !!x)));
     const seen = new Set<string>();
     const rows = ids.map(id => CREDITS[id]).filter((c): c is Credit => !!c).filter(c => { const k = c.title + c.where; if (seen.has(k)) return false; seen.add(k); return true; });
-    this.content = this.add.container(0, 0);
+    this.content = this.add.container(0, 0); (this.content as any).__scroll = true;   /* a film roll: its contents are meant to start and end off-screen */
     const add = (o: Phaser.GameObjects.GameObject) => this.content.add(o as any);
     let y = H - 60;   /* everything starts just below the screen and rolls up like film credits */
     add(txt(this, W / 2, y, 'WHAT REALLY HAPPENED', 16, PAL.sun2).setOrigin(0.5)); y += 34;
@@ -36,7 +36,7 @@ export class CreditsScene extends Phaser.Scene {
     y += 20; add(txt(this, W / 2, y, 'The Nomad Trail is a true story, mostly.', 8, PAL.gray1).setOrigin(0.5, 0)); y += 34;
     /* CC-BY requires the credit where the work is used, so the recorded jet and wind say their names here */
     add(txt(this, W / 2, y, 'MUSIC AND SOUND', 9, PAL.white).setOrigin(0.5, 0)); y += 16;
-    for (const line of AUDIO_CREDITS) { add(txt(this, W / 2, y, line, 8, PAL.gray2, { align: 'center', wrap: 300 }).setOrigin(0.5, 0)); y += 14; }
+    for (const line of AUDIO_CREDITS) { const o = txt(this, W / 2, y, line, 8, PAL.gray2, { align: 'center', wrap: 300 }).setOrigin(0.5, 0); add(o); y += Math.max(14, (o.height || 12) + 3); }   /* advance by what the line actually rendered: long credits wrap */
     y += 26;
     this.endY = y;   /* scroll until the last line has passed the middle of the screen */
     this.add.rectangle(W / 2, H - 14, W, 28, PAL.night0).setDepth(4);   /* a solid band so the rolling text passes behind the hint */
