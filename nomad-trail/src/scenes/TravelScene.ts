@@ -17,7 +17,8 @@ export class TravelScene extends Phaser.Scene {
     const tod = (['day', 'dusk', 'night', 'dawn'] as const)[run.day % 4];
     this.scape?.destroy(); this.scape = buildTravelScape(this, run.cityId, data.leg.to, data.leg.transport, tod, 360, 640, from?.region as Region | undefined, to?.region as Region | undefined);
     this.craft = this.scape.vehicle; this.t0 = this.time.now;
-    this.tweens.add({ targets: this.craft, x: 300, duration: 2500, ease: 'Sine.InOut' });
+    /* the craft crosses and leaves the frame, then comes round again: parking it at the right edge read as a stall */
+    this.tweens.add({ targets: this.craft, x: 440, duration: 2300, ease: 'Linear', repeat: -1, repeatDelay: 1200 });   /* must clear the frame before the 2.5 s resolve pauses the scene */
     if (data.leg.transport === 'flight') this.tweens.add({ targets: this.craft, y: this.scape.vehicleY - 40, duration: 1200, yoyo: true, ease: 'Sine.InOut' });
     /* a dark plate keeps the route line and the day count readable over a bright sky */
     this.add.rectangle(180, 71, 360, 52, PAL.night0, 0.45).setOrigin(0.5);
