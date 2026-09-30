@@ -265,16 +265,4 @@ export const MUSIC_CANDIDATES: Record<MusicSlot, MusicCandidate[]> = Object.from
   ];
   return [s, list];
 })) as Record<MusicSlot, MusicCandidate[]>;
-/** Rough RMS of a tracker loop in dBFS, from note density and the fixed channel amplitudes. An estimate, not a measurement:
- *  the synth is generated live, so there is no file to run through a meter. */
-export function trackerRms(l: Loop): number {
-  const step = 60 / (l.bpm * TEMPO) / 4;
-  const chans: [ReturnType<typeof parseChannel>, number][] = [[parseChannel(l.p1), 0.09], [parseChannel(l.p2), 0.045], [parseChannel(l.wave), 0.13]];
-  const steps = Math.max(...chans.map(([c]) => c.length), l.drums.trim().split(/\s+/).length);
-  let energy = 0;
-  for (const [ch, amp] of chans) for (const ev of ch) if (ev) energy += (amp * 0.707) ** 2 * ev.len * step;   /* 0.707: RMS of a periodic wave at that amplitude */
-  for (const d of l.drums.trim().split(/\s+/)) { const a = d === 'k' ? 0.16 : d === 's' ? 0.06 : d === 'h' ? 0.025 : 0; if (a) energy += (a * 0.707) ** 2 * 0.1; }
-  const total = steps * step; const rms = Math.sqrt(energy / total) * (l.vol ?? 1);
-  return 20 * Math.log10(rms || 1e-9);
-}
 export function musicById(id: string): MusicCandidate | undefined { const slot = id.split('.')[0] as MusicSlot; return MUSIC_CANDIDATES[slot]?.find(c => c.id === id); }

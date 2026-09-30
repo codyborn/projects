@@ -1,7 +1,7 @@
 /* Standalone player for the review hub's Sound Lab (built by tools/vite.soundlab.ts into trail/review/soundlab.js).
  * Exposes window.__soundlab: the catalog of candidates per slot and a tiny player that shares the game's audio code. */
 import { SFX_CANDIDATES, renderDef, trimmedSamples, SFX_TRIM, bandOf, type SfxName } from '../src/audio/sfx';
-import { MUSIC_CANDIDATES, MUSIC_SLOTS, Tracker, musicById, trackerRms, type MusicSlot } from '../src/audio/tracker';
+import { MUSIC_CANDIDATES, MUSIC_SLOTS, Tracker, musicById, trackerLevel, MUSIC_REFERENCE_DB, type MusicSlot } from '../src/audio/tracker';
 import { AMBIENCE } from '../src/audio/synth';
 import selection from '../src/audio/selection.json';
 
@@ -43,7 +43,7 @@ class Lab {
   private file(f: string) { let p = this.files.get(f); if (!p) { p = fetch('/trail/' + f).then(r => r.arrayBuffer()).then(b => this.ctx!.decodeAudioData(b)); this.files.set(f, p); } return p; }
   async playMusic(id: string) {
     this.init(); this.stop(); const c = musicById(id); if (!c || !this.ctx) return false; this.playing = id;
-    if (c.kind === 'tracker') { this.tracker!.play(c.loop, id.endsWith('Sting.tracker.calm') || id.endsWith('Sting.tracker.melodic'), () => { if (this.playing === id) this.playing = null; }); return true; }
+    if (c.kind === 'tracker') { this.tracker!.play(c.loop, id.endsWith('Sting.tracker.calm') || id.endsWith('Sting.tracker.melodic'), () => { if (this.playing === id) this.playing = null; }, c.gain ?? 1); return true; }
     const buf = await this.file(c.file); if (this.playing !== id) return true;
     const s = this.ctx.createBufferSource(); s.buffer = buf; s.loop = !id.includes('Sting'); s.connect(this.master!); s.onended = () => { if (this.src === s) { this.src = undefined; this.playing = null; } }; s.start(); this.src = s; return true;
   }
@@ -64,9 +64,9 @@ const lab = new Lab();
 (window as any).__soundlab = {
   catalog: {
     sfx: (Object.keys(SFX_CANDIDATES) as SfxName[]).map(slot => ({ slot, where: SFX_WHERE[slot], band: bandOf(slot), trim: SFX_TRIM[slot], candidates: SFX_CANDIDATES[slot].map(c => ({ id: c.id, label: c.label, level: c.file ? `file x${c.gain ?? 1}` : `${sfxLevel(c.id).toFixed(1)} dBFS` })) })),
-    music: MUSIC_SLOTS.map(slot => ({ slot, where: MUSIC_WHERE[slot], candidates: MUSIC_CANDIDATES[slot].map(c => ({ id: c.id, label: c.label, kind: c.kind, level: c.kind === 'file' ? `${c.lufs?.toFixed(1) ?? '?'} LUFS` : `${trackerRms(c.loop).toFixed(1)} dBFS est`, ...(c.kind === 'file' ? { url: c.url, bytes: c.bytes, licence: c.licence } : {}) })) })),
+    music: MUSIC_SLOTS.map(slot => ({ slot, where: MUSIC_WHERE[slot], candidates: MUSIC_CANDIDATES[slot].map(c => ({ id: c.id, label: c.label, kind: c.kind, level: c.kind === 'file' ? `${c.lufs?.toFixed(1) ?? '?'} LUFS` : `${trackerLevel(c.id)?.toFixed(1) ?? '?'} dBFS bus`, ...(c.kind === 'file' ? { url: c.url, bytes: c.bytes, licence: c.licence } : {}) })) })),
   },
-  defaults: selection,
+  defaults: selection, musicReference: MUSIC_REFERENCE_DB,
   playAmbience: (on: boolean) => lab.playAmbience(on), ambience: { id: 'ambience.wind', label: AMBIENCE.wind.label, where: 'a quiet bed under the Pinnacle and the water games', url: AMBIENCE.wind.url, licence: AMBIENCE.wind.licence },
   playSfx: (id: string) => lab.playSfx(id), playMusic: (id: string) => lab.playMusic(id), stop: () => lab.stop(), setVolume: (v: number) => lab.setVolume(v), state: () => lab.state(), playing: () => lab.playing,
 };

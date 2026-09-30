@@ -52,7 +52,10 @@ the game's credits data.
 
 ## Levels
 
-Music sits at -19.0 LUFS (spread 0.3 LUFS across the library). The generated effects are trimmed by `SFX_TRIM` in
+Music sits at -19.0 LUFS (spread 0.3 LUFS across the library). The generated tracker loops are matched to those files by
+ear-independent measurement: `node tools/measure_music.mjs` plays every candidate through the game's own music bus and
+records its level with an AnalyserNode, then `node tools/gen_tracker_gain.mjs` writes a per-candidate gain into
+`src/audio/tracker_levels.json`. The gain is applied on the Tracker's output, never by rewriting a loop's notes. The generated effects are trimmed by `SFX_TRIM` in
 `src/audio/sfx.ts` into three bands measured as gated RMS: quiet repeaters -23 dBFS, ordinary effects -17 dBFS, big one-offs
 -15 dBFS. `npx tsx tools/measure_sfx.ts` prints the measurements and `npx tsx tools/gen_sfx_trim.ts` regenerates the trims.
 
