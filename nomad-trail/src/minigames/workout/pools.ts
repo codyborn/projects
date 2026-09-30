@@ -4,7 +4,6 @@ export interface MicroMeta { /** the micro-game's own name: the HUD title */ nam
 export const META: Record<string, MicroMeta> = {
   pushup:      { name: 'Push-ups',      word: 'TAP!',      instr: 'Tap when the ring lands on the target.', hint: 'TAP when the rings meet', durationSec: 7 },
   plank:       { name: 'Plank',         word: 'HOLD!',     instr: 'Hold. Drag left/right to keep the marker centred.', hint: 'HOLD - drag left/right', durationSec: 7 },
-  jumprope:    { name: 'Jump Rope',     word: 'JUMP!',     instr: 'Tap as the rope passes under your feet.', hint: 'TAP as the rope passes', durationSec: 8 },
   curls:       { name: 'Curls',         word: 'SWIPE!',    instr: 'Swipe UP on the side the arrow shows. Before it fades.', hint: 'SWIPE UP on the arrow side', durationSec: 8 },
   burpee:      { name: 'Burpees',       word: 'CHAIN!',    instr: 'Five burpees. Each one is three moves cued on screen: DROP (swipe down), PLANK (hold 0.6 s), JUMP (swipe up). Score = clean moves out of 15.', hint: 'DROP - PLANK - JUMP x5', durationSec: 16 },
   squat:       { name: 'Squats',        word: 'HOLD!',     instr: 'Hold to lower. Let go inside the green band.', hint: 'HOLD - let go in the green', durationSec: 8 },
@@ -23,7 +22,7 @@ export const META: Record<string, MicroMeta> = {
 };
 export const MICRO_IDS = Object.keys(META);
 export const POOLS: Partial<Record<ActivityId, string[]>> = {
-  bands: ['pushup', 'plank', 'jumprope', 'curls', 'burpee', 'squat', 'sprint', 'stretch'],   // hotel room: the eight
+  bands: ['pushup', 'plank', 'curls', 'burpee', 'squat', 'sprint', 'stretch'],   // hotel room: the seven
   boulder: ['boulderbeta', 'dyno'],
   trailrun: ['runner', 'riverstones'],
   hike: ['sprint', 'stretch', 'riverstones', 'balance'],

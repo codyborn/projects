@@ -48,7 +48,7 @@ When the last step ends, the finished dish art grows to ~3.4x, centred, for 1.5 
 
 | activity | pool (three for bands/hike, one otherwise) |
 |---|---|
-| bands (hotel room), unknown | pushup, plank, jumprope, curls, burpee, squat, sprint, stretch (three per session) |
+| bands (hotel room), unknown | pushup, plank, curls, burpee, squat, sprint, stretch (three per session) |
 | boulder | boulderbeta, dyno |
 | trailrun | runner, riverstones |
 | hike | sprint, stretch, riverstones, balance (three per session) |
@@ -61,7 +61,6 @@ When the last step ends, the finished dish art grows to ~3.4x, centred, for 1.5 
 |---|---|---|---|
 | pushup | TAP! | tap when the shrinking ring meets the target ring; 4–6 reps, faster each rep | tap / SPACE |
 | plank | HOLD! | TOP-DOWN view: the athlete planks on a mat seen from above (head top, forearms and hands out front, straight body, feet bottom); the balance wobble rotates the body left/right and the bar above stays as the readout; hold, micro-drag left/right to keep it in the band, leaving it drains the plank meter | hold + drag / SPACE + ←→ |
-| jumprope | JUMP! | tap as the rope passes under the feet; speeds up; a mistimed tap trips (3 trips ends it) | tap |
 | curls | SWIPE! | swipe UP on the side the arrow shows before it fades; faster each time | swipe / ←→ |
 | burpee | (none shown) | BURPEES (round 10): five repeats of DROP (swipe down) → PLANK (hold 0.6 s) → JUMP (swipe up), 15 phases; the big card shows the current phase's icon and label with a "next" preview and a 1/5…5/5 rep counter, and the HUD hint line cues each phase ("2/5 PLANK: hold 0.6 s"); ~1.0 s per phase (× window); the athlete strikes the phase's pose | score = clean phases / 15 | swipes, hold / SPACE, ↑↓ |
 | squat | HOLD! | hold to lower, release inside the green depth band; 4 reps, band narrows | hold / SPACE |

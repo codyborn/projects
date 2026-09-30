@@ -14,7 +14,7 @@ describe('workout micro-game pools', () => {
     const seen = new Set([7, 8, 9, 10, 11, 12].map(s => pickSession('bands', seededRng(s)).join('>'))); expect(seen.size).toBeGreaterThan(1);   // different days, different combinations
   });
   it('the game matches the real workout', () => {
-    expect(POOLS.bands).toEqual(['pushup', 'plank', 'jumprope', 'curls', 'burpee', 'squat', 'sprint', 'stretch']);
+    expect(POOLS.bands).toEqual(['pushup', 'plank', 'curls', 'burpee', 'squat', 'sprint', 'stretch']);
     expect(POOLS.boulder).toEqual(['boulderbeta', 'dyno']); expect(POOLS.trailrun).toEqual(['runner', 'riverstones']); expect(POOLS.hike).toEqual(['sprint', 'stretch', 'riverstones', 'balance']); expect(META.pace).toBeUndefined();
     expect(POOLS.swim).toEqual(['swimbreath']); for (const a of ['yoga', 'surf', 'ski'] as const) expect(POOLS[a]).toEqual(['balance', 'pose']);
   });

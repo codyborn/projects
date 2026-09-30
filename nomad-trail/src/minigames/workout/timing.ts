@@ -24,24 +24,6 @@ export class PushUp extends Micro {
 }
 
 /** JUMP ROPE: the rope sweeps a circle; tap when it passes under the feet (bottom). It speeds up. A mistimed tap trips. */
-export class JumpRope extends Micro {
-  readonly id = 'jumprope'; readonly word = META.jumprope.word; readonly instr = META.jumprope.instr; readonly durationSec = META.jumprope.durationSec;
-  private ang = 0; private jumps = 0; private trips = 0; private airborne = 0; private need = 6; private lastPass = -1; private caught = false;
-  protected begin() {
-    const cx = W / 2, cy = 320; this.ctx.athlete.at(cx, cy).pose(0).show(true);
-    let omega = 3.2 * this.ctx.speed; const win = 0.45 * this.ctx.window + 0.15;
-    this.onTap(() => { if (this.airborne > 0) return; this.airborne = 0.35; this.ctx.athlete.sprite.y = cy - 26; this.ctx.athlete.pose(2); });
-    this.loop(dt => { this.ang += omega * dt; if (this.airborne > 0) { this.airborne -= dt; if (this.airborne <= 0) { this.ctx.athlete.sprite.y = cy; this.ctx.athlete.pose(0); } }
-      // rope passes the feet at ang ≡ π/2 (bottom)
-      const phase = ((this.ang - Math.PI / 2) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2); const pass = Math.floor((this.ang - Math.PI / 2) / (Math.PI * 2));
-      if (pass !== this.lastPass && phase < 0.05) { this.lastPass = pass; if (this.airborne > 0) { this.jumps++; omega *= 1.09; this.pop(cx, 230, 'HOP'); } else { this.trips++; this.pop(cx, 230, 'TRIP', PAL.red); this.ctx.frame.shake(120, 0.005); this.ctx.athlete.pose(1); this.after(300, () => this.ctx.athlete.pose(0)); }
-        this.ctx.frame.setProgress(`${this.jumps}/${this.need}`); if (this.jumps >= this.need || this.trips >= 3) this.after(250, () => this.finish(this.scoreNow())); }
-      this.g.clear(); this.backdrop(380, 400); const rx = Math.cos(this.ang) * 34, ry = Math.sin(this.ang) * 70;
-      const near = phase < win || phase > Math.PI * 2 - win; this.g.lineStyle(3, near ? PAL.neon : PAL.sun3); this.g.beginPath(); this.g.moveTo(cx - 40, cy - 20); this.g.lineTo(cx + rx, cy + ry); this.g.lineTo(cx + 40, cy - 20); this.g.strokePath();
-      this.g.fillStyle(PAL.ink).fillCircle(cx + rx, cy + ry, 4); });
-  }
-  protected scoreNow() { return clamp(this.jumps / this.need - this.trips * 0.2, 0, 1); }
-}
 
 /** DYNO: a climber swings on a hold; tap at the apex to catch the next one. 3 catches. */
 export class Dyno extends Micro {
