@@ -29,7 +29,8 @@ export class TitleScene extends Phaser.Scene {
     let y = 400;
     if (saved && saved.phase !== 'ended') { new Button(this, 180, y, `CONTINUE  ·  day ${saved.day}`, () => this.resume(saved), { w: 240, fill: PAL.dusk1 }); y += 56; }
     new Button(this, 180, y, 'NEW RUN', () => this.newRun(!!saved), { w: 240, fill: PAL.sea1 }); y += 56;
-    if (saved) { if (this.scene.get('Passport')) { new Button(this, 180, y, 'PASSPORT', () => { this.registry.set('run', saved); this.scene.start('Passport', { back: 'Title' }); }, { w: 240 }); y += 56; } }
+    if (this.scene.get('Passport')) { new Button(this, 180, y, 'PASSPORT', () => { if (saved) this.registry.set('run', saved); this.scene.start('Passport', { back: 'Title' }); }, { w: 240 }); y += 56; }
+    if (this.scene.get('Recipes')) { new Button(this, 180, y, 'RECIPES', () => this.scene.start('Recipes', { back: 'Title' }), { w: 240 }); y += 56; }
     buildIcons(this); const spk = this.add.image(40, 600, Audio.muted ? 'ico_sound_off' : 'ico_sound_on').setScale(3).setDepth(5).setInteractive({ useHandCursor: true });
     /* browsers block audio until a gesture, so the title screen asks for one: the first tap anywhere starts the music
        rather than toggling, otherwise tapping the speaker to get sound would mute it instead */

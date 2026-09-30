@@ -1,5 +1,6 @@
 // Passport spread: stamps per visited city (plain/gold), swipe to flip pages. Reads registry 'run' and 'cities'.
 import Phaser from 'phaser';
+import { getSettings } from '../ui/simBridge';
 import { PAL } from '../core/palette';
 import { GAME_W, GAME_H } from '../core/types';
 import type { RunState, City } from '../core/types';
@@ -20,7 +21,11 @@ export class PassportScene extends Phaser.Scene {
     px(this, 'pp_book', 320, 440, ctx => { R(ctx, 0, 0, 320, 440, PAL.ink); R(ctx, 2, 2, 316, 436, PAL.dusk0); R(ctx, 8, 8, 304, 424, PAL.white); R(ctx, 158, 8, 4, 424, PAL.gray2); const r = rng(5); for (let i = 0; i < 900; i++) { const x = r.int(8, 311), y = r.int(8, 431); if ((x + y) % 7 === 0) R(ctx, x, y, 1, 1, PAL.gray2); } });
     this.add.image(GAME_W / 2, GAME_H / 2, 'pp_book');
     ptext(this, GAME_W / 2, 36, 'PASSPORT', PAL.sun3, 2).setOrigin(0.5);
-    const visited = run?.visited ?? []; const stamps = run?.stamps ?? {};
+    /* the passport is a career document: every city ever stamped, with this run's stamps folded in live */
+    const career = getSettings(this).career ?? { stamps: {}, dishes: {} };
+    const stamps: Record<string, 'plain' | 'gold'> = { ...career.stamps };
+    for (const [id, k] of Object.entries(run?.stamps ?? {})) if (k === 'gold' || !stamps[id]) stamps[id] = k as 'plain' | 'gold';
+    const visited = Object.keys(stamps);
     const entries = visited.map(id => cities.find(c => c.id === id)).filter((c): c is City => !!c);
     const perPage = 12; const pages = Math.max(1, Math.ceil(entries.length / perPage));
     const render = () => {

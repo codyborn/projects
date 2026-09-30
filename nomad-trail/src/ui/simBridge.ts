@@ -40,8 +40,8 @@ export interface SimApi {
   /** Fare for a leg, if the engine prices legs. */
   legCost(state: RunState, leg: Leg): number | undefined;
 }
-import { loadSettings as _loadSettings, saveSettings as _saveSettings, recordRun } from '../core/sim';
-export { recordRun };
+import { loadSettings as _loadSettings, saveSettings as _saveSettings, recordRun, recordStamps, recordDish } from '../core/sim';
+export { recordRun, recordStamps, recordDish };
 const E = Engine as any;
 /** Adapter: the engine returns StepResult {state, events: ResolvedEvent[]} and mutates nothing; scenes expect ids + plain states. */
 export const Sim: SimApi = {

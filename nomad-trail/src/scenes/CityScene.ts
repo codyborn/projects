@@ -6,7 +6,7 @@ import { Button } from '../ui/Button';
 import { Panel, dimmer } from '../ui/Panel';
 import { Hud } from '../ui/hud';
 import { toast } from '../ui/Toast';
-import { Sim, Data, getRun, putRun } from '../ui/simBridge';
+import { Sim, Data, getRun, putRun, recordStamps, recordDish } from '../ui/simBridge';
 import { launchOnTop } from '../ui/overlay';
 import { buildIcons } from '../art/icons';
 const ACTIONS: { a: CityAction | 'map'; label: string; tip: string }[] = [
@@ -26,8 +26,8 @@ export class CityScene extends Phaser.Scene {
     // vista
     let drew = false; if ((window as any).__nomadArt?.skylineAt) { try { this.setSky(this.todFor(run.day), false); drew = true; } catch {} }
     if (!drew) this.fallbackVista(run.cityId, city?.climate ?? 'temperate');
-    { const name = (city?.name ?? run.cityId).toUpperCase(); const plateW = Math.min(300, Math.max(150, 20 + name.length * 13)); const plate = this.add.graphics().setDepth(2); plate.fillStyle(PAL.night0, 0.82); plate.fillRect(6, 90, plateW, 40); plate.fillStyle(PAL.sun1, 1); plate.fillRect(6, 90, 3, 40); }
-    txt(this, 14, 96, (city?.name ?? run.cityId).toUpperCase(), 16, PAL.white).setDepth(3); txt(this, 14, 116, `${city?.country ?? ''} · stay day ${run.stayDays + 1}${Sim.dullKnives(run) ? ' · dull knife' : ''}`, 8, PAL.gray2).setDepth(3);
+    { const name = (city?.name ?? run.cityId).toUpperCase(); const plateW = Math.min(300, Math.max(150, 20 + name.length * 13)); const plate = this.add.graphics().setDepth(2); plate.fillStyle(PAL.night0, 0.82); plate.fillRect(6, 90, plateW, 48); plate.fillStyle(PAL.sun1, 1); plate.fillRect(6, 90, 3, 48); }
+    txt(this, 14, 96, (city?.name ?? run.cityId).toUpperCase(), 16, PAL.white).setDepth(3); txt(this, 14, 124, `${city?.country ?? ''} · stay day ${run.stayDays + 1}${Sim.dullKnives(run) ? ' · dull knife' : ''}`, 8, PAL.gray2).setDepth(3);
     try { buildIcons(this); } catch { /* icons are optional */ }
     Audio.playLoop(REGION_LOOP[city?.region ?? ''] ?? 'americas');
     this.hud = new Hud(this); this.hud.refresh(run);
@@ -48,7 +48,7 @@ export class CityScene extends Phaser.Scene {
     this.btns.forEach(b => b.setDepth(10));   /* above the vista (depth 1), which is rebuilt on day changes and would otherwise cover them */
     txt(this, 180, 620, '1 action = 1 day · work week = 5 days', 8, PAL.gray0).setOrigin(0.5).setDepth(5);
     this.refreshWorkBtn(run.day);
-    if (data.arrived) { this.arrivalCard(); (this.sys.settings.data as any).arrived = false; }   /* STAY / BACK restart the scene without data; do not welcome the player twice */
+    if (data.arrived) { try { recordStamps(getRun(this).stamps ?? {}); } catch { /* ignore */ } this.arrivalCard(); (this.sys.settings.data as any).arrived = false; }   /* STAY / BACK restart the scene without data; do not welcome the player twice */
   }
   // ---- the vista cycles day → dusk → night → dawn as days pass, crossfading between skylines ----
   private sky?: any; private skyUpd?: (t: number, dt: number) => void;
@@ -68,7 +68,7 @@ export class CityScene extends Phaser.Scene {
     const g = this.add.graphics(); const rnd = new Phaser.Math.RandomDataGenerator([cityId]); g.fillStyle(PAL.night2, 1); let x = 0; while (x < 360) { const w = 14 + rnd.between(0, 30), h = climate === 'alpine' ? 40 + rnd.between(0, 80) : 20 + rnd.between(0, 60); if (climate === 'alpine') { g.fillTriangle(x, 236, x + w / 2, 236 - h, x + w, 236); } else g.fillRect(x, 236 - h, w, h); x += w + 2; }
     rect(this, 0, 232, 360, 6, PAL.earth0);
   }
-  private refreshLog() { const run = getRun(this); this.logLbl.setText(run.log.slice(-4).map(l => { const t = `d${l.day} ${l.text}`; return t.length > 78 ? t.slice(0, 76) + '…' : t; }).join('\n')); }
+  private refreshLog() { const run = getRun(this); this.logLbl.setText(run.log.slice(-3).map(l => { const t = `d${l.day} ${l.text}`; return t.length > 78 ? t.slice(0, 76) + '…' : t; }).join('\n')); }
   private arrivalCard() {
     const run = getRun(this); const city = Data.city(run.cityId); const dim = dimmer(this, 0.6); const p = new Panel(this, 24, 180, 312, 260, { fill: PAL.night1, border: PAL.sun2 });
     const parts: Phaser.GameObjects.GameObject[] = [dim, p];
@@ -105,7 +105,9 @@ export class CityScene extends Phaser.Scene {
   private minigame(m: { key: string; payload?: any; difficulty: number; extraLives?: number }) {
     return new Promise<void>(resolve => {
       const run = getRun(this); const before = JSON.parse(JSON.stringify(run)) as RunState;
-      const finish = (r: MinigameResult) => { if (r.cancelled) { putRun(this, before); this.hud.refresh(before); this.refreshLog(); toast(this, 'Another time.', PAL.gray2, 800); resolve(); return; } const s = Sim.applyMinigameResult(getRun(this), m.key, r); putRun(this, s); this.hud.refresh(s); toast(this, r.failed ? 'that did not go well' : r.perfect ? 'PERFECT' : `score ${Math.round(r.score)}`, r.failed ? PAL.red : PAL.neon); resolve(); };
+      const finish = (r: MinigameResult) => { if (r.cancelled) { putRun(this, before); this.hud.refresh(before); this.refreshLog(); toast(this, 'Another time.', PAL.gray2, 800); resolve(); return; } const s = Sim.applyMinigameResult(getRun(this), m.key, r); putRun(this, s);
+        /* career record: the passport and the recipe book outlive the run */
+        try { recordStamps(s.stamps ?? {}); if (m.key === 'Cooking') { const d = m.payload?.dish?.id ?? m.payload?.id; if (d) recordDish(d, r.score); } } catch { /* storage can be unavailable */ } this.hud.refresh(s); toast(this, r.failed ? 'that did not go well' : r.perfect ? 'PERFECT' : `score ${Math.round(r.score)}`, r.failed ? PAL.red : PAL.neon); resolve(); };
       if (!this.scene.get(m.key)) { toast(this, `(${m.key} not installed yet)`, PAL.gray2, 900); finish({ score: 50, perfect: false, failed: false }); return; }
       const launch: MinigameLaunch = { energy: run.energy, difficulty: m.difficulty, payload: m.payload, extraLives: m.extraLives, preview: (r) => Sim.previewMinigame(run, m.key, r), onDone: (r) => { if (this.scene.isActive(m.key) || this.scene.isPaused(m.key)) this.scene.stop(m.key); this.scene.resume(); Audio.playLoop(REGION_LOOP[Data.city(getRun(this).cityId)?.region ?? ''] ?? 'americas'); finish(r); } };
       launchOnTop(this, m.key, launch); this.scene.pause();

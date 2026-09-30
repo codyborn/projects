@@ -88,4 +88,6 @@ export interface Puzzle { id: string; title: string; prompt: string; kind: 'choi
 // ---------- Save ----------
 export const SAVE_KEY = 'nomadtrail.save.v2';  // v2: money, single bag
 export const SETTINGS_KEY = 'nomadtrail.settings.v1';
-export interface Settings { muted: boolean; runs: number; bestScore: number; history: { ending: Ending['kind']; day: number; score: number }[]; }
+export interface Settings { muted: boolean; runs: number; bestScore: number; history: { ending: Ending['kind']; day: number; score: number }[];
+  /** career record, cumulative across every run: the passport keeps its stamps and the recipe book its best scores */
+  career?: { stamps: Record<string, 'plain' | 'gold'>; dishes: Record<string, number> }; }
