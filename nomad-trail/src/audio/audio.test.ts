@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs';
 import { SFX_NAMES, renderSamples, renderDef, SFX_CANDIDATES, sfxDefById, sfxCandidateById, PRESETS, SFX_TRIM, SFX_BANDS, QUIET_SFX, LOUD_SFX, bandOf, type SfxName } from './sfx';
 import oga from './oga_tracks.json';
 import { LOOPS, STINGERS, parseChannel, midiOf, MUSIC_CANDIDATES, MUSIC_SLOTS, musicById, calmOf, trackerLevel, MUSIC_REFERENCE_DB } from './tracker';
-import { AMBIENCE } from './synth';
+import { AMBIENCE, MUSIC_RATE_MIN, MUSIC_RATE_MAX } from './synth';
 import selection from './selection.json';
 
 const TINY = ['wheel', 'tick', 'step', 'blip', 'tap', 'land', 'lock', 'reel', 'chop', 'crack'];
@@ -55,6 +55,16 @@ describe('audio: jsfxr presets and candidates', () => {
     expect(lufs.length, 'every track carries a measured loudness').toBe(tracks.length);
     expect(Math.max(...lufs) - Math.min(...lufs), 'loudness spread across the library').toBeLessThanOrEqual(1.5);
     for (const t of tracks) expect(t.tp!, `${t.id} true peak`).toBeLessThanOrEqual(-1.5);
+  });
+  it('the music tempo hook clamps, maps Pack-Tris levels and resets between loops', () => {
+    /* the clamp is pure maths, so it can be checked without an AudioContext */
+    const clampRate = (r: number) => Math.min(MUSIC_RATE_MAX, Math.max(MUSIC_RATE_MIN, Number.isFinite(r) ? r : 1));
+    expect(clampRate(1)).toBe(1); expect(clampRate(5)).toBe(MUSIC_RATE_MAX); expect(clampRate(0.1)).toBe(MUSIC_RATE_MIN);
+    expect(clampRate(NaN)).toBe(1); expect(MUSIC_RATE_MIN).toBeLessThan(1); expect(MUSIC_RATE_MAX).toBeGreaterThan(1.5);
+    /* Pack-Tris maps levels gained since the start onto the rate: +0.1 each, capped at +0.6 */
+    const rateFor = (gained: number) => 1 + Math.min(0.6, 0.1 * gained);
+    expect(rateFor(0)).toBe(1); expect(rateFor(3)).toBeCloseTo(1.3); expect(rateFor(6)).toBeCloseTo(1.6); expect(rateFor(99)).toBeCloseTo(1.6);
+    expect(clampRate(rateFor(99)), 'the top of the ramp is inside the clamp').toBeCloseTo(1.6);
   });
   it('every tracker candidate is levelled to the same band as the shipped files', () => {
     const off: string[] = [];

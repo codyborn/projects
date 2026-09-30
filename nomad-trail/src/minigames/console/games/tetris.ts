@@ -6,6 +6,7 @@
 import Phaser from 'phaser';
 import { PAL } from '../../../core/palette';
 import { clamp } from '../../_shared';
+import { Audio } from '../../../audio/synth';
 import { hex } from '../../../core/palette';
 import type { Pad } from '../input';
 import type { ConsoleCtx, ConsoleGame, ConsoleResult } from './types';
@@ -38,7 +39,7 @@ export class TetrisGame implements ConsoleGame {
 
   init(ctx: ConsoleCtx, done: (r: ConsoleResult) => void) {
     this.ctx = ctx; this.done = done; const s = ctx.scene;
-    this.grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null)); this.level = Math.floor(ctx.rng() * 3) + Math.round(ctx.difficulty * 2); this.level0 = this.level;
+    this.grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null)); this.level = Math.floor(ctx.rng() * 3) + Math.round(ctx.difficulty * 2); this.level0 = this.level; Audio.setMusicRate(1, 0);
     this.ox = Math.round(ctx.screen.x + 60); this.oy = Math.round(ctx.screen.y + (ctx.screen.height - ROWS * CELL) / 2);
     this.objs.push(s.add.rectangle(ctx.screen.centerX, ctx.screen.centerY, ctx.screen.width, ctx.screen.height, ctx.palette[0]).setDepth(ctx.depth));
     this.g = s.add.graphics().setDepth(ctx.depth + 2); this.objs.push(this.g); this.fx = s.add.graphics().setDepth(ctx.depth + 4); this.objs.push(this.fx);
@@ -47,6 +48,8 @@ export class TetrisGame implements ConsoleGame {
     const tag = s.add.text(this.ox - 5, this.oy + 10, 'FRAGILE', { fontFamily: 'monospace', fontSize: '9px', color: hex(PAL.red) }).setOrigin(1, 0).setDepth(ctx.depth + 3).setName('tt_tag').setVisible(false); this.objs.push(tag); s.tweens.add({ targets: tag, alpha: 0.4, yoyo: true, repeat: -1, duration: 500 });
     this.next = this.makePiece(); this.spawn(); ctx.setHearts(0, 0); this.hud();
   }
+  /** The music leans on the gas with the level: normal at the starting level, about 1.6 once six levels have gone by. */
+  private syncMusicRate() { Audio.setMusicRate(1 + Math.min(0.6, 0.1 * (this.level - this.level0))); }
   private hud() { (this.ctx.scene.children.getByName('tt_lines') as Phaser.GameObjects.Text | null)?.setText(`LINES  ${this.lines} / ${GOAL}\nLEVEL  ${this.level + 1}\nZIP in ${Math.max(0, this.nextZip - this.lines)}`); const item = this.ctx.scene.children.getByName('tt_item') as Phaser.GameObjects.Text | null; item?.setText(this.next.f ? 'FRAGILE' : this.next.b ? 'BATTERY' : '').setColor(this.next.f ? hex(PAL.red) : hex(PAL.sun2)); (this.ctx.scene.children.getByName('tt_tag') as Phaser.GameObjects.Text | null)?.setVisible(!!this.cur.f); this.ctx.setStatus(this.lines >= GOAL ? 'CLOSE THE LID' : `${this.lines}/${GOAL}`); }
   private draw() { if (!this.bag.length) { this.bag = NAMES.slice(); for (let i = this.bag.length - 1; i > 0; i--) { const j = Math.floor(this.ctx.rng() * (i + 1)); [this.bag[i], this.bag[j]] = [this.bag[j], this.bag[i]]; } } return this.bag.pop()!; }
   /** the next piece: a fragile bottle every 6th, a rare battery, else a bag draw */
@@ -57,7 +60,7 @@ export class TetrisGame implements ConsoleGame {
   private gravity() { return Math.max(0.12, 0.8 * Math.pow(0.82, this.level)) / this.ctx.speed; }
 
   update(dt: number, pad: Pad) {
-    if (this.ended) return; this.t += dt; const c = this.cur; if (this.t > (this.level - this.level0 + 1) * 25) this.level++;   // time also raises the level
+    if (this.ended) return; this.t += dt; const c = this.cur; if (this.t > (this.level - this.level0 + 1) * 25) { this.level++; this.syncMusicRate(); }   // time also raises the level
     if (this.zipT > 0) { this.zipT -= dt; this.render(); return; }   // zipper animation: the well is frozen for a beat
     const ax = pad.axisX; if (ax !== this.dasDir) { this.dasDir = ax; this.das = 0; if (ax && !this.collides(c.x + ax, c.y, c.r)) c.x += ax; } else if (ax) { this.das += dt; if (this.das > 0.16) { this.das -= 0.05; if (!this.collides(c.x + ax, c.y, c.r)) c.x += ax; } }
     // rotation never touches y or the fall accumulator; the wall kick is horizontal only
@@ -75,7 +78,7 @@ export class TetrisGame implements ConsoleGame {
     if (c.b) this.blast(placed);
     else { const hit = new Set<number>(); for (const [x, y] of placed) { const below = y + 1 < ROWS ? this.grid[y + 1][x] : null; if (below && below.f !== undefined && below.f !== c.f) hit.add(below.f); } for (const id of hit) this.shatter(id); }
     let cleared = 0; for (let y = ROWS - 1; y >= 0; y--) if (this.grid[y].every(v => v)) { this.grid.splice(y, 1); this.grid.unshift(Array(COLS).fill(null)); cleared++; y++; }
-    if (cleared) { this.lines += cleared; this.level += cleared >= 2 ? 1 : 0; this.ctx.flash(PAL.sun2, 40); this.ctx.sfx(cleared >= 4 ? 'win' : 'coin'); }
+    if (cleared) { this.lines += cleared; if (cleared >= 2) { this.level++; this.syncMusicRate(); } this.ctx.flash(PAL.sun2, 40); this.ctx.sfx(cleared >= 4 ? 'win' : 'coin'); }
     while (this.lines >= this.nextZip) { this.nextZip += ZIP_EVERY; this.zipper(); }
     this.hud();
     if (this.lines >= GOAL && this.underLid()) { this.closeCase(); return; }
@@ -95,7 +98,7 @@ export class TetrisGame implements ConsoleGame {
     this.stats.batteries++; this.ctx.shake(220, 0.012); this.ctx.flash(PAL.white, 90); this.ctx.sfx('pop'); this.toast('BATTERY BLAST', PAL.sun2);
   }
   private zipper() {
-    this.grid.splice(ROWS - 1, 1); this.grid.unshift(Array(COLS).fill(null)); this.level++; this.stats.zips++; this.zipT = 0.6; this.ctx.sfx('whoosh'); this.toast('ZIPPER! speed up', PAL.neon);
+    this.grid.splice(ROWS - 1, 1); this.grid.unshift(Array(COLS).fill(null)); this.level++; this.syncMusicRate(); this.stats.zips++; this.zipT = 0.6; this.ctx.sfx('whoosh'); this.toast('ZIPPER! speed up', PAL.neon);
     const s = this.ctx.scene; const y = this.oy - 6; const slider = s.add.rectangle(this.ox, y, 10, 8, PAL.sun2).setStrokeStyle(1, PAL.ink).setDepth(this.ctx.depth + 5); this.objs.push(slider);
     const teeth = s.add.graphics().setDepth(this.ctx.depth + 4); this.objs.push(teeth); for (let x = 0; x < COLS * CELL; x += 4) teeth.fillStyle(x % 8 ? PAL.gray1 : PAL.gray2).fillRect(this.ox + x, y - 2, 3, 4);
     s.tweens.add({ targets: slider, x: this.ox + COLS * CELL, duration: 500, ease: 'Sine.InOut', onComplete: () => { slider.destroy(); s.tweens.add({ targets: teeth, alpha: 0, duration: 200, onComplete: () => teeth.destroy() }); } });
@@ -137,5 +140,6 @@ export class TetrisGame implements ConsoleGame {
     for (const [x, y] of SHAPES[this.next.k][0]) { const qx = nx + x * 10, qy = ny + y * 10; g.fillStyle(PAL.ink).fillRect(qx, qy, 10, 10); if (this.next.f) { g.fillStyle(PAL.night0).fillRect(qx + 1, qy + 1, 8, 8); g.fillStyle(PAL.sky3, 0.45).fillRect(qx + 1, qy + 1, 8, 8); g.fillStyle(PAL.white, 0.9).fillRect(qx + 1, qy + 1, 8, 1).fillRect(qx + 1, qy + 1, 1, 8); g.fillStyle(PAL.white).fillRect(qx + 3, qy + 3, 2, 1); } else g.fillStyle(ncol).fillRect(qx + 1, qy + 1, 8, 8); }
   }
   scoreNow() { return (this.lines / GOAL) * 70; }
-  destroy() { const kill = (o?: { destroy: () => void }) => { try { if (o && (o as any).scene) o.destroy(); } catch { /* gone */ } }; this.objs.forEach(kill); }
+  destroy() { Audio.setMusicRate(1, 200);   /* never leave the next scene's music running fast */
+    const kill = (o?: { destroy: () => void }) => { try { if (o && (o as any).scene) o.destroy(); } catch { /* gone */ } }; this.objs.forEach(kill); }
 }

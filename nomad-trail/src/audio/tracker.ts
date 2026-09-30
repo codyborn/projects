@@ -194,7 +194,15 @@ export class Tracker {
   private step = 0; private nextTime = 0; private once = false; private onEnd?: () => void;
   /** Every voice goes through this, so a loop's level is one number on the candidate rather than edits to its notes. */
   private bus: GainNode;
+  /** Tempo multiplier. Steps are scheduled one at a time, so a change takes hold on the next step and the current bar
+   *  keeps playing; `rate` glides toward `rateTarget` so the music leans into the new tempo instead of jumping. */
+  private rate = 1; private rateTarget = 1; private glideTau = 0.1; private lastTick = 0;
   constructor(private ctx: AudioContext, out: AudioNode) { this.bus = ctx.createGain(); this.bus.gain.value = 1; this.bus.connect(out); }
+  /** Scale playback tempo. `glideMs` is how long the change takes; 0 applies it at the next step. */
+  setRate(rate: number, glideMs = 300) { this.rateTarget = rate; this.glideTau = Math.max(0.001, glideMs / 3000); if (glideMs <= 0) this.rate = rate; }
+  get currentRate() { return this.rate; }
+  /** Seconds per 16th step at the tempo actually being scheduled right now. */
+  get stepDur() { return this.loop ? 60 / (this.loop.bpm * TEMPO * this.rate) / 4 : 0; }
   play(loop: Loop | null, once = false, onEnd?: () => void, gain = 1) {
     this.bus.gain.value = gain;
     this.loop = loop; this.once = once; this.onEnd = onEnd; this.step = 0; this.nextTime = this.ctx.currentTime + 0.05;
@@ -203,7 +211,12 @@ export class Tracker {
   get playing() { return !!this.loop; }
   tick() {
     if (!this.loop || !this.parsed) return;
-    const stepDur = 60 / (this.loop.bpm * TEMPO) / 4; const len = this.parsed.p1.length;
+    const now = this.ctx.currentTime, dt = this.lastTick ? Math.min(0.5, now - this.lastTick) : 0; this.lastTick = now;
+    if (this.rate !== this.rateTarget) {
+      const k = 1 - Math.exp(-dt / this.glideTau); this.rate += (this.rateTarget - this.rate) * k;
+      if (Math.abs(this.rateTarget - this.rate) < 0.002) this.rate = this.rateTarget;
+    }
+    const stepDur = 60 / (this.loop.bpm * TEMPO * this.rate) / 4; const len = this.parsed.p1.length;
     while (this.nextTime < this.ctx.currentTime + 0.3) {
       if (this.step >= len) { if (this.once) { const cb = this.onEnd; this.loop = null; this.parsed = null; cb?.(); return; } this.step = 0; }
       const i = this.step, t = this.nextTime, v = this.loop.vol ?? 1;

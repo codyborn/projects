@@ -17,6 +17,7 @@ export type { LoopName } from './tracker';
 export interface Selection { sfx: Record<string, string>; music: Record<string, string>; gain: { sfx: number; music: number } }
 export const SELECTION = selectionJson as Selection;
 const MASTER = 0.6;
+export const MUSIC_RATE_MIN = 0.8, MUSIC_RATE_MAX = 1.8;
 const BASE_URL: string = (import.meta as any).env?.BASE_URL ?? '/';
 
 /** Plays a decoded file through the music gain, looping or once; fades like the tracker loops. */
@@ -29,7 +30,7 @@ export function prefetchAudio(file: string): Promise<ArrayBuffer> {
   return p;
 }
 class FilePlayer {
-  private src?: AudioBufferSourceNode; private cache = new Map<string, Promise<AudioBuffer>>(); private order: string[] = []; private token = 0;
+  private src?: AudioBufferSourceNode; private cache = new Map<string, Promise<AudioBuffer>>(); private order: string[] = []; private token = 0; private rate = 1;
   constructor(private ctx: AudioContext, private out: AudioNode) {}
   private load(file: string) {
     let p = this.cache.get(file);
@@ -42,10 +43,18 @@ class FilePlayer {
   }
   async play(file: string, loop: boolean, onEnd?: () => void) {
     this.stop(); const tok = ++this.token;   /* stop() bumps the token too, so claim ours after it or the guard below always fires */
-    try { const buf = await this.load(file); if (tok !== this.token) return; const s = this.ctx.createBufferSource(); s.buffer = buf; s.loop = loop; s.connect(this.out); s.onended = () => { if (this.src === s) this.src = undefined; if (!loop) onEnd?.(); }; s.start(); this.src = s; }
+    try { const buf = await this.load(file); if (tok !== this.token) return; const s = this.ctx.createBufferSource(); s.buffer = buf; s.loop = loop; s.playbackRate.value = this.rate; s.connect(this.out); s.onended = () => { if (this.src === s) this.src = undefined; if (!loop) onEnd?.(); }; s.start(); this.src = s; }
     catch { onEnd?.(); }
   }
   stop() { this.token++; try { this.src?.stop(); } catch { /* already stopped */ } this.src = undefined; }
+  /** A file has no tempo of its own, so speed is playbackRate; pitch rises with it, which is the retro effect we want. */
+  setRate(rate: number, glideMs = 300) {
+    this.rate = rate;
+    if (!this.src) return; const t = this.ctx.currentTime;
+    this.src.playbackRate.cancelScheduledValues(t);
+    if (glideMs <= 0) this.src.playbackRate.setValueAtTime(rate, t); else this.src.playbackRate.linearRampToValueAtTime(rate, t + glideMs / 1000);
+  }
+  get playbackRate() { return this.src?.playbackRate.value ?? this.rate; }
   get playing() { return !!this.src; }
 }
 
@@ -59,7 +68,7 @@ class AudioEngine {
   get live() { return this.ready && this.ctx?.state !== 'suspended' && !this.muted; }
   private bank?: SfxBank; private tracker?: Tracker; private files?: FilePlayer; private loop: LoopName = 'none'; private timer?: number; private ducked = false;
   private ambGain?: GainNode; private ambPlayer?: FilePlayer; private amb: AmbienceName = 'none'; private clips = new Map<string, Promise<AudioBuffer>>();
-  private last: Partial<Record<string, number>> = {}; selection: Selection = SELECTION;
+  private last: Partial<Record<string, number>> = {}; selection: Selection = SELECTION; private rate = 1;
   constructor() { try { const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); this.muted = !!s.muted; } catch { /* ignore */ } }
   get musicLevel() { return this.selection.gain?.music ?? 0.18; }
   get sfxLevel() { return this.selection.gain?.sfx ?? 0.35; }
@@ -118,6 +127,7 @@ class AudioEngine {
   private candidateFor(slot: string): MusicCandidate | undefined { return musicById(this.selection.music[slot] ?? `${slot}.tracker.calm`); }
   private startCandidate(c: MusicCandidate | undefined, once = false, onEnd?: () => void) {
     if (!this.tracker || !this.files) return;
+    this.setMusicRate(1, 0);   /* a new loop always starts at normal speed */
     this.tracker.play(null); this.files.stop();
     if (!c) { onEnd?.(); return; }
     if (c.kind === 'tracker') this.tracker.play(c.loop, once, onEnd, c.gain ?? 1); else this.files.play(c.file, !once, onEnd);
@@ -135,6 +145,15 @@ class AudioEngine {
     this.loop = 'none'; const g = this.musicGain!; g.gain.cancelScheduledValues(this.ctx.currentTime); g.gain.setTargetAtTime(this.musicLevel, this.ctx.currentTime, 0.05);
     this.startCandidate(this.candidateFor(name), true, () => { this.loop = 'none'; this.playLoop(then); });
   }
+  /** Speed the music up or down without restarting it: the tracker stretches its step clock, a file changes playbackRate.
+   *  Clamped to MUSIC_RATE range; 1 is normal. Resets to 1 whenever a different loop starts. */
+  setMusicRate(rate: number, glideMs = 300) {
+    const r = Math.min(MUSIC_RATE_MAX, Math.max(MUSIC_RATE_MIN, Number.isFinite(rate) ? rate : 1));
+    this.rate = r; this.tracker?.setRate(r, glideMs); this.files?.setRate(r, glideMs);
+  }
+  get musicRate() { return this.rate; }
+  /** What the tempo hook is actually doing, for tests: the request, the tracker's live rate and step, the file rate. */
+  rateInfo() { return { requested: this.rate, trackerRate: this.tracker?.currentRate ?? 1, trackerStepMs: (this.tracker?.stepDur ?? 0) * 1000, filePlaybackRate: this.files?.playbackRate ?? 1 }; }
   /** A quiet looping bed under some games (wind on the ridge and over the water). 'none' fades it out. */
   playAmbience(name: AmbienceName, force = false) {
     if (name === this.amb && !force) return; this.amb = name;
