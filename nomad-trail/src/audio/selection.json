@@ -53,7 +53,9 @@
  },
  "music": {
   "title": "title.oga.return-of-the-8bit-era",
-  "americas": "americas.oga.8-bit-theme-moving-right-along",
+  "americas": "americas.oga.a-video-game-short",
+  "miami": "miami.oga.pixel-paradise",
+  "latam": "latam.oga.pixel-paradise-20",
   "mexico": "mexico.tracker.calm",
   "europe": "europe.oga.chiptune-medieval-the-bards-tale",
   "alps": "alps.oga.chiptune-medieval-minstrel-dance",

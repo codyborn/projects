@@ -88,6 +88,8 @@ function fallbackRandomPack(seed: number): PackedItem[] {
   return out;
 }
 /** Choices the engine will accept right now (filtered by accessible gear); EventScene must use these, not the raw definition. */
+/** The engine's text filler: {city} {day} {item} {museum} {animal}. */
+export const fmtText = (text: string, state: RunState, item?: string) => E.fmt(text, state, item);
 export const pendingChoices = (state: RunState): { id: string; title: string; text: string; choices: any[] } | null => E.pendingChoices(state);
 export const engineEvents = (state: RunState) => E; // escape hatch
 const items = itemsJson as unknown as Item[]; const cities = citiesJson as unknown as City[]; const events = eventsJson as unknown as GameEvent[]; const dishes = dishesJson as unknown as Dish[];

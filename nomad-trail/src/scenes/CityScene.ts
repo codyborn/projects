@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { Audio, REGION_LOOP } from '../audio/synth';
+import { Audio, cityLoop } from '../audio/synth';
 import type { CityAction, MinigameLaunch, MinigameResult, RunState } from '../core/types';
 import { PAL, txt, rect, type Label } from '../ui/theme';
 import { Button } from '../ui/Button';
@@ -29,7 +29,7 @@ export class CityScene extends Phaser.Scene {
     { const name = (city?.name ?? run.cityId).toUpperCase(); const plateW = Math.min(300, Math.max(150, 20 + name.length * 13)); const plate = this.add.graphics().setDepth(2); plate.fillStyle(PAL.night0, 0.82); plate.fillRect(6, 90, plateW, 48); plate.fillStyle(PAL.sun1, 1); plate.fillRect(6, 90, 3, 48); }
     txt(this, 14, 96, (city?.name ?? run.cityId).toUpperCase(), 16, PAL.white).setDepth(3); txt(this, 14, 124, `${city?.country ?? ''} · stay day ${run.stayDays + 1}${Sim.dullKnives(run) ? ' · dull knife' : ''}`, 8, PAL.gray2).setDepth(3);
     try { buildIcons(this); } catch { /* icons are optional */ }
-    Audio.playLoop(REGION_LOOP[city?.region ?? ''] ?? 'americas');
+    Audio.playLoop(cityLoop(city?.id, city?.region));
     this.hud = new Hud(this); this.hud.refresh(run);
     this.time.delayedCall(0, () => this.refreshButtons());
     new Panel(this, 12, 244, 336, 118, { fill: PAL.night1, border: PAL.night3 }).setDepth(5); this.logLbl = txt(this, 20, 250, '', 8, PAL.gray2, { wrap: 320 }).setDepth(6); this.refreshLog();
@@ -100,7 +100,9 @@ export class CityScene extends Phaser.Scene {
     this.lastDay = res.state.day;
     (async () => { for (const q of queue) await q(); this.after(a); })();
   }
-  private overlay(key: string, data: any) { return new Promise<void>(resolve => { launchOnTop(this, key, { ...data, onDone: () => { if (this.scene.isActive(key) || this.scene.isPaused(key)) this.scene.stop(key); this.scene.resume(); Audio.playLoop(REGION_LOOP[Data.city(getRun(this).cityId)?.region ?? ''] ?? 'americas'); resolve(); } }); this.scene.pause(); }); }
+  /** The track for the city we are standing in (Miami has its own; everywhere else plays its region's). */
+  private cityTrack() { const c = Data.city(getRun(this).cityId); return cityLoop(c?.id, c?.region); }
+  private overlay(key: string, data: any) { return new Promise<void>(resolve => { launchOnTop(this, key, { ...data, onDone: () => { if (this.scene.isActive(key) || this.scene.isPaused(key)) this.scene.stop(key); this.scene.resume(); Audio.playLoop(this.cityTrack()); resolve(); } }); this.scene.pause(); }); }
   private refreshWorkBtn(day: number) { const b = this.btns[0]; if (!b) return; const wk = Sim.isWeekend(day); b.setLabel(wk ? 'WEEKEND' : 'WORK WEEK'); b.setAlpha(wk ? 0.55 : 1); }
   private minigame(m: { key: string; payload?: any; difficulty: number; extraLives?: number }) {
     return new Promise<void>(resolve => {
@@ -109,7 +111,7 @@ export class CityScene extends Phaser.Scene {
         /* career record: the passport and the recipe book outlive the run */
         try { recordStamps(s.stamps ?? {}); if (m.key === 'Cooking') { const d = m.payload?.dish?.id ?? m.payload?.id; if (d) recordDish(d, r.score); } } catch { /* storage can be unavailable */ } this.hud.refresh(s); toast(this, r.failed ? 'that did not go well' : r.perfect ? 'PERFECT' : `score ${Math.round(r.score)}`, r.failed ? PAL.red : PAL.neon); resolve(); };
       if (!this.scene.get(m.key)) { toast(this, `(${m.key} not installed yet)`, PAL.gray2, 900); finish({ score: 50, perfect: false, failed: false }); return; }
-      const launch: MinigameLaunch = { energy: run.energy, difficulty: m.difficulty, payload: m.payload, extraLives: m.extraLives, preview: (r) => Sim.previewMinigame(run, m.key, r), onDone: (r) => { if (this.scene.isActive(m.key) || this.scene.isPaused(m.key)) this.scene.stop(m.key); this.scene.resume(); Audio.playLoop(REGION_LOOP[Data.city(getRun(this).cityId)?.region ?? ''] ?? 'americas'); finish(r); } };
+      const launch: MinigameLaunch = { energy: run.energy, difficulty: m.difficulty, payload: m.payload, extraLives: m.extraLives, preview: (r) => Sim.previewMinigame(run, m.key, r), onDone: (r) => { if (this.scene.isActive(m.key) || this.scene.isPaused(m.key)) this.scene.stop(m.key); this.scene.resume(); Audio.playLoop(this.cityTrack()); finish(r); } };
       launchOnTop(this, m.key, launch); this.scene.pause();
     });
   }

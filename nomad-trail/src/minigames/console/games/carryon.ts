@@ -56,7 +56,7 @@ export class CarryOnGame implements ConsoleGame {
     s.physics.add.collider(this.player, this.oneways, undefined, () => this.dropT <= 0);
     s.physics.add.collider(this.player, this.movingPlats, undefined, () => this.dropT <= 0 && (this.player.body as Phaser.Physics.Arcade.Body).velocity.y >= 0);
     this.windStreaks = s.add.graphics().setDepth(D + 5).setScrollFactor(0); this.objs.push(this.windStreaks);
-    this.dustG = s.add.graphics().setDepth(D + 5); this.objs.push(this.dustG);   // sprint dust + speed lines (world space, behind the player)
+    this.dustG = s.add.graphics().setDepth(D + 5); this.objs.push(this.dustG);   // sprint dust (world space, behind the player)
     this.water = s.add.rectangle(this.ox + LW / 2, S.bottom + 200, LW, 400, PAL.sea1, 0.75).setDepth(D + 7).setVisible(this.level.hazard === 'wave'); this.objs.push(this.water);
     this.bar = s.add.graphics().setDepth(D + 9).setScrollFactor(0); this.objs.push(this.bar);
     this.coinT = s.add.text(S.width - 14, 6, '', { fontFamily: 'monospace', fontSize: '10px', color: '#f7cf6b' }).setOrigin(1, 0).setDepth(D + 9).setScrollFactor(0); this.objs.push(this.coinT);
@@ -147,7 +147,7 @@ export class CarryOnGame implements ConsoleGame {
   }
   /** camera follows with a lerp, 40% from the left edge, clamped to the course; it tightens while sprinting so the player cannot outrun it */
   private camera(dt: number, sprint = false) { const S = this.ctx.screen; const target = clamp(this.player.x - S.width * 0.4, this.ox, this.ox + this.cols * TILE - S.width); this.camX += (target - this.camX) * Math.min(1, dt * (sprint ? 10 : 6)); this.ctx.camera.setScroll(Math.round(this.camX), this.oy); }
-  /** run cycle (bob, twice as fast sprinting), dust puffs off the back foot and speed lines behind the shoulders */
+  /** run cycle (bob, twice as fast sprinting) and dust puffs off the back foot (the speed lines read as glitches, so they went) */
   private feet(dt: number, sprint: boolean, grounded: boolean, moving: boolean) {
     this.runCycle += dt * (moving ? (sprint ? 20 : 11) : 0);
     if (grounded && moving) { const b = Math.sin(this.runCycle); this.player.setScale(1 - b * 0.05, 1 + b * 0.06); } else if (grounded) this.player.setScale(1, 1);
@@ -156,7 +156,6 @@ export class CarryOnGame implements ConsoleGame {
     const g = this.dustG; g.clear();
     for (const d of this.dust) { d.life -= dt * 2.6; d.x += dir * 26 * dt; d.y -= 14 * dt; d.r += 9 * dt; if (d.life > 0) g.fillStyle(PAL.gray2, 0.5 * d.life).fillCircle(d.x, d.y, d.r); }
     this.dust = this.dust.filter(d => d.life > 0); if (this.dust.length > 40) this.dust.splice(0, this.dust.length - 40);
-    if (sprint && moving) { const a = 0.35 + 0.25 * Math.abs(Math.sin(this.runCycle)); for (let i = 0; i < 3; i++) g.fillStyle(PAL.white, a * (1 - i * 0.25)).fillRect(this.player.x + dir * (10 + i * 7), this.player.y - 4 + i * 5, 6 + i * 2, 1); }
   }
 
   private hazards(dt: number, pr: Phaser.Geom.Rectangle, rp: number) {

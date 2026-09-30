@@ -165,6 +165,22 @@
   "loseSting.tracker.melodic": {
    "rms": -32.9,
    "gain": 1.61
+  },
+  "miami.tracker.calm": {
+   "rms": -34,
+   "gain": 1.82
+  },
+  "miami.tracker.melodic": {
+   "rms": -32.4,
+   "gain": 1.523
+  },
+  "latam.tracker.calm": {
+   "rms": -36.6,
+   "gain": 2.451
+  },
+  "latam.tracker.melodic": {
+   "rms": -34.6,
+   "gain": 1.954
   }
  }
 }

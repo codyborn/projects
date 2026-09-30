@@ -5,7 +5,7 @@ import { PAL, txt, hex } from '../ui/theme';
 import { Button } from '../ui/Button';
 import { Panel, dimmer } from '../ui/Panel';
 import { typewrite } from '../ui/typewriter';
-import { Sim, Data, getRun, putRun, pendingChoices } from '../ui/simBridge';
+import { Sim, Data, getRun, putRun, pendingChoices, fmtText } from '../ui/simBridge';
 import { launchOnTop } from '../ui/overlay';
 /** Modal event card. Launched (not started) over Travel/City with { eventId, onDone }.
  *  Layout: header (day · city) at the top of the panel, title below it, body below the title's rendered height, then choices. */
@@ -22,7 +22,9 @@ export class EventScene extends Phaser.Scene {
       return;
     }
     const run = getRun(this); const ev: GameEvent = Data.event(data.eventId) ?? { id: data.eventId, title: 'Something happened', text: run.log[run.log.length - 1]?.text ?? '...', when: 'day', baseChance: 0, effects: {} } as GameEvent;
-    const city = Data.city(run.cityId); const fill = (s: string) => s.replace(/\{city\}/g, city?.name ?? run.cityId).replace(/\{day\}/g, String(run.day)).replace(/\{item\}/g, Data.item(run.lostItems[run.lostItems.length - 1] ?? '')?.label ?? 'something');
+    const city = Data.city(run.cityId);
+    /* one filler for the whole game (it also knows {museum} and {animal}); the local copy here missed those and the card read "the afternoon in museum" */
+    const fill = (s: string) => fmtText(s, run, Data.item(run.lostItems[run.lostItems.length - 1] ?? '')?.label);
     const tags = new Set(run.items.map(i => Data.item(i.id)?.tags ?? []).flat());
     const mitigated = (ev.mitigatedBy?.some(t => tags.has(t)) ?? false) && !!ev.mitigatedText;
     const text = fill(mitigated ? ev.mitigatedText! : ev.text);           // one or the other, never both

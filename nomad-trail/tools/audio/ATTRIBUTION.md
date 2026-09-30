@@ -3,7 +3,7 @@
 Music and recorded effects shipped in `public/audio/` (served at `/trail/audio/`). Licences were read from each source page at
 download time (OpenGameArt on 2026-09-30, Pixabay on 2026-09-30). Everything was trimmed, down-mixed to mono and re-encoded to MP3 (48 kbps, 32 kHz; the jet at 64 kbps) for size, then
 loudness-matched: every music file is two-pass `loudnorm`-ed to **-19.0 LUFS integrated** with a limiter holding the
-decoded true peak at or below -1.5 dBTP, so no track is louder than another. Total 9.5 MB across 36 files.
+decoded true peak at or below -1.5 dBTP, so no track is louder than another. Total 10.8 MB across 39 files.
 
 CC0 requires no attribution and the Pixabay Content License requires none either, but the authors deserve the credit.
 **CC-BY 3.0 does require it**: the jet takeoff and the wind loop below are used under CC-BY 3.0 and are credited here and in
@@ -14,7 +14,10 @@ the game's credits data.
 | The Return Of The 8-bit Era | DJARTMUSIC | [Pixabay](https://pixabay.com/de/music/videospiele-the-return-of-the-8-bit-era-301292/) | Pixabay Content License | `title` **picked** | `audio/return-of-the-8bit-era.mp3` (352 KB) |
 | Dreamtune | Fupi | [OpenGameArt](https://opengameart.org/content/dreamtune) | CC0 1.0 | `title` | `audio/dreamtune.mp3` (345 KB) |
 | Exploring Town | Spring Spring | [OpenGameArt](https://opengameart.org/content/exploring-town) | CC0 1.0 | `title` | `audio/exploring-town.mp3` (352 KB) |
-| 8-bit theme - Moving Right Along | Wolfgang_ | [OpenGameArt](https://opengameart.org/content/8-bit-theme-moving-right-along) | CC0 1.0 | `americas` **picked** | `audio/8-bit-theme-moving-right-along.mp3` (250 KB) |
+| A Video Game Short | moodmode | [Pixabay](https://pixabay.com/de/music/optimistisch-a-video-game-short-248442/) | Pixabay Content License | `americas` **picked** | `audio/a-video-game-short.mp3` (229 KB) |
+| Pixel Paradise | kissan4 | [Pixabay](https://pixabay.com/de/music/videospiele-pixel-paradise-358340/) | Pixabay Content License | `miami` **picked** | `audio/pixel-paradise.mp3` (352 KB) |
+| Pixel Paradise 2.0 | kissan4 | [Pixabay](https://pixabay.com/de/music/videospiele-pixel-paradise-20-369211/) | Pixabay Content License | `latam` **picked** | `audio/pixel-paradise-20.mp3` (352 KB) |
+| 8-bit theme - Moving Right Along | Wolfgang_ | [OpenGameArt](https://opengameart.org/content/8-bit-theme-moving-right-along) | CC0 1.0 | `americas` | `audio/8-bit-theme-moving-right-along.mp3` (250 KB) |
 | Free Run [8 bit(ish)] | TAD | [OpenGameArt](https://opengameart.org/content/free-run-8-bitish) | CC0 1.0 | `americas` | `audio/free-run-8-bitish.mp3` (352 KB) |
 | Dance field | Centurion_of_war | [OpenGameArt](https://opengameart.org/content/dance-field) | CC0 1.0 | `mexico` | `audio/dance-field.mp3` (321 KB) |
 | Digital Bananas | Locomule | [OpenGameArt](https://opengameart.org/content/digital-bananas) | CC0 1.0 | `mexico` | `audio/digital-bananas.mp3` (273 KB) |

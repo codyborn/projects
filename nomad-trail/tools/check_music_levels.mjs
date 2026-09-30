@@ -1,6 +1,6 @@
 import puppeteer from 'puppeteer-core';
 import fs from 'node:fs';
-const PICK = ['title','action','tetris','mexico','europe','coffee','indoor','drone','water','loseSting'];   /* whatever selection.json picks for each */
+const PICK = ['title','americas','miami','latam','action','tetris','mexico','europe','coffee','indoor','drone','water','loseSting'];   /* whatever selection.json picks for each */
 const b = await puppeteer.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true, args: ['--no-sandbox','--autoplay-policy=no-user-gesture-required'], protocolTimeout: 600000 });
 const p = await b.newPage(); await p.setViewport({ width: 360, height: 640 });
 const errs=[]; p.on('pageerror',e=>errs.push(String(e).slice(0,140)));

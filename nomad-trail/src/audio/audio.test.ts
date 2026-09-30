@@ -3,7 +3,8 @@ import { existsSync } from 'node:fs';
 import { SFX_NAMES, renderSamples, renderDef, SFX_CANDIDATES, sfxDefById, sfxCandidateById, PRESETS, SFX_TRIM, SFX_BANDS, QUIET_SFX, LOUD_SFX, bandOf, type SfxName } from './sfx';
 import oga from './oga_tracks.json';
 import { LOOPS, STINGERS, parseChannel, midiOf, MUSIC_CANDIDATES, MUSIC_SLOTS, musicById, calmOf, trackerLevel, MUSIC_REFERENCE_DB } from './tracker';
-import { AMBIENCE, MUSIC_RATE_MIN, MUSIC_RATE_MAX } from './synth';
+import { AMBIENCE, MUSIC_RATE_MIN, MUSIC_RATE_MAX, cityLoop } from './synth';
+import { CITIES } from '../core/sim/data';
 import selection from './selection.json';
 
 const TINY = ['wheel', 'tick', 'step', 'blip', 'tap', 'land', 'lock', 'reel', 'chop', 'crack'];
@@ -120,6 +121,13 @@ describe('audio: tracker loops and music candidates', () => {
   });
   it('the wind bed is declared with its CC-BY credit and the file is there', () => {
     expect(existsSync('public/' + AMBIENCE.wind.file)).toBe(true); expect(AMBIENCE.wind.licence).toContain('CC-BY'); expect(AMBIENCE.wind.author).toBeTruthy();
+  });
+  it('a city plays its own track when it has one, otherwise its region\'s', () => {
+    expect(cityLoop('miami', 'northamerica')).toBe('miami');          /* Miami earned its own */
+    expect(cityLoop('newyork', 'northamerica')).toBe('americas');
+    expect(cityLoop('santiago', 'southamerica')).toBe('latam');
+    expect(cityLoop(undefined, undefined)).toBe('americas');           /* never silence for want of a region */
+    for (const c of CITIES) expect(musicById((selection.music as Record<string, string>)[cityLoop(c.id, c.region)]), c.id).toBeDefined();
   });
   it('selection.json resolves every slot to an existing candidate', () => {
     for (const name of SFX_NAMES) expect(sfxCandidateById(selection.sfx[name as keyof typeof selection.sfx]), name).toBeDefined();

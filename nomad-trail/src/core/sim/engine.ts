@@ -284,7 +284,9 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       if (hasFlag(s, 'console_' + s.day)) return { state, events: [], error: 'One evening of that is enough. Tomorrow.' };
       const lvl = LEVEL_BY_CITY[s.cityId] ?? (LEVEL_BY_CITY['generic'] ? { ...LEVEL_BY_CITY['generic'], city: city.name, hazard: city.hazard } : undefined);
       if (!lvl) return { state, events: [], error: 'No cartridge for this city.' };
-      setFlag(s, 'console_' + s.day, true); const games = ['carryon', 'tetris'] as const; const ci = Math.max(0, CITIES.findIndex(c => c.id === s.cityId)); const game = games[hash32(s.seed, s.day, ci, 77) % games.length];
+      setFlag(s, 'console_' + s.day, true); const ci = Math.max(0, CITIES.findIndex(c => c.id === s.cityId));
+      /* Coin Collector is the city's cartridge until you clear it; after that the console offers Pack-Tris */
+      const game = hasFlag(s, 'coins_' + s.cityId) ? 'tetris' : 'carryon'; s.pendingConsole = game;
       return { state: s, events: [], minigame: { key: MINIGAME_KEYS.carryon, payload: { game, level: lvl, city: city.id, cityName: city.name, hazard: city.hazard, climate: city.climate, seed: hash32(s.seed, ci, s.day, 99) }, difficulty: diff } }; }
     case 'explore': {
       s.workStreak = 0; events = tickDay(s, rng);
@@ -394,6 +396,9 @@ export function applyMinigameResult(state: RunState, key: string, result: Miniga
       if (result.failed && rng.chance(0.25)) { const fp = EVENT['foodpoisoning']; const mit = !!fp?.mitigatedBy?.some(t => hasTag(s, t)); events.push(forceEvent(s, 'foodpoisoning', rng, mit)); }
       break; }
     case MINIGAME_KEYS.carryon: {
+      /* reaching the flag clears Coin Collector for this city: the next console evening here boots Pack-Tris */
+      if (s.pendingConsole === 'carryon' && !result.failed) setFlag(s, 'coins_' + s.cityId, true);
+      s.pendingConsole = undefined;
       s.mood = clamp(s.mood + rw.mood, 0, 100); s.energy = clamp(s.energy + rw.energy, 0, energyCap(s));
       s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.consoleEvening, { city: city.name, outcome: result.perfect || score >= 0.99 ? STR.log.consoleGold : STR.log.consoleOk }) });
       if (result.perfect || score >= 0.99) { s.stamps[s.cityId] = 'gold'; unlock(s, 'gold_' + s.cityId); s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.carryonGold, { city: city.name }) }); }
@@ -498,6 +503,7 @@ export function pendingChoices(s: RunState): { id: string; title: string; text: 
 export const Sim = {
   GRID, TOTAL_DAYS, HOME_CITY, HOME_MIN_CONTINENTS, HOME_PROGRESS_DEG, CONTINENTS_ALL, START_MONEY, OVERDRAFT, WORK_PAY, CITIES, CITY, ITEM, DISH, LEVEL_BY_CITY,
   createRun, validatePack, setPack, bagWeight, weightRatio, totalWeight, coffeePacked, bundles, hasTag, hasFlag, hasItem, dullKnives, minigameRewards, previewMinigame, workDaysAhead, corridorAllows, nextContinent, isOutdoorsy,
+  fmt,
   shelfPack, buildPack, randomPack, idsWeight, weekdayOf, isWeekend, nextWorkdays, fareFor, directionUndecided, setDirection,
   availableLegs, travelTo, cityAction, applyMinigameResult, resolveChoice, pendingChoices, checkEnding, score, progress, homeUnlocked, homeRequirements, continentsVisited, endingCause, monthOf,
   visibleAchievements, energyCap, accessibleItems,

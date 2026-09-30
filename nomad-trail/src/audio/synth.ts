@@ -170,7 +170,7 @@ class AudioEngine {
 export const AUDIO_CREDITS: string[] = [
   'Jet takeoff by dklon · CC-BY 3.0',
   'Wind loop by AntumDeluge / InspectorJ · CC-BY 3.0',
-  'Chiptune music by DJARTMUSIC, moodmode, Monume, NiKneT_Art (Pixabay)',
+  'Chiptune music by DJARTMUSIC, moodmode, Monume, NiKneT_Art, kissan4 (Pixabay)',
   'and Wolfgang_, Spring Spring, RandomMind, Fupi, Zane Little Music,',
   'Centurion_of_war, TAD, Locomule, pmiller, Jonathan So, iamoneabe,',
   'megupets, bertsz, congusbongus, SubspaceAudio (OpenGameArt, CC0)',
@@ -178,4 +178,8 @@ export const AUDIO_CREDITS: string[] = [
   'Korobeiniki arranged for this game · melody public domain',
 ];
 export const Audio = new AudioEngine();
-export const REGION_LOOP: Record<string, LoopName> = { northamerica: 'americas', mexico: 'mexico', southamerica: 'americas', europe: 'europe', alps: 'alps', africa: 'africa', asia: 'asia', himalaya: 'himalaya' };
+export const REGION_LOOP: Record<string, LoopName> = { northamerica: 'americas', mexico: 'mexico', southamerica: 'latam', europe: 'europe', alps: 'alps', africa: 'africa', asia: 'asia', himalaya: 'himalaya' };
+/** Cities that earned their own track. */
+export const CITY_LOOP: Record<string, LoopName> = { miami: 'miami' };
+/** The loop a city plays: its own if it has one, otherwise its region's. */
+export const cityLoop = (cityId?: string, region?: string): LoopName => (cityId && CITY_LOOP[cityId]) || REGION_LOOP[region ?? ''] || 'americas';

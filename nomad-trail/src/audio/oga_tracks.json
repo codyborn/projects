@@ -42,6 +42,19 @@
  ],
  "americas": [
   {
+   "id": "americas.oga.a-video-game-short",
+   "slug": "a-video-game-short",
+   "title": "A Video Game Short",
+   "author": "moodmode",
+   "url": "https://pixabay.com/de/music/optimistisch-a-video-game-short-248442/",
+   "file": "audio/a-video-game-short.mp3",
+   "bytes": 234837,
+   "source": "Pixabay",
+   "licence": "Pixabay Content License",
+   "lufs": -19.0,
+   "tp": -6.5
+  },
+  {
    "id": "americas.oga.8-bit-theme-moving-right-along",
    "slug": "8-bit-theme-moving-right-along",
    "title": "8-bit theme - Moving Right Along",
@@ -66,6 +79,36 @@
    "licence": "CC0 1.0",
    "lufs": -19.2,
    "tp": -3.5
+  }
+ ],
+ "miami": [
+  {
+   "id": "miami.oga.pixel-paradise",
+   "slug": "pixel-paradise",
+   "title": "Pixel Paradise",
+   "author": "kissan4",
+   "url": "https://pixabay.com/de/music/videospiele-pixel-paradise-358340/",
+   "file": "audio/pixel-paradise.mp3",
+   "bytes": 360549,
+   "source": "Pixabay",
+   "licence": "Pixabay Content License",
+   "lufs": -19.0,
+   "tp": -4.0
+  }
+ ],
+ "latam": [
+  {
+   "id": "latam.oga.pixel-paradise-20",
+   "slug": "pixel-paradise-20",
+   "title": "Pixel Paradise 2.0",
+   "author": "kissan4",
+   "url": "https://pixabay.com/de/music/videospiele-pixel-paradise-20-369211/",
+   "file": "audio/pixel-paradise-20.mp3",
+   "bytes": 360549,
+   "source": "Pixabay",
+   "licence": "Pixabay Content License",
+   "lufs": -19.0,
+   "tp": -2.9
   }
  ],
  "mexico": [

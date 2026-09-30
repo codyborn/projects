@@ -657,14 +657,14 @@
     "what": "onion"
    },
    {
-    "kind": "fold",
-    "count": 3,
-    "what": "empanada"
-   },
-   {
     "kind": "flip",
     "count": 2,
     "what": "beef"
+   },
+   {
+    "kind": "fold",
+    "count": 3,
+    "what": "empanada"
    }
   ],
   "health": 7,

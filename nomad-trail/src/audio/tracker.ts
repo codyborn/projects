@@ -2,7 +2,7 @@
  * and a noise channel for drums. Loops are data: strings of 16th-step tokens per channel. Scheduling runs a little ahead of the
  * clock so loops are seamless. Note tokens: "C5", "F#4", "Bb3"; "." rest; "-" hold the previous note one more step. Drum tokens:
  * "k" kick, "s" snare, "h" hat, "." rest. */
-export type LoopName = 'title' | 'americas' | 'mexico' | 'europe' | 'alps' | 'africa' | 'asia' | 'himalaya' | 'travel' | 'action'
+export type LoopName = 'title' | 'americas' | 'miami' | 'latam' | 'mexico' | 'europe' | 'alps' | 'africa' | 'asia' | 'himalaya' | 'travel' | 'action'
   | 'outdoor' | 'indoor' | 'water' | 'drone' | 'cooking' | 'coffee' | 'credits' | 'tetris' | 'none';
 /* outdoor: open-air workouts (climbing, ferrata, hikes, Pinnacle) · indoor: hotel-room workouts and yoga · water: Scuba and Kite
  * drone: the drone flights · cooking: the kitchen · coffee: the morning scene · credits: the end roll · tetris: Pack-Tris */
@@ -31,7 +31,7 @@ export function parseChannel(s: string): ({ midi: number; len: number } | null)[
 
 /* ---- the loops (8 or 16 bars of 16 steps) ---- */
 const rep = (s: string, n: number) => Array(n).fill(s.trim()).join(' ');
-export const LOOPS: Record<Exclude<LoopName, 'none' | 'outdoor'>, Loop> & { readonly outdoor: Loop } = {
+export const LOOPS: Record<Exclude<LoopName, 'none' | 'outdoor' | 'miami' | 'latam'>, Loop> & { readonly outdoor: Loop; readonly miami: Loop; readonly latam: Loop } = {
   /* warm and cozy: D major, gentle arpeggios, a slow walking bass */
   title: { bpm: 104, duty1: 0.25, duty2: 0.5,
     p1: rep('D5 - F#5 - A5 - F#5 - D5 - A4 - D5 - F#5 -', 2) + ' ' + rep('B4 - D5 - F#5 - D5 - B4 - G4 - B4 - D5 -', 2) + ' ' + rep('A4 - C#5 - E5 - C#5 - A4 - E4 - A4 - C#5 -', 2) + ' ' + rep('G4 - B4 - D5 - B4 - G4 - D4 - G4 - B4 -', 2),
@@ -136,6 +136,9 @@ export const LOOPS: Record<Exclude<LoopName, 'none' | 'outdoor'>, Loop> & { read
     drums: rep('k . h . s . h . k . h . s . h .', 8) },
   /* the outdoor slot's tracker reading borrows the action loop; the intended pick is a file (8-Bit Cave Loop) */
   get outdoor(): Loop { return this.action; },
+  /* Miami and Latin America are file slots (Cody picked both); their tracker readings borrow the nearest region loop */
+  get miami(): Loop { return this.americas; },
+  get latam(): Loop { return this.mexico; },
 };
 /** Korobeiniki, the 19th-century Russian folk melody behind the famous falling-blocks theme. Public domain (the tune, not any
  * particular arrangement); this four-channel setting is ours. A minor, eight bars. */
@@ -254,7 +257,7 @@ export class Tracker {
 import ogaJson from './oga_tracks.json';
 import trackerLevelsJson from './tracker_levels.json';
 export type MusicSlot = Exclude<LoopName, 'none'> | Stinger;
-export const MUSIC_SLOTS: MusicSlot[] = ['title', 'americas', 'mexico', 'europe', 'alps', 'africa', 'asia', 'himalaya', 'travel', 'action', 'outdoor', 'indoor', 'water', 'drone', 'cooking', 'coffee', 'credits', 'tetris', 'winSting', 'loseSting'];
+export const MUSIC_SLOTS: MusicSlot[] = ['title', 'americas', 'miami', 'latam', 'mexico', 'europe', 'alps', 'africa', 'asia', 'himalaya', 'travel', 'action', 'outdoor', 'indoor', 'water', 'drone', 'cooking', 'coffee', 'credits', 'tetris', 'winSting', 'loseSting'];
 /** Slots whose list gets an extra hand-written arrangement beyond calm / melodic. */
 const EXTRA_TRACKER: Partial<Record<MusicSlot, { id: string; label: string; loop: Loop }[]>> = { tetris: [{ id: 'tetris.tracker.korobeiniki', label: 'tracker · Korobeiniki', loop: KOROBEINIKI }] };
 export type MusicCandidate = { id: string; label: string; kind: 'tracker'; loop: Loop; gain: number; rms?: number } | { id: string; label: string; kind: 'file'; file: string; title: string; author: string; url: string; bytes: number; source?: string; licence?: string; lufs?: number; tp?: number };

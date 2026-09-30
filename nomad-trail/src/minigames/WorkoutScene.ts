@@ -93,7 +93,11 @@ export class WorkoutScene extends Phaser.Scene {
     const opts = { extra, height: 340, title: meta.name };
     if (micro.selfIntro) { this.frame.active = true; begin(); return; }   /* the game's own intro comes first (no cap yet); it asks the frame for the card and arms the cap itself */
     if (first) this.frame.intro(meta.instr, begin, opts); else this.frame.card(meta.instr, begin, opts);
-    this.time.delayedCall(150, () => { const go = () => this.frame.ready(); this.input.once('pointerdown', go); });   // tap anywhere also starts (after the tap that opened the card)
+    /* tap anywhere also starts, but only on empty card: a tap on BACK (or READY) belongs to that button, and
+       this handler used to fire first and start the game, so BACK never got its pointerup */
+    const go = (pt: Phaser.Input.Pointer) => { if (this.input.hitTestPointer(pt).length) return; this.input.off('pointerdown', go); this.frame.ready(); };
+    this.time.delayedCall(150, () => { if (!this.frame.finished) this.input.on('pointerdown', go); });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.off('pointerdown', go));
   }
   private banner(s: string, color: number) { const t = txt(this, W / 2, H / 2, s, 26, color).setDepth(750); this.tweens.add({ targets: t, scale: { from: 1.5, to: 1 }, duration: 200, ease: 'Back.Out' }); this.tweens.add({ targets: t, alpha: 0, duration: 250, delay: 380, onComplete: () => t.destroy() }); }
   private finishSession(outOfLives = false) { if (!this.frame.active) return; const s = this.sessionScore(); this.frame.finish(outOfLives ? Math.min(s, 45) : s, outOfLives); }

@@ -7,16 +7,17 @@ const sleep = ms => new Promise(r => setTimeout(r, ms)); const fails = [];
 const tap = async (x, y) => { await pg.touchscreen.touchStart(x, y); await sleep(40); await pg.touchscreen.touchEnd(); await sleep(350); };
 const swipe = async (x0, y0, x1, y1) => { await pg.touchscreen.touchStart(x0, y0); for (let i = 1; i <= 8; i++) { await pg.touchscreen.touchMove(x0 + (x1 - x0) * i / 8, y0 + (y1 - y0) * i / 8); await sleep(16); } await pg.touchscreen.touchEnd(); await sleep(450); };
 const st = () => pg.evaluate(() => { const sc = window.__nomad.game.scene.getScene('Pack'); return { placed: sc.placed.length, cat: sc.cat, visible: sc.pages.map(p => p.visible) }; });
-await pg.goto('http://localhost:4173/trail/', { waitUntil: 'networkidle0' }); await pg.waitForFunction(() => window.__nomad?.ready); await sleep(600);
+await pg.goto(process.argv[2] || 'http://localhost:4173/trail/', { waitUntil: 'networkidle0' }); await pg.waitForFunction(() => window.__nomad?.ready); await sleep(600);
 await pg.evaluate(() => window.__nomad.newRun('orangecounty', 'east')); await sleep(800);
 let s0 = await st(); if (s0.placed === 0) fails.push('expected pre-placed essentials');
+const base = s0.placed;   /* the essentials the run starts with: everything below counts from here */
 // 1. tap the first card (Essentials page, card at x 12..172, y 374..624)
-await tap(92, 480); let s1 = await st(); if (s1.placed !== 1) fails.push(`tap card -> placed ${s1.placed}`);
+await tap(92, 480); let s1 = await st(); if (s1.placed !== base + 1) fails.push(`tap card -> placed ${s1.placed}, wanted ${base + 1}`);
 await pg.screenshot({ path: 'e2e/layout/pack-after-tap.png' });
 // 2. tap the tile to remove it (tile at grid origin 84,56; first-fit puts it at 0,0)
 const tile = await pg.evaluate(() => { const sc = window.__nomad.game.scene.getScene('Pack'); const p = sc.placed[0]; return p ? { x: p.obj.x, y: p.obj.y, w: p.obj.width, h: p.obj.height } : null; });
 if (tile) { await tap(tile.x + tile.w - 4, tile.y + tile.h - 4); await sleep(400); } // bottom-right corner on purpose
-let s2 = await st(); if (s2.placed !== 0) fails.push(`tap tile corner -> placed ${s2.placed}`);
+let s2 = await st(); if (s2.placed !== s1.placed - 1) fails.push(`tap tile corner -> placed ${s2.placed}, wanted ${s1.placed - 1}`);
 // 3. swipe up on the tray -> next category
 await swipe(180, 560, 180, 440); let s3 = await st(); if (s3.cat !== 1) fails.push(`swipe up -> cat ${s3.cat}`); await sleep(300); const v3 = (await st()).visible; if (v3.filter(Boolean).length !== 1 || !v3[1]) fails.push(`page visibility ${v3.join(',')}`);
 await pg.screenshot({ path: 'e2e/layout/pack-clothes-page.png' });
@@ -25,7 +26,7 @@ await swipe(300, 500, 120, 500); let s4 = await st(); if (s4.cat !== 1) fails.pu
 // 5. swipe down -> back to essentials
 await swipe(180, 440, 180, 580); let s5 = await st(); if (s5.cat !== 0) fails.push(`swipe down -> cat ${s5.cat}`);
 // 6. tap card on clothes page twice -> two weeks, different colors
-await swipe(180, 560, 180, 440); await tap(92, 480); await tap(92, 480); const cl = await pg.evaluate(() => { const sc = window.__nomad.game.scene.getScene('Pack'); return sc.placed.map(p => p.id); }); if (cl.length !== 2 || cl[0] === cl[1]) fails.push(`clothes stack -> ${cl.join(',')}`);
+await swipe(180, 560, 180, 440); await tap(92, 480); await tap(92, 480); const cl = await pg.evaluate(() => { const sc = window.__nomad.game.scene.getScene('Pack'); return sc.placed.map(p => p.id); }); const two = cl.slice(-2); if (cl.length !== s2.placed + 2 || two[0] === two[1]) fails.push(`clothes stack -> ${cl.join(',')}`);
 // 7. SURPRISE ME (button center 196,26) then tile count > 3
 await tap(196, 26); await sleep(1400); let s7 = await st(); if (s7.placed < 4) fails.push(`surprise -> placed ${s7.placed}`);
 await pg.screenshot({ path: 'e2e/layout/pack-surprise.png' });

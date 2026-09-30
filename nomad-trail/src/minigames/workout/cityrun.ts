@@ -1,8 +1,9 @@
 // CITY RUN (round 10, Frogger): top-down street crossing on a 9 x 9 grid of 40 px tiles. Start on the bottom kerb, hop one tile per
 // D-pad press (the console's Pad, read-only), cross three lanes of traffic, rest on the median, cross three more, reach the coffee shop on
 // the far kerb. Cabs, buses, cyclists, scooters (and a tram in Lisbon / Amsterdam) scroll left or right at their own speeds. Nothing is
-// telegraphed: it is Frogger. A hit (or the crossing clock running out) costs a life and puts you back on the kerb; 3 lives. Reach the
-// shop 3 times, each crossing 15% faster, to finish. Score = crossings x 30 + 10 per life left (max 100). READY card and result flow as usual.
+// telegraphed: it is Frogger. A hit costs a life and puts you back on the kerb; 3 lives. One crossing wins it (round 12: three crossings
+// plus a per-crossing clock made it the hardest thing in the game, and the session timer is limit enough). Score = 70 for the coffee plus
+// 10 a life left, so an untouched crossing is 100. READY card and result flow as usual.
 import Phaser from 'phaser';
 import { Audio } from '../../audio/synth';
 import { PAL } from '../../core/palette';
@@ -15,7 +16,7 @@ type Kind = 'cab' | 'bus' | 'bike' | 'scooter' | 'tram';
 interface Car { x: number; w: number; color: number; }
 interface Lane { row: number; kind: Kind; dir: 1 | -1; speed: number; cars: Car[]; gap: number; }
 const TILE = 40, COLS = 9, ROWS = 9, Y0 = 56;                    // row r centre = Y0 + r*TILE + 20; rows 0 far kerb, 1-3 lanes, 4 median, 5-7 lanes, 8 start kerb
-const START = { row: 8, col: 4 }; const LANE_ROWS = [1, 2, 3, 5, 6, 7]; const CLOCK = [9, 8, 7];
+const START = { row: 8, col: 4 }; const LANE_ROWS = [1, 2, 3, 5, 6, 7];
 const TRAM_CITIES = new Set(['lisbon', 'amsterdam']);
 const LAYOUT: PadLayout = { dpad: { x: W / 2, y: 548, r: 62 }, a: { x: -200, y: -200, r: 0 }, b: { x: -200, y: -200, r: 0 }, start: new Phaser.Geom.Rectangle(-1, -1, 0, 0), select: new Phaser.Geom.Rectangle(-1, -1, 0, 0), screen: new Phaser.Geom.Rectangle(0, Y0, W, ROWS * TILE) };
 const cx = (c: number) => 20 + c * TILE, cy = (r: number) => Y0 + r * TILE + 20;
@@ -23,10 +24,10 @@ const cx = (c: number) => 20 + c * TILE, cy = (r: number) => Y0 + r * TILE + 20;
 export class CityRun extends Micro {
   readonly id = 'cityrun'; readonly word = META.cityrun.word; readonly instr = META.cityrun.instr; readonly durationSec = META.cityrun.durationSec;
   private row = START.row; private col = START.col; private px = cx(START.col); private py = cy(START.row); private hopT = 0; private lanes: Lane[] = [];
-  private lives = 3; private crossings = 0; private inv = 0; private busy = false; private clock = CLOCK[0]; private ended = false; private mult = 1;
+  private lives = 3; private crossings = 0; private inv = 0; private busy = false; private ended = false; private mult = 1;
   private pad?: Pad; private padG?: Phaser.GameObjects.Graphics; private lastPad = ''; private handlers: Array<[string, (...a: any[]) => void]> = []; private sd?: { x: number; y: number };
   /** harness: the grid state and every vehicle */
-  hint() { return { row: this.row, col: this.col, lives: this.lives, crossings: this.crossings, hopping: this.hopT > 0 || this.busy, clock: this.clock, t: this.t, lanes: this.lanes.map(L => ({ row: L.row, dir: L.dir, speed: L.speed * this.mult, cars: L.cars.map(c => ({ x: c.x, w: c.w })) })) }; }
+  hint() { return { row: this.row, col: this.col, lives: this.lives, crossings: this.crossings, hopping: this.hopT > 0 || this.busy, t: this.t, lanes: this.lanes.map(L => ({ row: L.row, dir: L.dir, speed: L.speed * this.mult, cars: L.cars.map(c => ({ x: c.x, w: c.w })) })) }; }
   /** one hop */
   act(k: 'left' | 'right' | 'up' | 'down') {
     if (this.ended || this.busy || this.hopT > 0) return;
@@ -37,16 +38,15 @@ export class CityRun extends Micro {
   }
   private arrive() {
     this.crossings++; this.busy = true; Audio.playSfx('coin'); this.pop(cx(this.col), cy(0) - 24, 'COFFEE!', PAL.sun2); this.ctx.frame.flash(PAL.sun2, 40); this.progress();
-    if (this.crossings >= 3) { this.ended = true; this.after(500, () => this.finish(this.scoreNow())); return; }
-    this.mult *= 1.15; this.after(600, () => this.respawn());
+    this.ended = true; this.after(600, () => this.finish(this.scoreNow()));
   }
   private lose(why: string) {
     if (this.ended) return; this.lives--; this.inv = 1.0; this.busy = true; Audio.playSfx('hurt'); this.ctx.frame.shake(160, 0.007); this.pop(this.px, this.py - 30, why, PAL.red); this.progress();
     if (this.lives <= 0) { this.ended = true; this.after(400, () => this.finish(this.scoreNow())); return; }
     this.after(450, () => this.respawn());
   }
-  private respawn() { this.row = START.row; this.col = START.col; this.px = cx(this.col); this.py = cy(this.row); this.hopT = 0; this.busy = false; this.clock = CLOCK[Math.min(this.crossings, 2)]; this.ctx.athlete.pose(0); }
-  private progress() { this.ctx.frame.setProgress(`${'♥'.repeat(this.lives)}${'·'.repeat(3 - this.lives)}  ${this.crossings}/3 coffees`); }
+  private respawn() { this.row = START.row; this.col = START.col; this.px = cx(this.col); this.py = cy(this.row); this.hopT = 0; this.busy = false; this.ctx.athlete.pose(0); }
+  private progress() { this.ctx.frame.setProgress(`${'♥'.repeat(this.lives)}${'·'.repeat(3 - this.lives)}  coffee ${this.crossings}/1`); }
   protected begin() {
     const rng = this.ctx.rng; const sc = this.ctx.scene; const ath = this.ctx.athlete; const tram = TRAM_CITIES.has((this.ctx.city || '').toLowerCase());
     const kinds: Kind[] = ['cab', tram ? 'tram' : 'bus', 'bike', 'scooter', 'cab', 'bus'];
@@ -63,7 +63,6 @@ export class CityRun extends Micro {
       this.pad!.update(); for (const k of ['left', 'right', 'up', 'down'] as const) if (this.pad!.justPressed(k)) this.act(k); if (this.pad!.justPressed('a')) this.act('up');
       const sig = JSON.stringify(this.pad!.pressed); if (sig !== this.lastPad) { this.lastPad = sig; this.drawPad(); }
       if (this.inv > 0) this.inv -= dt; if (this.hopT > 0) { this.hopT -= dt; if (this.hopT <= 0 && !this.busy) ath.pose(0); }
-      if (!this.busy) { this.clock -= dt; if (this.clock <= 0) { this.clock = 0; this.lose('TOO SLOW'); } }
       // traffic
       for (const L of this.lanes) { const v = L.speed * this.mult * L.dir; for (const c of L.cars) c.x += v * dt; L.cars = L.cars.filter(c => c.x > -260 && c.x < W + 260);
         const edge = L.dir > 0 ? Math.min(...L.cars.map(c => c.x), 1e9) : Math.max(...L.cars.map(c => c.x + c.w), -1e9); const room = L.dir > 0 ? edge : W - edge;
@@ -95,8 +94,8 @@ export class CityRun extends Micro {
       if (L.kind === 'bike' || L.kind === 'scooter') { g.fillStyle(PAL.ink).fillRect(x, y - 3, w, 6); g.fillStyle(c.color).fillRect(x + 4, y - 6, w - 8, 12); g.fillStyle(PAL.earth3).fillCircle(x + w / 2, y, 5); g.fillStyle(PAL.ink).fillRect(x + (L.dir > 0 ? w - 4 : 0), y - 5, 4, 10); }
       else { g.fillStyle(PAL.ink).fillRect(x - 1, y - 15, w + 2, 30); g.fillStyle(c.color).fillRect(x, y - 14, w, 28); g.fillStyle(PAL.sky3, 0.9).fillRect(x + 8, y - 10, w - 16, 7); if (L.kind !== 'tram') g.fillStyle(PAL.sky3, 0.9).fillRect(x + (L.dir > 0 ? w - 14 : 6), y - 10, 8, 20); if (L.kind === 'tram') { for (let k = 14; k < w - 10; k += 22) g.fillStyle(PAL.sky3).fillRect(x + k, y + 2, 14, 8); g.fillStyle(PAL.ink).fillRect(x + w / 2 - 1, y - 20, 2, 8); }
         if (L.kind === 'cab' && c.color === PAL.sun2) g.fillStyle(PAL.ink).fillRect(x + w / 2 - 5, y - 3, 10, 6); g.fillStyle(L.dir > 0 ? PAL.sun3 : PAL.red).fillRect(L.dir > 0 ? x + w - 3 : x, y - 12, 3, 8).fillRect(L.dir > 0 ? x + w - 3 : x, y + 4, 3, 8); } }
-    // crossing clock under the grid
-    const f = clamp(this.clock / CLOCK[Math.min(this.crossings, 2)], 0, 1); g.fillStyle(PAL.ink).fillRect(40, Y0 + ROWS * TILE + 8, W - 80, 6); g.fillStyle(f > 0.3 ? PAL.neon : PAL.red).fillRect(40, Y0 + ROWS * TILE + 8, (W - 80) * f, 6);
+    // the session clock under the grid: standing still costs nothing now, only the traffic can end it
+    const f = clamp(1 - this.t / this.durationSec, 0, 1); g.fillStyle(PAL.ink).fillRect(40, Y0 + ROWS * TILE + 8, W - 80, 6); g.fillStyle(f > 0.3 ? PAL.neon : PAL.red).fillRect(40, Y0 + ROWS * TILE + 8, (W - 80) * f, 6);
     if ((window as any).__hitboxes) { g.lineStyle(1, PAL.neon, 1); g.strokeRect(this.px - 10, this.py - 12, 20, 24); g.lineStyle(1, PAL.red, 1); for (const L of this.lanes) for (const c of L.cars) g.strokeRect(c.x, cy(L.row) - 14, c.w, 28); }
   }
   /** The D-pad in the console's style (CarryOnScene.drawPad): a cross with lit arms, a hub dot, four arrows. */
@@ -111,6 +110,6 @@ export class CityRun extends Micro {
     g.fillStyle(PAL.gray1, 0.9); g.fillTriangle(L.x - 44, L.y, L.x - 30, L.y - 9, L.x - 30, L.y + 9); g.fillTriangle(L.x + 44, L.y, L.x + 30, L.y - 9, L.x + 30, L.y + 9);
     g.fillTriangle(L.x, L.y - 44, L.x - 9, L.y - 30, L.x + 9, L.y - 30); g.fillTriangle(L.x, L.y + 44, L.x - 9, L.y + 30, L.x + 9, L.y + 30);
   }
-  protected scoreNow() { return clamp((this.crossings * 30 + this.lives * 10) / 100, 0, 1); }
+  protected scoreNow() { return clamp((this.crossings ? 70 + this.lives * 10 : this.lives * 10) / 100, 0, 1); }
   destroy() { const inp = this.ctx.scene.input; for (const [ev, fn] of this.handlers) inp.off(ev, fn); this.handlers = []; this.pad?.destroy(); this.pad = undefined; this.ctx.athlete.sprite.setAlpha(1).setDepth(5).setScale(1).setFlipX(false); this.ctx.athlete.pose(0); super.destroy(); }
 }
