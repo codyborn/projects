@@ -157,6 +157,21 @@ function forestGround(ctx: Ctx, w: number, y: number, c: number, tod: TimeOfDay,
     for (let x = r.int(-8, 0); x < w + 10; x += step) { const tx = x + r.int(-3, 3), h = th + r.int(-5, 5);
       for (let k = 0; k < h; k++) { const hw = Math.max(1, Math.round((k / h) * (h * 0.32))); R(ctx, tx - hw, baseY - h + k, hw * 2 + 1, 1, c); if (k % 4 === 1 && hw > 2) R(ctx, tx - hw + 1, baseY - h + k, Math.max(1, hw - 1), 1, lit); } R(ctx, tx, baseY, 1, 3, c); } } }
 
+/** Tokyo's elevated track, as an offset from the mid layer's horizon (mid hy = horizonY + 24, the rail sits at hy - 46). */
+const TOKYO_TRACK_DY = 24 - 46;
+/** A Yamanote-style commuter set: four cars, silver body with a green stripe, lit windows at dusk and night. Frame 1 streaks the window lights for motion. */
+function tokyoTrainTexture(scene: Phaser.Scene, tod: TimeOfDay, win: number, frame: 0 | 1): string {
+  const key = `tk_train_${tod}_${frame}`; if (scene.textures.exists(key)) return key;
+  const cars = 4, cw = 26, gap = 2, W2 = cars * (cw + gap), H2 = 14;
+  const body = tod === 'day' ? PAL.gray2 : PAL.gray1, roof = tod === 'day' ? PAL.white : PAL.gray2, skirt = PAL.ink, glass = tod === 'day' ? PAL.sky2 : win;
+  const cv = makeCanvas(W2, H2, ctx => { for (let i = 0; i < cars; i++) { const x = i * (cw + gap);
+    R(ctx, x, 2, cw, 10, body); R(ctx, x, 1, cw, 2, roof); R(ctx, x, 7, cw, 2, PAL.grass1); R(ctx, x, 12, cw, 1, skirt);   /* body, roof, the green stripe, underframe */
+    for (let k = 2; k < cw - 3; k += 5) { const lit = tod === 'day' ? true : (k / 5 + i) % 4 !== 3; R(ctx, x + k, 3, frame ? 4 : 3, 3, lit ? glass : PAL.night2); }   /* windows; frame 1 stretches them into streaks */
+    R(ctx, x + 1, 13, 2, 1, skirt); R(ctx, x + cw - 3, 13, 2, 1, skirt);   /* bogies */
+    if (i === 0) { R(ctx, x, 2, 2, 10, PAL.grass1); R(ctx, x, 9, 3, 2, tod === 'day' ? PAL.sun2 : PAL.sun3); }   /* cab front and headlight */
+    if (i === cars - 1) R(ctx, x + cw - 2, 9, 2, 2, PAL.red); } });
+  scene.textures.addCanvas(key, cv); return key;
+}
 /** Cities that paint their own ground in the near layer (ocean to the bottom, resort tiles). */
 const NO_GROUND = new Set(['orangecounty', 'roatan', 'miami', 'laventana', 'hyeres', 'scotland', 'montana', 'patagonia', 'iguazu', 'chiangmai', 'lasvegas', 'joshuatree', 'lapaz', 'iceland', 'salzkammergut', 'dakhla', 'hongkong', 'minakami', 'riviera']);
 /** Blocky 3x5 letters for signs. */
@@ -198,9 +213,8 @@ const CITY: Record<string, Drawer> = {
       R(ctx, gx - 14, gt - 6, 28, 16, gc); R(ctx, gx - 6, gt - 18, 16, 14, gc); R(ctx, gx + 8, gt - 14, 8, 6, gc);   // shoulders, head, snout
       for (let i = 0; i < 4; i++) { const sy = gt - 16 + i * 6; for (let k = 0; k < 5; k++) R(ctx, gx - 10 - k, sy + k, 1, 5 - k, gc); }   // back spines
       P(ctx, gx + 4, gt - 13, PAL.sun1, 1, 1);   // a faint eye
-      // the Yamanote-style train on an elevated track
-      const ty = hy - 46; R(ctx, 0, ty + 8, w, 3, c); for (let x = 12; x < w; x += 40) R(ctx, x, ty + 11, 4, hy - ty - 11, c);
-      for (let seg = 0; seg < 4; seg++) { const tx = 20 + seg * 26; R(ctx, tx, ty - 2, 24, 10, PAL.gray2); R(ctx, tx, ty + 4, 24, 2, PAL.grass1); for (let k = 2; k < 22; k += 5) R(ctx, tx + k, ty, 3, 3, win); }
+      /* the elevated track only: the Yamanote set itself is animated in buildSkyline and passes every 8 to 20 s (TOKYO_TRACK_DY below) */
+      const ty = hy - 46; R(ctx, 0, ty + 8, w, 3, c); R(ctx, 0, ty + 7, w, 1, PAL.gray1); for (let x = 12; x < w; x += 40) { R(ctx, x, ty + 11, 4, hy - ty - 11, c); R(ctx, x - 2, ty + 11, 8, 2, c); }
     } else { buildings(ctx, w, hy, c, win, r, 10, 34, 14, 30, 0.3); neonSigns(ctx, w, hy, r, 8); } },
   innsbruck: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { const mc = tod === 'day' ? PAL.night3 : tod === 'night' ? PAL.night2 : PAL.dusk0; peaks(ctx, w, hy, mc, r, 82, 26, PAL.white, 0.7); R(ctx, 0, hy - 2, w, 4, mc); } else if (L === 'mid') { const rc = tod === 'day' ? PAL.night2 : c;   // one step darker than the far peaks so the ridge reads as its own line
       const jag = 40, amp = 60; let px0 = 0; const pts: number[] = []; while (px0 <= w) { pts.push(hy - r.int(amp * 0.3, amp)); px0 += jag; }
@@ -432,13 +446,24 @@ export function buildSkyline(scene: Phaser.Scene, cityIdOrRegion: string, tod: T
   if (rainy && tod !== 'day') { rain = scene.add.graphics(); container.add(rain); anim.push(rain); }
   const neon: Phaser.GameObjects.Rectangle[] = [];
   if (['tokyo', 'seoul', 'lasvegas', 'hongkong', 'bangkok', 'miami'].includes(key) && tod !== 'day') { const rr = rng(3); for (let i = 0; i < 6; i++) { const n = scene.add.rectangle(rr.int(10, w - 10), horizonY - rr.int(20, 80), rr.int(3, 8), rr.int(2, 5), rr.pick([PAL.neon, PAL.pink, PAL.sun2, PAL.red])).setOrigin(0); (n as any).__ph = rr.next() * 6; neon.push(n); container.add(n); } }
+  /* Tokyo: a commuter set crosses the elevated track now and then, never continuously */
+  let train: Phaser.GameObjects.Image | undefined; let trainWait = 0, trainX = 0, trainDur = 0, trainDir = 1; const trainFrames: string[] = [];
+  if (key === 'tokyo') { trainFrames.push(tokyoTrainTexture(scene, tod, win, 0), tokyoTrainTexture(scene, tod, win, 1));
+    train = scene.add.image(-200, horizonY + TOKYO_TRACK_DY, trainFrames[0]).setOrigin(0, 1).setVisible(false); container.addAt(train, 3); anim.push(train);
+    const rr = rng(seedOf(key + tod + 'train')); trainWait = rr.int(2, 7); }
   const speeds = [0.15, 0.4, 1];
   const sl: Skyline = {
     container, layers: [far, mid, near], sky, horizonY, width: w, height: h,
     scroll(dx) { far.tilePositionX += dx * speeds[0]; mid.tilePositionX += dx * speeds[1]; near.tilePositionX += dx * speeds[2]; },
     update(dt) { t += dt / 1000;
       if (rain) { rain.clear(); rain.lineStyle(1, PAL.sky2, 0.55); const rr = rng(Math.floor(t * 12)); for (let i = 0; i < 40; i++) { const x = rr.int(0, w), y = rr.int(0, h); rain.lineBetween(x, y, x - 2, y + 9); } }
-      for (const n of neon) n.setVisible(Math.sin(t * 3 + (n as any).__ph) > -0.7); },
+      for (const n of neon) n.setVisible(Math.sin(t * 3 + (n as any).__ph) > -0.7);
+      if (train) { const dt2 = dt / 1000;
+        if (!train.visible) { trainWait -= dt2; if (trainWait <= 0) { const rr = rng(Math.floor(t * 1000) + 7); trainDir = rr.chance(0.5) ? 1 : -1; trainDur = 4 + rr.next() * 2; trainX = 0; train.setFlipX(trainDir < 0).setVisible(true); } }
+        else { trainX += dt2 / trainDur; const span = w + 130; const px = trainDir > 0 ? -110 + trainX * span : w + 110 - trainX * span;
+          train.setPosition(Math.round(px), horizonY + TOKYO_TRACK_DY + (Math.sin(t * 22) > 0 ? 0 : 1));   /* a 1 px bob on the rail */
+          train.setTexture(trainFrames[Math.sin(t * 30) > 0 ? 1 : 0]);
+          if (trainX >= 1) { train.setVisible(false); const rr = rng(Math.floor(t * 1000) + 13); trainWait = 8 + rr.next() * 12; } } } },
     destroy() { container.destroy(true); },
     setTimeOfDay(nt) { const nk = buildSkyline(scene, cityIdOrRegion, nt, climate, w, h, horizonY, region); sky.setTexture(nk.sky.texture.key); far.setTexture(nk.layers[0].texture.key); mid.setTexture(nk.layers[1].texture.key); near.setTexture(nk.layers[2].texture.key); nk.destroy(); },
   };
