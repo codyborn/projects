@@ -57,10 +57,15 @@ export function jumpFor(level: Pick<ArcadeLevel, 'hazard'>, snow?: boolean) { re
 /** Max rise in rows the player can land on (apex minus head margin). */
 export function maxRiseRows(jump: number) { return Math.floor(((jump * jump) / (2 * PHYS.gravity) - HEAD) / TILE); }
 /** Horizontal reach in tiles when landing `rise` rows higher (negative = falling), -1 if impossible. Descending-branch landing time. */
-export function reachTiles(jump: number, rise: number) {
+export function reachTiles(jump: number, rise: number, runMult = 1) {
   const g = PHYS.gravity; const h = rise * TILE + (rise > 0 ? HEAD : 0); const disc = jump * jump - 2 * g * h; if (disc < 0) return -1;
-  const t = (jump + Math.sqrt(disc)) / g; return Math.floor((t * PHYS.run * 0.92) / TILE);   // 0.92: players do not hit the edge at full speed
+  const t = (jump + Math.sqrt(disc)) / g; return Math.floor((t * PHYS.run * runMult * 0.92) / TILE);   // 0.92: players do not hit the edge at full speed
 }
+/**
+ * Holding B sprints: 1.6x run with a slightly taller jump so the extra momentum does not shorten the arc.
+ * Courses are generated and validated at WALK speed, so a sprint can only add reach (see the sprint tests) and never makes a gap unclearable.
+ */
+export const SPRINT = { run: 1.6, jump: 1.08 };
 
 /** Moving platforms ('M') travel ±MOVE_RANGE tiles horizontally, so the cells above that whole span count as standable for validation. */
 export const MOVE_RANGE = 3;

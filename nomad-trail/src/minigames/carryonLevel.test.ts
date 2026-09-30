@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DEFAULT_LEVEL, validateLevel, trimStamps, PHYS, TILE, MAX_STAMPS, generateLevel, generateCourse, FAMILIES, reachableCells, jumpFor, maxRiseRows, reachTiles, familyFor, coinReachable, COLS } from './carryonLevel';
+import { DEFAULT_LEVEL, validateLevel, trimStamps, PHYS, TILE, MAX_STAMPS, generateLevel, generateCourse, FAMILIES, reachableCells, jumpFor, maxRiseRows, reachTiles, familyFor, coinReachable, COLS, SPRINT, generateCourse as genCourse } from './carryonLevel';
 
 describe('Carry-On physics', () => {
   it('jump apex clears a 3-row rise with head room but not 4', () => {
@@ -66,4 +66,23 @@ describe('side-scrolling courses', () => {
     const { reach } = reachableCells(tiles, PHYS.jump); expect(reach.has('4,4')).toBe(true); expect(reach.has('7,4')).toBe(true);
   });
   it('is deterministic per seed', () => { expect(generateCourse(4242, { hazard: 'crowd' }).tiles).toEqual(generateCourse(4242, { hazard: 'crowd' }).tiles); });
+});
+
+describe('sprint (hold B)', () => {
+  it('never shortens a jump: sprint reach >= walk reach for every rise', () => {
+    for (const jump of [PHYS.jump, PHYS.snowJump]) for (let rise = -6; rise <= maxRiseRows(jump); rise++) {
+      const walk = reachTiles(jump, rise), run = reachTiles(jump * SPRINT.jump, rise, SPRINT.run);
+      if (walk < 0) continue; expect(run, `rise ${rise}`).toBeGreaterThanOrEqual(walk);
+    }
+  });
+  it('clears a wider gap than a walk and still clears the widest gap a course builds', () => {
+    expect(reachTiles(PHYS.jump * SPRINT.jump, 0, SPRINT.run)).toBeGreaterThan(reachTiles(PHYS.jump, 0));
+    expect(reachTiles(PHYS.jump, 0)).toBeGreaterThanOrEqual(4);   // courses carve pits of at most 3 tiles
+  });
+  it('courses stay valid when the validator is run with the sprint arc', () => {
+    for (let i = 0; i < 8; i++) { const c = genCourse(300 + i * 17, { hazard: 'pigeon' }); expect(validateLevel(c)).toEqual([]); }
+  });
+  it('the sprint jump apex stays under 5 tiles, so a sprint cannot skip a floor', () => {
+    const apex = Math.pow(PHYS.jump * SPRINT.jump, 2) / (2 * PHYS.gravity); expect(apex / TILE).toBeLessThan(5);
+  });
 });

@@ -27,14 +27,14 @@ export class TitleScene extends Phaser.Scene {
     txt(this, 180, 184, STRINGS.ui.tagline, 9, PAL.sun3, { align: 'center', wrap: 340 }).setOrigin(0.5);   /* clear of the logo, which bobs 4px */
     const saved = Sim.load(); const settings = getSettings(this);
     let y = 400;
-    if (saved && saved.phase !== 'ended') { new Button(this, 180, y, `CONTINUE  ·  day ${saved.day}`, () => this.resume(saved), { w: 240, fill: PAL.dusk1 }); y += 56; }
+    if (saved && saved.phase !== 'ended') { new Button(this, 180, y, `CONTINUE · DAY ${saved.day}`, () => this.resume(saved), { w: 240, size: 12, fill: PAL.dusk1 }); y += 56; }
     new Button(this, 180, y, 'NEW RUN', () => this.newRun(!!saved), { w: 240, fill: PAL.sea1 }); y += 56;
     if (this.scene.get('Passport')) { new Button(this, 180, y, 'PASSPORT', () => { if (saved) this.registry.set('run', saved); this.scene.start('Passport', { back: 'Title' }); }, { w: 240 }); y += 56; }
     if (this.scene.get('Recipes')) { new Button(this, 180, y, 'RECIPES', () => this.scene.start('Recipes', { back: 'Title' }), { w: 240 }); y += 56; }
     buildIcons(this); const spk = this.add.image(40, 600, Audio.muted ? 'ico_sound_off' : 'ico_sound_on').setScale(3).setDepth(5).setInteractive({ useHandCursor: true });
     /* browsers block audio until a gesture, so the title screen asks for one: the first tap anywhere starts the music
        rather than toggling, otherwise tapping the speaker to get sound would mute it instead */
-    const hint = txt(this, 14, 570, Audio.muted ? 'sound is off' : 'tap for sound', 8, PAL.sun2).setOrigin(0, 0.5).setDepth(5);
+    const hint = txt(this, GAME_W / 2, 26, Audio.muted ? 'sound is off' : 'tap for sound', 8, PAL.sun2).setOrigin(0.5, 0).setDepth(5);
     this.tweens.add({ targets: hint, alpha: 0.35, yoyo: true, repeat: -1, duration: 900 });
     const sync = () => { spk.setTexture(Audio.muted ? 'ico_sound_off' : 'ico_sound_on'); this.sound.mute = Audio.muted; hint.setVisible(!Audio.unlocked || Audio.muted); hint.setText(Audio.muted ? 'sound is off' : 'tap for sound'); };
     /* main.ts unlocks audio on the first canvas pointerdown, which is the same tap as this pointerup, so a tap that

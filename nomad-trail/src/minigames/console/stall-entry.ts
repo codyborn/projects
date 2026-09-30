@@ -5,7 +5,7 @@
 //   ?game=tetris&rot=1                      gravity frozen, A pressed 20x: piece y and fall accumulator must not change; plus D-pad geometry (low RIGHT thumb = right only)
 //   ?game=tetris&mech=1                     scripted FRAGILE shatter, ZIPPER pull and BATTERY blast against a hand-set well
 //   ?game=carryon&hazard=wave&water=1       samples the water line: grace before it moves, time to peak, rise rate
-//   ?game=carryon&bot=1&seed=N              a hold-RIGHT bot that jumps at walls, pits, spikes and hazards: must reach the flag (add &god=1 to make it invulnerable)
+//   ?game=carryon&bot=1&seed=N              a hold-RIGHT bot that jumps at walls, pits, spikes and hazards: must reach the flag (add &god=1 to make it invulnerable, &sprint=1 to hold B)
 //   ?game=carryon&noinput=1                 nothing pressed: must end by death or the 90 s cap, onDone once
 //   ?game=carryon&critter=1                 scripted: drop onto a critter (stomp kills it and bounces), then walk into one (contact costs a heart)
 //   &rt=1                                   real-time loop (for screenshots)   &autostart=0  leave the title card up
@@ -69,7 +69,7 @@ game.events.once('ready', () => {
     const hook = setInterval(() => { const s = sc(); const c = s?.cart; if (!c || !s.started || !c.player || (c as any).__bot) return; (c as any).__bot = true; clearInterval(hook); if (q.get('god') === '1') c.hurt = () => {}; if (!bot) return;
       let jumpFrames = 0, stuck = 0, lastX = -1; const orig = c.update.bind(c);
       c.update = (dt: number, pad: any) => {
-        if (!c.ended) { pad.cur.right = true; const p = c.player, b = p.body, grounded = b.blocked.down || b.touching.down, feet = p.y + 8; const tA = (dx: number, dy: number) => c.tileAt(p.x + dx, feet + dy);
+        if (!c.ended) { pad.cur.right = true; if (q.get('sprint') === '1') pad.cur.b = true; const p = c.player, b = p.body, grounded = b.blocked.down || b.touching.down, feet = p.y + 8; const tA = (dx: number, dy: number) => c.tileAt(p.x + dx, feet + dy);
           const pit = tA(12, 6) === '.' || tA(24, 6) === '.'; const spike = tA(16, -2) === '^' || tA(28, -2) === '^'; const foe = c.movers.some((m: any) => m.alive && m.spr.x > p.x && m.spr.x - p.x < 44 && Math.abs(m.spr.y - p.y) < 20);
           if (p.x > lastX + 1) { lastX = p.x; stuck = 0; } else stuck += dt;
           // how wide is the gap ahead (tiles until something standable reappears at foot level or up to 3 rows above)? short gap = short hop
@@ -84,7 +84,7 @@ game.events.once('ready', () => {
           // landing rule: descending with something standable under the feet → stop drifting right and drop onto it
           if (!grounded && b.velocity.y > 0) { const u = tA(0, 6); if (u === '#' || u === '-' || u === 'C' || u === 'M') pad.cur.right = false; } }
         orig(dt, pad); }; }, 50);
-    Object.defineProperty(extra, 'bot', { get: () => { const s = sc(); const c = s?.cart; return { ...log, reachedFlag: c?.stats?.reachedFlag, hearts: c?.hearts, coins: `${c?.collected}/${c?.total}`, progress: +(c?.progress ?? 0).toFixed(2), stomps: c?.stats?.stomps, pits: c?.stats?.pits, playSeconds: +(c?.t ?? 0).toFixed(1), screens: s?.level?.tiles?.[0]?.length / 23, families: s?.level?.families?.join(',') }; } }); }
+    Object.defineProperty(extra, 'bot', { get: () => { const s = sc(); const c = s?.cart; return { ...log, sprint: q.get('sprint') === '1', sprintSec: +(c?.stats?.sprintSec ?? 0).toFixed(1), reachedFlag: c?.stats?.reachedFlag, hearts: c?.hearts, coins: `${c?.collected}/${c?.total}`, progress: +(c?.progress ?? 0).toFixed(2), stomps: c?.stats?.stomps, pits: c?.stats?.pits, playSeconds: +(c?.t ?? 0).toFixed(1), screens: s?.level?.tiles?.[0]?.length / 23, families: s?.level?.families?.join(',') }; } }); }
   if (q.get('critter') === '1') { const run = setInterval(() => { const s = sc(); const c = s?.cart; if (!c || !s.started || !c.player) return; clearInterval(run); const R: any = {};
       const crits = c.movers.filter((m: any) => m.kind === 'critter'); R.critters = crits.length; R.kinds = [...new Set(crits.map((m: any) => m.critter))]; R.textures = ['co_tick0', 'co_tick1', 'co_tick_sq', 'co_bug0', 'co_bug1', 'co_bug_sq'].every(k => s.textures.exists(k));
       if (crits.length < 2) { finish('CRITTER_DONE', { critter: { ...R, note: 'need 2 critters' } }); return; }

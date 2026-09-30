@@ -120,7 +120,7 @@ class AudioEngine {
     if (!this.tracker || !this.files) return;
     this.tracker.play(null); this.files.stop();
     if (!c) { onEnd?.(); return; }
-    if (c.kind === 'tracker') this.tracker.play(c.loop, once, onEnd); else this.files.play(c.file, !once, onEnd);
+    if (c.kind === 'tracker') this.tracker.play(c.loop, once, onEnd, c.gain ?? 1); else this.files.play(c.file, !once, onEnd);
   }
   /** Crossfade to a loop ('none' fades out). Idempotent. */
   playLoop(name: LoopName) {

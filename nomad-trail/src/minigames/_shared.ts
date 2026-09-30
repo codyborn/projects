@@ -176,7 +176,16 @@ export class MinigameFrame {
   /** Harness: press READY programmatically (or CONTINUE when a result card is the only thing up). */
   ready() { if (this.readyHandler) this.readyHandler(); else this.continueHandler?.(); }
   /** Games that draw their own card (Airport, Kite, CarryOn) call this when their READY/START is pressed: starts the play clock and cap. */
-  beginPlay() { if (this.readyHandler) { this.readyHandler(); return; } if (this.active || this.finished) return; this.introObjs.forEach(o => o.destroy()); this.introObjs = []; this.active = true; this.playStart = this.scene.time.now; this.capTimer = this.scene.time.delayedCall(this.capSec * 1000, () => { if (!this.finished) this.finish(this.scoreNow()); }); }
+  /** Start play. Games that draw their own start card (the console shell) come in here directly, so this path
+   *  must do everything the READY card's handler does, music included, or they keep the previous scene's track. */
+  beginPlay() {
+    if (this.readyHandler) { this.readyHandler(); return; }
+    if (this.active || this.finished) return;
+    this.introObjs.forEach(o => o.destroy()); this.introObjs = [];
+    this.active = true; this.playStart = this.scene.time.now;
+    Audio.playLoop(this.musicLoop);
+    this.capTimer = this.scene.time.delayedCall(this.capSec * 1000, () => { if (!this.finished) this.finish(this.scoreNow()); });
+  }
   private readyHandler?: () => void;
 
   /** Top HUD strip: title left, progress right, timer center. */

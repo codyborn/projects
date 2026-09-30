@@ -35,7 +35,7 @@ export class Pad {
     const k = scene.input.keyboard;
     if (k) {
       const add = (key: PadKey, ...codes: string[]) => { this.kb[key] = codes.map(c => k.addKey(c)); };
-      add('left', 'LEFT'); add('right', 'RIGHT'); add('up', 'UP'); add('down', 'DOWN'); add('a', 'Z', 'SPACE'); add('b', 'X'); add('start', 'ENTER'); add('select', 'SHIFT');
+      add('left', 'LEFT'); add('right', 'RIGHT'); add('up', 'UP'); add('down', 'DOWN'); add('a', 'Z', 'SPACE'); add('b', 'X', 'SHIFT'); add('start', 'ENTER'); add('select', 'SHIFT');
     }
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.destroy());
   }

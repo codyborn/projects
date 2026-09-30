@@ -10,6 +10,7 @@ import levelsJson from './data/arcade_levels.json';
 import puzzlesJson from './data/puzzles.json';
 import creditsJson from './data/credits.json';
 import { puzzleById } from './minigames/work/sample';
+import { POOLS } from './minigames/workout/pools';
 import { Button } from './ui/Button';
 import { txt, rect } from './ui/theme';
 
@@ -35,7 +36,10 @@ export function installPlayLink(game: Phaser.Game): boolean {
     const done = (title: string) => (r?: MinigameResult) => { stopAll(); game.scene.start('PlayEnd', { title, result: r, replay: start }); };
     const base = { energy: Number(q.get('energy') || 85), difficulty: Number(q.get('difficulty') || 0.4) };
     switch (play) {
-      case 'Workout': { const activity = q.get('activity') || (city.activities[0] ?? 'bands'); const plan = q.get('plan'); const extraLives = Number(q.get('lives') || 0);
+      case 'Workout': { const plan = q.get('plan');
+        /* a forced plan decides the activity, so the review page gets the right music and label (pushup is indoor, ferrata is not) */
+        const fromPlan = plan ? Object.entries(POOLS).find(([, ids]) => (ids as string[]).includes(plan))?.[0] : undefined;
+        const activity = q.get('activity') || fromPlan || (city.activities[0] ?? 'bands'); const extraLives = Number(q.get('lives') || 0);
         game.scene.start('Workout', { ...base, extraLives, payload: { activity, city: city.id, day: Number(q.get('day') || 3), ...(plan ? { plan: [plan] } : {}) }, onDone: done(`${plan || activity} · ${city.name}`) }); break; }
       case 'Cooking': { const dish = DISHES.find(d => d.id === q.get('dish')) || DISHES.find(d => city.dishes.includes(d.id)) || DISHES[0];
         game.scene.start('Cooking', { ...base, payload: { ...dish, cityName: city.name, dullKnives: q.get('dull') === '1' }, onDone: done(dish.name) }); break; }

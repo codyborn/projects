@@ -19,7 +19,7 @@ export class RecipesScene extends Phaser.Scene {
   static KEY = 'Recipes';
   private backKey?: string; private content!: Phaser.GameObjects.Container; private maxScroll = 0; private scrollY = 0;
   constructor() { super(RecipesScene.KEY); }
-  init(d?: { back?: string }) { this.backKey = d?.back; this.scrollY = 0; }
+  init(d?: { back?: string }) { this.backKey = d?.back; this.scrollY = 0; this.target = 0; this.vel = 0; this.dragging = false; }
   create() {
     this.cameras.main.setBackgroundColor(PAL.night0);
     const best = getSettings(this).career?.dishes ?? {};
@@ -51,11 +51,16 @@ export class RecipesScene extends Phaser.Scene {
     const rows = Math.ceil(dishes.length / COLS);
     this.maxScroll = Math.max(0, GRID_TOP + rows * (CH + GAP) + 12 - (H - 64));
 
-    let downY = 0, start = 0, moved = false;
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { downY = p.y; start = this.scrollY; moved = false; });
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => { if (!p.isDown) return; if (Math.abs(p.y - downY) > 6) moved = true; this.setScroll(start + (downY - p.y)); });
-    this.input.on('wheel', (_p: unknown, _o: unknown, _dx: number, dy: number) => this.setScroll(this.scrollY + dy * 0.5));
-    this.input.on('pointerup', () => { if (moved) this.input.enabled = this.input.enabled; });   /* a drag must not also open a recipe */
+    /* drag tracks the finger exactly, then coasts: target + inertia, smoothed every frame in update() */
+    let downY = 0, start = 0, moved = false, lastY = 0, lastT = 0;
+    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { downY = lastY = p.y; lastT = this.time.now; start = this.target; moved = false; this.vel = 0; this.dragging = true; });
+    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
+      if (!p.isDown) return; if (Math.abs(p.y - downY) > 6) moved = true;
+      const dt = Math.max(1, this.time.now - lastT); this.vel = (lastY - p.y) / dt * 16;   /* px per frame */
+      lastY = p.y; lastT = this.time.now; this.setTarget(start + (downY - p.y));
+    });
+    this.input.on('pointerup', () => { this.dragging = false; });
+    this.input.on('wheel', (_p: unknown, _o: unknown, _dx: number, dy: number) => { this.vel = 0; this.setTarget(this.target + dy * 0.6); });
     this.dragGuard = () => moved;
 
     this.add.rectangle(W / 2, H - 32, W, 64, PAL.night0).setDepth(9);
@@ -63,7 +68,16 @@ export class RecipesScene extends Phaser.Scene {
     this.cameras.main.fadeIn(200, 0, 0, 0);
   }
   private dragGuard: () => boolean = () => false;
-  private setScroll(v: number) { this.scrollY = Phaser.Math.Clamp(v, 0, this.maxScroll); this.content.setY(-this.scrollY); }
+  private target = 0; private vel = 0; private dragging = false;
+  private setTarget(v: number) { this.target = Phaser.Math.Clamp(v, 0, this.maxScroll); }
+  update(_t: number, dt: number) {
+    if (!this.dragging && Math.abs(this.vel) > 0.05) { this.setTarget(this.target + this.vel); this.vel *= 0.92; }   /* coast */
+    else if (!this.dragging) this.vel = 0;
+    const k = 1 - Math.pow(0.001, dt / 1000);                                  /* frame-rate independent ease */
+    this.scrollY += (this.target - this.scrollY) * k;
+    if (Math.abs(this.target - this.scrollY) < 0.1) this.scrollY = this.target;
+    this.content.setY(-Math.round(this.scrollY));                              /* round: the pixel font stays crisp */
+  }
   /** Replay a dish: the Cooking scene on top, result recorded as a new personal best if it beats the old one. */
   private cook(d: Dish) {
     if (this.dragGuard()) return;

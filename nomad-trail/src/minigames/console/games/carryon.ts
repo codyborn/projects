@@ -1,12 +1,12 @@
 // COIN COLLECTOR (game id 'carryon', scene key 'CarryOn' kept for the engine): a side-scrolling platformer course 6 to 8 screens wide.
-// Reach the flag at the end; coins along the way are extra. D-pad moves, A jumps (variable height), DOWN drops through thin ledges.
+// Reach the flag at the end; coins along the way are extra. D-pad moves, A jumps (variable height), B sprints, DOWN drops through thin ledges.
 // Ticks and bed bugs patrol the platforms (stomp them from above), the city's own hazards (rocks, pigeons, mosquitoes, water, gusts) stay,
 // pits respawn you at the last safe ground, water levels swell slowly.
 // Score: reached the flag ? 60 + 40 × coins/total : 30 × progress. 90 s cap shown as a thin bar.
 import Phaser from 'phaser';
 import { PAL } from '../../../core/palette';
 import type { ArcadeLevel, Hazard } from '../../../core/types';
-import { TILE, PHYS, MOVE_RANGE, validateLevel } from '../../carryonLevel';
+import { TILE, PHYS, MOVE_RANGE, SPRINT, validateLevel } from '../../carryonLevel';
 import { clamp, pixTexture } from '../../_shared';
 import type { Pad } from '../input';
 import type { ConsoleCtx, ConsoleGame, ConsoleResult } from './types';
@@ -18,16 +18,16 @@ const OWN_SPRITE: Hazard[] = ['rock', 'pigeon', 'mosquito', 'wave', 'gust'];
 const CAP = 90, RAMP_AT = 60;
 
 export class CarryOnGame implements ConsoleGame {
-  readonly id = 'carryon' as const; readonly name = 'COIN COLLECTOR'; readonly controls = ['D-PAD  move · DOWN drop through thin ledges', 'A      jump (hold for higher)', 'START  pause']; readonly capSec = CAP; readonly timerBar = true;
-  get instructions() { const hz = this.level?.hazard; const own = hz && OWN_SPRITE.includes(hz) && hz !== 'wave' && hz !== 'gust'; return `Reach the flag. Coins are extra. Stomp the bugs${own ? `, dodge the ${hz}s` : ''}. D-pad moves, A jumps, DOWN drops through thin ledges.`; }
+  readonly id = 'carryon' as const; readonly name = 'COIN COLLECTOR'; readonly controls = ['D-PAD  move · DOWN drop through thin ledges', 'A      jump (hold for higher)', 'B      hold to sprint · START  pause']; readonly capSec = CAP; readonly timerBar = true;
+  get instructions() { const hz = this.level?.hazard; const own = hz && OWN_SPRITE.includes(hz) && hz !== 'wave' && hz !== 'gust'; return `Reach the flag. Coins are extra. Stomp the bugs${own ? `, dodge the ${hz}s` : ''}. D-pad moves, A jumps, hold B to sprint, DOWN drops through thin ledges.`; }
   private ctx!: ConsoleCtx; private done!: (r: ConsoleResult) => void; private level!: ArcadeLevel; private ox = 0; private oy = 0; private cols = 23; private rows = 20;
   private player!: Phaser.Physics.Arcade.Sprite; private solids!: Phaser.Physics.Arcade.StaticGroup; private oneways!: Phaser.Physics.Arcade.StaticGroup; private movingPlats!: Phaser.Physics.Arcade.Group;
   private coins: Phaser.GameObjects.Image[] = []; private spikes: Phaser.Geom.Rectangle[] = []; private movers: Mover[] = []; private spawners: { x: number; y: number }[] = [];
   private crumbles: { img: Phaser.Physics.Arcade.Image; t: number }[] = []; private flag!: { x: number; y: number; pole: Phaser.GameObjects.Rectangle; cloth: Phaser.GameObjects.Image };
   private hearts = 3; private collected = 0; private total = 0; private t = 0; private iframes = 0; private windForce = 0; private windT = 0; private waterY = 0; private rockT = 0; private gd = 1;
-  private jumpBuffer = 0; private coyote = 0; private jumpHeld = false; private ended = false; private dropT = 0; private respawnT = 0; private safe = { x: 0, y: 0 }; private maxX = 0; private camX = 0;
-  private objs: Phaser.GameObjects.GameObject[] = []; private windStreaks!: Phaser.GameObjects.Graphics; private water!: Phaser.GameObjects.Rectangle; private bar!: Phaser.GameObjects.Graphics; private coinT!: Phaser.GameObjects.Text;
-  /** the harness reads these */ stats = { stomps: 0, pits: 0, reachedFlag: false };
+  private jumpBuffer = 0; private coyote = 0; private jumpHeld = false; private ended = false; private dropT = 0; private respawnT = 0; private runCycle = 0; private dust: { x: number; y: number; r: number; life: number }[] = []; private dustT = 0; private sprinting = false; private safe = { x: 0, y: 0 }; private maxX = 0; private camX = 0;
+  private objs: Phaser.GameObjects.GameObject[] = []; private windStreaks!: Phaser.GameObjects.Graphics; private dustG!: Phaser.GameObjects.Graphics; private water!: Phaser.GameObjects.Rectangle; private bar!: Phaser.GameObjects.Graphics; private coinT!: Phaser.GameObjects.Text;
+  /** the harness reads these */ stats = { stomps: 0, pits: 0, reachedFlag: false, sprintSec: 0 };
 
   init(ctx: ConsoleCtx, done: (r: ConsoleResult) => void) {
     this.ctx = ctx; this.done = done; this.level = ctx.level; const s = ctx.scene;
@@ -51,11 +51,12 @@ export class CarryOnGame implements ConsoleGame {
       else if (c === 'H') this.spawners.push({ x: px, y: py });
       else if (c === 'F') { const pole = s.add.rectangle(px, py - TILE * 2, 3, TILE * 5, PAL.gray2).setDepth(D + 4); const cloth = s.add.image(px + 9, py - TILE * 4 - 2, 'co_flag').setDepth(D + 5); this.objs.push(pole, cloth); this.flag = { x: px, y: py, pole, cloth }; s.tweens.add({ targets: cloth, scaleX: 0.85, duration: 400, yoyo: true, repeat: -1, ease: 'Sine.InOut' }); }
     }));
-    this.player = s.physics.add.sprite(sx, sy, 'co_player').setDepth(D + 6); this.player.setSize(10, 13).setOffset(1, 1); this.player.setMaxVelocity(220, 620); this.objs.push(this.player); this.safe = { x: sx, y: sy }; this.maxX = sx;
+    this.player = s.physics.add.sprite(sx, sy, 'co_player').setDepth(D + 6); this.player.setSize(10, 13).setOffset(1, 1); this.player.setMaxVelocity(320, 620);   // headroom for sprint + a gust this.objs.push(this.player); this.safe = { x: sx, y: sy }; this.maxX = sx;
     s.physics.add.collider(this.player, this.solids);
     s.physics.add.collider(this.player, this.oneways, undefined, () => this.dropT <= 0);
     s.physics.add.collider(this.player, this.movingPlats, undefined, () => this.dropT <= 0 && (this.player.body as Phaser.Physics.Arcade.Body).velocity.y >= 0);
     this.windStreaks = s.add.graphics().setDepth(D + 5).setScrollFactor(0); this.objs.push(this.windStreaks);
+    this.dustG = s.add.graphics().setDepth(D + 5); this.objs.push(this.dustG);   // sprint dust + speed lines (world space, behind the player)
     this.water = s.add.rectangle(this.ox + LW / 2, S.bottom + 200, LW, 400, PAL.sea1, 0.75).setDepth(D + 7).setVisible(this.level.hazard === 'wave'); this.objs.push(this.water);
     this.bar = s.add.graphics().setDepth(D + 9).setScrollFactor(0); this.objs.push(this.bar);
     this.coinT = s.add.text(S.width - 14, 6, '', { fontFamily: 'monospace', fontSize: '10px', color: '#f7cf6b' }).setOrigin(1, 0).setDepth(D + 9).setScrollFactor(0); this.objs.push(this.coinT);
@@ -113,7 +114,8 @@ export class CarryOnGame implements ConsoleGame {
     if (this.ended) { this.player.setVelocityX(0); this.camera(dtIn); return; }
     const dt = Math.min(0.033, dtIn); this.t += dt; const body = this.player.body as Phaser.Physics.Arcade.Body; const hz = this.level.hazard; const rp = this.ramp(); const S = this.ctx.screen;
     this.respawnT -= dt; const frozen = this.respawnT > 0; const left = pad.held('left') && !frozen, right = pad.held('right') && !frozen; if (pad.justPressed('a') && !frozen) { this.jumpBuffer = 0.12; this.jumpHeld = true; }
-    const run = PHYS.run * (1 - 0.15 * this.ctx.hard); const slippery = hz === 'ice';
+    const sprint = pad.held('b') && !frozen; this.sprinting = sprint; if (sprint) this.stats.sprintSec += dt;
+    const run = PHYS.run * (sprint ? SPRINT.run : 1) * (1 - 0.15 * this.ctx.hard); const slippery = hz === 'ice';
     if (slippery) { const ax = (left ? -1 : right ? 1 : 0) * 500; body.setAccelerationX(ax); body.setDragX(ax === 0 ? 120 : 0); if (Math.abs(body.velocity.x) > run) body.setVelocityX(Math.sign(body.velocity.x) * run); }
     else { body.setAccelerationX(0); body.setVelocityX((left ? -run : right ? run : 0) + this.windForce); }
     if (left) this.player.setFlipX(true); if (right) this.player.setFlipX(false);
@@ -123,7 +125,7 @@ export class CarryOnGame implements ConsoleGame {
     // last safe ground (real ground, not over a pit, not thin)
     if (grounded && this.tileAt(this.player.x, this.player.y + 8) === '#' && this.tileAt(this.player.x + 20, this.player.y + 8) === '#' && this.tileAt(this.player.x - 20, this.player.y + 8) === '#') this.safe = { x: this.player.x, y: this.player.y };
     this.dropT -= dt; if (pad.justPressed('down') && grounded && this.onThinPlatform()) { this.dropT = 0.15; this.coyote = 0; body.setVelocityY(60); this.ctx.sfx('whoosh'); }
-    const jv = (hz === 'snow' ? PHYS.snowJump : PHYS.jump) * (1 - 0.04 * this.ctx.hard);
+    const jv = (hz === 'snow' ? PHYS.snowJump : PHYS.jump) * (sprint ? SPRINT.jump : 1) * (1 - 0.04 * this.ctx.hard);   // a taller arc carries the extra momentum, so gaps stay clearable
     if (this.jumpBuffer > 0 && this.coyote > 0) { body.setVelocityY(-jv); this.jumpBuffer = 0; this.coyote = 0; this.player.setScale(0.8, 1.25); this.ctx.scene.tweens.add({ targets: this.player, scaleX: 1, scaleY: 1, duration: 140 }); this.ctx.sfx('jump'); }
     if (!pad.held('a')) { if (this.jumpHeld && body.velocity.y < -80) body.setVelocityY(body.velocity.y * 0.55); this.jumpHeld = false; }
     for (const c of this.crumbles) { if (!c.img.active) continue; const b = c.img.body as Phaser.Physics.Arcade.StaticBody; const on = grounded && Math.abs(this.player.x - c.img.x) < 10 && Math.abs((this.player.y + 7) - b.y) < 8; if (on || c.t > 0) c.t += dt; if (c.t > 0.35) { c.img.disableBody(true, true); } }
@@ -138,12 +140,24 @@ export class CarryOnGame implements ConsoleGame {
     // the flag
     if (this.flag && Math.abs(this.player.x - this.flag.x) < 8 && this.player.y < this.flag.y + 8) { this.reachFlag(); return; }
     this.maxX = Math.max(this.maxX, this.player.x);
-    this.camera(dt);
+    this.feet(dt, sprint, grounded, left || right);
+    this.camera(dt, sprint);
     // time bar (thin, top of the screen) + coin counter
     const rem = clamp(1 - this.t / CAP, 0, 1); this.bar.clear(); this.bar.fillStyle(PAL.ink, 0.7).fillRect(6, 6, S.width - 90, 5); this.bar.fillStyle(rem > 0.25 ? PAL.neon : PAL.red).fillRect(7, 7, (S.width - 92) * rem, 3);
   }
-  /** camera follows with a lerp, 40% from the left edge, clamped to the course */
-  private camera(dt: number) { const S = this.ctx.screen; const target = clamp(this.player.x - S.width * 0.4, this.ox, this.ox + this.cols * TILE - S.width); this.camX += (target - this.camX) * Math.min(1, dt * 6); this.ctx.camera.setScroll(Math.round(this.camX), this.oy); }
+  /** camera follows with a lerp, 40% from the left edge, clamped to the course; it tightens while sprinting so the player cannot outrun it */
+  private camera(dt: number, sprint = false) { const S = this.ctx.screen; const target = clamp(this.player.x - S.width * 0.4, this.ox, this.ox + this.cols * TILE - S.width); this.camX += (target - this.camX) * Math.min(1, dt * (sprint ? 10 : 6)); this.ctx.camera.setScroll(Math.round(this.camX), this.oy); }
+  /** run cycle (bob, twice as fast sprinting), dust puffs off the back foot and speed lines behind the shoulders */
+  private feet(dt: number, sprint: boolean, grounded: boolean, moving: boolean) {
+    this.runCycle += dt * (moving ? (sprint ? 20 : 11) : 0);
+    if (grounded && moving) { const b = Math.sin(this.runCycle); this.player.setScale(1 - b * 0.05, 1 + b * 0.06); } else if (grounded) this.player.setScale(1, 1);
+    const dir = this.player.flipX ? 1 : -1;   // behind the player
+    if (sprint && moving) { this.dustT -= dt; if (this.dustT <= 0) { this.dustT = grounded ? 0.05 : 0.1; this.dust.push({ x: this.player.x + dir * 6, y: this.player.y + (grounded ? 7 : 2), r: 1.5 + this.ctx.rng() * 2, life: 1 }); } }
+    const g = this.dustG; g.clear();
+    for (const d of this.dust) { d.life -= dt * 2.6; d.x += dir * 26 * dt; d.y -= 14 * dt; d.r += 9 * dt; if (d.life > 0) g.fillStyle(PAL.gray2, 0.5 * d.life).fillCircle(d.x, d.y, d.r); }
+    this.dust = this.dust.filter(d => d.life > 0); if (this.dust.length > 40) this.dust.splice(0, this.dust.length - 40);
+    if (sprint && moving) { const a = 0.35 + 0.25 * Math.abs(Math.sin(this.runCycle)); for (let i = 0; i < 3; i++) g.fillStyle(PAL.white, a * (1 - i * 0.25)).fillRect(this.player.x + dir * (10 + i * 7), this.player.y - 4 + i * 5, 6 + i * 2, 1); }
+  }
 
   private hazards(dt: number, pr: Phaser.Geom.Rectangle, rp: number) {
     const hz = this.level.hazard; const s = this.ctx.scene; const body = this.player.body as Phaser.Physics.Arcade.Body; const S = this.ctx.screen; const D = this.ctx.depth; const LW = this.cols * TILE;

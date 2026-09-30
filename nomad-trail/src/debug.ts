@@ -6,6 +6,7 @@ import { buildPack } from './core/sim/pack';
 import { makeRng } from './core/sim/rng';
 import { renderDishCanvas } from './minigames/dishArt';
 import { Audio } from './audio/synth';
+import { MUSIC_SLOTS, MUSIC_CANDIDATES } from './audio/tracker';
 import { META as WORKOUT_META, POOLS as WORKOUT_POOLS, DENSE_CITIES } from './minigames/workout/pools';
 import { CONSOLE_GAME_IDS } from './minigames/console/games';
 import citiesJson from './data/cities.json';
@@ -28,6 +29,7 @@ export function installDebug(game: Phaser.Game) {
     ready: false, game, sim: null as any,
     scene: (key: string) => game.scene.getScene(key),
     audio: Audio,   /* the live engine, so a test can tap the music bus with an AnalyserNode */
+    music: { slots: MUSIC_SLOTS, candidates: MUSIC_CANDIDATES },   /* every candidate, so the loudness pass can drive them */
     goto: go,
     state: run,
     hasSave: () => !!SimMod?.load?.(),

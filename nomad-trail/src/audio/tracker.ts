@@ -192,8 +192,11 @@ export function pulseWave(ctx: AudioContext, duty: number): PeriodicWave {
 export class Tracker {
   private loop: Loop | null = null; private parsed: { p1: ReturnType<typeof parseChannel>; p2: ReturnType<typeof parseChannel>; wave: ReturnType<typeof parseChannel>; drums: string[] } | null = null;
   private step = 0; private nextTime = 0; private once = false; private onEnd?: () => void;
-  constructor(private ctx: AudioContext, private out: AudioNode) {}
-  play(loop: Loop | null, once = false, onEnd?: () => void) {
+  /** Every voice goes through this, so a loop's level is one number on the candidate rather than edits to its notes. */
+  private bus: GainNode;
+  constructor(private ctx: AudioContext, out: AudioNode) { this.bus = ctx.createGain(); this.bus.gain.value = 1; this.bus.connect(out); }
+  play(loop: Loop | null, once = false, onEnd?: () => void, gain = 1) {
+    this.bus.gain.value = gain;
     this.loop = loop; this.once = once; this.onEnd = onEnd; this.step = 0; this.nextTime = this.ctx.currentTime + 0.05;
     this.parsed = loop ? { p1: parseChannel(loop.p1), p2: parseChannel(loop.p2), wave: parseChannel(loop.wave), drums: loop.drums.trim().split(/\s+/) } : null;
   }
@@ -214,12 +217,12 @@ export class Tracker {
   private pulse(midi: number, t: number, dur: number, duty: number, vol: number) {
     const o = this.ctx.createOscillator(); o.setPeriodicWave(pulseWave(this.ctx, duty)); o.frequency.value = hz(midi);
     const g = this.ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.02); g.gain.setValueAtTime(vol, t + Math.max(0.03, dur * 0.6)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.98);
-    o.connect(g); g.connect(this.out); o.start(t); o.stop(t + dur + 0.02);
+    o.connect(g); g.connect(this.bus); o.start(t); o.stop(t + dur + 0.02);
   }
   private tri(midi: number, t: number, dur: number, vol: number) {
     const o = this.ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = hz(midi);
     const g = this.ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.01); g.gain.setValueAtTime(vol, t + Math.max(0.02, dur * 0.8)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(this.out); o.start(t); o.stop(t + dur + 0.02);
+    o.connect(g); g.connect(this.bus); o.start(t); o.stop(t + dur + 0.02);
   }
   private noiseBuf?: AudioBuffer;
   private drum(kind: string, t: number, v: number) {
@@ -229,25 +232,30 @@ export class Tracker {
     const dur = kind === 'k' ? 0.1 : kind === 's' ? 0.1 : 0.03; const vol = (kind === 'k' ? 0.16 : kind === 's' ? 0.06 : 0.025) * v;
     f.type = kind === 'h' ? 'highpass' : 'lowpass'; f.frequency.value = kind === 'k' ? 140 : kind === 's' ? 900 : 7000;
     g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    s.connect(f); f.connect(g); g.connect(this.out); s.start(t); s.stop(t + dur + 0.01);
-    if (kind === 'k') { const o = this.ctx.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.1); const og = this.ctx.createGain(); og.gain.setValueAtTime(0.18 * v, t); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.12); o.connect(og); og.connect(this.out); o.start(t); o.stop(t + 0.14); }
+    s.connect(f); f.connect(g); g.connect(this.bus); s.start(t); s.stop(t + dur + 0.01);
+    if (kind === 'k') { const o = this.ctx.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.1); const og = this.ctx.createGain(); og.gain.setValueAtTime(0.18 * v, t); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.12); o.connect(og); og.connect(this.bus); o.start(t); o.stop(t + 0.14); }
   }
 }
 
 /* ---- music candidates per slot: two tracker readings, any hand-written arrangement, then the downloaded tracks ---- */
 import ogaJson from './oga_tracks.json';
+import trackerLevelsJson from './tracker_levels.json';
 export type MusicSlot = Exclude<LoopName, 'none'> | Stinger;
 export const MUSIC_SLOTS: MusicSlot[] = ['title', 'americas', 'mexico', 'europe', 'alps', 'africa', 'asia', 'himalaya', 'travel', 'action', 'outdoor', 'indoor', 'water', 'drone', 'cooking', 'coffee', 'credits', 'tetris', 'winSting', 'loseSting'];
 /** Slots whose list gets an extra hand-written arrangement beyond calm / melodic. */
 const EXTRA_TRACKER: Partial<Record<MusicSlot, { id: string; label: string; loop: Loop }[]>> = { tetris: [{ id: 'tetris.tracker.korobeiniki', label: 'tracker · Korobeiniki', loop: KOROBEINIKI }] };
-export type MusicCandidate = { id: string; label: string; kind: 'tracker'; loop: Loop } | { id: string; label: string; kind: 'file'; file: string; title: string; author: string; url: string; bytes: number; source?: string; licence?: string; lufs?: number; tp?: number };
+export type MusicCandidate = { id: string; label: string; kind: 'tracker'; loop: Loop; gain: number; rms?: number } | { id: string; label: string; kind: 'file'; file: string; title: string; author: string; url: string; bytes: number; source?: string; licence?: string; lufs?: number; tp?: number };
 const OGA = ogaJson as Record<string, { id: string; slug: string; title: string; author: string; url: string; file: string; bytes: number; source?: string; licence?: string; lufs?: number; tp?: number }[]>;
+/** Measured level of each tracker candidate on the music bus at unity, and the gain that brings it into the file band.
+ *  Generated by `node tools/measure_music.mjs` + `node tools/gen_tracker_gain.mjs`; never hand-edited. */
+export const TRACKER_LEVELS = trackerLevelsJson as Record<string, { rms: number; gain: number }>;
+export const trackerGain = (id: string) => TRACKER_LEVELS[id]?.gain ?? 1;
 export const MUSIC_CANDIDATES: Record<MusicSlot, MusicCandidate[]> = Object.fromEntries(MUSIC_SLOTS.map(s => {
   const base: Loop = (s in LOOPS ? LOOPS[s as keyof typeof LOOPS] : STINGERS[s as Stinger]);
   const list: MusicCandidate[] = [
-    { id: `${s}.tracker.calm`, label: 'tracker · calm', kind: 'tracker', loop: calmOf(base) },
-    { id: `${s}.tracker.melodic`, label: 'tracker · melodic', kind: 'tracker', loop: base },
-    ...(EXTRA_TRACKER[s] ?? []).map(e => ({ id: e.id, label: e.label, kind: 'tracker' as const, loop: e.loop })),
+    { id: `${s}.tracker.calm`, label: 'tracker · calm', kind: 'tracker', loop: calmOf(base), gain: trackerGain(`${s}.tracker.calm`), rms: TRACKER_LEVELS[`${s}.tracker.calm`]?.rms },
+    { id: `${s}.tracker.melodic`, label: 'tracker · melodic', kind: 'tracker', loop: base, gain: trackerGain(`${s}.tracker.melodic`), rms: TRACKER_LEVELS[`${s}.tracker.melodic`]?.rms },
+    ...(EXTRA_TRACKER[s] ?? []).map(e => ({ id: e.id, label: e.label, kind: 'tracker' as const, loop: e.loop, gain: trackerGain(e.id), rms: TRACKER_LEVELS[e.id]?.rms })),
     ...(OGA[s] ?? []).map(o => ({ id: o.id, label: `${o.title} · ${o.author}`, kind: 'file' as const, file: o.file, title: o.title, author: o.author, url: o.url, bytes: o.bytes, source: o.source, licence: o.licence, lufs: o.lufs, tp: o.tp })),
   ];
   return [s, list];
