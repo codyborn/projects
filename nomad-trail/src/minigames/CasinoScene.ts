@@ -31,7 +31,7 @@ export class CasinoScene extends Phaser.Scene {
     this.frame = new MinigameFrame(this, this.launch, `${this.launch.payload?.cityName ?? 'Las Vegas'} casino`); this.cameras.main.setBackgroundColor(PAL.night0);
     this.frame.capSec = 100000; this.frame.scoreNow = () => scoreFor(this.bank - this.start);
     this.buildSymbols(); this.buildFloor(); this.frame.hud();
-    this.frame.intro(`A casino on the way back from the Strip. Your bankroll is $${this.start}. Roulette pays 1:1 or 35:1; the slots take $25 a pull. Twelve rounds, or walk away whenever you like. The house always has an edge.`, () => this.setMsg('Place a bet.'), { height: 300 });
+    this.frame.intro(`A casino on the way back from the Strip. You are playing with your own $${this.start}. Walk away whenever you like.`, () => this.setMsg('Place a bet.'), { height: 300 });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.tabs = []; this.reelImgs = []; });
   }
   update(_t: number, dt: number) { this.frame.update(dt); }
@@ -79,15 +79,13 @@ export class CasinoScene extends Phaser.Scene {
     spot('red', 226, 128, 72, 40, PAL.red, 'RED'); spot('black', 302, 128, 72, 40, PAL.ink, 'BLACK'); spot('odd', 226, 172, 72, 40, PAL.grass1, 'ODD'); spot('even', 302, 172, 72, 40, PAL.grass1, 'EVEN');
     spot('number', 264, 222, 148, 44, PAL.night3, `NUMBER ${this.pick}  ·  35:1`);
     // chips
-    this.L(txt(this, 26, 276, 'CHIP', 8, PAL.gray1, { align: 'left' }).setOrigin(0, 0.5));
-    CHIP_SIZES.forEach((c, i) => { const x = 70 + i * 62; const r = this.L(this.add_rect(x, 276, 54, 26, PAL.night3)); r.setInteractive({ useHandCursor: true }); r.on('pointerdown', () => this.setChip(i)); this.L(txt(this, x, 276, `$${c}`, 9, PAL.white, { align: 'center' }).setOrigin(0.5)); this.chipRects.push(r); });
+    CHIP_SIZES.forEach((c, i) => { const x = 46 + i * 62; const r = this.L(this.add_rect(x, 276, 54, 26, PAL.night3)); r.setInteractive({ useHandCursor: true }); r.on('pointerdown', () => this.setChip(i)); this.L(txt(this, x, 276, `$${c}`, 9, PAL.white, { align: 'center' }).setOrigin(0.5)); this.chipRects.push(r); });
     const clear = this.L(this.add_rect(300, 276, 90, 26, PAL.dusk0)); clear.setInteractive({ useHandCursor: true }); clear.on('pointerdown', () => { if (!this.busy) { this.bets = []; this.refreshBets(); } }); this.L(txt(this, 300, 276, 'CLEAR', 9, PAL.white, { align: 'center' }).setOrigin(0.5));
     this.setChip(this.chip);
     // history + spin
     this.lastLbl = this.L(txt(this, W / 2, 306, this.history.length ? 'last: ' + this.history.slice(-8).join('  ') : 'no spins yet', 8, PAL.gray1, { align: 'center' }).setOrigin(0.5));
     const spin = this.L(this.add_rect(W / 2, 348, 200, 44, PAL.sun0)); spin.setInteractive({ useHandCursor: true }); spin.on('pointerdown', () => this.spin());
     this.L(txt(this, W / 2, 348, 'SPIN', 14, PAL.white, { align: 'center' }).setOrigin(0.5));
-    this.L(txt(this, W / 2, 392, 'even money 1:1 · number 35:1 · single 0', 8, PAL.gray1, { align: 'center' }).setOrigin(0.5));
     this.refreshBets();
   }
   private add_rect(x: number, y: number, w: number, h: number, fill: number) { return new Phaser.GameObjects.Rectangle(this, x, y, w, h, fill).setStrokeStyle(2, PAL.ink); }
