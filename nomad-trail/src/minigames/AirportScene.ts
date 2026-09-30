@@ -15,20 +15,20 @@ import { genFork, genDoors } from './gateForks';
  * the new corridor fades in, no obstacles for 1.5 s); the
  * middle lane runs into the wall (PICK A SIDE). A wrong side turns into a dead end: WRONG WAY, U-turn, 3 s lost, the fork repeats.
  * Five forks narrow the gate down (letters → letter → numbers → numbers → the door itself across the three lanes).
- * Payload: { gate?: string } like 'B56'. Boarding closes 60 s after READY. Score: 100 − 8 per wrong turn − 1 per collision (−4 each beyond two).
+ * Payload: { gate?: string } like 'B56'. Boarding closes 87 s after READY. Score: 100 − 8 per wrong turn − 1 per collision (−4 each beyond two).
  */
 type ObKind = 'traveller' | 'bag' | 'rope' | 'cart' | 'walkway';
 interface Ob { kind: ObKind; lane: number; z: number; hit?: boolean; used?: boolean; /** elapsed at spawn; reached = passed the runner's depth (pop-in metric) */ spawnAt: number; reached?: boolean; }
 interface Fork { z: number; hold: number; left: string; right: string; correct: number; doors?: string[]; resolved?: boolean; }
 const HORIZON = 210, FLOOR = 560, VX = W / 2;
 const LANE_NEAR = 96, LANE_FAR = 12;
-const BOARDING_SEC = 60, FORK_HOLD = 2.0, FORK_APPROACH = 0.3, FORK_GAP = 2.0, FIRST_FORK = 2.0, TURN_SEC = 0.9, CLEAR_AFTER_TURN = 1.5;
+const BOARDING_SEC = 87, FORK_HOLD = 2.0, FORK_APPROACH = 0.3, FORK_GAP = 5.2, FIRST_FORK = 3.0, TURN_SEC = 0.9, CLEAR_AFTER_TURN = 1.5;   // round 10: ~45% longer course (5.2 s of corridor between walls) with the deadline scaled to match, so difficulty per second is unchanged
 const BASE_SPEED = 0.375;   // corridor depth per second (25% slower than round 9)
 
 export class AirportScene extends Phaser.Scene {
   private frame!: MinigameFrame; private launch!: MinigameLaunch; private g!: Phaser.GameObjects.Graphics; private meter!: Meter;
   private gateLetter = 'B'; private gateNum = 56;
-  lane = 1; private laneX = 0; private jumpT = -1; private speed = 0.5; private boost = 0; private dist = 0; private elapsed = 0;
+  lane = 1; private laneX = 0; private jumpT = -1; private slideT = -1; private speed = 0.5; private boost = 0; private dist = 0; private elapsed = 0;
   private obstacles: Ob[] = []; private fork?: Fork; private stage = 0; private nextForkAt = FIRST_FORK; private nextObAt = 1.0;
   /** harness: the shortest time any obstacle took from spawning to reaching the runner (pop-in check, should stay ≥ 1.4 s) */ popMin = Infinity;
   private wrong = 0; private collisions = 0; private penalty = 0; private stunned = 0; private iframes = 0; private ended = false; private uturn = 0;
@@ -43,7 +43,7 @@ export class AirportScene extends Phaser.Scene {
     this.launch = normalizeLaunch(data);
     const gate = String(this.launch.payload?.gate ?? 'B56').toUpperCase(); const m = /^([A-F])(\d{1,2})$/.exec(gate);
     this.gateLetter = m ? m[1] : 'B'; this.gateNum = m ? clamp(parseInt(m[2], 10), 1, 99) : 56;
-    this.lane = 1; this.jumpT = -1; this.dist = 0; this.elapsed = 0; this.obstacles = []; this.fork = undefined; this.stage = 0; this.nextForkAt = FIRST_FORK; this.nextObAt = 1.0;
+    this.lane = 1; this.jumpT = -1; this.slideT = -1; this.dist = 0; this.elapsed = 0; this.obstacles = []; this.fork = undefined; this.stage = 0; this.nextForkAt = FIRST_FORK; this.nextObAt = 1.0;
     this.wrong = 0; this.collisions = 0; this.penalty = 0; this.stunned = 0; this.iframes = 0; this.ended = false; this.uturn = 0; this.boost = 0; this.runT = 0;
     this.waiting = true; this.turning = undefined; this.deadEnd = -1; this.ox = 0; this.card = []; this.popMin = Infinity;
   }
@@ -77,7 +77,7 @@ export class AirportScene extends Phaser.Scene {
     const row = (y: number, draw: () => void, label: string) => { ic.fillStyle(PAL.night3).fillRect(34, y - 20, 44, 40); draw(); add(txt(s, 90, y, label, 10, PAL.white, 'left').setDepth(902)); };
     // swipe left / right
     row(230, () => { ic.fillStyle(PAL.neon).fillTriangle(40, 230, 50, 222, 50, 238).fillTriangle(72, 230, 62, 222, 62, 238).fillRect(50, 228, 12, 4); }, 'SWIPE LEFT / RIGHT\nchange lane, dodge people');
-    row(288, () => { ic.fillStyle(PAL.neon).fillTriangle(56, 270, 48, 282, 64, 282).fillRect(54, 282, 4, 16); }, 'SWIPE UP\njump bags and ropes');
+    row(288, () => { ic.fillStyle(PAL.neon).fillTriangle(56, 270, 48, 282, 64, 282).fillRect(54, 282, 4, 16); ic.fillStyle(PAL.sun2).fillTriangle(56, 302, 48, 290, 64, 290); }, 'SWIPE UP to jump bags and ropes\nSWIPE DOWN to slide under a rope');
     row(346, () => { ic.fillStyle(PAL.sun2).fillRect(40, 336, 14, 8).fillRect(58, 336, 14, 8); ic.fillStyle(PAL.gray2).fillRect(55, 344, 2, 14); ic.fillStyle(PAL.ink).fillRect(42, 338, 10, 4).fillRect(60, 338, 10, 4); }, 'AT A WALL: READ THE SIGNS\nleft or right lane = you turn\nmiddle = you hit the wall');
     add(txt(s, W / 2, 404, `Follow the ranges that contain ${this.gate}.\nA–C or D–F, then the letter, then the numbers.`, 9, PAL.gray2).setDepth(902));
     add(txt(s, W / 2, 440, `Boarding closes in ${BOARDING_SEC} seconds of running.`, 9, PAL.sun1).setDepth(902));
@@ -96,14 +96,16 @@ export class AirportScene extends Phaser.Scene {
   // ---------- input ----------
   private setupInput() {
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { this.sx = p.x; this.sy = p.y; this.swiped = false; });
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => { if (!p.isDown || this.swiped) return; const dx = p.x - this.sx, dy = p.y - this.sy; if (Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy)) { this.swiped = true; this.move(dx > 0 ? 1 : -1); } else if (dy < -28) { this.swiped = true; this.jump(); } });
-    this.input.on('pointerup', (p: Phaser.Input.Pointer) => { if (this.swiped) return; const dx = p.x - this.sx, dy = p.y - this.sy; if (Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy)) return this.move(dx > 0 ? 1 : -1); if (dy < -28) return this.jump(); if (p.x < W / 3) this.move(-1); else if (p.x > (2 * W) / 3) this.move(1); else this.jump(); });
-    const kb = this.input.keyboard; kb?.on('keydown-LEFT', () => this.move(-1)); kb?.on('keydown-RIGHT', () => this.move(1)); kb?.on('keydown-UP', () => this.jump()); kb?.on('keydown-SPACE', () => this.jump());
+    this.input.on('pointermove', (p: Phaser.Input.Pointer) => { if (!p.isDown || this.swiped) return; const dx = p.x - this.sx, dy = p.y - this.sy; if (Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy)) { this.swiped = true; this.move(dx > 0 ? 1 : -1); } else if (dy > 28) { this.swiped = true; this.slide(); } else if (dy < -28) { this.swiped = true; this.jump(); } });
+    this.input.on('pointerup', (p: Phaser.Input.Pointer) => { if (this.swiped) return; const dx = p.x - this.sx, dy = p.y - this.sy; if (Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy)) return this.move(dx > 0 ? 1 : -1); if (dy > 28) return this.slide(); if (dy < -28) return this.jump(); if (p.x < W / 3) this.move(-1); else if (p.x > (2 * W) / 3) this.move(1); else this.jump(); });
+    const kb = this.input.keyboard; kb?.on('keydown-LEFT', () => this.move(-1)); kb?.on('keydown-RIGHT', () => this.move(1)); kb?.on('keydown-UP', () => this.jump()); kb?.on('keydown-SPACE', () => this.jump()); kb?.on('keydown-DOWN', () => this.slide());
   }
   private busy() { return this.waiting || !this.frame.active || this.ended || this.uturn > 0 || !!this.turning || this.deadEnd >= 0; }
   private act(fn: () => void) { if (this.busy()) return; if (this.frame.lag > 0) this.time.delayedCall(this.frame.lag, fn); else fn(); }
   move(dir: number) { this.act(() => { this.lane = clamp(this.lane + dir, 0, 2); }); }
-  jump() { this.act(() => { if (this.jumpT < 0) this.jumpT = 0; }); }
+  jump() { this.act(() => { if (this.jumpT < 0 && this.slideT < 0) this.jumpT = 0; }); }
+  /** Slide under a rope barrier (0.5 s). */
+  slide() { this.act(() => { if (this.jumpT < 0 && this.slideT < 0) this.slideT = 0; }); }
   /** Harness hint: the lane to be in and whether to jump right now, for a scripted perfect run. */
   hint(): { lane: number; jump: boolean } {
     const f = this.fork; const live = this.obstacles.filter(o => !o.hit && !o.used && o.z < 0.34);
@@ -136,7 +138,7 @@ export class AirportScene extends Phaser.Scene {
     f.resolved = true;
     if (f.doors) { if (this.lane === f.correct) this.forkPassed(); else this.wrongWay(false); return; }
     if (this.lane === 1) { this.wrongWay(false, 'PICK A SIDE'); return; }
-    const ok = this.lane === f.correct; this.turning = { dir: this.lane === 0 ? -1 : 1, t: 0, ok, wall: f }; this.obstacles = []; this.fork = undefined; this.runner.setFrame(0);
+    const ok = this.lane === f.correct; this.turning = { dir: this.lane === 0 ? -1 : 1, t: 0, ok, wall: f }; this.obstacles = []; this.fork = undefined; this.runner.setFrame(0); this.jumpT = -1; this.slideT = -1;
   }
   private forkPassed() {
     this.stage++; this.frame.setProgress(`fork ${Math.min(this.stage, 5)}/5`); this.frame.flash(PAL.neon, 40); Audio.playSfx('confirm');
@@ -179,6 +181,7 @@ export class AirportScene extends Phaser.Scene {
     this.dist += v * dt; if (v > 0 && this.frame.active) Audio.playSfx('step', 520);
     if (this.deadEnd >= 0) { this.deadEnd -= v * 1.4 * dt; if (this.deadEnd <= 0.04) this.wrongWay(true); this.draw(); return; }
     if (this.jumpT >= 0) { this.jumpT += dt / 0.6; if (this.jumpT >= 1) this.jumpT = -1; }
+    if (this.slideT >= 0) { this.slideT += dt / 0.5; if (this.slideT >= 1) this.slideT = -1; }
     // spawn: a fork wall appears far ahead and holds at the horizon so the signs can be read, then approaches
     if (!this.fork && this.elapsed >= this.nextForkAt && this.stage < 5) this.fork = this.makeFork();
     // obstacles always spawn at the horizon (never mid-corridor, never behind an approaching wall), drawn at 30% size so they are visible from the first frame.
@@ -203,16 +206,21 @@ export class AirportScene extends Phaser.Scene {
     for (const o of this.obstacles) {
       if (o.z < 0.07 && o.z > -0.02 && o.lane === this.lane && !o.hit && !o.used) {
         if (o.kind === 'walkway') { o.used = true; this.boost = 1.8; this.frame.flash(PAL.neon, 30); Audio.playSfx('powerup'); this.say('MOVING WALKWAY', PAL.neon); }
-        else if ((o.kind === 'bag' || o.kind === 'rope') && airborne) { /* cleared */ }
+        else if ((o.kind === 'bag' || o.kind === 'rope') && airborne) { /* jumped */ }
+        else if (o.kind === 'rope' && this.slideT >= 0.1 && this.slideT < 0.85) { /* slid under the tape */ }
         else if (this.iframes <= 0) { o.hit = true; this.collisions++; this.penalty += 1.5; this.stunned = 0.7; this.iframes = 1; Audio.playSfx('hurt'); this.frame.shake(120, 0.005); this.say(o.kind === 'traveller' ? 'SORRY!' : o.kind === 'cart' ? 'CLEANING CART' : 'OOF', PAL.sun1); }
       }
     }
     this.obstacles = this.obstacles.filter(o => o.z > -0.15);
     if (this.fork && !this.fork.resolved && this.fork.z <= 0.03) this.reachFork(this.fork);
     // runner
-    this.runT += dt * (this.stunned > 0 ? 6 : 12); const fr = this.jumpT >= 0 ? 3 : Math.floor(this.runT) % 3; this.runner.setFrame(fr);
+    // the run cycle: four frames of alternating legs and a swinging arm, cadence tied to the corridor speed (faster on a walkway boost, slower when stunned);
+    // it holds on the jump frame while airborne and the slide frame while sliding, and picks up again on landing.
+    const cadence = 7.5 * (v / this.speed) * (this.stunned > 0 ? 0.55 : 1); this.runT += dt * cadence;
+    const cyc = Math.floor(this.runT) % 4; const fr = this.jumpT >= 0 ? 4 : this.slideT >= 0 ? 5 : cyc; this.runner.setFrame(fr);
     const tx = this.laneScreenX(this.lane, 0); this.laneX += (tx - this.laneX) * Math.min(1, dt * 14);
-    const jy = this.jumpT >= 0 ? -Math.sin(this.jumpT * Math.PI) * 64 : 0; this.runner.setPosition(this.laneX, FLOOR - 6 + jy);
+    const bob = this.jumpT >= 0 || this.slideT >= 0 ? 0 : (cyc % 2 === 1 ? -3 : 0);   // a slight vertical bob on the passing frames
+    const jy = this.jumpT >= 0 ? -Math.sin(this.jumpT * Math.PI) * 64 : 0; this.runner.setPosition(this.laneX, FLOOR - 6 + jy + bob);
     this.draw();
   }
 
@@ -295,14 +303,28 @@ export class AirportScene extends Phaser.Scene {
     const bw = Math.max(110, 120 * s), bh = 34, bx = vx - bw / 2, by = yC + (yF - yC) * 0.35; g.fillStyle(PAL.ink).fillRect(bx - 2, by - 2, bw + 4, bh + 4); g.fillStyle(PAL.red).fillRect(bx, by, bw, bh);
     this.signM.setText('NO EXIT').setPosition(vx, by + bh / 2).setScale(clamp(0.75 + 0.25 * (1 - z), 0.75, 1)).setColor('#f4f1ea').setVisible(true);
   }
+  /** The runner seen from behind, dragging a carry-on: four run frames (legs alternating, the free arm swinging), a jump and a slide. 14 x 14, scaled 3x. */
   private buildRunner() {
     const map: Record<string, number> = { h: PAL.earth3, k: PAL.ink, o: PAL.sun0, b: PAL.night3, s: PAL.sea1, w: PAL.white };
-    const A = ['....hhhh......', '....hkhk......', '....hhhh......', '.....oo...ss..', '...oooooo.ss..', '..o.oooo.oss..', '..o.oooo.o.k..', '....bbbb...k..', '....bbbb..sss.', '...bb..bb.sss.', '...bb..bb.sss.', '..bb....bbsss.', '..k......k.kk.', '..............'];
-    const B = ['....hhhh......', '....hkhk......', '....hhhh......', '.....oo...ss..', '...oooooo.ss..', '..o.oooo.oss..', '..o.oooo.o.k..', '....bbbb...k..', '....bbbb..sss.', '....bbbb..sss.', '....bbbb..sss.', '....bb.b..sss.', '....k..k...kk.', '..............'];
-    const C = ['....hhhh......', '....hkhk......', '....hhhh......', '.....oo...ss..', '...oooooo.ss..', '..o.oooo.oss..', '..o.oooo.o.k..', '....bbbb...k..', '....bbbb..sss.', '...bb.bb..sss.', '..bb...bb.sss.', '.bb.....bbsss.', '.k.......k.kk.', '..............'];
+    const HEAD = ['....hhhh......', '....hkhk......', '....hhhh......', '.....oo...ss..'];
+    // torso rows 4-7; the left arm swings between three heights, the right arm stays on the bag handle
+    const torso = (arm: 'fwd' | 'mid' | 'back') => [
+      arm === 'fwd' ? '..oooooooo.ss.' : '...oooooo.ss..',
+      arm === 'fwd' ? '..o.oooo.oss..' : arm === 'mid' ? '..o.oooo.oss..' : '....oooo.oss..',
+      arm === 'back' ? '..o.oooo.o.k..' : arm === 'mid' ? '..o.oooo.o.k..' : '....oooo.o.k..',
+      arm === 'back' ? '..o.bbbb...k..' : '....bbbb...k..'];
+    const LEGS = {
+      splitL: ['....bbbb..sss.', '...bb..bb.sss.', '...bb..bb.sss.', '..bb....bbsss.', '..k......k.kk.'],
+      pass:   ['....bbbb..sss.', '....bbbb..sss.', '....bbbb..sss.', '....bb.b..sss.', '....k..k...kk.'],
+      splitR: ['....bbbb..sss.', '...bb..bb.sss.', '..bb...bb.sss.', '.bb.....bbsss.', '.k.......k.kk.'],
+      pass2:  ['....bbbb..sss.', '....bbbb..sss.', '...bbbb...sss.', '...bb.bb..sss.', '...k...k...kk.'],
+    };
+    const runFrame = (arm: 'fwd' | 'mid' | 'back', legs: keyof typeof LEGS) => [...HEAD, ...torso(arm), ...LEGS[legs]].slice(0, 14);
+    const R0 = runFrame('fwd', 'splitL'), R1 = runFrame('mid', 'pass'), R2 = runFrame('back', 'splitR'), R3 = runFrame('mid', 'pass2');
     const J = ['....hhhh......', '....hkhk......', '....hhhh......', 'o....oo...ss..', '.oooooooo.ss..', '....oooo..ss..', '....oooo...k..', '....bbbb...k..', '...bbbbbb.sss.', '..bb....bbsss.', '.bb......bsss.', '.k........k...', '..............', '..............'];
+    const S = ['..............', '..............', '..............', '..............', '....hhhh...ss.', '....hkhk...ss.', '..ooooooo..ss.', '.o.ooooo...k..', '.o.bbbbbb.sss.', '...bbbbbbbsss.', '..bbb...bbsss.', '..k.......k.k.', '..............', '..............'];   // slide: tucked low, legs forward
     const key = 'gd_run'; if (this.textures.exists(key)) return;
-    const frames = [A, B, C, J]; const fw = 14, fh = 14; const g = this.add.graphics();
+    const frames = [R0, R1, R2, R3, J, S]; const fw = 14, fh = 14; const g = this.add.graphics();
     frames.forEach((rows, fi) => rows.forEach((r, y) => [...r].forEach((ch, x) => { if (ch !== '.' && map[ch] !== undefined) g.fillStyle(map[ch]).fillRect(fi * fw + x, y, 1, 1); })));
     g.generateTexture(key, fw * frames.length, fh); g.destroy();
     const tex = this.textures.get(key); for (let i = 0; i < frames.length; i++) tex.add(i, 0, i * fw, 0, fw, fh);
