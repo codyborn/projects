@@ -122,7 +122,8 @@ def export_screens(out):
     out += ['## Screens', '',
             'Copy that lives in the code: buttons, cards, toasts, mini-game instructions, the lines the engine writes into the log. '
             'The numbers are positions in the file, so **do not add, remove or reorder entries** — edit the text after the colon and nothing else. '
-            '`${...}` and `{braces}` are filled in by the game; keep them, spelling and all. An import that finds a file changed underneath it skips that file and says so.', '']
+            '`${...}` and `{braces}` are filled in by the game; keep them, spelling and all. An import that finds a file changed underneath it skips that file and says so. '
+            'Two things are deliberately missing: the audio credits (a CC-BY licence obliges us to name the author exactly) and dev-only text.', '']
     for rel in src_files():
         _code, hits = screen_strings(rel)
         if not hits: continue
