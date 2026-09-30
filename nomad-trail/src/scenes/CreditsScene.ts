@@ -3,6 +3,7 @@ import { Audio } from '../audio/synth';
 import { PAL, txt } from '../ui/theme';
 import { getRun, Data } from '../ui/simBridge';
 import creditsJson from '../data/credits.json';
+import { AUDIO_CREDITS } from '../audio/synth';
 
 /** One line per event: the display title and where it really happened to Cody. */
 type Credit = { title: string; where: string };
@@ -16,7 +17,7 @@ export class CreditsScene extends Phaser.Scene {
   constructor() { super(CreditsScene.KEY); }
   init(d?: { next?: string; back?: string; onClose?: () => void }) { this.nextKey = d?.next ?? d?.back; this.onClose = d?.onClose; this.done = false; }
   create() {
-    this.cameras.main.setBackgroundColor(PAL.night0); Audio.playLoop('title');
+    this.cameras.main.setBackgroundColor(PAL.night0); Audio.playLoop('credits');
     const run = getRun(this);
     const fired = run?.eventsFired ?? [];
     /* fall back to the log titles for saves made before eventsFired existed */
@@ -32,7 +33,11 @@ export class CreditsScene extends Phaser.Scene {
       add(txt(this, W / 2, y, r.title.toUpperCase(), 10, PAL.white, { align: 'center' }).setOrigin(0.5, 0)); y += 18;
       add(txt(this, W / 2, y, r.where, 10, PAL.neon, { align: 'center', wrap: 300 }).setOrigin(0.5, 0)); y += 44;
     }
-    y += 20; add(txt(this, W / 2, y, 'The Nomad Trail is a true story, mostly.', 8, PAL.gray1).setOrigin(0.5, 0)); y += 40;
+    y += 20; add(txt(this, W / 2, y, 'The Nomad Trail is a true story, mostly.', 8, PAL.gray1).setOrigin(0.5, 0)); y += 34;
+    /* CC-BY requires the credit where the work is used, so the recorded jet and wind say their names here */
+    add(txt(this, W / 2, y, 'MUSIC AND SOUND', 9, PAL.white).setOrigin(0.5, 0)); y += 16;
+    for (const line of AUDIO_CREDITS) { add(txt(this, W / 2, y, line, 8, PAL.gray2, { align: 'center', wrap: 300 }).setOrigin(0.5, 0)); y += 14; }
+    y += 26;
     this.endY = y;   /* scroll until the last line has passed the middle of the screen */
     this.add.rectangle(W / 2, H - 14, W, 28, PAL.night0).setDepth(4);   /* a solid band so the rolling text passes behind the hint */
     const hint = txt(this, W / 2, H - 14, 'tap to skip', 8, PAL.gray0).setOrigin(0.5).setDepth(5); this.tweens.add({ targets: hint, alpha: 0.3, yoyo: true, repeat: -1, duration: 800 });

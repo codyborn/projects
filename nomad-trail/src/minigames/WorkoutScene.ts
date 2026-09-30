@@ -32,7 +32,7 @@ export class WorkoutScene extends Phaser.Scene {
   }
 
   create() {
-    this.frame = new MinigameFrame(this, this.launch, TITLES[this.activity] || 'Workout'); if (OUTDOOR_ACTIVITIES.has(this.activity)) this.frame.musicLoop = 'outdoor';   /* open-air workouts get the outdoor loop */
+    this.frame = new MinigameFrame(this, this.launch, TITLES[this.activity] || 'Workout'); this.frame.musicLoop = OUTDOOR_ACTIVITIES.has(this.activity) ? 'outdoor' : 'indoor';   /* open-air workouts get the outdoor loop, hotel-room ones the indoor loop */
     this.cameras.main.setBackgroundColor(PAL.night1);
     this.g = this.add.graphics().setDepth(3);
     this.meter = new Meter(this, 40, 600, W - 80, 8);
@@ -50,6 +50,7 @@ export class WorkoutScene extends Phaser.Scene {
     // ---- the session: one game, or three different ones for the hotel room and the hike
     const forced = ((this.launch.payload || {}) as Partial<WorkoutPayload>).plan?.filter(id => MICRO_REGISTRY[id]);
     this.microIds = forced?.length ? forced : pickSession(this.activity, this.rng, ((this.launch.payload || {}) as any).city);
+    if (this.microIds.includes('pinnacle')) this.frame.ambience = 'wind';   /* the ridge has weather */
     this.frame.capSec = this.microIds.length > 1 ? 36 : 30;
     this.athlete = new Athlete(this, W / 2, 330); this.athlete.show(false);
     this.frame.scoreNow = () => this.sessionScore();

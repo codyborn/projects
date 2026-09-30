@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { LoopName } from '../audio/tracker';
-import { Audio } from '../audio/synth';
+import { Audio, type AmbienceName } from '../audio/synth';
 import { PAL, hex } from '../core/palette';
 import { GAME_W, GAME_H, type MinigameLaunch, type MinigameResult } from '../core/types';
 
@@ -67,6 +67,8 @@ export class MinigameFrame {
   readonly hard: number;
   /** which music slot plays during this game: 'action' by default, 'outdoor' for the open-air workouts */
   musicLoop: LoopName = 'action';
+  /** an optional looping bed under this game (the wind on the ridge and over the water) */
+  ambience: AmbienceName = 'none';
   /** extra fields a game wants on its MinigameResult (the casino sets { money: net }) */
   resultExtra?: Partial<MinigameResult>;
   /** multiplier for timing windows / target sizes (1 = generous, ~0.4 = tight) */
@@ -110,7 +112,7 @@ export class MinigameFrame {
     const s = this.scene; const add = (o: Phaser.GameObjects.GameObject) => { this.introObjs.push(o); return o; };
     let starting = false;
     const start = () => {
-      if (this.active || this.finished || starting) return; starting = true; Audio.playSfx('confirm'); Audio.playLoop(this.musicLoop);
+      if (this.active || this.finished || starting) return; starting = true; Audio.playSfx('confirm'); Audio.playLoop(this.musicLoop); if (this.ambience !== 'none') { Audio.playAmbience(this.ambience); s.events.once(Phaser.Scenes.Events.SHUTDOWN, () => Audio.playAmbience('none')); }
       this.introObjs.forEach(o => o.destroy()); this.introObjs = [];
       /* the READY tap must not leak into play: wait for the finger to lift, then a short beat, before the game goes live */
       const begin = () => s.time.delayedCall(200, () => {

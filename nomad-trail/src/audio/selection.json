@@ -39,7 +39,7 @@
   "fail": "fail.current",
   "lose": "lose.current",
   "chime": "chime.low",
-  "plane": "plane.current",
+  "plane": "plane.jet",
   "train": "train.low",
   "boarding": "boarding.current",
   "whistle": "whistle.current",
@@ -52,7 +52,7 @@
   "crack": "crack.current"
  },
  "music": {
-  "title": "title.oga.dreamtune",
+  "title": "title.oga.return-of-the-8bit-era",
   "americas": "americas.oga.8-bit-theme-moving-right-along",
   "mexico": "mexico.tracker.calm",
   "europe": "europe.oga.chiptune-medieval-the-bards-tale",
@@ -60,11 +60,18 @@
   "africa": "africa.oga.desert-theme-8bit-chiptune-theme",
   "asia": "asia.oga.chipnese",
   "himalaya": "himalaya.oga.fields-of-ice",
-  "travel": "travel.tracker.calm",
-  "action": "action.tracker.calm",
+  "travel": "travel.oga.best-game-console",
+  "action": "action.oga.my-8bit-hero",
   "outdoor": "outdoor.oga.8-bit-cave-loop",
   "winSting": "winSting.oga.8-bit-victory-loop",
-  "loseSting": "loseSting.tracker.calm"
+  "loseSting": "loseSting.tracker.calm",
+  "drone": "drone.oga.fun-with-my-8bit-game",
+  "water": "water.oga.game-8bit-on",
+  "cooking": "cooking.oga.console-of-my-dreams",
+  "coffee": "coffee.oga.retro-arcade-game-music",
+  "credits": "credits.oga.retro-8bit-happy",
+  "indoor": "indoor.oga.moms-workout-cd",
+  "tetris": "tetris.tracker.korobeiniki"
  },
  "gain": {
   "sfx": 0.35,

@@ -24,7 +24,7 @@ export class KiteScene extends Phaser.Scene {
     this.kiteA = 0; this.zoneC = 0.15; this.zoneTarget = 0.15; this.speed = 0; this.elapsed = 0; this.held = false; this.fingerX = W / 2; this.airborne = 0; this.hang = 0; this.airTotal = 0; this.clean = 0; this.wipeouts = 0; this.recover = 0; this.hop = 0; this.waveOff = 0; this.spray = []; this.waiting = true; this.card = []; this.gust = 0;
   }
   create() {
-    this.frame = new MinigameFrame(this, this.launch, 'Kiteboarding'); this.frame.musicLoop = 'outdoor'; this.frame.capSec = DUR + 1; this.cameras.main.setBackgroundColor(PAL.sky1);
+    this.frame = new MinigameFrame(this, this.launch, 'Kiteboarding'); this.frame.musicLoop = 'water'; this.frame.ambience = 'wind'; this.frame.capSec = DUR + 1; this.cameras.main.setBackgroundColor(PAL.sky1);
     this.g = this.add.graphics().setDepth(3); this.meter = new Meter(this, 40, 604, W - 80, 10, PAL.neon); this.zoneW = 0.3 * this.frame.window + 0.14;
     this.buildRider(); this.rider = this.add.sprite(W / 2, 470, 'kb_rider', 0).setOrigin(0.5, 1).setDepth(6).setScale(3);
     this.msg = txt(this, W / 2, 130, '', 14, PAL.white).setDepth(8);

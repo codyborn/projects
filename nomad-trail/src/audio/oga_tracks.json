@@ -1,13 +1,26 @@
 {
  "title": [
   {
+   "id": "title.oga.return-of-the-8bit-era",
+   "slug": "return-of-the-8bit-era",
+   "title": "The Return Of The 8-bit Era",
+   "author": "DJARTMUSIC",
+   "url": "https://pixabay.com/de/music/videospiele-the-return-of-the-8-bit-era-301292/",
+   "file": "audio/return-of-the-8bit-era.mp3",
+   "bytes": 360549,
+   "source": "Pixabay",
+   "licence": "Pixabay Content License"
+  },
+  {
    "id": "title.oga.dreamtune",
    "slug": "dreamtune",
    "title": "Dreamtune",
    "author": "Fupi",
    "url": "https://opengameart.org/content/dreamtune",
    "file": "audio/dreamtune.mp3",
-   "bytes": 353421
+   "bytes": 353421,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   },
   {
    "id": "title.oga.exploring-town",
@@ -16,7 +29,9 @@
    "author": "Spring Spring",
    "url": "https://opengameart.org/content/exploring-town",
    "file": "audio/exploring-town.mp3",
-   "bytes": 360549
+   "bytes": 360549,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   }
  ],
  "americas": [
@@ -27,7 +42,9 @@
    "author": "Wolfgang_",
    "url": "https://opengameart.org/content/8-bit-theme-moving-right-along",
    "file": "audio/8-bit-theme-moving-right-along.mp3",
-   "bytes": 256653
+   "bytes": 256653,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   },
   {
    "id": "americas.oga.free-run-8-bitish",
@@ -36,7 +53,9 @@
    "author": "TAD",
    "url": "https://opengameart.org/content/free-run-8-bitish",
    "file": "audio/free-run-8-bitish.mp3",
-   "bytes": 360549
+   "bytes": 360549,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   }
  ],
  "mexico": [
@@ -47,7 +66,9 @@
    "author": "Centurion_of_war",
    "url": "https://opengameart.org/content/dance-field",
    "file": "audio/dance-field.mp3",
-   "bytes": 329661
+   "bytes": 329661,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   },
   {
    "id": "mexico.oga.digital-bananas",
@@ -56,7 +77,9 @@
    "author": "Locomule",
    "url": "https://opengameart.org/content/digital-bananas",
    "file": "audio/digital-bananas.mp3",
-   "bytes": 280197
+   "bytes": 280197,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   }
  ],
  "europe": [
@@ -67,7 +90,9 @@
    "author": "RandomMind",
    "url": "https://opengameart.org/content/chiptune-medieval-the-bards-tale",
    "file": "audio/chiptune-medieval-the-bards-tale.mp3",
-   "bytes": 360549
+   "bytes": 360549,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   },
   {
    "id": "europe.oga.chiptune-medieval-the-old-tower-inn",
@@ -76,7 +101,9 @@
    "author": "RandomMind",
    "url": "https://opengameart.org/content/chiptune-medieval-the-old-tower-inn",
    "file": "audio/chiptune-medieval-the-old-tower-inn.mp3",
-   "bytes": 360549
+   "bytes": 360549,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   }
  ],
  "alps": [
@@ -87,7 +114,9 @@
    "author": "RandomMind",
    "url": "https://opengameart.org/content/chiptune-medieval-minstrel-dance",
    "file": "audio/chiptune-medieval-minstrel-dance.mp3",
-   "bytes": 360549
+   "bytes": 360549,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   },
   {
    "id": "alps.oga.chippy-melody-1",
@@ -96,7 +125,9 @@
    "author": "Centurion_of_war",
    "url": "https://opengameart.org/content/chippy-melody-1",
    "file": "audio/chippy-melody-1.mp3",
-   "bytes": 154269
+   "bytes": 154269,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   }
  ],
  "africa": [
@@ -107,7 +138,9 @@
    "author": "Wolfgang_",
    "url": "https://opengameart.org/content/desert-theme-8bit-chiptune-theme",
    "file": "audio/desert-theme-8bit-chiptune-theme.mp3",
-   "bytes": 238941
+   "bytes": 238941,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   },
   {
    "id": "africa.oga.egyptian-fortress-boss",
@@ -116,7 +149,9 @@
    "author": "Spring Spring",
    "url": "https://opengameart.org/content/egyptian-fortress-boss",
    "file": "audio/egyptian-fortress-boss.mp3",
-   "bytes": 360549
+   "bytes": 360549,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   }
  ],
  "asia": [
@@ -127,7 +162,9 @@
    "author": "Spring Spring",
    "url": "https://opengameart.org/content/chipnese",
    "file": "audio/chipnese.mp3",
-   "bytes": 360549
+   "bytes": 360549,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   },
   {
    "id": "asia.oga.ch-ay-na",
@@ -136,7 +173,9 @@
    "author": "Spring Spring",
    "url": "https://opengameart.org/content/ch-ay-na",
    "file": "audio/ch-ay-na.mp3",
-   "bytes": 352989
+   "bytes": 352989,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   }
  ],
  "himalaya": [
@@ -147,7 +186,9 @@
    "author": "Jonathan So",
    "url": "https://opengameart.org/content/fields-of-ice",
    "file": "audio/fields-of-ice.mp3",
-   "bytes": 360549
+   "bytes": 360549,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   },
   {
    "id": "himalaya.oga.8-bit-cave-loop",
@@ -156,10 +197,23 @@
    "author": "Wolfgang_",
    "url": "https://opengameart.org/content/8-bit-cave-loop",
    "file": "audio/8-bit-cave-loop.mp3",
-   "bytes": 360549
+   "bytes": 360549,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   }
  ],
  "travel": [
+  {
+   "id": "travel.oga.best-game-console",
+   "slug": "best-game-console",
+   "title": "Best Game Console",
+   "author": "DJARTMUSIC",
+   "url": "https://pixabay.com/de/music/videospiele-best-game-console-301284/",
+   "file": "audio/best-game-console.mp3",
+   "bytes": 360549,
+   "source": "Pixabay",
+   "licence": "Pixabay Content License"
+  },
   {
    "id": "travel.oga.catchy",
    "slug": "catchy",
@@ -167,7 +221,9 @@
    "author": "Spring Spring",
    "url": "https://opengameart.org/content/catchy",
    "file": "audio/catchy.mp3",
-   "bytes": 360549
+   "bytes": 360549,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   },
   {
    "id": "travel.oga.freddie-friday-loop",
@@ -176,10 +232,23 @@
    "author": "iamoneabe",
    "url": "https://opengameart.org/content/freddie-friday-loop",
    "file": "audio/freddie-friday-loop.mp3",
-   "bytes": 337005
+   "bytes": 337005,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   }
  ],
  "action": [
+  {
+   "id": "action.oga.my-8bit-hero",
+   "slug": "my-8bit-hero",
+   "title": "My 8-bit Hero",
+   "author": "DJARTMUSIC",
+   "url": "https://pixabay.com/de/music/videospiele-my-8-bit-hero-301280/",
+   "file": "audio/my-8bit-hero.mp3",
+   "bytes": 360549,
+   "source": "Pixabay",
+   "licence": "Pixabay Content License"
+  },
   {
    "id": "action.oga.8-bit-battle-loop",
    "slug": "8-bit-battle-loop",
@@ -187,7 +256,9 @@
    "author": "Wolfgang_",
    "url": "https://opengameart.org/content/8-bit-battle-loop",
    "file": "audio/8-bit-battle-loop.mp3",
-   "bytes": 160533
+   "bytes": 160533,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   },
   {
    "id": "action.oga.chiptune-battle-music",
@@ -196,7 +267,9 @@
    "author": "pmiller",
    "url": "https://opengameart.org/content/chiptune-battle-music",
    "file": "audio/chiptune-battle-music.mp3",
-   "bytes": 360549
+   "bytes": 360549,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   }
  ],
  "winSting": [
@@ -207,7 +280,9 @@
    "author": "Wolfgang_",
    "url": "https://opengameart.org/content/8-bit-victory-loop",
    "file": "audio/8-bit-victory-loop.mp3",
-   "bytes": 54477
+   "bytes": 54477,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   },
   {
    "id": "winSting.oga.bonus-round-8bit",
@@ -216,7 +291,9 @@
    "author": "Wolfgang_",
    "url": "https://opengameart.org/content/bonus-round-8bit",
    "file": "audio/bonus-round-8bit.mp3",
-   "bytes": 54477
+   "bytes": 54477,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   }
  ],
  "loseSting": [
@@ -227,7 +304,9 @@
    "author": "megupets",
    "url": "https://opengameart.org/content/continue",
    "file": "audio/continue.mp3",
-   "bytes": 54477
+   "bytes": 54477,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   },
   {
    "id": "loseSting.oga.drama-drama-drama",
@@ -236,7 +315,9 @@
    "author": "Spring Spring",
    "url": "https://opengameart.org/content/drama-drama-drama",
    "file": "audio/drama-drama-drama.mp3",
-   "bytes": 54477
+   "bytes": 54477,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   }
  ],
  "outdoor": [
@@ -247,7 +328,9 @@
    "author": "Wolfgang_",
    "url": "https://opengameart.org/content/8-bit-cave-loop",
    "file": "audio/8-bit-cave-loop.mp3",
-   "bytes": 360549
+   "bytes": 360549,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   },
   {
    "id": "outdoor.oga.free-run-8-bitish",
@@ -256,7 +339,87 @@
    "author": "TAD",
    "url": "https://opengameart.org/content/free-run-8-bitish",
    "file": "audio/free-run-8-bitish.mp3",
-   "bytes": 360549
+   "bytes": 360549,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
+  }
+ ],
+ "drone": [
+  {
+   "id": "drone.oga.fun-with-my-8bit-game",
+   "slug": "fun-with-my-8bit-game",
+   "title": "Fun With My 8-Bit Game",
+   "author": "DJARTMUSIC",
+   "url": "https://pixabay.com/de/music/videospiele-fun-with-my-8-bit-game-301278/",
+   "file": "audio/fun-with-my-8bit-game.mp3",
+   "bytes": 360549,
+   "source": "Pixabay",
+   "licence": "Pixabay Content License"
+  }
+ ],
+ "water": [
+  {
+   "id": "water.oga.game-8bit-on",
+   "slug": "game-8bit-on",
+   "title": "Game 8-Bit On",
+   "author": "moodmode",
+   "url": "https://pixabay.com/music/video-games-game-8-bit-on-278083/",
+   "file": "audio/game-8bit-on.mp3",
+   "bytes": 360549,
+   "source": "Pixabay",
+   "licence": "Pixabay Content License"
+  }
+ ],
+ "cooking": [
+  {
+   "id": "cooking.oga.console-of-my-dreams",
+   "slug": "console-of-my-dreams",
+   "title": "The Console Of My Dreams",
+   "author": "DJARTMUSIC",
+   "url": "https://pixabay.com/de/music/videospiele-the-console-of-my-dreams-301289/",
+   "file": "audio/console-of-my-dreams.mp3",
+   "bytes": 360549,
+   "source": "Pixabay",
+   "licence": "Pixabay Content License"
+  }
+ ],
+ "coffee": [
+  {
+   "id": "coffee.oga.retro-arcade-game-music",
+   "slug": "retro-arcade-game-music",
+   "title": "Retro Arcade Game Music",
+   "author": "Monume",
+   "url": "https://pixabay.com/music/video-games-retro-arcade-game-music-577980/",
+   "file": "audio/retro-arcade-game-music.mp3",
+   "bytes": 360549,
+   "source": "Pixabay",
+   "licence": "Pixabay Content License"
+  }
+ ],
+ "credits": [
+  {
+   "id": "credits.oga.retro-8bit-happy",
+   "slug": "retro-8bit-happy",
+   "title": "Retro 8bit happy videogame music",
+   "author": "NiKneT_Art",
+   "url": "https://pixabay.com/music/video-games-retro-8bit-happy-videogame-music-246631/",
+   "file": "audio/retro-8bit-happy.mp3",
+   "bytes": 360549,
+   "source": "Pixabay",
+   "licence": "Pixabay Content License"
+  }
+ ],
+ "indoor": [
+  {
+   "id": "indoor.oga.moms-workout-cd",
+   "slug": "moms-workout-cd",
+   "title": "Mom's Workout CD",
+   "author": "Zane Little Music",
+   "url": "https://opengameart.org/content/moms-workout-cd",
+   "file": "audio/moms-workout-cd.mp3",
+   "bytes": 360549,
+   "source": "OpenGameArt",
+   "licence": "CC0 1.0"
   }
  ]
 }

@@ -2,6 +2,7 @@
  * Exposes window.__soundlab: the catalog of candidates per slot and a tiny player that shares the game's audio code. */
 import { SFX_CANDIDATES, renderDef, type SfxName } from '../src/audio/sfx';
 import { MUSIC_CANDIDATES, MUSIC_SLOTS, Tracker, musicById, type MusicSlot } from '../src/audio/tracker';
+import { AMBIENCE } from '../src/audio/synth';
 import selection from '../src/audio/selection.json';
 
 const SFX_WHERE: Record<SfxName, string> = {
@@ -12,6 +13,7 @@ const SFX_WHERE: Record<SfxName, string> = {
   lose: 'top-out, run lost', chime: 'coffee morning', plane: 'flight departs', train: 'train departs', boarding: 'gate dash start', whistle: 'wind telegraph (Pinnacle)', tick: 'clock / metronome', pop: 'pack tile removed, blast', grind: 'coffee grinder', lock: 'pack tile placed, piece locks', line: 'line clear', thunk: 'clean wood split', crack: 'glancing chop',
 };
 const MUSIC_WHERE: Record<MusicSlot, string> = {
+  outdoor: 'open-air workouts: climbing, ferrata, hikes, the Pinnacle', indoor: 'hotel-room workouts, bands, yoga', water: 'Scuba and Kiteboarding', drone: 'drone flights', cooking: 'the cooking game', coffee: 'the coffee morning scene', credits: 'the credits roll', tetris: 'Pack-Tris',
   title: 'title screen, credits roll', americas: 'North + South American cities', mexico: 'Mexico, Roatán', europe: 'European cities', alps: 'Innsbruck, Hallstatt, Munich', africa: 'Casablanca, Dakhla', asia: 'Tokyo, Seoul, Bangkok, Hong Kong', himalaya: 'Kathmandu, Minakami',
   travel: 'the travel transition', action: 'indoor mini-games (cooking, laundry, puzzles, console, casino, drone, scuba)', outdoor: 'open-air workouts: climbing, ferrata, hikes, the Pinnacle, kite', winSting: 'run won (End screen)', loseSting: 'run lost (End screen)',
 };
@@ -25,17 +27,24 @@ class Lab {
   }
   state() { return this.ctx?.state ?? 'none'; }
   setVolume(v: number) { this.volume = v; if (this.master) this.master.gain.value = v; }
-  stop() { this.tracker?.play(null); try { this.src?.stop(); } catch { /* ok */ } this.src = undefined; this.playing = null; }
+  stop() { this.tracker?.play(null); try { this.src?.stop(); } catch { /* ok */ } this.src = undefined; try { this.amb?.stop(); } catch { /* ok */ } this.amb = undefined; this.playing = null; }
   playSfx(id: string) {
     this.init(); const slot = id.split('.')[0] as SfxName; const c = SFX_CANDIDATES[slot]?.find(x => x.id === id); if (!c || !this.ctx) return false;
+    if (c.file) { this.file(c.file).then(buf => { const g = this.ctx!.createGain(); g.gain.value = c.gain ?? 1; g.connect(this.master!); const s = this.ctx!.createBufferSource(); s.buffer = buf; s.connect(g); s.start(); }).catch(() => {}); return true; }
     let b = this.bank.get(id); if (!b) { const r = renderDef(c.def); b = this.ctx.createBuffer(1, r.samples.length, r.sampleRate); b.getChannelData(0).set(r.samples); this.bank.set(id, b); }
     const s = this.ctx.createBufferSource(); s.buffer = b; s.connect(this.master!); s.start(); return true;
   }
+  amb?: AudioBufferSourceNode;
+  async playAmbience(on: boolean) {
+    this.init(); try { this.amb?.stop(); } catch { /* ok */ } this.amb = undefined; if (!on || !this.ctx) return true;
+    const buf = await this.file(AMBIENCE.wind.file); const g = this.ctx.createGain(); g.gain.value = 0.25; g.connect(this.master!);
+    const s = this.ctx.createBufferSource(); s.buffer = buf; s.loop = true; s.connect(g); s.start(); this.amb = s; return true;
+  }
+  private file(f: string) { let p = this.files.get(f); if (!p) { p = fetch('/trail/' + f).then(r => r.arrayBuffer()).then(b => this.ctx!.decodeAudioData(b)); this.files.set(f, p); } return p; }
   async playMusic(id: string) {
     this.init(); this.stop(); const c = musicById(id); if (!c || !this.ctx) return false; this.playing = id;
     if (c.kind === 'tracker') { this.tracker!.play(c.loop, id.endsWith('Sting.tracker.calm') || id.endsWith('Sting.tracker.melodic'), () => { if (this.playing === id) this.playing = null; }); return true; }
-    let p = this.files.get(c.file); if (!p) { p = fetch('/trail/' + c.file).then(r => r.arrayBuffer()).then(b => this.ctx!.decodeAudioData(b)); this.files.set(c.file, p); }
-    const buf = await p; if (this.playing !== id) return true;
+    const buf = await this.file(c.file); if (this.playing !== id) return true;
     const s = this.ctx.createBufferSource(); s.buffer = buf; s.loop = !id.includes('Sting'); s.connect(this.master!); s.onended = () => { if (this.src === s) { this.src = undefined; this.playing = null; } }; s.start(); this.src = s; return true;
   }
 }
@@ -46,5 +55,6 @@ const lab = new Lab();
     music: MUSIC_SLOTS.map(slot => ({ slot, where: MUSIC_WHERE[slot], candidates: MUSIC_CANDIDATES[slot].map(c => ({ id: c.id, label: c.label, kind: c.kind, ...(c.kind === 'file' ? { url: c.url, bytes: c.bytes } : {}) })) })),
   },
   defaults: selection,
+  playAmbience: (on: boolean) => lab.playAmbience(on), ambience: { id: 'ambience.wind', label: AMBIENCE.wind.label, where: 'a quiet bed under the Pinnacle and the water games', url: AMBIENCE.wind.url, licence: AMBIENCE.wind.licence },
   playSfx: (id: string) => lab.playSfx(id), playMusic: (id: string) => lab.playMusic(id), stop: () => lab.stop(), setVolume: (v: number) => lab.setVolume(v), state: () => lab.state(), playing: () => lab.playing,
 };

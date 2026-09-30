@@ -41,7 +41,7 @@ export class CookingScene extends Phaser.Scene {
   }
 
   create() {
-    this.frame = new MinigameFrame(this, this.launch, this.dish.name);
+    this.frame = new MinigameFrame(this, this.launch, this.dish.name); this.frame.musicLoop = 'cooking';
     this.cameras.main.setBackgroundColor(PAL.night1);
     // counter top + plate
     this.add.rectangle(W / 2, 470, W, 340, PAL.earth1).setDepth(0);

@@ -47,7 +47,7 @@ export class CarryOnScene extends Phaser.Scene {
 
   create() {
     const names: Record<ConsoleGameId, string> = { carryon: 'Coin Collector', tetris: 'Pack-Tris' };
-    this.frame = new MinigameFrame(this, this.launch, names[this.gameId]);
+    this.frame = new MinigameFrame(this, this.launch, names[this.gameId]); this.frame.musicLoop = this.gameId === 'tetris' ? 'tetris' : 'action';
     this.drawBezel();
     this.pad = new Pad(this, LAYOUT, (k) => this.onPadPress(k));
     this.padG = this.add.graphics().setDepth(24); this.drawPad();

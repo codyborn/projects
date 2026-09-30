@@ -2,7 +2,10 @@
  * and a noise channel for drums. Loops are data: strings of 16th-step tokens per channel. Scheduling runs a little ahead of the
  * clock so loops are seamless. Note tokens: "C5", "F#4", "Bb3"; "." rest; "-" hold the previous note one more step. Drum tokens:
  * "k" kick, "s" snare, "h" hat, "." rest. */
-export type LoopName = 'title' | 'americas' | 'mexico' | 'europe' | 'alps' | 'africa' | 'asia' | 'himalaya' | 'travel' | 'action' | 'outdoor' | 'none';   /* outdoor: open-air workouts (climbing, ferrata, hikes, kite) */
+export type LoopName = 'title' | 'americas' | 'mexico' | 'europe' | 'alps' | 'africa' | 'asia' | 'himalaya' | 'travel' | 'action'
+  | 'outdoor' | 'indoor' | 'water' | 'drone' | 'cooking' | 'coffee' | 'credits' | 'tetris' | 'none';
+/* outdoor: open-air workouts (climbing, ferrata, hikes, Pinnacle) · indoor: hotel-room workouts and yoga · water: Scuba and Kite
+ * drone: the drone flights · cooking: the kitchen · coffee: the morning scene · credits: the end roll · tetris: Pack-Tris */
 export type Stinger = 'winSting' | 'loseSting';
 export interface Loop { bpm: number; p1: string; p2: string; wave: string; drums: string; duty1?: number; duty2?: number; vol?: number; }
 /** Global tempo factor (Cody found the first pass too busy; everything runs at 80%). */
@@ -89,9 +92,80 @@ export const LOOPS: Record<Exclude<LoopName, 'none' | 'outdoor'>, Loop> & { read
     p2: rep('E4 . . E4 . . E4 . E4 . . E4 . . E4 .', 4) + ' ' + rep('C4 . . C4 . . C4 . D4 . . D4 . . B3 .', 4),
     wave: rep('E2 - E2 - E2 - E2 - E2 - E2 - D2 - D2 -', 4) + ' ' + rep('C2 - C2 - C2 - C2 - D2 - D2 - B1 - B1 -', 4),
     drums: rep('k . h . s . h . k . h . s . h .', 8) },
+  /* indoor workout: a steady, encouraging pulse in F major, nothing to think about */
+  indoor: { bpm: 124,
+    p1: rep('F4 - A4 - C5 - A4 - F4 - C5 - A4 - F4 -', 2) + ' ' + rep('Bb4 - D5 - F5 - D5 - Bb4 - F4 - Bb4 - D5 -', 2) + ' ' + rep('C5 - E5 - G5 - E5 - C5 - G4 - C5 - E5 -', 2) + ' ' + rep('F4 - A4 - C5 - A4 - F4 - C5 - A4 - F4 -', 2),
+    p2: rep('. . . . A4 - - - . . . . C5 - - -', 4) + ' ' + rep('. . . . G4 - - - . . . . E5 - - -', 2) + ' ' + rep('. . . . A4 - - - . . . . C5 - - -', 2),
+    wave: rep('F2 - - - F2 - - - C3 - - - C3 - - -', 2) + ' ' + rep('Bb2 - - - Bb2 - - - F2 - - - F2 - - -', 2) + ' ' + rep('C3 - - - C3 - - - G2 - - - G2 - - -', 2) + ' ' + rep('F2 - - - F2 - - - C3 - - - C3 - - -', 2),
+    drums: rep('k . h . s . h . k . h . s . h .', 8) },
+  /* water: slow, floaty, a wide pentatonic with long tails */
+  water: { bpm: 84,
+    p1: rep('G4 - - - B4 - - - D5 - - - B4 - - -', 2) + ' ' + rep('E5 - - - D5 - - - B4 - - - - - - -', 2) + ' ' + rep('A4 - - - C5 - - - E5 - - - C5 - - -', 2) + ' ' + rep('D5 - - - B4 - - - G4 - - - - - - -', 2),
+    p2: rep('. . . . . . . . D4 - - - - - - -', 8),
+    wave: rep('G2 - - - - - - - D3 - - - - - - -', 4) + ' ' + rep('A2 - - - - - - - E3 - - - - - - -', 2) + ' ' + rep('G2 - - - - - - - D3 - - - - - - -', 2),
+    drums: rep('k . . . . . . . h . . . . . . .', 8) },
+  /* drone flight: airy and wide, a rising figure over an open fifth */
+  drone: { bpm: 116,
+    p1: rep('D5 - A4 - D5 - F#5 - A5 - F#5 - D5 - A4 -', 2) + ' ' + rep('E5 - B4 - E5 - G5 - B5 - G5 - E5 - B4 -', 2) + ' ' + rep('D5 - A4 - D5 - F#5 - A5 - - - G5 - F#5 -', 2) + ' ' + rep('E5 - - - D5 - - - A4 - - - - - - -', 2),
+    p2: rep('. . . . F#4 - - - . . . . A4 - - -', 4) + ' ' + rep('. . . . G4 - - - . . . . B4 - - -', 2) + ' ' + rep('. . . . F#4 - - - . . . . A4 - - -', 2),
+    wave: rep('D2 - - - A2 - - - D2 - - - A2 - - -', 4) + ' ' + rep('E2 - - - B2 - - - E2 - - - B2 - - -', 2) + ' ' + rep('D2 - - - A2 - - - D2 - - - A2 - - -', 2),
+    drums: rep('k . . h . . k . . h . . s . . .', 8) },
+  /* kitchen: bouncy and busy, a little clatter in the drums */
+  cooking: { bpm: 128,
+    p1: rep('C5 - E5 - G5 - E5 - F5 - E5 - D5 - C5 -', 2) + ' ' + rep('D5 - F5 - A5 - F5 - G5 - F5 - E5 - D5 -', 2) + ' ' + rep('E5 - G5 - C6 - G5 - A5 - G5 - F5 - E5 -', 2) + ' ' + rep('D5 - C5 - B4 - C5 - D5 - - - . . . .', 2),
+    p2: rep('C4 . . G4 . . C4 . . G4 . . E4 . . .', 4) + ' ' + rep('D4 . . A4 . . D4 . . A4 . . F4 . . .', 2) + ' ' + rep('C4 . . G4 . . C4 . . G4 . . E4 . . .', 2),
+    wave: rep('C2 - - - G2 - - - C2 - - - G2 - - -', 2) + ' ' + rep('D2 - - - A2 - - - D2 - - - A2 - - -', 2) + ' ' + rep('E2 - - - B2 - - - E2 - - - B2 - - -', 2) + ' ' + rep('G2 - - - G2 - - - C2 - - - C2 - - -', 2),
+    drums: rep('k . h h s . h . k h . h s . h h', 8) },
+  /* the morning: sparse, warm, almost nothing happening */
+  coffee: { bpm: 76,
+    p1: rep('A4 - - - C5 - - - E5 - - - - - - -', 2) + ' ' + rep('D5 - - - C5 - - - A4 - - - - - - -', 2) + ' ' + rep('G4 - - - B4 - - - D5 - - - - - - -', 2) + ' ' + rep('C5 - - - A4 - - - - - - - - - - -', 2),
+    p2: rep('. . . . . . . . . . . . E4 - - -', 8),
+    wave: rep('A2 - - - - - - - - - - - - - - -', 4) + ' ' + rep('G2 - - - - - - - - - - - - - - -', 2) + ' ' + rep('A2 - - - - - - - - - - - - - - -', 2),
+    drums: rep('. . . . . . . . . . . . . . . .', 8) },
+  /* credits: nostalgic, a long descending line over a soft bass */
+  credits: { bpm: 92,
+    p1: rep('G5 - - - F#5 - E5 - D5 - - - B4 - - -', 2) + ' ' + rep('C5 - - - B4 - A4 - G4 - - - - - - -', 2) + ' ' + rep('A4 - B4 - C5 - D5 - E5 - - - D5 - - -', 2) + ' ' + rep('B4 - - - G4 - - - - - - - . . . .', 2),
+    p2: rep('. . . . D4 - - - . . . . G4 - - -', 4) + ' ' + rep('. . . . E4 - - - . . . . A4 - - -', 2) + ' ' + rep('. . . . D4 - - - . . . . G4 - - -', 2),
+    wave: rep('G2 - - - - - - - D3 - - - - - - -', 2) + ' ' + rep('C3 - - - - - - - G2 - - - - - - -', 2) + ' ' + rep('A2 - - - - - - - E3 - - - - - - -', 2) + ' ' + rep('G2 - - - - - - - D3 - - - - - - -', 2),
+    drums: rep('k . . . . . h . . . . . h . . .', 8) },
+  /* Pack-Tris: a neutral puzzle groove; the intended pick is the Korobeiniki arrangement below */
+  tetris: { bpm: 132,
+    p1: rep('A4 - C5 - E5 - C5 - A4 - E4 - A4 - C5 -', 2) + ' ' + rep('G4 - B4 - D5 - B4 - G4 - D4 - G4 - B4 -', 2) + ' ' + rep('F4 - A4 - C5 - A4 - F4 - C4 - F4 - A4 -', 2) + ' ' + rep('E4 - G#4 - B4 - G#4 - E4 - B3 - E4 - G#4 -', 2),
+    p2: rep('. . . . E4 - - - . . . . A4 - - -', 4) + ' ' + rep('. . . . D4 - - - . . . . G4 - - -', 2) + ' ' + rep('. . . . E4 - - - . . . . B4 - - -', 2),
+    wave: rep('A2 - - - A2 - - - E2 - - - E2 - - -', 2) + ' ' + rep('G2 - - - G2 - - - D2 - - - D2 - - -', 2) + ' ' + rep('F2 - - - F2 - - - C2 - - - C2 - - -', 2) + ' ' + rep('E2 - - - E2 - - - B1 - - - B1 - - -', 2),
+    drums: rep('k . h . s . h . k . h . s . h .', 8) },
   /* the outdoor slot's tracker reading borrows the action loop; the intended pick is a file (8-Bit Cave Loop) */
   get outdoor(): Loop { return this.action; },
 };
+/** Korobeiniki, the 19th-century Russian folk melody behind the famous falling-blocks theme. Public domain (the tune, not any
+ * particular arrangement); this four-channel setting is ours. A minor, eight bars. */
+export const KOROBEINIKI: Loop = { bpm: 150,
+  p1: ['E5 - - - B4 - C5 - D5 - - - C5 - B4 -',
+       'A4 - - - A4 - C5 - E5 - - - D5 - C5 -',
+       'B4 - - - - - C5 - D5 - - - E5 - - -',
+       'C5 - - - A4 - - - A4 - - - . . . .',
+       'D5 - - - - - F5 - A5 - - - G5 - F5 -',
+       'E5 - - - - - C5 - E5 - - - D5 - C5 -',
+       'B4 - - - B4 - C5 - D5 - - - E5 - - -',
+       'C5 - - - A4 - - - A4 - - - . . . .'].join(' '),
+  p2: ['. . . . C4 - - - . . . . E4 - - -',
+       '. . . . C4 - - - . . . . E4 - - -',
+       '. . . . B3 - - - . . . . G#3 - - -',
+       '. . . . C4 - - - . . . . A3 - - -',
+       '. . . . F4 - - - . . . . A4 - - -',
+       '. . . . C4 - - - . . . . E4 - - -',
+       '. . . . B3 - - - . . . . G#3 - - -',
+       '. . . . C4 - - - . . . . A3 - - -'].join(' '),
+  wave: ['A2 - - - A2 - - - E3 - - - E3 - - -',
+         'A2 - - - A2 - - - E3 - - - E3 - - -',
+         'E2 - - - E2 - - - B2 - - - B2 - - -',
+         'A2 - - - A2 - - - E3 - - - E3 - - -',
+         'D2 - - - D2 - - - A2 - - - A2 - - -',
+         'A2 - - - A2 - - - E3 - - - E3 - - -',
+         'E2 - - - E2 - - - B2 - - - B2 - - -',
+         'A2 - - - A2 - - - E3 - - - E3 - - -'].join(' '),
+  drums: rep('k . . . h . . . s . . . h . . .', 8) };
+
 /** A calmer reading of every loop: no second pulse, the lead thinned (every other note rests), drums down to a soft kick. */
 export function calmOf(l: Loop): Loop {
   const toks = l.p1.trim().split(/\s+/); let seen = 0;
@@ -160,18 +234,21 @@ export class Tracker {
   }
 }
 
-/* ---- music candidates: two tracker readings and two public-domain tracks per slot ---- */
+/* ---- music candidates per slot: two tracker readings, any hand-written arrangement, then the downloaded tracks ---- */
 import ogaJson from './oga_tracks.json';
 export type MusicSlot = Exclude<LoopName, 'none'> | Stinger;
-export const MUSIC_SLOTS: MusicSlot[] = ['title', 'americas', 'mexico', 'europe', 'alps', 'africa', 'asia', 'himalaya', 'travel', 'action', 'outdoor', 'winSting', 'loseSting'];
-export type MusicCandidate = { id: string; label: string; kind: 'tracker'; loop: Loop } | { id: string; label: string; kind: 'file'; file: string; title: string; author: string; url: string; bytes: number };
-const OGA = ogaJson as Record<string, { id: string; slug: string; title: string; author: string; url: string; file: string; bytes: number }[]>;
+export const MUSIC_SLOTS: MusicSlot[] = ['title', 'americas', 'mexico', 'europe', 'alps', 'africa', 'asia', 'himalaya', 'travel', 'action', 'outdoor', 'indoor', 'water', 'drone', 'cooking', 'coffee', 'credits', 'tetris', 'winSting', 'loseSting'];
+/** Slots whose list gets an extra hand-written arrangement beyond calm / melodic. */
+const EXTRA_TRACKER: Partial<Record<MusicSlot, { id: string; label: string; loop: Loop }[]>> = { tetris: [{ id: 'tetris.tracker.korobeiniki', label: 'tracker · Korobeiniki', loop: KOROBEINIKI }] };
+export type MusicCandidate = { id: string; label: string; kind: 'tracker'; loop: Loop } | { id: string; label: string; kind: 'file'; file: string; title: string; author: string; url: string; bytes: number; source?: string; licence?: string };
+const OGA = ogaJson as Record<string, { id: string; slug: string; title: string; author: string; url: string; file: string; bytes: number; source?: string; licence?: string }[]>;
 export const MUSIC_CANDIDATES: Record<MusicSlot, MusicCandidate[]> = Object.fromEntries(MUSIC_SLOTS.map(s => {
   const base: Loop = (s in LOOPS ? LOOPS[s as keyof typeof LOOPS] : STINGERS[s as Stinger]);
   const list: MusicCandidate[] = [
     { id: `${s}.tracker.calm`, label: 'tracker · calm', kind: 'tracker', loop: calmOf(base) },
     { id: `${s}.tracker.melodic`, label: 'tracker · melodic', kind: 'tracker', loop: base },
-    ...(OGA[s] ?? []).map(o => ({ id: o.id, label: `${o.title} · ${o.author}`, kind: 'file' as const, file: o.file, title: o.title, author: o.author, url: o.url, bytes: o.bytes })),
+    ...(EXTRA_TRACKER[s] ?? []).map(e => ({ id: e.id, label: e.label, kind: 'tracker' as const, loop: e.loop })),
+    ...(OGA[s] ?? []).map(o => ({ id: o.id, label: `${o.title} · ${o.author}`, kind: 'file' as const, file: o.file, title: o.title, author: o.author, url: o.url, bytes: o.bytes, source: o.source, licence: o.licence })),
   ];
   return [s, list];
 })) as Record<MusicSlot, MusicCandidate[]>;

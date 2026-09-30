@@ -50,7 +50,7 @@ export class DroneScene extends Phaser.Scene {
 
   get ringCount() { return 6 + 2 * this.level; }
   create() {
-    this.frame = new MinigameFrame(this, this.launch, 'Drone flight');
+    this.frame = new MinigameFrame(this, this.launch, 'Drone flight'); this.frame.musicLoop = 'drone';
     this.v = (44 + 13 * this.level) * (0.9 + 0.2 * this.launch.difficulty) * (1 + 0.1 * this.frame.hard);   // level 1 ≈ 44 px/s, level 3 ≈ 83
     const dur = 35 + 10 * this.level; this.padWx = Math.round(this.v * dur) + this.x; this.frame.capSec = dur + 30;   // course length in scroll px: 45 / 55 / 65 s at this level's speed; the cap is only a safety net
     this.cameras.main.setBackgroundColor(this.set.sky[0]);

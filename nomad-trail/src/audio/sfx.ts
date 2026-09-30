@@ -74,7 +74,7 @@ export const PRESETS: Record<SfxName, Def> = {
 };
 
 /** Three alternative characters per effect, derived from the current preset so ids stay stable: soft (rounder, longer, darker), bright (shorter, higher, crisper), low (deeper, mellow). */
-export type SfxCandidate = { id: string; label: string; def: Def };
+export type SfxCandidate = { id: string; label: string; def: Def; file?: string; gain?: number };
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 function variant(kind: 'soft' | 'bright' | 'low', d: Def): Def {
   const o: Def = { ...d }; const noise = d.wave_type === 3;
@@ -89,7 +89,16 @@ export const SFX_CANDIDATES: Record<SfxName, SfxCandidate[]> = Object.fromEntrie
   { id: `${n}.bright`, label: 'bright / short', def: variant('bright', PRESETS[n]) },
   { id: `${n}.low`, label: 'mellow / low', def: variant('low', PRESETS[n]) },
 ]])) as Record<SfxName, SfxCandidate[]>;
-export function sfxDefById(id: string): Def | undefined { const slot = id.split('.')[0] as SfxName; return SFX_CANDIDATES[slot]?.find(c => c.id === id)?.def; }
+/* Two effects can also be a recorded file (a real jet, a real gust); the engine decodes and caches them like the rendered ones. */
+export type SfxFileCandidate = { id: string; label: string; file: string; gain: number };
+export const SFX_FILES: Partial<Record<SfxName, SfxFileCandidate[]>> = {
+  plane: [{ id: 'plane.jet', label: 'real jet takeoff · dklon', file: 'audio/jet-takeoff.mp3', gain: 0.35 }],
+  whistle: [{ id: 'whistle.wind', label: 'real gust · InspectorJ', file: 'audio/wind-gust.mp3', gain: 0.5 }],
+};
+for (const [slot, files] of Object.entries(SFX_FILES)) for (const f of files!) SFX_CANDIDATES[slot as SfxName].push({ id: f.id, label: f.label, def: PRESETS[slot as SfxName], file: f.file, gain: f.gain });
+export function sfxDefById(id: string): Def | undefined { const slot = id.split('.')[0] as SfxName; const c = SFX_CANDIDATES[slot]?.find(x => x.id === id); return c && !c.file ? c.def : c?.def; }
+/** The candidate behind an id, whether it is a rendered preset or a file. */
+export function sfxCandidateById(id: string): SfxCandidate | undefined { const slot = id.split('.')[0] as SfxName; return SFX_CANDIDATES[slot]?.find(c => c.id === id); }
 
 export const SFX_NAMES = Object.keys(PRESETS) as SfxName[];
 

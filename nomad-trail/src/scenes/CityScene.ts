@@ -100,7 +100,7 @@ export class CityScene extends Phaser.Scene {
     this.lastDay = res.state.day;
     (async () => { for (const q of queue) await q(); this.after(a); })();
   }
-  private overlay(key: string, data: any) { return new Promise<void>(resolve => { launchOnTop(this, key, { ...data, onDone: () => { if (this.scene.isActive(key) || this.scene.isPaused(key)) this.scene.stop(key); this.scene.resume(); resolve(); } }); this.scene.pause(); }); }
+  private overlay(key: string, data: any) { return new Promise<void>(resolve => { launchOnTop(this, key, { ...data, onDone: () => { if (this.scene.isActive(key) || this.scene.isPaused(key)) this.scene.stop(key); this.scene.resume(); Audio.playLoop(REGION_LOOP[Data.city(getRun(this).cityId)?.region ?? ''] ?? 'americas'); resolve(); } }); this.scene.pause(); }); }
   private refreshWorkBtn(day: number) { const b = this.btns[0]; if (!b) return; const wk = Sim.isWeekend(day); b.setLabel(wk ? 'WEEKEND' : 'WORK WEEK'); b.setAlpha(wk ? 0.55 : 1); }
   private minigame(m: { key: string; payload?: any; difficulty: number; extraLives?: number }) {
     return new Promise<void>(resolve => {

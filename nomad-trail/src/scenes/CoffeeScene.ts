@@ -45,7 +45,7 @@ export class CoffeeScene extends Phaser.Scene {
     ptext(this, W / 2, 456, 'MORNING. THE GOOD KIND.', PAL.gray1, 1).setOrigin(0.5, 0);
     const hint = ptext(this, W / 2, H - 30, 'TAP TO CONTINUE', PAL.gray1, 1).setOrigin(0.5); this.tweens.add({ targets: hint, alpha: 0.3, yoyo: true, repeat: -1, duration: 700 });
     label.setAlpha(0); this.tweens.add({ targets: label, alpha: 1, duration: 500, delay: 300 });
-    Audio.playSfx('chime');
+    Audio.playSfx('chime'); Audio.playLoop('coffee');
     this.time.delayedCall(3500, () => this.finish());
     this.input.once('pointerdown', () => this.finish());
     this.cameras.main.fadeIn(300, 11, 15, 26);

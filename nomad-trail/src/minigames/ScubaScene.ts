@@ -40,7 +40,7 @@ export class ScubaScene extends Phaser.Scene {
     this.total = this.murky ? 7 + (this.rand() < 0.5 ? 1 : 0) : 10 + (this.rand() < 0.5 ? 1 : 0);
   }
   create() {
-    this.frame = new MinigameFrame(this, this.launch, 'Lionfish dive'); this.frame.capSec = 24 * 3600;   /* no clock: the dive ends on the last fish or SURFACE */
+    this.frame = new MinigameFrame(this, this.launch, 'Lionfish dive'); this.frame.musicLoop = 'water'; this.frame.capSec = 24 * 3600;   /* no clock: the dive ends on the last fish or SURFACE */
     this.cameras.main.setBackgroundColor(PAL.sea0); this.cameras.main.setBounds(0, 0, WW, WH); this.physics?.world?.setBounds?.(0, 0, WW, WH);
     buildScubaSprites(this);
     const water = this.add.graphics().setDepth(0); drawWater(water, this.murky);
