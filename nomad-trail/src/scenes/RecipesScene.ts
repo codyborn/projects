@@ -57,7 +57,7 @@ export class RecipesScene extends Phaser.Scene {
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
       if (!p.isDown) return; if (Math.abs(p.y - downY) > 6) moved = true;
       const dt = Math.max(1, this.time.now - lastT); this.vel = (lastY - p.y) / dt * 16;   /* px per frame */
-      lastY = p.y; lastT = this.time.now; this.setTarget(start + (downY - p.y));
+      lastY = p.y; lastT = this.time.now; this.setTarget(start + (downY - p.y)); this.scrollY = this.target; this.content.setY(-Math.round(this.scrollY));
     });
     this.input.on('pointerup', () => { this.dragging = false; });
     this.input.on('wheel', (_p: unknown, _o: unknown, _dx: number, dy: number) => { this.vel = 0; this.setTarget(this.target + dy * 0.6); });
@@ -71,11 +71,14 @@ export class RecipesScene extends Phaser.Scene {
   private target = 0; private vel = 0; private dragging = false;
   private setTarget(v: number) { this.target = Phaser.Math.Clamp(v, 0, this.maxScroll); }
   update(_t: number, dt: number) {
-    if (!this.dragging && Math.abs(this.vel) > 0.05) { this.setTarget(this.target + this.vel); this.vel *= 0.92; }   /* coast */
-    else if (!this.dragging) this.vel = 0;
-    const k = 1 - Math.pow(0.001, dt / 1000);                                  /* frame-rate independent ease */
-    this.scrollY += (this.target - this.scrollY) * k;
-    if (Math.abs(this.target - this.scrollY) < 0.1) this.scrollY = this.target;
+    if (this.dragging) { this.scrollY = this.target; }                         /* under the finger: no easing, it reads as lag */
+    else {
+      if (Math.abs(this.vel) > 0.05) { this.setTarget(this.target + this.vel); this.vel *= Math.pow(0.9, dt / 16.7); }   /* coast */
+      else this.vel = 0;
+      const k = 1 - Math.pow(1e-9, dt / 1000);                                 /* settle fast, frame-rate independent */
+      this.scrollY += (this.target - this.scrollY) * k;
+      if (Math.abs(this.target - this.scrollY) < 0.1) this.scrollY = this.target;
+    }
     this.content.setY(-Math.round(this.scrollY));                              /* round: the pixel font stays crisp */
   }
   /** Replay a dish: the Cooking scene on top, result recorded as a new personal best if it beats the old one. */
