@@ -39,6 +39,12 @@ class FilePlayer {
 
 class AudioEngine {
   ctx?: AudioContext; master?: GainNode; musicGain?: GainNode; sfxGain?: GainNode; muted = false; ready = false;
+  /** true once a gesture has created the context (the browser's autoplay gate is passed) */
+  get unlocked() { return this.ready; }
+  /** performance.now() of the unlocking gesture, so UI can tell 'this tap unlocked audio' from 'this tap means mute' */
+  unlockedAt = 0;
+  /** true when sound can actually be heard right now */
+  get live() { return this.ready && this.ctx?.state !== 'suspended' && !this.muted; }
   private bank?: SfxBank; private tracker?: Tracker; private files?: FilePlayer; private loop: LoopName = 'none'; private timer?: number; private ducked = false;
   private ambGain?: GainNode; private ambPlayer?: FilePlayer; private amb: AmbienceName = 'none'; private clips = new Map<string, Promise<AudioBuffer>>();
   private last: Partial<Record<string, number>> = {}; selection: Selection = SELECTION;
@@ -47,13 +53,13 @@ class AudioEngine {
   get sfxLevel() { return this.selection.gain?.sfx ?? 0.35; }
   /** Create or resume the context. Safe to call on every gesture. */
   init() {
-    if (this.ready) { if (this.ctx?.state === 'suspended') this.ctx.resume().catch(() => {}); return; }
+    if (this.ready) { if (this.ctx?.state === 'suspended') this.ctx.resume().then(() => { if (this.loop !== 'none') this.startCandidate(this.candidateFor(this.loop)); }).catch(() => {}); return; }
     const AC = (window as any).AudioContext || (window as any).webkitAudioContext; if (!AC) return;
     this.ctx = new AC(); this.master = this.ctx!.createGain(); this.master.gain.value = this.muted ? 0 : MASTER; this.master.connect(this.ctx!.destination);
     this.musicGain = this.ctx!.createGain(); this.musicGain.gain.value = this.musicLevel; this.musicGain.connect(this.master);
     this.sfxGain = this.ctx!.createGain(); this.sfxGain.gain.value = this.sfxLevel; this.sfxGain.connect(this.master);
     this.bank = new SfxBank(this.ctx!); this.tracker = new Tracker(this.ctx!, this.musicGain); this.files = new FilePlayer(this.ctx!, this.musicGain);
-    this.ambGain = this.ctx!.createGain(); this.ambGain.gain.value = 0; this.ambGain.connect(this.master); this.ambPlayer = new FilePlayer(this.ctx!, this.ambGain); this.ready = true;
+    this.ambGain = this.ctx!.createGain(); this.ambGain.gain.value = 0; this.ambGain.connect(this.master); this.ambPlayer = new FilePlayer(this.ctx!, this.ambGain); this.ready = true; this.unlockedAt = performance.now();
     for (const id of Object.values(this.selection.sfx)) { const c = sfxCandidateById(id); if (c?.file) void this.clip(c.file); }   /* a recorded effect must be ready before its first play */
     this.timer = window.setInterval(() => this.tracker?.tick(), 60);
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && this.ctx?.state === 'suspended') this.ctx.resume().catch(() => {}); });

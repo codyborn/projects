@@ -31,12 +31,28 @@ export class TitleScene extends Phaser.Scene {
     new Button(this, 180, y, 'NEW RUN', () => this.newRun(!!saved), { w: 240, fill: PAL.sea1 }); y += 56;
     if (saved) { if (this.scene.get('Passport')) { new Button(this, 180, y, 'PASSPORT', () => { this.registry.set('run', saved); this.scene.start('Passport', { back: 'Title' }); }, { w: 240 }); y += 56; } }
     buildIcons(this); const spk = this.add.image(40, 600, Audio.muted ? 'ico_sound_off' : 'ico_sound_on').setScale(3).setDepth(5).setInteractive({ useHandCursor: true });
-    spk.on('pointerup', () => { Audio.init(); const m = Audio.toggleMuted(); settings.muted = m; putSettings(this, settings); spk.setTexture(m ? 'ico_sound_off' : 'ico_sound_on'); this.sound.mute = m; if (!m) Audio.playSfx('tap'); });
-    this.sound.mute = Audio.muted; Audio.playLoop('title');
+    /* browsers block audio until a gesture, so the title screen asks for one: the first tap anywhere starts the music
+       rather than toggling, otherwise tapping the speaker to get sound would mute it instead */
+    const hint = txt(this, 14, 570, Audio.muted ? 'sound is off' : 'tap for sound', 8, PAL.sun2).setOrigin(0, 0.5).setDepth(5);
+    this.tweens.add({ targets: hint, alpha: 0.35, yoyo: true, repeat: -1, duration: 900 });
+    const sync = () => { spk.setTexture(Audio.muted ? 'ico_sound_off' : 'ico_sound_on'); this.sound.mute = Audio.muted; hint.setVisible(!Audio.unlocked || Audio.muted); hint.setText(Audio.muted ? 'sound is off' : 'tap for sound'); };
+    /* main.ts unlocks audio on the first canvas pointerdown, which is the same tap as this pointerup, so a tap that
+       merely woke the sound must not also mute it */
+    spk.on('pointerup', () => {
+      Audio.init();
+      if (performance.now() - Audio.unlockedAt < 700) { Audio.playLoop('title'); Audio.playSfx('tap'); sync(); return; }
+      const m = Audio.toggleMuted(); settings.muted = m; putSettings(this, settings); sync(); if (!m) { Audio.playLoop('title'); Audio.playSfx('tap'); }
+    });
+    this.syncAudio = sync; this.audioWas = '';
+    this.sound.mute = Audio.muted; Audio.playLoop('title'); this.time.delayedCall(60, sync);
     txt(this, 180, 604, STRINGS.ui.basedOn, 8, PAL.gray1, { align: 'center' }).setOrigin(0.5);
     txt(this, 180, 620, settings.runs ? `Runs ${settings.runs} · Best ${settings.bestScore}` : STRINGS.ui.production, 8, PAL.gray0).setOrigin(0.5);
   }
-  update(_t: number, dt: number) { for (const c of this.clouds) { c.x += (c as any).spd * dt / 1000; if (c.x > GAME_W) c.x = -c.width; } }
+  private audioWas = ''; private syncAudio?: () => void;
+  update(_t: number, dt: number) {
+    for (const c of this.clouds) { c.x += (c as any).spd * dt / 1000; if (c.x > GAME_W) c.x = -c.width; }
+    const now = `${Audio.unlocked}/${Audio.muted}`; if (now !== this.audioWas) { this.audioWas = now; this.syncAudio?.(); }   /* whoever unlocked the sound, the icon and hint follow */
+  }
   private resume(saved: RunState) {
     putRun(this, saved);
     const next = saved.phase === 'pack' ? 'Pack' : saved.phase === 'city' ? 'City' : saved.phase === 'ended' ? 'End' : 'Route';

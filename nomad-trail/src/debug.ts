@@ -5,6 +5,7 @@ import { MINIGAME_KEYS } from './core/types';
 import { buildPack } from './core/sim/pack';
 import { makeRng } from './core/sim/rng';
 import { renderDishCanvas } from './minigames/dishArt';
+import { Audio } from './audio/synth';
 import { META as WORKOUT_META, POOLS as WORKOUT_POOLS, DENSE_CITIES } from './minigames/workout/pools';
 import { CONSOLE_GAME_IDS } from './minigames/console/games';
 import citiesJson from './data/cities.json';
@@ -52,6 +53,7 @@ export function installDebug(game: Phaser.Game) {
     errors: [] as string[],
   };
   // review hub data (tools/review.mjs)
+  (api as any).audio = Audio;   /* dev probe: mute state, context state, current loop */
   (api as any).review = {
     cities: citiesJson, dishes: dishesJson, events: eventsJson, items: itemsJson, puzzles: puzzlesJson,
     workoutMeta: WORKOUT_META, workoutPools: WORKOUT_POOLS, denseCities: Array.from(DENSE_CITIES), consoleGames: CONSOLE_GAME_IDS,
