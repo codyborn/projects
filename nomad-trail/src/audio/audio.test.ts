@@ -12,7 +12,9 @@ describe('audio: jsfxr presets and candidates', () => {
       const r = renderSamples(name);
       expect(r.samples.length, name).toBeGreaterThan(TINY.includes(name) ? 80 : 400);
       let peak = 0; for (let i = 0; i < r.samples.length; i++) { const v = Math.abs(r.samples[i]); expect(Number.isFinite(v), name).toBe(true); if (v > peak) peak = v; }
-      expect(peak, name).toBeGreaterThan(0.05); expect(r.samples.length / r.sampleRate, name).toBeLessThan(3);
+      /* 'non-silent', not 'loud': the quiet repeaters (footsteps, wheel ticks) peak near 0.04 by design, and jsfxr's
+         noise makes the exact peak vary a little between renders */
+      expect(peak, name).toBeGreaterThan(TINY.includes(name) ? 0.01 : 0.05); expect(r.samples.length / r.sampleRate, name).toBeLessThan(3);
     }
   });
   it('four rendered candidates per effect plus any recorded ones, stable ids', () => {
