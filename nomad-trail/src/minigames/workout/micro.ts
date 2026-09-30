@@ -65,31 +65,33 @@ export class Athlete {
     ];
     this.sprite = scene.add.image(x, y, this.poses[0]).setDepth(5);
   }
-  /** Side-on run cycle for the trail runner, built on first use. All six frames are a full 12 x 16 box so the figure never shifts
-   *  between states: 0-3 = the cycle (alternating legs, opposite arm swing, a hair flick, the torso a row higher on the passing frames),
-   *  4 = jump (tucked, arms up), 5 = duck (low, leaning forward). Jeans are sky0, not the night3 of the poses, so the legs read against
-   *  the night3 mountains behind the trail. */
+  /** Side-on run cycle for the trail runner, built on first use. A taller 12 x 20 box than the front-facing poses (which stay 12 x 16 so
+   *  no other game shifts), scaled 4x = 48 x 80 px: standing, the head and shoulders sit well inside the branch line. Every frame fills
+   *  the box with the feet on the bottom row, so the figure never jumps vertically between states. 0-3 = the run cycle (alternating legs,
+   *  opposite arm swing, a hair flick), 4 = jump (tucked, arms up), 5 = duck (head dropped to half height, body stretched forward).
+   *  Jeans are sky0, not the night3 of the poses, so the legs read against the night3 mountains behind the trail. */
   private runs?: string[];
   runFrame(i: number) {
     if (!this.runs) {
       const map = { o: PAL.earth3, h: PAL.earth0, s: PAL.sun0, p: PAL.sky0, k: PAL.ink };
       const pad = (r: string) => (r + '............').slice(0, 12);
-      const BLANK = '............';
-      const HEAD = (flick: boolean) => [flick ? '...hhhhh....' : '..hhhhh.....', '..hhoooo....', '...hoooo....', '....oo......'];
+      const B = '............';
+      const HEAD = (flick: boolean) => [flick ? '...hhhhh....' : '..hhhhh.....', '..hhoooo....', '..hhoooo....', '...hoooo....', '....oo......'];
       const ARMS: Record<string, string[]> = {
-        fwd:  ['..sssss.....', 'o.sssss.oo..', '.osssss.o...', '..sssss.....'],
-        mid:  ['..sssss.....', '.osssss.o...', '.osssss.o...', '..sssss.....'],
-        back: ['..sssss.....', '.osssss.o...', 'o.sssss.oo..', '..sssss.....'],
+        fwd:  ['o.sssss.oo..', '.osssss.oo..', '..sssss.o...'],
+        mid:  ['.osssss.o...', '.osssss.o...', '..sssss.....'],
+        back: ['..sssss.o...', '.osssss.oo..', 'o.sssss.oo..'],
       };
       const LEGS: Record<string, string[]> = {
-        splitA: ['..pppppp....', '..pp..ppp...', '.pp....pp...', 'pp......pp..', 'kk.......kk.'],
-        pass:   ['..pppppp....', '...pppp.....', '...pp.pp....', '...pp..pp...', '...kk...kk..'],
-        splitB: ['..pppppp....', '..ppp..pp...', '..pp....pp..', '.pp......pp.', '.kk......kk.'],
-        pass2:  ['..pppppp....', '...pppp.....', '..pp.pp.....', '..pp..pp....', '..kk..kk....'],
+        splitA: ['..pp..pp....', '..pp..ppp...', '.pp....pp...', '.pp.....pp..', 'pp......pp..', 'pp.......pp.', 'pp.......pp.', 'kk.......kk.'],
+        pass:   ['..pppppp....', '...pppp.....', '...pppp.....', '...pp.pp....', '...pp..pp...', '...pp..pp...', '...pp..pp...', '...kk...kk..'],
+        splitB: ['..pp..pp....', '..ppp..pp...', '..pp....pp..', '.pp.....pp..', '.pp......pp.', 'pp.......pp.', 'pp.......pp.', '.kk......kk.'],
+        pass2:  ['..pppppp....', '...pppp.....', '..pppp......', '..pp.pp.....', '..pp..pp....', '..pp..pp....', '..pp..pp....', '..kk..kk....'],
       };
-      const frame = (flick: boolean, arm: string, legs: string) => [BLANK, BLANK, BLANK, ...HEAD(flick), ...ARMS[arm], ...LEGS[legs]].map(pad);
-      const JUMP = [BLANK, '...hhhhh....', '..hhoooo....', '...hoooo....', 'o...oo...o..', 'o.sssss..o..', '.osssss.o...', '..sssss.....', '..pppppp....', '..pp..pp....', '.pp....pp...', '.kk....kk...', BLANK, BLANK, BLANK, BLANK].map(pad);
-      const DUCK = [BLANK, BLANK, BLANK, BLANK, BLANK, BLANK, BLANK, '....hhhhh...', '...hhoooo.o.', '..ssssssoo..', '.osssssss...', '..pppppp....', '.pppp.ppp...', 'pp.....pp...', 'kk......kk..', BLANK].map(pad);
+      // 5 head + 1 shoulders + 3 arms + 1 chest + 2 hips + 8 legs = 20
+      const frame = (flick: boolean, arm: string, legs: string) => [...HEAD(flick), '..sssss.....', ...ARMS[arm], '..sssss.....', '..pppppp....', '..pppppp....', ...LEGS[legs]].map(pad);
+      const JUMP = [B, '...hhhhh....', '..hhoooo....', '..hhoooo....', '...hoooo....', 'o...oo...o..', 'o.sssss..o..', '.osssss.oo..', '..sssss.o...', '..sssss.....', '..pppppp....', '..pppppp....', '..pp..pp....', '.pp....pp...', '.pp....pp...', '.kk....kk...', B, B, B, B].map(pad);
+      const DUCK = [B, B, B, B, B, B, B, B, B, B, '....hhhhh...', '...hhoooo.o.', '..ssssssoo..', '.osssssss...', '..pppppp....', '.pppp.ppp...', 'pp....ppp...', 'pp.....pp...', 'kk......kk..', B].map(pad);
       const P = (rows: string[], key: string) => pixTexture(this.scene, key, rows, map, 4);
       this.runs = [P(frame(false, 'fwd', 'splitA'), 'ath_run0'), P(frame(true, 'mid', 'pass'), 'ath_run1'), P(frame(false, 'back', 'splitB'), 'ath_run2'), P(frame(true, 'mid', 'pass2'), 'ath_run3'), P(JUMP, 'ath_run_jump'), P(DUCK, 'ath_run_duck')];
     }

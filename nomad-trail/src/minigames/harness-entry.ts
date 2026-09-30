@@ -168,6 +168,7 @@ if (q.get('auto') === '1') {
     const drive = () => {
       if (!scene.scene.isActive()) return; if (!scene.frame?.active) { if (Math.random() < 0.5 && !(q.get('holdResult') === '1' && scene.frame?.continueHandler)) scene.frame?.ready?.(); return; }
       const cur = scene.current; if (!cur) return; if (cur.id !== lastId) { lastId = cur.id; games.push(cur.id); } titles.add(scene.frame.title);
+      if (mode === 'off') return;   // READY and CONTINUE only: no gameplay input, for scripted collision probes
       if (mode === 'random') { const x = 20 + Math.random() * 320, y = 100 + Math.random() * 400; if (Math.random() < 0.5) { scene.input.emit('pointerdown', mk(x, y, true)); setTimeout(() => scene.input.emit('pointerup', mk(x, y - (Math.random() < 0.3 ? 60 : 0), false)), 40 + Math.random() * 400); } return; }
       if (cur.id === 'burpee') { const h = cur.hint(); if (holding) { if (cur.t >= holdUntil) { holding = false; cur.release(180, 300); } return; } if (h.done) return; const mv = h.move; const x = 180, y = 300;
         if (mv === 'tap') { cur.press(x, y); cur.release(x, y); } else if (mv === 'up') { cur.press(x, y); cur.release(x, y - 60); } else if (mv === 'down') { cur.press(x, y); cur.release(x, y + 60); } else { cur.press(x, y); holding = true; holdUntil = cur.t + 0.75; }
