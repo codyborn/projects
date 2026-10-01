@@ -18,20 +18,24 @@ await pg.evaluate(() => {
     const n = window.__nomad, W = 360, H = 640, out = [];
     const walk = (list, ox, oy, acc, depth) => {
       for (const o of list) {
+        if (o.visible === false || (o.alpha ?? 1) < 0.05) continue;
         const d = o.depth || depth;
         if (o.__rect) acc.push({ x: ox + o.x + o.__rect.x, y: oy + o.y + o.__rect.y, w: o.__rect.w, h: o.__rect.h, depth: d });
         if (o.type === 'Container') walk(o.list, ox + o.x, oy + o.y, acc, d);
       }
       return acc;
     };
-    const texts = (list, ox, oy, acc, nested) => {
+    let ord = 0;
+    const texts = (list, ox, oy, acc, nested, idx) => {
       for (const o of list) {
+        if (idx !== undefined) ord = idx;
+        if (o.visible === false || (o.alpha ?? 1) < 0.05) continue;   /* a hidden container hides its children: the Pack tray stacks four pages in one place */
         if (o.type === 'Container') { texts(o.list, ox + o.x, oy + o.y, acc, true); continue; }
         const t = o.text;
         if (typeof t !== 'string' || !t.trim() || !o.visible || o.alpha < 0.05) continue;
         const w = o.width * (o.scaleX ?? 1), h = o.height * (o.scaleY ?? 1);
         const left = ox + o.x - w * (o.originX ?? 0), top = oy + o.y - h * (o.originY ?? 0);
-        acc.push({ t, left, top, right: left + w, bottom: top + h, depth: o.depth, nested });
+        acc.push({ t, left, top, right: left + w, bottom: top + h, depth: o.depth, nested, order: ord });
       }
       return acc;
     };
@@ -39,7 +43,27 @@ await pg.evaluate(() => {
       const sc = n.game.scene.getScene(key);
       if (!sc || !n.game.scene.isVisible(key)) continue;
       const rects = walk(sc.children.list, 0, 0, [], 0);
-      for (const L of texts(sc.children.list, 0, 0, [], false)) {
+      /* labels that sit on top of each other: same depth, overlapping rows, overlapping columns. Two of these shipped
+         in one screen (a hint running back into its heading, a tag landing on the line under it), so it is worth a check.
+         A modal dims the screen and draws over it, so anything behind the last full-screen dimmer is out of the running. */
+      const all = []; sc.children.list.forEach((o, i) => texts([o], 0, 0, all, false, i));
+      /* anything an opaque panel is painted over afterwards is not on screen: a modal dimmer, or the solid band a
+         scrolling list disappears behind. Without this the audit reports the list it cannot see. */
+      const covers = [];
+      sc.children.list.forEach((o, i) => { if (o.type !== 'Rectangle' && o.type !== 'Graphics') return;
+        const w = o.width * (o.scaleX ?? 1), h = o.height * (o.scaleY ?? 1); if (!(w > 40 && h > 10) || (o.alpha ?? 1) < 0.85) return;
+        covers.push({ order: i, x: o.x - w * (o.originX ?? 0.5), y: o.y - h * (o.originY ?? 0.5), w, h }); });
+      const hidden = (L) => covers.some(c => c.order > L.order && L.left >= c.x - 1 && L.right <= c.x + c.w + 1 && L.top >= c.y - 1 && L.bottom <= c.y + c.h + 1);
+      const live = all.filter(L => !hidden(L));
+      for (let i = 0; i < live.length; i++) for (let j = i + 1; j < live.length; j++) {
+        const A = live[i], B = live[j];
+        if ((A.depth ?? 0) !== (B.depth ?? 0)) continue;
+        const rows = Math.min(A.bottom, B.bottom) - Math.max(A.top, B.top);
+        const cols = Math.min(A.right, B.right) - Math.max(A.left, B.left);
+        /* touching counts: two labels 1 px apart read as one run of text, which is how "dragJan" happened */
+        if (rows > 3 && cols > -3) out.push({ scene: key, text: `${A.t.slice(0, 20)} / ${B.t.slice(0, 20)}`, why: cols > 2 ? 'labels overlap' : 'labels touch', box: [Math.round(Math.max(A.left, B.left)), Math.round(Math.min(A.right, B.right))] });
+      }
+      for (const L of all) {
         /* a label inside a container may be scrolled off on purpose (the Pack tray, the Recipes grid): only loose labels are held to the screen */
         if (!L.nested && (L.left < -1 || L.right > W + 1)) out.push({ scene: key, text: L.t.slice(0, 44), why: 'off screen', box: [Math.round(L.left), Math.round(L.right)] });
         /* the panel a label belongs to: of the tagged rects under its middle, the one drawn closest beneath it */
@@ -58,6 +82,10 @@ const found = [];
 const audit = async (label, keys) => { const r = await pg.evaluate(k => window.__fit(k), keys); for (const f of r) found.push({ at: label, ...f }); };
 
 await audit('title', ['Title']);
+/* panels that only exist after a tap were invisible to this audit, which is how the NEW RUN blurb shipped 4 px wide */
+await pg.evaluate(() => { const sc = window.__nomad.game.scene.getScene('Title'); const b = sc.children.list.find(o => o.type === 'Container' && (o.list || []).some(c => c.text === 'NEW RUN')); b?.emit('pointerup', { downY: 0, upY: 0 }); });
+await sleep(600); await audit('title:new run', ['Title']);
+await pg.evaluate(() => window.__nomad.goto('Title')); await sleep(600);
 // the longest names in the game, so the worst case is the one measured
 const CITY_IDS = await pg.evaluate(() => window.__nomad.review.cities.map(c => c.id));
 for (const city of CITY_IDS) {
@@ -66,7 +94,8 @@ for (const city of CITY_IDS) {
   await sleep(500); await audit(`city:${city}`, ['City']);
 }
 await pg.evaluate(() => window.__nomad.goto('Pack')); await sleep(800); await audit('pack', ['Pack']);
-await pg.evaluate(() => window.__nomad.depart()); await sleep(1000); await audit('route', ['Route']);
+await pg.evaluate(() => { const n = window.__nomad; n.newRun('orangecounty', 'east'); n.autoPack('balanced'); n.depart(); });
+await sleep(1100); await audit('route:first pick', ['Route']);   /* the longest list in the game: 11 legs, both directions, the overflow hint */
 await pg.evaluate(() => window.__nomad.goto('Passport', { back: 'Title' })); await sleep(900); await audit('passport', ['Passport']);
 await pg.evaluate(() => window.__nomad.goto('Recipes', { back: 'Title' })); await sleep(900); await audit('recipes', ['Recipes']);
 for (const ev of ['museum', 'rain', 'airbnbcancel', 'taxibreakdown', 'otter']) {

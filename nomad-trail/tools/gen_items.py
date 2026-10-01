@@ -42,7 +42,7 @@ B = [
  # ---- fun, comfort, traps
  ('switch',     'Handheld Console',   'Console',      0.9, 2, 1, ['switch','luxury'],           0, 'The game within the game. Rest days get a level per city.', False, 'red', ['Carry-On: a level per city on rest days', 'Gold stamps']),
  ('ereader',    'E-Reader',           'E-reader',     0.4, 2, 1, ['luxury'],                    0, 'A thousand books and one cable you will lose.', False, 'gray0', ['+2 mood on travel days', 'A thousand books, 0.4 lb']),
- ('packingcubes','Packing Cubes',     'Cubes',        0.8, 2, 2, ['organizer'],                 0, 'Nothing gets left behind when everything has a place.', False, 'sea3', ['Nothing gets left behind', 'Forgot-something events stop']),
+ ('packingcubes','Packing Cubes',     'Cubes',        0.2, 1, 1, ['organizer'],                 0, 'Nothing gets left behind when everything has a place.', False, 'sea3', ['Nothing gets left behind', 'Forgot-something events stop']),
  ('hostgifts',  'Host Gifts',         'Host gifts',   2.0, 2, 2, ['luxury'],                    0, 'Small, local, edible. Reviews get warmer.', False, 'pink', ['Hosts like you more', '+3 mood on arrival']),
  ('umbrella',   'Umbrella',           'Umbrella',     0.8, 1, 3, ['rain'],                      0, 'Inverts in Patagonia. Fine in Lisbon.', False, 'night3', ['Rain days cost no energy', 'Inverts in Patagonia']),
  ('travelkettle','Travel Kettle',     'Kettle',       1.1, 2, 2, ['kettle','trap'],             0, 'Tea in every room, ninety seconds to a boil. Folds flat.', True, 'red', ['Tea in every room', '+1 mood at night']),

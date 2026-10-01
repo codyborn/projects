@@ -166,7 +166,16 @@ function legsUnfiltered(s: RunState): AvailableLeg[] {
       .sort((a, b) => aheadOf(s, here, b) - aheadOf(s, here, a)).slice(0, 2);
     for (const c of leaps) { const f = fallbackFlight(s, here, c, false); if (s.money >= fareFor(here, f) * 1.5) out.push({ ...f, energy: f.energy + 8, longHaul: true } as LongHaulLeg); }   // only if you saved up
   }
-  if (directionUndecided(s)) { out.sort((a, b) => km(here, a.city) - km(here, b.city)); return out; }   // first pick: nearest first, both ways
+  if (directionUndecided(s)) {
+    /* First pick: the direction is still open, so both ways have to be *visible*. Sorting purely by distance buried
+       every westward city behind eight closer eastward ones and the choice looked like no choice at all. Nearest
+       first within each direction, then dealt out alternately, so the top of the list always shows both. */
+    const near = (a: AvailableLeg, b: AvailableLeg) => km(here, a.city) - km(here, b.city);
+    const east = out.filter(l => wrap(l.city.lon - here.lon) >= 0).sort(near);
+    const west = out.filter(l => wrap(l.city.lon - here.lon) < 0).sort(near);
+    const deal: AvailableLeg[] = []; for (let i = 0; i < Math.max(east.length, west.length); i++) { if (east[i]) deal.push(east[i]); if (west[i]) deal.push(west[i]); }
+    return deal;
+  }
   // rank: home flight first when available, then by forward progress; keep at most one sideways (< 8 degrees ahead) option; long hauls last
   out.sort((a, b) => Number(b.home) - Number(a.home) || Number(!!(a as any).longHaul) - Number(!!(b as any).longHaul) || aheadOf(s, here, b.city) - aheadOf(s, here, a.city));
   let sideways = 0;

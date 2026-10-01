@@ -28,14 +28,22 @@ export class RouteScene extends Phaser.Scene {
     txt(this, 12, 296, 'CONTINENTS', 8, PAL.gray2); const cw = (360 - 116) / ALL.length;
     ALL.forEach((name, i) => { const lit = visited.has(name); const x0 = 116 + i * cw; rect(this, x0, 292, cw - 4, 16, lit ? PAL.night3 : PAL.night1, lit ? PAL.neon : PAL.night3); txt(this, x0 + (cw - 4) / 2, 300, short[name] ?? name.slice(0, 4).toUpperCase(), 8, lit ? PAL.neon : PAL.gray0).setOrigin(0.5); });
     const legs = Sim.availableLegs(run); const m = Sim.monthOf(run.day);
-    txt(this, 12, 322, this.preview ? 'FROM HERE YOU COULD GO' : legs.length ? 'NEXT STOP' : 'NO ROUTES THIS MONTH', 10, PAL.sun2);
+    this.firstPick = !this.preview && Sim.directionUndecided(run);
+    txt(this, 12, 322, this.preview ? 'FROM HERE YOU COULD GO' : this.firstPick ? 'EAST OR WEST?' : legs.length ? 'NEXT STOP' : 'NO ROUTES THIS MONTH', 10, PAL.sun2);
     { const nc = Sim.nextContinent(run); if (nc && legs.length) txt(this, 348, 324, `then ${nc}`, 8, PAL.gray2).setOrigin(1, 0); }   /* the corridor: where the trail goes after this continent */
     txt(this, 348, 322, `${MONTHS[m - 1]} · day ${run.day}`, 8, PAL.gray2).setOrigin(1, 0);
     const listC = this.add.container(0, 0); (listC as any).__scroll = true; const mask = this.make.graphics({}); mask.fillRect(0, 336, 360, 246); listC.setMask(mask.createGeometryMask());   /* __scroll: the list is clipped and drag-scrolled, so its cards are meant to run past the fold */
     legs.forEach((leg, i) => listC.add(this.card(leg, 12, 340 + i * 62)));
-    const total = legs.length * 62; if (total > 246) { const z = this.add.zone(180, 459, 360, 246).setInteractive({ draggable: true }); let sy = 0, s0 = 0; z.on('pointerdown', (p: any) => { s0 = p.y; }); z.on('drag', (p: any) => { const ny = Phaser.Math.Clamp(sy + (p.y - s0), -(total - 246), 0); listC.y = ny; }); z.on('dragend', () => { sy = listC.y; }); z.setDepth(-1); }
+    const total = legs.length * 62;
+    if (total > 246) { const frac = 246 / total;
+      const bar = this.add.graphics().setDepth(6); const drawBar = (off: number) => { bar.clear(); bar.fillStyle(PAL.night3, 0.9).fillRect(354, 340, 3, 246); bar.fillStyle(PAL.sun2, 0.9).fillRect(354, 340 + (-off / total) * 246, 3, Math.max(18, 246 * frac)); };
+      drawBar(0); (this as any).__drawBar = drawBar;
+      txt(this, 150, 324, `${legs.length} ways`, 8, PAL.gray2); }   /* the scrollbar says the rest; the right edge belongs to the month line */
+    if (total > 246) { const z = this.add.zone(180, 459, 360, 246).setInteractive({ draggable: true }); let sy = 0, s0 = 0; z.on('pointerdown', (p: any) => { s0 = p.y; }); z.on('drag', (p: any) => { const ny = Phaser.Math.Clamp(sy + (p.y - s0), -(total - 246), 0); listC.y = ny; (this as any).__drawBar?.(ny); }); z.on('dragend', () => { sy = listC.y; }); z.setDepth(-1); }
     if (!legs.length) { new Button(this, 180, 400, 'WAIT A WEEK HERE', () => { for (let i = 0; i < 7; i++) Sim.cityAction(run, 'rest'); putRun(this, run); this.scene.restart(); }, { w: 240, fill: PAL.dusk0 }); txt(this, 180, 440, 'Some legs only open in season (treks, campervans, Oktoberfest).', 8, PAL.gray2, { align: 'center', wrap: 300 }).setOrigin(0.5); }
     rect(this, 0, 582, 360, 58, PAL.night0).setDepth(5); rect(this, 0, 582, 360, 1, PAL.night3).setDepth(5);
+    /* a solid band under the buttons: the leg list scrolls past 586 and used to show through beside them */
+    this.add.rectangle(180, 614, 360, 52, PAL.night0).setDepth(5);
     new Button(this, 68, 614, this.preview ? '← BACK' : '← STAY', () => this.scene.start('City'), { w: 100, h: 44, size: 10, fill: PAL.night2 }).setDepth(6);
     if (this.scene.get('Passport')) new Button(this, 292, 614, 'PASSPORT', () => this.scene.start('Passport', { back: 'Route' }), { w: 100, h: 44, size: 10, fill: PAL.night2 }).setDepth(6);
   }
@@ -57,19 +65,29 @@ export class RouteScene extends Phaser.Scene {
     for (const c of Data.cities) { const p = this.project(c.lat, c.lon, lon0, cx, cy, R); if (!p) continue; const v = route.includes(c.id); g.fillStyle(v ? PAL.sun2 : PAL.gray2, 1); g.fillRect(Math.round(p.x) - 1, Math.round(p.y) - 1, 3, 3); }
     if (cur) { const p = this.project(cur.lat, cur.lon, lon0, cx, cy, R)!; this.pulse = this.add.circle(p.x, p.y, 4, PAL.white).setStrokeStyle(1, PAL.ink); this.tweens.add({ targets: this.pulse, scaleX: 1.8, scaleY: 1.8, alpha: 0.3, duration: 700, yoyo: true, repeat: -1 }); }
   }
+  private firstPick = false;
   private card(leg: Leg, x: number, y: number) {
     const c = Data.city(leg.to); const p = new Panel(this, x, y, 336, 56, { fill: PAL.night1, border: PAL.night3 }); const fare = Sim.legCost(getRun(this), leg);
     const glyph = TRANSPORT_GLYPH[leg.transport] ?? '·';
     p.add(txt(this, 10, 8, `${glyph}  ${c?.name ?? leg.to}${c?.hero ? ' ★' : ''}`, 12, PAL.white) as any);
     if ((leg as any).longHaul) p.add(txt(this, 200, 12, 'LONG HAUL', 8, PAL.pink) as any);
+
     /* keep the detail line clear of the fare / GO column on the right: drop the optional bits, then trim */
     const bits = [`${leg.days}d`, `energy −${leg.energy}`];
     if (leg.timezones) bits.push(`${Math.abs(leg.timezones)}h lag`);
     if (leg.months) bits.push('in season');
+    /* the first leg sets the direction for the whole year, so each card says which way it goes. The tag leads the
+       detail line rather than floating over it, and the line's budget shrinks to make room. */
+    let subX = 10, budget = 32;
+    if (this.firstPick && c) {
+      const east = (((c.lon - (Data.city(getRun(this).cityId)?.lon ?? 0)) + 540) % 360) - 180 >= 0;
+      const tag = txt(this, subX, 30, east ? 'EAST →' : '← WEST', 8, east ? PAL.sun2 : PAL.sky2);
+      p.add(tag as any); subX += Math.round(tag.width) + 8; budget = 23;
+    }
     let sub = [c?.country ?? '', ...bits].join(' · ');
-    while (sub.length > 32 && bits.length > 2) { bits.pop(); sub = [c?.country ?? '', ...bits].join(' · '); }
-    if (sub.length > 32) sub = sub.slice(0, 31) + '…';
-    p.add(txt(this, 10, 30, sub, 8, PAL.gray2) as any);
+    while (sub.length > budget && bits.length > 1) { bits.pop(); sub = [c?.country ?? '', ...bits].join(' · '); }
+    if (sub.length > budget) sub = sub.slice(0, budget - 1) + '…';
+    p.add(txt(this, subX, 30, sub, 8, PAL.gray2) as any);
     if (typeof fare === 'number') p.add(txt(this, 326, 12, `$${Math.round(fare)}`, 8, PAL.sun2).setOrigin(1, 0.5) as any);
     if (!this.preview) p.add(txt(this, 326, 36, 'GO →', 12, PAL.neon).setOrigin(1, 0.5) as any);
     p.setSize(336, 56); p.setInteractive(new Phaser.Geom.Rectangle(168, 28, 336, 56), Phaser.Geom.Rectangle.Contains);

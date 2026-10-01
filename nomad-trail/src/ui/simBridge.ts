@@ -15,6 +15,8 @@ export interface SimApi {
   hasTag(state: RunState, tag: string): boolean;
   /** where the route corridor goes after this continent (undefined before the first leg) */
   nextContinent(state: RunState): string | undefined;
+  /** before the first leg both ways are open and the next city picks one */
+  directionUndecided(state: RunState): boolean;
   /** result-card lines for a mini-game outcome ("+5 health · +7 mood", "a day passes") */
   previewMinigame(state: RunState, key: string, result: MinigameResult): string[];
   setPack(state: RunState, packed: PackedItem[]): { ok: boolean; errors: string[]; weights: { checked: number; backpack?: number } };
@@ -32,6 +34,8 @@ export interface SimApi {
   visibleAchievements(state: RunState): string[];
   continentsVisited(state: RunState): string[];
   CONTINENTS_ALL: string[];
+  /** how many of the five the passport needs before the flight home opens */
+  HOME_MIN_CONTINENTS: number;
   /** 0 = Sunday. Day 1 of the run is Thu 1 Jan 2026. */
   weekdayOf(day: number): number;
   isWeekend(day: number): boolean;
@@ -51,6 +55,7 @@ export const Sim: SimApi = {
   hasItem: (state, id) => E.hasItem(state, id),
   hasTag: (state, tag) => E.hasTag(state, tag as any),
   nextContinent: (state) => E.nextContinent(state),
+  directionUndecided: (state) => !!E.directionUndecided?.(state),
   previewMinigame: (state, key, result) => E.previewMinigame(state, key, result),
   setPack: (state, packed) => { const r = E.setPack(state, packed); if (r.ok && r.state) Object.assign(state, r.state); return { ok: r.ok, errors: r.errors, weights: r.weights }; },
   availableLegs: (state) => E.availableLegs(state),
@@ -68,6 +73,7 @@ export const Sim: SimApi = {
   // engine may lag behind the scenes: derive from city regions when the engine has no continent helpers yet
   continentsVisited: (state) => E.continentsVisited ? E.continentsVisited(state) : Array.from(new Set(state.visited.map(id => { const c = cities.find(x => x.id === id); return c ? (CONTINENT_OF[c.region] as string) : ''; }).filter(x => !!x))),
   CONTINENTS_ALL: E.CONTINENTS_ALL ?? ['North America', 'South America', 'Europe', 'Africa', 'Asia'],
+  HOME_MIN_CONTINENTS: E.HOME_MIN_CONTINENTS ?? 4,
   weekdayOf: (day) => E.weekdayOf ? E.weekdayOf(day) : ((day - 1) + 4) % 7,
   isWeekend: (day) => { if (E.isWeekend) return E.isWeekend(day); const w = ((day - 1) + 4) % 7; return w === 0 || w === 6; },
   randomPack: (seed) => E.randomPack ? E.randomPack(seed) : fallbackRandomPack(seed),

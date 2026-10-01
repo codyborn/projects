@@ -68,7 +68,9 @@ export class TitleScene extends Phaser.Scene {
     items.push(txt(this, 180, 232, 'Start and finish: Orange County', 9, PAL.gray2).setOrigin(0.5) as any);
     const start = 'orangecounty';
     items.push(txt(this, 180, 290, 'East or west? The first city\nyou fly to decides.', 10, PAL.gray2, { align: 'center' }).setOrigin(0.5) as any);
-    items.push(txt(this, 180, 340, 'Circle the planet, touch every continent,\nand make it back within the year.', 8, PAL.gray1, { align: 'center' }).setOrigin(0.5) as any);
+    /* the rule is four of the five continents, not all of them — and the line has to fit the 320 px panel, which at 8 px
+       means roughly 36 characters a row */
+    items.push(txt(this, 180, 334, `Circle the planet, touch ${Sim.HOME_MIN_CONTINENTS}\nof the 5 continents, and make it\nback inside the year.`, 8, PAL.gray1, { align: 'center' }).setOrigin(0.5) as any);
     items.push(new Button(this, 180, 400, 'START PACKING', () => { const s = Sim.createRun(Date.now() % 1e9, start, 'east'); putRun(this, s); this.scene.start('Pack'); }, { w: 240, fill: PAL.sun0 }));
     items.push(new Button(this, 180, 446, 'back', () => items.forEach(i => i.destroy()), { w: 120, h: 44, size: 10, fill: PAL.night2 }));
   }

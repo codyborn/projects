@@ -545,9 +545,9 @@
     "id": "packingcubes",
     "name": "Packing Cubes",
     "label": "Cubes",
-    "weightLb": 0.8,
-    "w": 2,
-    "h": 2,
+    "weightLb": 0.2,
+    "w": 1,
+    "h": 1,
     "tags": [
       "organizer"
     ],
