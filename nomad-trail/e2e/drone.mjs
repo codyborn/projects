@@ -60,6 +60,27 @@ for (const [city, want] of [['miami', 'gull'], ['tokyo', 'kaiju'], ['munich', 'd
     `${r.boss ? r.boss.name + ' hp' + r.boss.maxHp : 'no boss'} projs=${r.projs} beam=${r.beam} beaten=${r.beaten} landed=${r.landed} score=${r.score}`);
   check(`${city}: its name fits the screen`, !r.nameW || r.nameW <= 352, `${r.nameW ?? '-'} px`);
 }
+// the kaiju's beam must come out where it threatened to
+{
+  const r = await pg.evaluate(async () => {
+    const n = window.__nomad; const city = n.review.cities.find(c => c.id === 'tokyo');
+    n.minigame('Drone', { city, cityName: city.name, seed: 11, level: 1 }); await new Promise(r => setTimeout(r, 700));
+    const sc = n.game.scene.getScene('Drone'); sc.frame.ready(); await new Promise(r => setTimeout(r, 300));
+    sc.hearts = 999; sc.padWx = sc.scroll + sc.x + 30;
+    const muzzle = () => sc.boss.y + sc.boss.def.muzzle;
+    for (let i = 0; i < 2600; i++) {
+      await new Promise(r => setTimeout(r, 16));
+      if (!sc.boss) continue;
+      if (sc.boss.windup > 0 && sc.boss.pending === 'beam' && sc.boss.windup < 0.1) {
+        const warned = muzzle();                                   // where the warning line is, one frame before it fires
+        for (let k = 0; k < 20; k++) { await new Promise(r => setTimeout(r, 16)); if (sc.boss.beam > 0) return { warned, fired: muzzle(), drift: Math.abs(muzzle() - warned) }; }
+        return { warned, fired: null };
+      }
+    }
+    return null;
+  });
+  check('the beam fires from where it warned', r && r.fired !== null && r.drift < 12, r ? `warned at ${r.warned?.toFixed(0)}, fired at ${r.fired?.toFixed(0)}` : 'no beam seen');
+}
 const sky = await watchSky('dakhla');
 check('balloons drift through the course', sky.kinds.includes('balloon'), sky.kinds.join(','));
 check('a balloon rises and sinks', sky.balloonDrift >= 12, `${sky.balloonDrift} px`);

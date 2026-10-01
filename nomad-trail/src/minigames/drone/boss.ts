@@ -114,6 +114,9 @@ export function stepBoss(b: BossState, dt: number, droneX: number, droneY: numbe
   // attack clock: a telegraphed wind-up, then the attack itself
   if (b.windup > 0) {
     b.windup -= dt;
+    /* aim during the wind-up, not at the moment of firing: the warning line used to sit at the drone's height while the
+       beam came out of a mouth that had not moved there yet, so it fired from somewhere other than where it threatened */
+    if (b.pending === 'beam') { const want = Math.max(top, Math.min(bot, b.beamY - d.muzzle)); b.y += (want - b.y) * Math.min(1, 6 * dt); }
     if (b.windup <= 0) {
       const kind = b.pending ?? 'spit'; b.pending = undefined;
       const speed = 150 + 18 * level + 20 * hard;
@@ -170,18 +173,34 @@ export function drawBoss(g: G, b: BossState, skin: DragonSkin, t: number) {
       g.fillStyle(PAL.gray1).fillTriangle(x - 10, y - 12 + wing * 0.6, x - 40, y - 20 + wing, x - 14, y - 4);
       break; }
     case 'kaiju': {
-      const c = flash ? PAL.white : PAL.grass0;
-      g.fillStyle(PAL.ink).fillTriangle(x + 20, y + 54, x + 60, y + 60, x + 24, y + 38);               // tail
-      g.fillStyle(c).fillRect(x - 24, y - 26, 48, 80);                                                 // torso
-      g.fillStyle(PAL.grass1).fillRect(x - 16, y - 10, 32, 56);                                        // belly plates
-      for (let i = 0; i < 5; i++) g.fillStyle(PAL.gray2).fillRect(x - 16, y - 4 + i * 11, 32, 3);
-      g.fillStyle(c).fillRect(x - 40, y + 2, 18, 34).fillRect(x + 22, y + 2, 18, 34);                  // arms
-      g.fillStyle(c).fillRect(x - 22, y + 54, 18, 26).fillRect(x + 4, y + 54, 18, 26);                 // legs
-      g.fillStyle(PAL.grass2); for (let i = 0; i < 5; i++) g.fillTriangle(x + 24 + i, y - 18 + i * 16, x + 24 + i, y - 4 + i * 16, x + 38 + i * 2, y - 11 + i * 16);   // dorsal plates, down the back
-      g.fillStyle(c).fillRect(x - 20, y - 52, 40, 30);                                                 // head
-      g.fillStyle(PAL.ink).fillRect(x - 14, y - 44, 8, 6).fillRect(x + 6, y - 44, 8, 6);
-      g.fillStyle(charging ? PAL.neon : PAL.ink).fillRect(x - 16, y - 32, 32, 8);                      // mouth, lit while charging
-      if (charging) { g.fillStyle(PAL.neon, 0.5 + 0.5 * Math.sin(t * 30)).fillCircle(x - 26, y - 28, 10 + 6 * Math.sin(t * 20)); }
+      /* built on one grid so the pieces meet: torso x±24 / y-26..+54, head on top of it and offset toward the
+         drone, arms off the shoulders, legs under the hips, tail and plates off the back edge at x+24 */
+      const c = flash ? PAL.white : PAL.grass0, dark = flash ? PAL.gray2 : PAL.grass2, O = PAL.ink;
+      const TOP = y - 26, BOT = y + 54, LX = x - 24, RX = x + 24;
+      // tail: three tapering blocks off the lower back
+      for (let i = 0; i < 3; i++) { const tw = 16 - i * 4, tx = RX + i * 13, ty = y + 34 + i * 7;
+        g.fillStyle(O).fillRect(tx - 1, ty - 1, 15, tw + 2); g.fillStyle(dark).fillRect(tx, ty, 14, tw); }
+      // far leg and far arm first, a shade darker so the near ones read in front
+      g.fillStyle(O).fillRect(x + 3, BOT - 1, 20, 30); g.fillStyle(dark).fillRect(x + 4, BOT, 18, 28);
+      g.fillStyle(O).fillRect(RX - 7, TOP + 6, 14, 38); g.fillStyle(dark).fillRect(RX - 6, TOP + 7, 12, 36);
+      // dorsal plates down the back edge
+      g.fillStyle(dark); for (let i = 0; i < 5; i++) g.fillTriangle(RX - 2, TOP + 2 + i * 16, RX - 2, TOP + 15 + i * 16, RX + 13, TOP + 8 + i * 16);
+      // torso
+      g.fillStyle(O).fillRect(LX - 1, TOP - 1, 50, BOT - TOP + 2); g.fillStyle(c).fillRect(LX, TOP, 48, BOT - TOP);
+      g.fillStyle(PAL.grass1).fillRect(LX + 7, TOP + 14, 34, 50);                                   // belly
+      for (let i = 0; i < 4; i++) g.fillStyle(PAL.gray2, 0.8).fillRect(LX + 7, TOP + 20 + i * 12, 34, 3);
+      // near leg and near arm
+      g.fillStyle(O).fillRect(LX + 1, BOT - 1, 20, 30); g.fillStyle(c).fillRect(LX + 2, BOT, 18, 28);
+      g.fillStyle(O).fillRect(LX - 13, TOP + 10, 14, 40); g.fillStyle(c).fillRect(LX - 12, TOP + 11, 12, 38);
+      g.fillStyle(O).fillRect(LX - 14, TOP + 44, 14, 7);                                            // claw
+      // head: sits on the torso, pushed toward the drone, with a snout and a mouth that lights while charging
+      const hx = x - 8, hy = TOP - 18;
+      g.fillStyle(O).fillRect(hx - 21, hy - 17, 44, 36); g.fillStyle(c).fillRect(hx - 20, hy - 16, 42, 34);
+      g.fillStyle(O).fillRect(hx - 34, hy - 4, 16, 18); g.fillStyle(c).fillRect(hx - 33, hy - 3, 14, 16);   // snout
+      g.fillStyle(charging ? PAL.neon : PAL.ink).fillRect(hx - 34, hy + 5, 30, 7);                   // mouth line
+      g.fillStyle(PAL.sun2).fillRect(hx - 14, hy - 8, 7, 6); g.fillStyle(O).fillRect(hx - 12, hy - 6, 3, 3);   // eye
+      g.fillStyle(dark).fillTriangle(hx + 4, hy - 17, hx + 10, hy - 28, hx + 16, hy - 16);           // brow spike
+      if (charging) g.fillStyle(PAL.neon, 0.45 + 0.45 * Math.sin(t * 30)).fillCircle(hx - 36, hy + 8, 9 + 5 * Math.sin(t * 20));
       break; }
     case 'dragon': {
       const body = flash ? PAL.white : skin.body, belly = flash ? PAL.white : skin.belly;
@@ -252,7 +271,7 @@ export const beamLineY = (b: BossState) => b.y + b.def.muzzle;
 /** The beam and the line that warns about it. */
 export function drawBossBeam(g: G, b: BossState, skin: DragonSkin, t: number, screenW: number) {
   const col = b.def.kind === 'dragon' ? skin.fire : b.def.tint; const my = beamLineY(b);
-  if (b.windup > 0 && b.pending === 'beam') { const a = 0.25 + 0.45 * Math.abs(Math.sin(t * 18)); g.fillStyle(col, a).fillRect(0, b.beamY - 2, b.x, 4); return; }   /* the warning line sits where the beam will land */
+  if (b.windup > 0 && b.pending === 'beam') { const a = 0.25 + 0.45 * Math.abs(Math.sin(t * 18)); g.fillStyle(col, a).fillRect(0, my - 2, b.x, 4); return; }   /* the warning line is drawn from the mouth, which is already swinging onto the shot */
   if (b.beam <= 0) return;
   const h = 16 + Math.sin(t * 40) * 3;
   g.fillStyle(col, 0.35).fillRect(0, my - h, b.x, h * 2);

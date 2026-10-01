@@ -147,10 +147,22 @@ export class Pinnacle extends Micro {
   /** The goal on screen: the top of the blade with its cairn and pole, small on the horizon at the start, scaling up and coming down the
    *  screen toward the climber as progress grows; in the last 10% it sits right in front of them. */
   private summitPos() { const p = this.prog; const e = p * p * (3 - 2 * p); return { x: VX, y: VY + 6 + (ATH_Y - 58 - VY - 6) * e, s: 0.3 + 1.7 * e }; }
+  /** Where the ridge stops. The lane used to run all the way to the vanishing point, which reads as a corridor with no end;
+   *  it now finishes on a square edge at the summit, far away and hairline at the start, wide and close by the top. */
+  private laneEnd() {
+    const endY = this.summitPos().y + 6;
+    const nearHalf = this.laneHalf() * (LANE_NEAR_Y - VY) / (ATH_Y - VY);
+    const k = clamp((endY - VY) / (LANE_NEAR_Y - VY), 0, 1);
+    return { y: endY, half: 3 + (nearHalf - 3) * k, nearHalf };
+  }
   private drawSummit(g: Phaser.GameObjects.Graphics) {
     const { x, y, s } = this.summitPos();
     /* the blade's top behind the cairn, then the cairn (three courses of stones) and the pole */
-    g.fillStyle(PAL.night3).fillTriangle(x - 30 * s, y + 6, x, y - 34 * s, x + 30 * s, y + 6); g.fillStyle(PAL.gray0, 0.35).fillTriangle(x, y - 34 * s, x + 4 * s, y - 26 * s, x + 30 * s, y + 6);
+    /* the peak sits on the end of the ridge and is as wide as it: a narrow spike read as more ridge carrying on behind */
+    const base = Math.max(30 * s, this.laneEnd().half);
+    g.fillStyle(PAL.night3).fillTriangle(x - base, y + 6, x, y - 34 * s, x + base, y + 6);
+    g.fillStyle(PAL.gray0, 0.35).fillTriangle(x, y - 34 * s, x + 5 * s, y - 24 * s, x + base, y + 6);
+    g.fillStyle(PAL.night1, 0.6).fillTriangle(x, y - 34 * s, x - 5 * s, y - 24 * s, x - base, y + 6);
     const course = (yy: number, w: number, c: number) => { g.fillStyle(c).fillRect(x - w / 2, yy - 6 * s, w, 6 * s); g.fillStyle(PAL.gray0, 0.5).fillRect(x - w / 2 + 2 * s, yy - 6 * s, 3 * s, 2 * s); };
     course(y, 30 * s, PAL.night2); course(y - 6 * s, 22 * s, PAL.night3); course(y - 12 * s, 12 * s, PAL.night2);
     g.fillStyle(PAL.gray0).fillRect(x - 1 * s, y - 46 * s, Math.max(1, 2 * s), 34 * s);
@@ -163,17 +175,20 @@ export class Pinnacle extends Micro {
     g.fillStyle(PAL.gray1).fillRect(0, 26, W, H - 26); g.fillStyle(PAL.gray2, 0.75).fillRect(0, 26, W, VY - 26);
     if (pull > 0) { g.fillStyle(PAL.gray0, 0.9 * pull); for (let px = 0; px < W; px += 2) { const y = VY - 30 + Math.round(Math.sin(px / 41) * 16 + Math.sin(px / 13 + 1) * 5); g.fillRect(px, y, 2, VY + 40 - y); } g.fillStyle(PAL.night3, 0.8 * pull); for (let px = 0; px < W; px += 2) { const y = VY - 8 + Math.round(Math.sin(px / 29 + 2) * 10 + Math.sin(px / 9) * 3); g.fillRect(px, y, 2, VY + 40 - y); } }
     /* the lane in perspective: the far end narrows to the vanishing point, the near end is `half` wide at the athlete's row and widens as the ridge does */
-    const nearHalf = half * (LANE_NEAR_Y - VY) / (ATH_Y - VY); const farHalf = 3 + p * 6;
-    const lane = [{ x: VX - nearHalf, y: LANE_NEAR_Y }, { x: VX - farHalf, y: VY }, { x: VX + farHalf, y: VY }, { x: VX + nearHalf, y: LANE_NEAR_Y }];
+    const { y: endY, half: endHalf, nearHalf } = this.laneEnd();
+    const lane = [{ x: VX - nearHalf, y: LANE_NEAR_Y }, { x: VX - endHalf, y: endY }, { x: VX + endHalf, y: endY }, { x: VX + nearHalf, y: LANE_NEAR_Y }];
     g.fillStyle(PAL.night3).fillPoints(V(lane), true);
-    g.fillStyle(PAL.gray0, 0.3).fillPoints(V([{ x: VX - nearHalf * 0.72, y: LANE_NEAR_Y }, { x: VX - farHalf * 0.6, y: VY }, { x: VX + farHalf * 0.6, y: VY }, { x: VX + nearHalf * 0.72, y: LANE_NEAR_Y }]), true);
+    g.fillStyle(PAL.gray0, 0.3).fillPoints(V([{ x: VX - nearHalf * 0.72, y: LANE_NEAR_Y }, { x: VX - endHalf * 0.72, y: endY }, { x: VX + endHalf * 0.72, y: endY }, { x: VX + nearHalf * 0.72, y: LANE_NEAR_Y }]), true);
+    /* the far edge itself: the lip you are walking toward, lit so it reads as a stop rather than a horizon */
+    g.fillStyle(PAL.night1).fillRect(VX - endHalf, endY - 2, endHalf * 2, 4);
+    g.fillStyle(PAL.gray1, 0.8).fillRect(VX - endHalf, endY - 3, endHalf * 2, 1);
     /* cliff edges: a dark lip on both sides, then the drop */
-    g.lineStyle(3, PAL.night1, 1); g.lineBetween(VX - nearHalf, LANE_NEAR_Y, VX - farHalf, VY); g.lineBetween(VX + nearHalf, LANE_NEAR_Y, VX + farHalf, VY);
-    g.lineStyle(1, PAL.gray0, 0.7); g.lineBetween(VX - nearHalf + 3, LANE_NEAR_Y, VX - farHalf + 1, VY); g.lineBetween(VX + nearHalf - 3, LANE_NEAR_Y, VX + farHalf - 1, VY);
+    g.lineStyle(3, PAL.night1, 1); g.lineBetween(VX - nearHalf, LANE_NEAR_Y, VX - endHalf, endY); g.lineBetween(VX + nearHalf, LANE_NEAR_Y, VX + endHalf, endY);
+    g.lineStyle(1, PAL.gray0, 0.7); g.lineBetween(VX - nearHalf + 3, LANE_NEAR_Y, VX - endHalf + 1, endY); g.lineBetween(VX + nearHalf - 3, LANE_NEAR_Y, VX + endHalf - 1, endY);
     /* scrolling cross-lines carry the walking motion */
-    for (let i = 0; i < 12; i++) { const k = ((i / 12 + p * 6) % 1); const kk = k * k; const y = VY + (LANE_NEAR_Y - VY) * kk; const hw = farHalf + (nearHalf - farHalf) * kk; g.fillStyle(PAL.gray0, 0.3 + 0.4 * k).fillRect(VX - hw, y, hw * 2, 2); }
+    for (let i = 0; i < 12; i++) { const k = ((i / 12 + p * 6) % 1); const kk = k * k; const y = endY + (LANE_NEAR_Y - endY) * kk; const hw = endHalf + (nearHalf - endHalf) * kk; g.fillStyle(PAL.gray0, 0.3 + 0.4 * k).fillRect(VX - hw, y, hw * 2, 2); }
     /* fog banks beyond the edges */
-    for (let k = 0; k < 6; k++) { const yy = VY + 40 + k * 68 + Math.sin(this.t * 0.8 + k) * 6; const kk = (yy - VY) / (LANE_NEAR_Y - VY); const hw = farHalf + (nearHalf - farHalf) * kk * kk; const drift = Math.sin(this.t * 0.5 + k * 2) * 14; const back = pull * 170; f.fillStyle(PAL.white, 0.18 * (1 - 0.6 * pull)).fillRoundedRect(-30 + drift - back, yy, Math.max(0, VX - hw + 4), 30, 14); f.fillStyle(PAL.white, 0.18 * (1 - 0.6 * pull)).fillRoundedRect(VX + hw - 4 - drift + back, yy + 20, W, 30, 14); }
+    for (let k = 0; k < 6; k++) { const yy = endY + 30 + k * 68 + Math.sin(this.t * 0.8 + k) * 6; if (yy > LANE_NEAR_Y) continue; const kk = clamp((yy - endY) / Math.max(1, LANE_NEAR_Y - endY), 0, 1); const hw = endHalf + (nearHalf - endHalf) * kk * kk; const drift = Math.sin(this.t * 0.5 + k * 2) * 14; const back = pull * 170; f.fillStyle(PAL.white, 0.18 * (1 - 0.6 * pull)).fillRoundedRect(-30 + drift - back, yy, Math.max(0, VX - hw + 4), 30, 14); f.fillStyle(PAL.white, 0.18 * (1 - 0.6 * pull)).fillRoundedRect(VX + hw - 4 - drift + back, yy + 20, W, 30, 14); }
     this.drawSummit(g);
     /* the athlete from behind, leaning with the needle; the lean shows against the lane's width */
     const lean = this.x / EDGE; this.ctx.athlete.at(VX + lean * half * 0.8, ATH_Y + (this.walking ? Math.sin(this.t * 14) * 2 : 0)); this.ctx.athlete.sprite.setAngle(lean * 20); this.ctx.athlete.pose(this.walking ? (Math.floor(this.t * 6) % 2 ? 3 : 0) : 0);

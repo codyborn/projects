@@ -27,6 +27,12 @@ export class CreditsScene extends Phaser.Scene {
     this.content = this.add.container(0, 0); (this.content as any).__scroll = true;   /* a film roll: its contents are meant to start and end off-screen */
     const add = (o: Phaser.GameObjects.GameObject) => this.content.add(o as any);
     let y = H - 60;   /* everything starts just below the screen and rolls up like film credits */
+    /* the verdict leads the roll: you learn how it went before you read what any of it was */
+    const won = run?.ending?.kind === 'win';
+    if (run?.ending) {
+      add(txt(this, W / 2, y, won ? 'SUCCESS' : 'GAME OVER', 26, won ? PAL.neon : PAL.red).setOrigin(0.5)); y += 34;
+      add(txt(this, W / 2, y, run.ending.text ?? '', 9, PAL.gray2, { align: 'center', wrap: 300 }).setOrigin(0.5, 0)); y += 52;
+    }
     add(txt(this, W / 2, y, 'WHAT REALLY HAPPENED', 16, PAL.sun2).setOrigin(0.5)); y += 34;
     add(txt(this, W / 2, y, rows.length ? 'Every event in your run happened to Cody on the trip.' : 'Nothing that happened to you this run has happened to Cody. Yet.', 8, PAL.gray2, { align: 'center', wrap: 300 }).setOrigin(0.5, 0)); y += rows.length ? 48 : 60;
     for (const r of rows) {

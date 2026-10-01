@@ -13,13 +13,17 @@ const W = 360, H = 640;
 /* the dish texture is 96x64, so it is drawn at 0.78 to leave room for the name and score inside the card */
 const COLS = 3, CW = 104, CH = 108, GAP = 8, ART = 0.78;
 const GRID_X = (W - (COLS * CW + (COLS - 1) * GAP)) / 2, GRID_TOP = 96;
+/* scroll feel: how long the list takes to reach the finger, how long a throw lasts, how hard the ends push back */
+/* DECAY_MS 430 puts the throw between iOS 'normal' (~500) and 'fast' (~100). STOP_PXS is where it is called
+   finished: below half a pixel a frame the list is only nudging the pixel grid, which reads as never settling. */
+const TRACK_MS = 35, DECAY_MS = 430, SPRING_MS = 85, OVER = 0.42, VEL_WINDOW = 90, STOP_PXS = 30;
 
 /** The recipe book: every dish in the game, greyed until the player has cooked it, then replayable with its best score. */
 export class RecipesScene extends Phaser.Scene {
   static KEY = 'Recipes';
   private backKey?: string; private content!: Phaser.GameObjects.Container; private maxScroll = 0; private scrollY = 0;
   constructor() { super(RecipesScene.KEY); }
-  init(d?: { back?: string }) { this.backKey = d?.back; this.scrollY = 0; this.target = 0; this.vel = 0; this.dragging = false; }
+  init(d?: { back?: string }) { this.backKey = d?.back; this.scrollY = 0; this.aim = 0; this.vel = 0; this.dragging = false; }
   create() {
     this.cameras.main.setBackgroundColor(PAL.night0);
     const best = getSettings(this).career?.dishes ?? {};
@@ -51,16 +55,38 @@ export class RecipesScene extends Phaser.Scene {
     const rows = Math.ceil(dishes.length / COLS);
     this.maxScroll = Math.max(0, GRID_TOP + rows * (CH + GAP) + 12 - (H - 64));
 
-    /* drag tracks the finger exactly, then coasts: target + inertia, smoothed every frame in update() */
-    let downY = 0, start = 0, moved = false, lastY = 0, lastT = 0;
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { downY = lastY = p.y; lastT = this.time.now; start = this.target; moved = false; this.vel = 0; this.dragging = true; });
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
-      if (!p.isDown) return; if (Math.abs(p.y - downY) > 6) moved = true;
-      const dt = Math.max(1, this.time.now - lastT); this.vel = (lastY - p.y) / dt * 16;   /* px per frame */
-      lastY = p.y; lastT = this.time.now; this.setTarget(start + (downY - p.y)); this.scrollY = this.target; this.content.setY(-Math.round(this.scrollY));
+    /* Scrolling, the way a phone does it. Four things matter and the first three were missing:
+       · the finger's position is a *target*, chased with a 35 ms time constant. Touch events arrive coalesced and at
+         their own rate (often slower than the frame), so applying them raw makes the grid step; 35 ms is below the
+         threshold where a lag is felt but long enough to turn those steps into a ramp.
+       · the throw speed comes from the last ~90 ms of movement, not the last event, and is dropped entirely if the
+         finger came to rest before lifting (otherwise a careful placement flings the list away).
+       · past either end the list follows at 42% and springs back: a hard stop is the thing that feels most like a game
+         and least like a phone.
+       · momentum is integrated straight into the position with an exponential decay. The old code ran the velocity into
+         a target and then eased the position toward that target, which is two lags stacked. */
+    let startScroll = 0, startY = 0, moved = false;
+    const samples: { t: number; y: number }[] = [];
+    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      startY = p.y; startScroll = this.scrollY; this.aim = this.scrollY; this.vel = 0; moved = false; this.dragging = true;
+      samples.length = 0; samples.push({ t: this.time.now, y: p.y });
     });
-    this.input.on('pointerup', () => { this.dragging = false; });
-    this.input.on('wheel', (_p: unknown, _o: unknown, _dx: number, dy: number) => { this.vel = 0; this.setTarget(this.target + dy * 0.6); });
+    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
+      if (!p.isDown || !this.dragging) return;
+      if (Math.abs(p.y - startY) > 6) moved = true;
+      samples.push({ t: this.time.now, y: p.y }); while (samples.length > 2 && this.time.now - samples[0].t > VEL_WINDOW) samples.shift();
+      this.aim = this.rubber(startScroll + (startY - p.y));
+    });
+    const release = () => {
+      if (!this.dragging) return; this.dragging = false;
+      const now = this.time.now, last = samples[samples.length - 1];
+      /* a finger that stopped before lifting means "stay here", not "throw" */
+      if (!last || now - last.t > 70 || samples.length < 2) { this.vel = 0; return; }
+      const first = samples[0]; const dt = last.t - first.t;
+      this.vel = dt > 8 ? (first.y - last.y) / dt * 1000 : 0;   /* px per second, down-swipe positive */
+    };
+    this.input.on('pointerup', release); this.input.on('pointerupoutside', release);
+    this.input.on('wheel', (_p: unknown, _o: unknown, _dx: number, dy: number) => { this.vel = 0; this.aim = this.scrollY = Phaser.Math.Clamp(this.scrollY + dy * 0.6, 0, this.maxScroll); });
     this.dragGuard = () => moved;
 
     this.add.rectangle(W / 2, H - 32, W, 64, PAL.night0).setDepth(9);
@@ -68,18 +94,34 @@ export class RecipesScene extends Phaser.Scene {
     this.cameras.main.fadeIn(200, 0, 0, 0);
   }
   private dragGuard: () => boolean = () => false;
-  private target = 0; private vel = 0; private dragging = false;
-  private setTarget(v: number) { this.target = Phaser.Math.Clamp(v, 0, this.maxScroll); }
+  /** where the finger wants the list (drag) · how fast it is being thrown (px/s) */
+  private aim = 0; private vel = 0; private dragging = false;
+  /** How far past an end the list will follow the finger, and how hard it resists getting there. */
+  private rubber(v: number) {
+    if (v < 0) return v * OVER;
+    if (v > this.maxScroll) return this.maxScroll + (v - this.maxScroll) * OVER;
+    return v;
+  }
   update(_t: number, dt: number) {
-    if (this.dragging) { this.scrollY = this.target; }                         /* under the finger: no easing, it reads as lag */
-    else {
-      if (Math.abs(this.vel) > 0.05) { this.setTarget(this.target + this.vel); this.vel *= Math.pow(0.9, dt / 16.7); }   /* coast */
-      else this.vel = 0;
-      const k = 1 - Math.pow(1e-9, dt / 1000);                                 /* settle fast, frame-rate independent */
-      this.scrollY += (this.target - this.scrollY) * k;
-      if (Math.abs(this.target - this.scrollY) < 0.1) this.scrollY = this.target;
+    const ms = Math.min(dt, 50);                                        /* a stalled frame must not teleport the list */
+    if (this.dragging && !this.input.activePointer.isDown) this.dragging = false;   /* the finger left the canvas */
+    if (this.dragging) {
+      this.scrollY += (this.aim - this.scrollY) * (1 - Math.exp(-ms / TRACK_MS));
+    } else {
+      const over = this.scrollY < 0 ? -this.scrollY : this.scrollY > this.maxScroll ? this.maxScroll - this.scrollY : 0;
+      if (over !== 0) {
+        /* past the end: kill the throw quickly and spring back */
+        this.vel *= Math.exp(-ms / 60);
+        this.scrollY += this.vel * ms / 1000;
+        const bound = this.scrollY < 0 ? 0 : this.maxScroll;
+        this.scrollY += (bound - this.scrollY) * (1 - Math.exp(-ms / SPRING_MS));
+        if (Math.abs(bound - this.scrollY) < 0.4) { this.scrollY = bound; this.vel = 0; }
+      } else if (Math.abs(this.vel) > STOP_PXS) {
+        this.scrollY += this.vel * ms / 1000;
+        this.vel *= Math.exp(-ms / DECAY_MS);
+      } else this.vel = 0;
     }
-    this.content.setY(-Math.round(this.scrollY));                              /* round: the pixel font stays crisp */
+    this.content.setY(-Math.round(this.scrollY));                       /* round: the pixel font stays crisp */
   }
   /** Replay a dish: the Cooking scene on top, result recorded as a new personal best if it beats the old one. */
   private cook(d: Dish) {

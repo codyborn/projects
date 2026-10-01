@@ -70,7 +70,7 @@ export class DroneScene extends Phaser.Scene {
     this.frame.scoreNow = () => this.score();
     const bd = this.bossDef();
     this.frame.intro(`${this.cityName.toUpperCase()} · ${this.set.name}. Fly through ${this.ringCount} photo rings, then ${bd.name} is waiting at the end of the course. ${this.set.tagline}.`, () => this.startRun(),
-      { height: 540, title: `Drone flight · level ${this.level}`, extra: (s, add) => {
+      { height: 500, title: `Drone flight · level ${this.level}`, extra: (s, add) => {
         const top = H / 2 - 250; add(s.add.sprite(W / 2, top + 118, 'dr_drone0').setScale(3));
         const ic = s.add.graphics(); add(ic);
         const row = (y: number, draw: () => void, label: string) => { ic.fillStyle(PAL.night3).fillRect(34, y - 16, 36, 32); draw(); add(txt(s, 80, y, label, 9, PAL.white, 'left')); };
@@ -79,8 +79,7 @@ export class DroneScene extends Phaser.Scene {
         row(top + 248, () => { for (let i = 0; i < 3; i++) { ic.fillStyle(PAL.red).fillRect(40 + i * 9, top + 245, 6, 5).fillRect(41 + i * 9, top + 250, 4, 2).fillRect(42 + i * 9, top + 252, 2, 1); } }, '3 hearts · a hit = -1 heart, -10 points');
         row(top + 328, () => { ic.fillStyle(PAL.sun2).fillRect(40, top + 334, 24, 4); ic.fillStyle(PAL.ink).fillRect(48, top + 328, 8, 6); ic.fillStyle(PAL.white).fillRect(50, top + 329, 4, 4); }, 'fly to the LANDING PAD at the end of the course');
         row(top + 288, () => { ic.fillStyle(PAL.red).fillRect(38, top + 284, 8, 7); ic.fillStyle(PAL.sun2).fillRect(49, top + 284, 7, 7); ic.fillStyle(PAL.sky2).fillRect(59, top + 284, 7, 7); }, 'HEART +1 life · DOUBLE SHOT 15 s · SHIELD 1 hit');
-        row(top + 368, () => { ic.fillStyle(PAL.red).fillCircle(52, top + 368, 9); ic.fillStyle(PAL.ink).fillRect(48, top + 365, 3, 3).fillRect(55, top + 365, 3, 3); }, `BOSS: ${bd.name.toLowerCase()} · keep firing, keep moving`);
-        add(txt(s, W / 2, top + 396, `ring = 1 shot · hearts at 0 = crash`, 9, PAL.sun1));
+        add(txt(s, W / 2, top + 360, `ring = 1 shot · hearts at 0 = crash`, 9, PAL.sun1));
       } });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.tick?.remove());
   }
@@ -267,6 +266,24 @@ export class DroneScene extends Phaser.Scene {
     // keep a safe line: tall structures never sit on a ring and never closer than 170 px to the last one
     if (tall) { if (wx - this.lastStaticWx < 170) return; if (this.rings.some(r => r.state === 'open' && Math.abs(r.wx - wx) < (kind === 'crane' || kind === 'cable' ? 110 : kind === 'balloon' ? 95 : 56))) return; this.lastStaticWx = wx; }
     const h = makeHazard(kind, wx, gy, this.rng, this.level);
+    if (kind === 'cable') {
+      /* a cable car has to go somewhere: find the highest ground ahead and hang the top of the line on that peak,
+         with the lower station on the slope under the spawn point. The terrain is a function of world x, so the
+         anchor stays on the peak as the landscape scrolls. */
+      let bestDx = 180, bestTop = Infinity;
+      for (let dx = 130; dx <= 340; dx += 8) { const topY = BASE - terrainH(this.set.terrain, wx + dx, this.seed); if (topY < bestTop) { bestTop = topY; bestDx = dx; } }
+      /* the summit station stands on the peak on its own tower. The terrain only carries ~50 px of relief, so the
+         tower makes up the difference: the line always climbs about 90 px, and its top always stands on the highest
+         ground in view rather than ending in mid-air. */
+      h.y = gy - 10; const relief = h.y - bestTop;
+      const mast = clamp(92 - relief, 26, 96);
+      h.a = bestDx; h.b = Math.max(44, relief + mast);
+      /* and it has to clear the ground it crosses: walk the span, find the worst dip into the hillside and stand the
+         lower station on a taller pylon by that much, keeping the top where it is */
+      let sink = 0;
+      for (let k = 0.08; k <= 0.95; k += 0.06) { const gk = BASE - terrainH(this.set.terrain, wx + h.a * k, this.seed); sink = Math.max(sink, (h.y - h.b * k) - (gk - 12)); }
+      if (sink > 0) { h.y -= sink; h.b -= sink; }
+    }
     if (kind === 'gull' || kind === 'eagle' || kind === 'toucan') h.spr = this.add.sprite(W + 40, h.y, `dr_${kind}0`).setScale(2).setDepth(4);
     this.hazards.push(h);
   }
@@ -368,20 +385,34 @@ export class DroneScene extends Phaser.Scene {
         g.lineStyle(1, PAL.gray2, 0.8).lineBetween(kx + tilt * 1.4, ky + 5, kx + sw.dx * 0.15, ky + 16);   // tail streamer trailing the swing
         break; }
       case 'balloon': {   // a hot-air balloon: too big and too full of people to shoot, so it is dodged
-        const by = balloonY(h), r = h.a, hot = Math.sin(h.t * 3 + h.phase) > 0.6;
-        g.fillStyle(PAL.ink, 0.18).fillEllipse(x, by + r * 1.5, r * 1.5, 7);
-        g.fillStyle(h.phase > 3 ? PAL.red : PAL.sky1).fillEllipse(x, by, r * 1.5, r * 1.9);
-        g.fillStyle(h.phase > 3 ? PAL.sun2 : PAL.white).fillEllipse(x - r * 0.35, by - r * 0.1, r * 0.45, r * 1.7);
-        g.fillStyle(h.phase > 3 ? PAL.sun3 : PAL.sea2).fillEllipse(x + r * 0.42, by - r * 0.1, r * 0.4, r * 1.6);
-        g.fillStyle(PAL.ink, 0.35).fillEllipse(x, by + r * 0.75, r * 1.2, r * 0.5);
-        g.lineStyle(1, PAL.ink, 0.9).lineBetween(x - r * 0.5, by + r * 0.85, x - 5, by + r * 1.3).lineBetween(x + r * 0.5, by + r * 0.85, x + 5, by + r * 1.3);
-        g.fillStyle(PAL.earth1).fillRect(x - 7, by + r * 1.3, 14, 9); g.fillStyle(PAL.earth0).fillRect(x - 7, by + r * 1.3, 14, 2);
-        if (hot) g.fillStyle(PAL.sun0, 0.8).fillTriangle(x - 4, by + r * 1.3, x + 4, by + r * 1.3, x, by + r * 0.7);   // the burner catching
+        const by = balloonY(h), rx = h.a * 0.78, ry = h.a * 0.95, hot = Math.sin(h.t * 3 + h.phase) > 0.6;
+        const warm = h.phase > 3, gores: number[] = warm ? [PAL.red, PAL.sun2, PAL.sun0, PAL.sun2] : [PAL.sky1, PAL.white, PAL.sea2, PAL.white];
+        /* the panels are cut from the envelope row by row, so they narrow with it and meet at the crown — painting
+           flat stripes over the top of an ellipse left them floating off the edges */
+        for (let dy = -ry; dy <= ry; dy++) {
+          const w = rx * Math.sqrt(Math.max(0, 1 - (dy / ry) * (dy / ry)));
+          if (w < 0.5) continue;
+          const yy = Math.round(by + dy), n = gores.length;
+          for (let i = 0; i < n; i++) { const x0 = x - w + (2 * w * i) / n, x1 = x - w + (2 * w * (i + 1)) / n;
+            g.fillStyle(gores[i]).fillRect(Math.round(x0), yy, Math.max(1, Math.round(x1) - Math.round(x0)), 1); }
+          g.fillStyle(PAL.ink, 0.9).fillRect(Math.round(x - w), yy, 1, 1).fillRect(Math.round(x + w) - 1, yy, 1, 1);
+        }
+        g.fillStyle(PAL.ink, 0.3).fillEllipse(x, by + ry * 0.72, rx * 1.5, ry * 0.5);               // the shaded underside of the envelope
+        g.lineStyle(1, PAL.ink, 0.9).lineBetween(x - rx * 0.55, by + ry * 0.8, x - 5, by + ry * 1.25).lineBetween(x + rx * 0.55, by + ry * 0.8, x + 5, by + ry * 1.25);
+        g.fillStyle(PAL.earth1).fillRect(x - 7, by + ry * 1.25, 14, 9); g.fillStyle(PAL.earth0).fillRect(x - 7, by + ry * 1.25, 14, 2);
+        if (hot) g.fillStyle(PAL.sun0, 0.85).fillTriangle(x - 4, by + ry * 1.25, x + 4, by + ry * 1.25, x, by + ry * 0.72);   // the burner catching
         break; }
       case 'crane': g.fillStyle(PAL.sun1).fillRect(x - 3, h.a, 6, h.y - h.a); g.fillRect(h.b < 0 ? x - 72 : x, h.a - 3, 72, 5); g.fillStyle(PAL.ink).fillRect(x - 3, h.a - 8, 6, 5); g.lineStyle(1, PAL.gray2).lineBetween(x + h.b * 50, h.a + 2, x + h.b * 50, h.a + 30); g.fillStyle(PAL.earth2).fillRect(x + h.b * 50 - 5, h.a + 30, 10, 8); break;
       case 'laundry': g.fillStyle(PAL.gray2).fillRect(x - 31, h.y - h.a - 8, 2, h.a + 8).fillRect(x + 29, h.y - h.a - 8, 2, h.a + 8); g.lineStyle(1, PAL.white).lineBetween(x - 30, h.y - h.a, x + 30, h.y - h.a); for (let i = 0; i < 5; i++) g.fillStyle([PAL.sky2, PAL.pink, PAL.sun3, PAL.grass3, PAL.white][i]).fillRect(x - 26 + i * 12, h.y - h.a + 1 + Math.sin(h.t * 3 + i) * 1, 7, 8); break;
       case 'cliff': g.fillStyle(this.set.groundDark).fillRect(x - 13, h.y - h.a, 26, h.a); g.fillStyle(this.set.ground).fillRect(x - 11, h.y - h.a + 2, 22, h.a - 2); g.fillStyle(PAL.white, 0.7).fillRect(x - 11, h.y - h.a + 2, 22, 4); break;
-      case 'cable': { g.lineStyle(1, PAL.gray0).lineBetween(x, h.y, x + h.a, h.y - h.b); const car = 0.5 + 0.5 * Math.sin(h.t * 0.7 + h.c * 6); const cx = x + car * h.a, cy = h.y - car * h.b; g.fillStyle(PAL.gray0).fillRect(cx - 1, cy - 4, 2, 5); g.fillStyle(PAL.red).fillRect(cx - 6, cy, 12, 10); g.fillStyle(PAL.sky3).fillRect(cx - 4, cy + 2, 8, 4); break; }
+      case 'cable': {   // lower mast on the slope, upper station on the peak, the car running between them
+        const topX = x + h.a, topY = h.y - h.b;
+        g.fillStyle(PAL.gray0).fillRect(x - 2, h.y, 4, Math.max(0, this.groundY(x) - h.y)); g.fillStyle(PAL.gray1).fillRect(x - 7, h.y - 4, 14, 4);
+        g.fillStyle(PAL.gray0).fillRect(topX - 2, topY, 4, Math.max(0, this.groundY(topX) - topY));
+        g.fillStyle(PAL.gray1).fillRect(topX - 11, topY - 7, 22, 9); g.fillStyle(PAL.ink).fillRect(topX - 9, topY - 5, 7, 5); g.fillStyle(PAL.sun2, 0.9).fillRect(topX + 1, topY - 5, 6, 5);
+        g.lineStyle(1, PAL.gray0).lineBetween(x, h.y, topX, topY);
+        const car = 0.5 + 0.5 * Math.sin(h.t * 0.7 + h.c * 6); const cx = x + car * h.a, cy = h.y - car * h.b;
+        g.fillStyle(PAL.gray0).fillRect(cx - 1, cy - 4, 2, 5); g.fillStyle(PAL.red).fillRect(cx - 6, cy, 12, 10); g.fillStyle(PAL.sky3).fillRect(cx - 4, cy + 2, 8, 4); break; }
       case 'dust': { const hgt = h.a; g.fillStyle(PAL.earth3, 0.55); for (let i = 0; i < 6; i++) { const yy = h.y - (i + 0.5) * hgt / 6; const w = 6 + i * 3 + Math.sin(h.t * 6 + i) * 2; g.fillRect(x - w / 2 + Math.sin(h.t * 5 + i * 1.3) * 4, yy - hgt / 12, w, hgt / 6); } break; }
       case 'spray': case 'geyser': { const u = plumeUp(h); if (plumeWarn(h) && h.kind === 'geyser') { g.fillStyle(PAL.white, 0.7); for (let i = 0; i < 3; i++) g.fillCircle(x - 6 + i * 6, h.y - 4 - ((h.t * 30 + i * 5) % 12), 2); } if (u > 0.05) { const hgt = h.a * u; g.fillStyle(h.kind === 'geyser' ? PAL.sky3 : PAL.sea3, 0.85).fillRect(x - 5, h.y - hgt, 10, hgt); g.fillStyle(PAL.white, 0.8).fillRect(x - 3, h.y - hgt, 3, hgt); g.fillStyle(PAL.white, 0.5).fillCircle(x, h.y - hgt, 9 * u); } else { g.fillStyle(PAL.sky2, 0.7).fillRect(x - 8, h.y - 2, 16, 2); } break; }
       case 'plume': { const sw = Math.sin(h.t * 2) * 4; g.fillStyle(PAL.sea3, 0.8).fillRect(x - 6 + sw, h.y - h.a, 12, h.a); g.fillStyle(PAL.white, 0.6).fillRect(x - 2 + sw, h.y - h.a, 3, h.a); g.fillStyle(PAL.white, 0.35).fillCircle(x + sw, h.y - h.a + 6, 12).fillCircle(x + sw - 8, h.y - h.a + 16, 8); break; }
