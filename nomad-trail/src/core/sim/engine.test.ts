@@ -3,6 +3,7 @@ import { Sim, GRID, HOME_PROGRESS_DEG, HOME_MIN_CONTINENTS, HOME_CITY } from './
 import { ITEMS, ITEM, CITIES, CITY, EVENTS, EVENT, DISHES, DISH, LEVELS } from './data';
 import { saveRun, loadRun, clearRun, _resetMemoryStore, recordRun, loadSettings } from './save';
 import { makeRng } from './rng';
+import { mitigatedLine } from './events';
 import { rollEvents, eventChance, monthOf, LODGING_DEPENDENT } from './events';
 import { shelfPack, buildPack, randomPack, playRun } from '../../../sim/policy';
 import { START_MONEY, OVERDRAFT, WORK_PAY, WORK_ENERGY, isWeekend, weekdayOf } from './consts';
@@ -179,6 +180,30 @@ describe('events', () => {
     for (const e of EVENTS) if (e.mitigatedText) { expect(e.mitigatedText[0]).toMatch(/[A-Z{]/); expect(e.mitigatedText.length).toBeGreaterThan(30); }
     expect(EVENT.coffeeshop.text).toContain('THE cafe');
     for (const e of EVENTS) for (const t of [e.text, e.mitigatedText ?? '']) expect(t).not.toMatch(/Not an? \w+: the \w+/);
+  });
+  it('a mitigated line never describes gear the player did not pack', () => {
+    /* two items carry the rain tag: a line that says "the shell goes on" is wrong for an umbrella packer */
+    const ITEMS_BY_TAG: Record<string, string[]> = {};
+    for (const it of ITEMS) for (const t of it.tags ?? []) (ITEMS_BY_TAG[t] ??= []).push(it.id);
+    for (const e of EVENTS) {
+      const ids = (e.mitigatedBy ?? []).flatMap(t => ITEMS_BY_TAG[t] ?? []);
+      if (ids.length < 2 || !e.mitigatedText) continue;
+      for (const id of ids) {
+        const line = mitigatedLine({ items: [{ id, x: 0, y: 0, container: 'checked' }] } as any, e);
+        for (const other of ids) {
+          if (other === id) continue;
+          const word = (ITEM[other]?.label ?? '').split(' ').pop()!.toLowerCase();
+          if (word.length > 3) expect(line.toLowerCase(), `${e.id} with ${id}`).not.toContain(word);
+        }
+      }
+    }
+  });
+  it('the rain line follows the gear: shell, umbrella, or neither named', () => {
+    const line = (id: string) => mitigatedLine({ items: [{ id, x: 0, y: 0, container: 'checked' }] } as any, EVENT.rain);
+    expect(line('shell')).toContain('shell');
+    expect(line('umbrella')).toContain('umbrella');
+    expect(line('umbrella')).not.toContain('shell');
+    expect(mitigatedLine({ items: [] } as any, EVENT.rain)).toBe(EVENT.rain.mitigatedText);   /* a future rain item still gets a true sentence */
   });
   it('on arrival the cancelled booking comes first and silences the wifi / host / neighbour events that day', () => {
     const s = { ...packed(), phase: 'city' as const, cityId: 'lisbon' };

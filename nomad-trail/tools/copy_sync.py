@@ -151,7 +151,7 @@ def import_screens(sections):
 def export():
     out = ['---', 'tags: [personal, project, nomad, game, copy]', 'created: 2026-09-24', 'status: Cody editing; sync with `npm run copy:import`', '---', '',
            '# Nomad Trail: all the words', '',
-           'Every line of copy in [[The Nomad Trail (game)]], pulled from the game data. **Edit the text after the colon; do not touch `###` ids or the `- key:` names.** Lists use ` | ` between entries. Line breaks inside a value are written as `\\n`. Keep `{placeholders}`.',
+           'Every line of copy in [[The Nomad Trail (game)]] \u2014 the data files **and** the text written into the scenes. **Edit the text after the colon; do not touch `###` ids or the `- key:` names.** Lists use ` | ` between entries. Line breaks inside a value are written as `\\n`. Keep `{placeholders}`.',
            '', 'To push edits into the game: `cd ~/repos/projects/nomad-trail && npm run copy:import` (then rebuild + push). To regenerate this note from the game: `npm run copy:export` (overwrites your edits, so import first).', '']
     for title, fn, idk, fields, note in SPECS:
         data = J(fn); out += [f'## {title}', '', note, '']
@@ -159,6 +159,8 @@ def export():
             out.append(f'### {row[idk]}')
             for nk, jk, is_list in fields:
                 if jk in row and row[jk] not in (None, ''): out.append(f'- {nk}: {enc(row[jk])}')
+            # per-item mitigated wording (the rain shell and the umbrella read differently)
+            for item_id, line in (row.get('mitigatedTextBy') or {}).items(): out.append(f'- mitigatedText.{item_id}: {enc(line)}')
             # event choices
             for i, ch in enumerate([c for c in (row.get('choices') or []) if isinstance(c, dict)], 1):
                 out.append(f'- choice{i}.label: {enc(ch.get("label", ""))}'); out.append(f'- choice{i}.text: {enc(ch.get("text", ""))}')
@@ -193,6 +195,9 @@ def imp():
                 if nk not in b: continue
                 v = [dec(x.strip()) for x in b[nk].split(' | ')] if is_list else dec(b[nk])
                 if row.get(jk) != v: row[jk] = v; changed += 1
+            for item_id in list((row.get('mitigatedTextBy') or {})):
+                k = f'mitigatedText.{item_id}'
+                if k in b and row['mitigatedTextBy'][item_id] != dec(b[k]): row['mitigatedTextBy'][item_id] = dec(b[k]); changed += 1
             for i, ch in enumerate(row.get('choices') or [], 1):
                 for f in ('label', 'text'):
                     k = f'choice{i}.{f}'

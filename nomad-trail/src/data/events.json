@@ -25,8 +25,8 @@
   },
   {
     "id": "backinjury",
-    "title": "Something gives",
-    "text": "Lifting the bag onto the train rack, something in your lower back makes a sound you did not know it could make. For the next ten days, existence is suffering.",
+    "title": "What gives?",
+    "text": "While lifting the bag onto the train, something in your upper back gives out. For the next ten days, existence is suffering.",
     "when": "leg",
     "baseChance": 0.45,
     "effects": {
@@ -63,7 +63,7 @@
   {
     "id": "kettle",
     "title": "The kettle",
-    "text": "The collapsible travel kettle boils, then does not stop, then detonates. Second-degree burns across the wrist. The hotel has a kettle. It always had a kettle.",
+    "text": "The travel kettle boils, then does not stop, then detonates. You get second-degree burns across your wrist. The hotel has a kettle. It always had a kettle.",
     "when": "day",
     "baseChance": 0.02,
     "effects": {
@@ -145,7 +145,7 @@
     "mitigatedBy": [
       "repellent"
     ],
-    "mitigatedText": "Sunset in {city}. The mosquitoes arrive. The net goes up and the repellent goes on. You sleep like a baby.",
+    "mitigatedText": "Sunset in {city}. The mosquitoes arrive. The net goes up and you sleep like a baby. A baby desired by a hundred flying needles, just out of reach.",
     "mitigatedEffects": {
       "mood": 1
     }
@@ -163,7 +163,7 @@
     "mitigatedBy": [
       "sleep"
     ],
-    "mitigatedText": "Six or more time zones in one leg. Sleep mask down, earplugs in, sun lamp on at 7. The body grumbles and gets in line.",
+    "mitigatedText": "Six or more time zones in one leg. Melatonin at night and sun lamp on at 7. The body grumbles and gets in line.",
     "mitigatedEffects": {
       "energy": -10
     }
@@ -171,7 +171,7 @@
   {
     "id": "windday",
     "title": "Wind day",
-    "text": "The wind arrives at 2 pm like a train timetable. Everyone in {city} disappears to the water.",
+    "text": "The wind arrives promptly at 2 pm. Everyone in {city} disappears to the water. You watch enviously from the shoreline.",
     "when": "day",
     "baseChance": 0.08,
     "effects": {
@@ -184,7 +184,7 @@
     "mitigatedBy": [
       "kite"
     ],
-    "mitigatedText": "The wind arrives at 2 pm like a train timetable. You rig up. Best day of the month.",
+    "mitigatedText": "The wind arrives promptly at 2 pm. You rig up. Best day of the month.",
     "mitigatedEffects": {
       "mood": 15,
       "energy": -12,
@@ -198,7 +198,7 @@
   {
     "id": "overweight",
     "title": "Check-in scale",
-    "text": "The airline scale reads a number and the agent reads it back to you like a diagnosis. Fifty pounds is fifty pounds.",
+    "text": "The airline scale reads a number and the agent reads it back to you like a diagnosis. Fifty one pounds is not fifty pounds.",
     "when": "flight",
     "baseChance": 0.6,
     "effects": {
@@ -210,7 +210,7 @@
   {
     "id": "oktoberfest",
     "title": "Oktoberfest",
-    "text": "Opening weekend. A tent, a Mass, another Mass, a brass band that will not stop. You lose a day and gain a story.",
+    "text": "Opening weekend. A tent, a prost, another prost, a brass band that has no right to go this hard. You lose a day and gain a story.",
     "when": "day",
     "baseChance": 0.5,
     "effects": {
@@ -238,9 +238,13 @@
     "mitigatedBy": [
       "rain"
     ],
-    "mitigatedText": "It rains in {city}. The shell goes on. You are the only dry person at the bus stop.",
+    "mitigatedText": "It rains in {city}. You came prepared. You are the only dry person at the bus stop.",
     "mitigatedEffects": {
       "mood": 1
+    },
+    "mitigatedTextBy": {
+      "shell": "It rains in {city}. The shell goes on. You are the only dry person at the bus stop.",
+      "umbrella": "It rains in {city}. Up goes the umbrella, which you have resented carrying until exactly now."
     }
   },
   {

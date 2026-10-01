@@ -61,6 +61,12 @@ export function eventChance(ev: GameEvent, s: RunState, ctx: RollCtx): { chance:
 }
 
 export const availableChoices = (s: RunState, choices: EventChoice[]) => choices.filter(c => !c.requiresTag || hasTag(s, c.requiresTag));
+/** The mitigated line to show: the wording for the item that actually saved you, if the event has one. */
+export function mitigatedLine(s: RunState, ev: GameEvent): string {
+  const by = ev.mitigatedTextBy;
+  if (by) { for (const id of Object.keys(by)) if (s.items.some(p => p.id === id)) return by[id]; }   /* declaration order decides it when two bits of gear both apply */
+  return ev.mitigatedText ?? ev.text;
+}
 export function fmt(text: string, s: RunState, item?: string) {
   const c = CITY[s.cityId];
   return text.replace(/\{city\}/g, c?.name ?? s.cityId).replace(/\{day\}/g, String(s.day)).replace(/\{item\}/g, item ?? 'something').replace(/\{museum\}/g, c?.museum ?? 'the museum').replace(/\{animal\}/g, c?.animal ?? 'a dog');
@@ -130,7 +136,7 @@ function resolve(s: RunState, ev: GameEvent, mitigated: boolean, rng: Rng): Reso
     return { id: ev.id, title: ev.title, text: fmt(ev.text, s), effects: {}, mitigated, choices: availableChoices(s, ev.choices), pending: true };
   }
   const lost = applyEffects(s, effects, rng);
-  const text = fmt(useMit && ev.mitigatedText ? ev.mitigatedText : ev.text, s, lost);
+  const text = fmt(useMit ? mitigatedLine(s, ev) : ev.text, s, lost);
   s.log.push({ day: s.day, city: s.cityId, text: `${ev.title}: ${text}` });
   s.eventsFired = [...(s.eventsFired ?? []), ev.id];   /* the credits page lists what really happened, keyed by these ids */
   return { id: ev.id, title: ev.title, text, effects, mitigated: useMit, pending: false };

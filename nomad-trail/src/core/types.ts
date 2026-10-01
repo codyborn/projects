@@ -39,6 +39,8 @@ export interface GameEvent {
   baseChance: number; requiresTag?: ItemTag; requiresCity?: string; requiresCities?: string[]; requiresClimate?: City['climate'][]; requiresOverweight?: boolean;
   requiresOutdoorsy?: boolean; requiresActivity?: ActivityId[]; requiresTransport?: Transport[];   // setting gates: mountains, water sports, train legs
   mitigatedBy?: ItemTag[]; mitigatedText?: string;
+  /** Per-item wording for the mitigated line, by item id: the rain shell and the umbrella both stop the rain, but only one of them goes *on*. First packed match wins; falls back to mitigatedText. */
+  mitigatedTextBy?: Record<string, string>;
   choices?: EventChoice[];                            // if absent, effects apply directly
   effects: Effects; mitigatedEffects?: Effects;
 }

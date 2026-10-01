@@ -6,7 +6,7 @@ import STRINGS from '../../data/strings.json';
 export const STR = STRINGS as typeof STRINGS;
 /** Fill {placeholders} in a copy string. */
 export function tpl(t: string, vars: Record<string, string | number>): string { return t.replace(/\{(\w+)\}/g, (_, k) => (k in vars ? String(vars[k]) : `{${k}}`)); }
-import { rollEvents, applyEffects, hasTag, hasFlag, setFlag, clamp, monthOf, energyCap, recomputeClothes, fmt, accessibleItems, visibleAchievements, availableChoices, forceEvent, LODGING_DEPENDENT, type ResolvedEvent } from './events';
+import { rollEvents, applyEffects, hasTag, hasFlag, setFlag, clamp, monthOf, energyCap, recomputeClothes, fmt, mitigatedLine, accessibleItems, visibleAchievements, availableChoices, forceEvent, LODGING_DEPENDENT, type ResolvedEvent } from './events';
 import { saveRun, loadRun, clearRun } from './save';
 import { GRID, TOTAL_DAYS, HOME_PROGRESS_DEG, HOME_CITY, HOME_MIN_CONTINENTS, START_MONEY, OVERDRAFT, WORK_PAY, DEFAULT_COST_PER_DAY, FARE, WORK_ENERGY, WORK_MOOD, weekdayOf, isWeekend, OUTDOOR_ACTIVITIES } from './consts';
 import { shelfPack, buildPack, randomPack, idsWeight } from './pack';
@@ -503,7 +503,7 @@ export function pendingChoices(s: RunState): { id: string; title: string; text: 
 export const Sim = {
   GRID, TOTAL_DAYS, HOME_CITY, HOME_MIN_CONTINENTS, HOME_PROGRESS_DEG, CONTINENTS_ALL, START_MONEY, OVERDRAFT, WORK_PAY, CITIES, CITY, ITEM, DISH, LEVEL_BY_CITY,
   createRun, validatePack, setPack, bagWeight, weightRatio, totalWeight, coffeePacked, bundles, hasTag, hasFlag, hasItem, dullKnives, minigameRewards, previewMinigame, workDaysAhead, corridorAllows, nextContinent, isOutdoorsy,
-  fmt,
+  fmt, mitigatedLine,
   shelfPack, buildPack, randomPack, idsWeight, weekdayOf, isWeekend, nextWorkdays, fareFor, directionUndecided, setDirection,
   availableLegs, travelTo, cityAction, applyMinigameResult, resolveChoice, pendingChoices, checkEnding, score, progress, homeUnlocked, homeRequirements, continentsVisited, endingCause, monthOf,
   visibleAchievements, energyCap, accessibleItems,

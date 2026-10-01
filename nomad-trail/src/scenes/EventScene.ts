@@ -5,7 +5,7 @@ import { PAL, txt, hex } from '../ui/theme';
 import { Button } from '../ui/Button';
 import { Panel, dimmer } from '../ui/Panel';
 import { typewrite } from '../ui/typewriter';
-import { Sim, Data, getRun, putRun, pendingChoices, fmtText } from '../ui/simBridge';
+import { Sim, Data, getRun, putRun, pendingChoices, fmtText, mitigatedLine } from '../ui/simBridge';
 import { launchOnTop } from '../ui/overlay';
 /** Modal event card. Launched (not started) over Travel/City with { eventId, onDone }.
  *  Layout: header (day · city) at the top of the panel, title below it, body below the title's rendered height, then choices. */
@@ -27,7 +27,7 @@ export class EventScene extends Phaser.Scene {
     const fill = (s: string) => fmtText(s, run, Data.item(run.lostItems[run.lostItems.length - 1] ?? '')?.label);
     const tags = new Set(run.items.map(i => Data.item(i.id)?.tags ?? []).flat());
     const mitigated = (ev.mitigatedBy?.some(t => tags.has(t)) ?? false) && !!ev.mitigatedText;
-    const text = fill(mitigated ? ev.mitigatedText! : ev.text);           // one or the other, never both
+    const text = fill(mitigated ? mitigatedLine(run, ev) : ev.text);       // one or the other, never both; the line can depend on which item saved you
     const pend = run.pendingEvent === ev.id ? pendingChoices(run) : null; const choices = (pend?.choices ?? []) as any[];
     this.choices = choices; this.onDone = data.onDone; this.evId = ev.id;
     // measure first, then lay out: title height and body height decide the panel size

@@ -88,6 +88,8 @@ function fallbackRandomPack(seed: number): PackedItem[] {
   return out;
 }
 /** Choices the engine will accept right now (filtered by accessible gear); EventScene must use these, not the raw definition. */
+/** The mitigated line for the item the player actually packed. */
+export const mitigatedLine = (state: RunState, ev: any) => E.mitigatedLine(state, ev);
 /** The engine's text filler: {city} {day} {item} {museum} {animal}. */
 export const fmtText = (text: string, state: RunState, item?: string) => E.fmt(text, state, item);
 export const pendingChoices = (state: RunState): { id: string; title: string; text: string; choices: any[] } | null => E.pendingChoices(state);
