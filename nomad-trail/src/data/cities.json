@@ -102,7 +102,7 @@
         "timezones": 3
       }
     ],
-    "blurb": "Home base, allegedly. Ninety-six days here last year and the tan never took.",
+    "blurb": "Flashy cars, flashier people. No shortage of health food.",
     "stampIcon": "palm",
     "costPerDay": 150,
     "droneRule": "ok",
@@ -215,7 +215,7 @@
         "timezones": 3
       }
     ],
-    "blurb": "The team onsite city. Twenty days at a time, four times a year, always a hotel with a view of a wall.",
+    "blurb": "Where drivers act like get paid to honk their horns.",
     "stampIcon": "skyline",
     "costPerDay": 180,
     "droneRule": "banned",
@@ -304,7 +304,7 @@
         "timezones": 1
       }
     ],
-    "blurb": "Trail runs at altitude, coffee at sea-level prices. The only American city that feels like a base.",
+    "blurb": "Where people line up to climb 14-ers like New Yorkers line up for the latest Stussy merch.",
     "stampIcon": "flatirons",
     "altitude": 1655,
     "costPerDay": 140,

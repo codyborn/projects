@@ -1,4 +1,4 @@
-// Shared headless player policies for `npm run sim` and tests. Items are BUNDLES (see tools/gen_items.py).
+// Shared headless player policies for `npm run sim` and tests. Items are BUNDLES (see src/data/items.json).
 import type { RunState, CityAction, MinigameResult } from '../src/core/types';
 import { CONTINENT_OF } from '../src/core/types';
 import { Sim } from '../src/core/sim/engine';

@@ -541,7 +541,7 @@
       "iguazu",
       "buenosaires"
     ],
-    "text": "{city}. A bar of chocolate from the corner shop, eaten in bed with a film. By morning your stomach is not happy. You go to throw the wrapper away and stop: the inside of the packaging is dotted with tiny brown capsules, stuck in neat rows. Cockroach eggs.",
+    "text": "{city}. A rare find! A bar of chocolate from the corner shop. By morning your stomach is not happy. You go to throw the wrapper away and stop: the inside of the packaging is dotted with tiny brown capsules, stuck in neat rows. Cockroach eggs.",
     "effects": {
       "health": -10,
       "energy": -12,
@@ -552,7 +552,7 @@
     "mitigatedBy": [
       "meds"
     ],
-    "mitigatedText": "{city}. A bar of chocolate from the corner shop, eaten in bed with a film. By morning your stomach is not happy, and by afternoon, with the probiotics from the medicine kit, it has fewer. You go to throw the wrapper away and stop: the inside of the packaging is dotted with tiny brown capsules in neat rows. Cockroach eggs. You do not finish the film.",
+    "mitigatedText": "{city}. A rare find! A bar of chocolate from the corner shop. By morning your stomach is not happy, and by afternoon, with the probiotics from the medicine kit kick in. You go to throw the wrapper away and stop: the inside of the packaging is dotted with tiny brown capsules in neat rows. Cockroach eggs.",
     "mitigatedEffects": {
       "health": -4,
       "energy": -6,
@@ -577,7 +577,7 @@
     "title": "The permit you did not have",
     "when": "action",
     "baseChance": 0,
-    "text": "{city}. A ranger appears from nowhere, the way rangers do. Flying here needs a permit, and the permit needs a form, and the form needs three weeks. The fine needs only your card. The footage stays on the card too.",
+    "text": "{city}. A ranger appears from nowhere, the way rangers do. Flying here needs a permit, and the permit needs a form, and the form needs three weeks. The fine needs only your card.",
     "effects": {
       "mood": -3
     }
@@ -595,7 +595,7 @@
       "kite",
       "scuba"
     ],
-    "text": "{city}. Warm water, a long swim out, and something soft brushes your face. The sting lands on your lips. Within a minute they are twice their size and you cannot say the word 'jellyfish' to the lifeguard, only point at your mouth. It hurts more than anything has any right to. Two days of soup through a straw.",
+    "text": "{city}. Warm water, a long swim out, and something soft brushes your face. The sting lands on your lips. Within a minute they are twice their size and you cannot say the word 'jellyfish' to the lifeguard, only point at your mouth. It hurts more than anything has any right to.",
     "effects": {
       "health": -8,
       "energy": -10,
@@ -627,7 +627,7 @@
       "hike",
       "trailrun"
     ],
-    "text": "{city}. Heather, bracken, a long day on the hill. In the shower you find a small dark passenger behind your knee, legs waving. Tweezers, a steady hand, and three weeks of checking the bite for a ring.",
+    "text": "{city}. Heather, bracken, a long day on the hill. In the shower you find a small dark passenger behind your knee, legs waving. You try to pull it out yourself with tweezers, but you just end up massacring it while it's still inside you. The next day you go to the doctor to get the rest removed.",
     "effects": {
       "health": -4,
       "mood": -6,
@@ -648,7 +648,7 @@
     "title": "The flu",
     "when": "day",
     "baseChance": 0.004,
-    "text": "{city}. It starts as a scratchy throat on a video call and by nightfall you are shivering under every blanket the place owns. Three days lost to the ceiling. The city carries on outside the window without you.",
+    "text": "{city}. It starts as a scratchy throat on a video call and by nightfall you are shivering under every blanket the place owns. Three days lost staring at the ceiling. The city carries on outside the window without you.",
     "effects": {
       "health": -10,
       "energy": -20,
@@ -705,7 +705,7 @@
       "seoul",
       "tokyo"
     ],
-    "text": "{city}. Rain, or a hangover, or just a Tuesday: you spend the afternoon in {museum} and come out three hours later blinking, with a postcard you will never send. Worth it.",
+    "text": "{city}. You spend the afternoon in {museum} and come out three hours later blinking, with a postcard you will never send. Worth it.",
     "effects": {
       "mood": 6,
       "energy": -4
@@ -719,7 +719,7 @@
     "requiresCities": [
       "roatan"
     ],
-    "text": "{city}. A perfect evening on the beach, feet in the sand, nothing biting that you could see. The next morning your ankles and shins are a constellation of red welts. Sand flies. Nobody warned you because everyone assumes you know.",
+    "text": "{city}. A perfect evening strolling the beach. The next morning your ankles and shins are a constellation of red welts. Sand flies. Nobody warned you because everyone assumed you'd know.",
     "effects": {
       "health": -3,
       "mood": -6,
@@ -728,7 +728,7 @@
     "mitigatedBy": [
       "repellent"
     ],
-    "mitigatedText": "{city}. A perfect evening on the beach, feet in the sand. You sprayed the ankles out of habit. In the morning: two bites. The couple at the next table look like they lost a fight with a constellation.",
+    "mitigatedText": "{city}. A perfect evening strolling the beach. You sprayed the ankles out of habit. In the morning: two bites. The couple at the next table look like they were eaten alive.",
     "mitigatedEffects": {
       "mood": 1
     }
@@ -775,7 +775,7 @@
       "seoul",
       "tokyo"
     ],
-    "text": "{city}. Out on the water before the wind picks up, and a fin, then three, then a whole pod cutting through the swell twenty metres out. You stop everything. So does everyone else.",
+    "text": "{city}. Out on the water before the wind picks up, and a fin, then three, then a whole pod cutting through the swell thirty feet out.",
     "effects": {
       "mood": 7
     }
@@ -785,7 +785,7 @@
     "title": "The long walk",
     "when": "action",
     "baseChance": 0.06,
-    "text": "{city}. What started out as a walk around the block turned into a five-hour adventure: a market, a hill, a neighbourhood that was not on the map, a bakery that saved the day. Your legs file a complaint. Everything else is delighted.",
+    "text": "{city}. What started out as a walk around the block turned into a five-hour adventure: a market, a hill, a neighborhood that was not on the map, a bakery that saved the day. Your legs file a complaint. Everything else is delighted.",
     "effects": {
       "mood": 6,
       "health": 3,
@@ -801,7 +801,7 @@
       "tokyo",
       "minakami"
     ],
-    "text": "{city}. A stand by the station sells matcha soft serve so green it looks fake. It is not fake. You have two. This is not a health decision.",
+    "text": "{city}. A stand by the station sells matcha soft serve so green it looks fake. It is not fake. You have two. This does not get logged in your health journal.",
     "effects": {
       "health": -2,
       "mood": 5,
@@ -816,7 +816,7 @@
     "requiresCities": [
       "reykjavik"
     ],
-    "text": "{city}. Crampons on, into the glacier. The ice is blue in a way that photos will not carry home, and the cave breathes cold on the back of your neck. You come out tired and quiet.",
+    "text": "{city}. Crampons on, into the glacier. The ice is a new shade of blue and the cave breathes cold on the back of your neck. You emerge a new person.",
     "effects": {
       "mood": 9,
       "energy": -12,
@@ -843,7 +843,7 @@
       "patagonia",
       "reykjavik"
     ],
-    "text": "{city}. On the way back, {animal} decides you are worth a closer look. Ten minutes later you have a friend for the afternoon and a face full of hair. The best company on the trail does not talk.",
+    "text": "{city}. On the way back, {animal} decides you are worth a closer look. Ten minutes later you have a friend for the afternoon. The best company on the trail does not talk.",
     "effects": {
       "energy": 4,
       "mood": 7,
@@ -880,7 +880,7 @@
       "seoul",
       "tokyo"
     ],
-    "text": "{city}. A long swim down the shoreline, the town sliding past on the right, nothing in your head for once. You come out salt-crusted and better.",
+    "text": "{city}. A long swim down the shoreline, the town sliding past on the right, nothing in your head for once. You come out salt-crusted and inspired.",
     "effects": {
       "mood": 6,
       "energy": -8
@@ -891,7 +891,7 @@
     "title": "The shark",
     "when": "action",
     "baseChance": 0,
-    "text": "{city}. A long swim down the shoreline, the town sliding past on the right. Then people on the beach are shouting and waving, and it takes a while to understand they are waving at you. Behind you, a fin, keeping pace. You swim to shore faster than you have ever swum anywhere. It follows to the shallows and turns away.",
+    "text": "{city}. A long swim down the shoreline, the town sliding past on the right. People on the beach start shouting and waving, and it takes a while to understand they are waving at you. Behind you, a fin, keeping pace. You swim to shore faster than you thought was possible. It follows to the shallows and turns away.",
     "effects": {
       "mood": -8,
       "energy": -12,
@@ -903,18 +903,18 @@
     "title": "The casino",
     "when": "action",
     "baseChance": 0,
-    "text": "{city}. You went for a walk. The walk went past a casino. The casino has air conditioning and no clocks.",
+    "text": "{city}. You went for a walk and stumble upon a casino. The casino has air conditioning and no clocks.",
     "effects": {}
   },
   {
     "id": "batpoop",
-    "title": "The pillow",
+    "title": "Batman Origin Story",
     "when": "day",
     "baseChance": 0.06,
     "requiresCities": [
       "bozeman"
     ],
-    "text": "{city}. You wake to a scattering of small dark pellets on the pillow, next to your face. Not seeds. The cabin has a resident in the rafters, and the resident has a routine. You sleep with a hat on for the rest of the week.",
+    "text": "{city}. You wake to a scattering of small dark pellets on the pillow, next to your face. Not seeds. The cabin has an unexpected resident in the rafters.",
     "effects": {
       "mood": -5,
       "energy": -4,

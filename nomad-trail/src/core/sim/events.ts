@@ -19,7 +19,7 @@ export const visibleAchievements = (s: RunState) => s.achievements.filter(a => !
 
 /** Events that can only happen once per run. */
 /** Global multiplier on every event's chance; Cody found the trail too chaotic at 1.0. */
-export const EVENT_RATE = 0.65;
+export const EVENT_RATE = 0.95;   /* one multiplier over every baseChance. 0.65 left random packs failing only 25% of the time against a 35-45% target and the trail felt empty; measured sweep: 0.80 -> 34%, 0.95 -> 39%, 1.10 -> 52%. */
 /** Consequences of the player's own choices keep their full odds (an overweight bag should still cost you a back). */
 const RATE_EXEMPT = new Set(['backinjury', 'overweight', 'dirtyclothes', 'broke']);
 export const ONCE = new Set(['otter','kettle','wheel','oktoberfest','backinjury','upgrade','hostgift','surprisemeetup','nowifi',]);

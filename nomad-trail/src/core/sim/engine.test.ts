@@ -169,7 +169,7 @@ describe('events', () => {
     expect(fired).toBe(1); expect(s.achievements).toContain('otter'); expect(s.achievements).not.toContain('otter_lived');
     const withKit = { ...tokyo, items: [...tokyo.items, P('firstaid', 'checked', 6, 0)] } as RunState;
     let s2: RunState = JSON.parse(JSON.stringify(withKit)), seenKit = false;
-    for (let i = 0; i < 60 && s2.phase === 'city'; i++) { const r = Sim.cityAction(s2, 'explore'); s2 = r.state; const ot = r.events.find(e => e.id === 'otter'); if (ot) { seenKit = true; expect(ot.mitigated).toBe(true); expect(s2.achievements).toContain('otter_lived'); expect(s2.sickDays).toBe(0); break; } if (s2.pendingEvent) s2 = Sim.resolveChoice(s2, s2.pendingEvent, 0).state; }
+    for (let i = 0; i < 60 && s2.phase === 'city'; i++) { const r = Sim.cityAction(s2, 'explore'); s2 = r.state; const ot = r.events.find(e => e.id === 'otter'); if (ot) { seenKit = true; expect(ot.mitigated).toBe(true); expect(s2.achievements).toContain('otter_lived'); expect((ot.effects as { sick?: number }).sick ?? 0).toBe(0); break; }   /* the otter's own effects, not the run's: at the current event rate something else can be making you sick the same week */ if (s2.pendingEvent) s2 = Sim.resolveChoice(s2, s2.pendingEvent, 0).state; }
     expect(seenKit).toBe(true);
   });
   it('no event has choices any more; the cancelled booking is a plain drain', () => {
