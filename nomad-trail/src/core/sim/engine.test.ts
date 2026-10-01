@@ -287,6 +287,17 @@ describe('city loop, minigames, endings', () => {
     expect(Sim.cityAction({ ...three, day: three.day + 1 }, 'drone').minigame?.payload.level).toBe(2);
     const usa = Sim.applyMinigameResult({ ...st, cityId: 'boulder' }, 'Drone', { score: 90, perfect: false, failed: false }); expect(usa.events.some(e => e.id === 'dronefine' || e.id === 'dronepermit')).toBe(false);
   });
+  it('casino: its own button where there is a casino, once a night, and never without the table minimum', () => {
+    const base = hop(packed());
+    expect(Sim.cityAction({ ...base, cityId: 'tokyo' }, 'casino').error).toMatch(/no casino/i);
+    const vegas = { ...base, cityId: 'lasvegas', money: 3000 };
+    const r = Sim.cityAction(vegas, 'casino');
+    expect(r.error).toBeUndefined(); expect(r.minigame?.key).toBe('Casino'); expect(r.state.day).toBe(vegas.day);   /* an evening, not a day */
+    expect(Sim.cityAction(r.state, 'casino').error).toMatch(/Tomorrow/);
+    expect(Sim.cityAction({ ...vegas, money: 20 }, 'casino').error).toMatch(/table minimum/i);
+    /* the walk that ends at a table no longer fires the same night the button was used */
+    expect(CITIES.filter(c => c.casino).map(c => c.id).sort()).toEqual(['antibes', 'buenosaires', 'lasvegas', 'london', 'montreal']);
+  });
   it('console: a button, not a rest-day surprise; once a day, no day passes, gold stamp on a perfect run', () => {
     const noSwitch = hop(packed()); expect(Sim.cityAction(noSwitch, 'console').error).toMatch(/console/i);
     const s = hop(packed(withExtras('switch'))); const r = Sim.cityAction(s, 'console'); expect(r.minigame?.key).toBe('CarryOn'); expect(['carryon', 'tetris']).toContain(r.minigame?.payload.game);

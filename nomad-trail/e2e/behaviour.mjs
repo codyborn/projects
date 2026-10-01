@@ -1,10 +1,11 @@
-// Round 12 checks, against `npm run preview`:
+// Behaviour checks against `npm run preview` — the things unit tests cannot see:
 //   - the gate dash runs before the vehicle moves, and the flight follows it
 //   - the craft leaves the frame and stays gone (no loop)
 //   - BACK on a workout's READY card actually backs out (the tap-anywhere starter used to eat it)
 //   - City Run: standing still costs nothing, one crossing wins
 //   - the museum line names the city's museum
 //   - a fresh title screen has no PASSPORT / RECIPES
+//   - the casino has its own button where there is a casino, sharing the slot with the drone and the handheld
 import puppeteer from 'puppeteer-core';
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const base = process.argv[2] || 'http://localhost:4173/trail/';
@@ -61,6 +62,30 @@ const museum = await page.evaluate(async () => { const st = window.__nomad.state
   await new Promise(r => setTimeout(r, 3200));
   return window.__nomad.game.scene.getScene('Event').children.list.filter(o => typeof o.text === 'string' && o.text.length > 20).map(o => o.text).join(' // '); });
 check('the museum line names the museum', museum.includes('the Ghibli Museum'), museum.slice(0, 60) + '…');
+
+// the evening slot: drone, handheld and casino share it, and only casino towns offer the tables
+const inCity = async (city, extras) => {
+  await page.evaluate(([c, ex]) => { const n = window.__nomad; n.newRun('orangecounty', 'east'); n.autoPack('balanced');
+    const s = n.state(); s.cityId = c; s.phase = 'city'; s.money = 3000;
+    s.items = s.items.filter(i => i.id !== 'dronekit' && i.id !== 'switch');
+    if (ex) s.items.push({ id: 'dronekit', x: 0, y: 0, container: 'checked' }, { id: 'switch', x: 0, y: 0, container: 'checked' });
+    n.game.registry.set('run', s); n.goto('City'); }, [city, extras]);
+  await sleep(900);
+  return page.evaluate(() => { const sc = window.__nomad.game.scene.getScene('City');
+    const slot = sc.btns.map((b, i) => ({ a: sc.btnActs[i], x: b.x, w: b.w })).filter(b => ['drone', 'console', 'casino', 'map'].includes(b.a));
+    return { acts: sc.btnActs, slot }; });
+};
+const vegas3 = await inCity('lasvegas', true);
+check('Vegas offers drone, handheld and casino in one slot', ['drone', 'console', 'casino'].every(a => vegas3.acts.includes(a)), vegas3.acts.join(','));
+check('the three share the slot without overlapping', vegas3.slot.every((b, i, all) => i === 0 || b.x - b.w / 2 >= all[i - 1].x + all[i - 1].w / 2 - 1),
+  vegas3.slot.map(b => `${b.a}@${Math.round(b.x)}`).join(' '));
+const vegas1 = await inCity('lasvegas', false);
+check('with nothing packed the casino takes the whole slot', vegas1.acts.includes('casino') && !vegas1.acts.includes('map'), vegas1.acts.join(','));
+const tokyo = await inCity('tokyo', true);
+check('a town without a casino does not offer one', !tokyo.acts.includes('casino'), tokyo.acts.join(','));
+await inCity('lasvegas', true);
+await page.evaluate(() => window.__nomad.act('casino')); await sleep(1800);
+check('the button opens the tables', (await page.evaluate(() => window.__nomad.activeScenes())).includes('Casino'));
 
 console.log(errs.length ? 'ERRORS:\n' + errs.join('\n') : 'no page errors');
 await browser.close();

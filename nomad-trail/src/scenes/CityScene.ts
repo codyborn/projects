@@ -26,21 +26,31 @@ export class CityScene extends Phaser.Scene {
     // vista
     let drew = false; if ((window as any).__nomadArt?.skylineAt) { try { this.setSky(this.todFor(run.day), false); drew = true; } catch {} }
     if (!drew) this.fallbackVista(run.cityId, city?.climate ?? 'temperate');
-    { const name = (city?.name ?? run.cityId).toUpperCase(); const plateW = Math.min(300, Math.max(150, 20 + name.length * 13)); const plate = this.add.graphics().setDepth(2); plate.fillStyle(PAL.night0, 0.82); plate.fillRect(6, 90, plateW, 48); plate.fillStyle(PAL.sun1, 1); plate.fillRect(6, 90, 3, 48); }
-    txt(this, 14, 96, (city?.name ?? run.cityId).toUpperCase(), 16, PAL.white).setDepth(3); txt(this, 14, 124, `${city?.country ?? ''} · stay day ${run.stayDays + 1}${Sim.dullKnives(run) ? ' · dull knife' : ''}`, 8, PAL.gray2).setDepth(3);
+    /* the plate is cut to the labels, not to a per-character guess: at 13 px a character it was short for
+       16 of 39 cities, and ORANGE COUNTY and SCOTTISH HIGHLANDS ran right off the end of it */
+    { const name = txt(this, 14, 96, (city?.name ?? run.cityId).toUpperCase(), 16, PAL.white).setDepth(3);
+      const sub = txt(this, 14, 124, `${city?.country ?? ''} · stay day ${run.stayDays + 1}${Sim.dullKnives(run) ? ' · dull knife' : ''}`, 8, PAL.gray2).setDepth(3);
+      const plateW = Math.min(348, Math.max(150, 16 + Math.max(name.width, sub.width)));
+      const plate = this.add.graphics().setDepth(2); plate.fillStyle(PAL.night0, 0.82); plate.fillRect(6, 90, plateW, 48); plate.fillStyle(PAL.sun1, 1); plate.fillRect(6, 90, 3, 48);
+      (plate as any).__rect = { x: 6, y: 90, w: plateW, h: 48 };   /* the text-fit audit reads this */ }
     try { buildIcons(this); } catch { /* icons are optional */ }
     Audio.playLoop(cityLoop(city?.id, city?.region));
     this.hud = new Hud(this); this.hud.refresh(run);
     this.time.delayedCall(0, () => this.refreshButtons());
     new Panel(this, 12, 244, 336, 118, { fill: PAL.night1, border: PAL.night3 }).setDepth(5); this.logLbl = txt(this, 20, 250, '', 8, PAL.gray2, { wrap: 320 }).setDepth(6); this.refreshLog();
-    // slot 6 (where MAP lives) belongs to the side games when they are packed: the drone, the handheld, or both at half width
-    const hasDrone = Sim.hasItem(run, 'dronekit'), hasSwitch = Sim.hasTag(run, 'switch'); this.btnActs = [];
+    /* slot 6 (where MAP lives) belongs to the evening's diversions: the drone and the handheld if they are packed, and the
+       casino in the towns that have one. One gets the full slot with its label; two or three share it as icons. */
+    const side: { a: CityAction; label: string; key: string; alt: string }[] = [];
+    if (Sim.hasItem(run, 'dronekit')) side.push({ a: 'drone', label: 'DRONE', key: 'ico_drone', alt: 'DRN' });
+    if (Sim.hasTag(run, 'switch')) side.push({ a: 'console', label: 'PLAY', key: 'ico_switch', alt: 'PLAY' });
+    if (city?.casino) side.push({ a: 'casino', label: 'CASINO', key: 'ico_casino', alt: 'BET' });
+    this.btnActs = [];
     ACTIONS.forEach((act, i) => {
       const x = 96 + (i % 2) * 168, y = 392 + Math.floor(i / 2) * 56;
-      if (act.a === 'map' && (hasDrone || hasSwitch)) {
-        const side: { a: CityAction; label: string; key: string }[] = []; if (hasDrone) side.push({ a: 'drone', label: 'DRONE', key: 'ico_drone' }); if (hasSwitch) side.push({ a: 'console', label: 'PLAY', key: 'ico_switch' });
-        if (side.length === 2) side.forEach((sd, k) => { this.btns.push(new Button(this, x - 41 + k * 82, y, '', () => this.act(sd.a), { w: 78, h: 48, size: 12, iconKey: sd.key, icon: this.textures.exists(sd.key) ? undefined : (sd.a === 'drone' ? 'DRN' : 'PLAY'), fill: PAL.night2 })); this.btnActs.push(sd.a); });
-        else { const sd = side[0]; this.btns.push(new Button(this, x, y, sd.label, () => this.act(sd.a), { w: 160, h: 48, size: 12, iconKey: sd.key, fill: PAL.night2 })); this.btnActs.push(sd.a); }
+      if (act.a === 'map' && side.length) {
+        if (side.length === 1) { const sd = side[0]; this.btns.push(new Button(this, x, y, sd.label, () => this.act(sd.a), { w: 160, h: 48, size: 12, iconKey: sd.key, fill: PAL.night2 })); this.btnActs.push(sd.a); return; }
+        const bw = side.length === 2 ? 78 : 52, gap = 4, total = side.length * bw + (side.length - 1) * gap;
+        side.forEach((sd, k) => { this.btns.push(new Button(this, x - total / 2 + bw / 2 + k * (bw + gap), y, '', () => this.act(sd.a), { w: bw, h: 48, size: 12, iconKey: sd.key, icon: this.textures.exists(sd.key) ? undefined : sd.alt, fill: PAL.night2 })); this.btnActs.push(sd.a); });
         return;
       }
       this.btns.push(new Button(this, x, y, act.label, () => this.act(act.a), { w: 160, h: 48, size: 12, iconKey: act.a === 'map' ? 'ico_map' : undefined, fill: act.a === 'moveon' ? PAL.sea0 : PAL.night2 })); this.btnActs.push(act.a);

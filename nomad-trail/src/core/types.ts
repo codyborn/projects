@@ -28,7 +28,7 @@ export interface City {
   outdoorsy?: boolean;                                // adventure gear pays off here
   costPerDay?: number;                                // lodging + food, USD
   dishes: string[]; activities: ActivityId[]; hazard: Hazard; lodgings: Lodging[]; droneRule?: DroneRule;
-  museum?: string; animal?: string; coast?: boolean;   /* event flavour: a real museum, the animal you can befriend, whether there is sea to swim in */
+  museum?: string; animal?: string; coast?: boolean; casino?: boolean;   /* event flavour: a real museum, the animal you can befriend, whether there is sea to swim in */
   eventWeights: Record<string, number>;               // eventId -> multiplier
   legs: Leg[]; blurb: string; stampIcon: string;      // stampIcon: key for a tiny procedural glyph
 }
@@ -72,7 +72,7 @@ export interface RunState {
 }
 export interface LogLine { day: number; city: string; text: string; }
 export type Ending = { kind: 'win' | 'hospital' | 'flewhome' | 'outofdays' | 'broke' | 'quit'; text: string; score: number; cause?: string; };  // cause: the one-line reason shown on the share card
-export type CityAction = 'work' | 'explore' | 'train' | 'cook' | 'rest' | 'laundry' | 'checkroom' | 'moveon' | 'drone' | 'console';   // drone: fly the drone kit (side game); console: the handheld's cartridges
+export type CityAction = 'work' | 'explore' | 'train' | 'cook' | 'rest' | 'laundry' | 'checkroom' | 'moveon' | 'drone' | 'console' | 'casino';   // drone: fly the drone kit (side game); console: the handheld's cartridges; casino: an evening at the tables, in the cities that have them
 
 // ---------- Mini-game contract ----------
 // Every mini-game is a Phaser scene started with MinigameLaunch and MUST call launch.onDone(result) exactly once, then stop itself.

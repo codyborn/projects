@@ -486,7 +486,8 @@
     "stampIcon": "dice",
     "costPerDay": 130,
     "droneRule": "ok",
-    "museum": "the Neon Museum"
+    "museum": "the Neon Museum",
+    "casino": true
   },
   {
     "id": "joshuatree",
@@ -766,7 +767,8 @@
     "costPerDay": 110,
     "radon": 2,
     "droneRule": "ok",
-    "museum": "the Montreal Museum of Fine Arts"
+    "museum": "the Montreal Museum of Fine Arts",
+    "casino": true
   },
   {
     "id": "lapaz",
@@ -1272,7 +1274,8 @@
     "costPerDay": 80,
     "droneRule": "permit",
     "museum": "MALBA",
-    "coast": true
+    "coast": true,
+    "casino": true
   },
   {
     "id": "iguazu",
@@ -1714,7 +1717,8 @@
     "stampIcon": "bigben",
     "costPerDay": 170,
     "droneRule": "banned",
-    "museum": "the British Museum"
+    "museum": "the British Museum",
+    "casino": true
   },
   {
     "id": "brussels",
@@ -2106,7 +2110,8 @@
     "costPerDay": 140,
     "droneRule": "permit",
     "museum": "the Picasso Museum",
-    "coast": true
+    "coast": true,
+    "casino": true
   },
   {
     "id": "edinburgh",

@@ -279,6 +279,12 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       if (hasFlag(s, 'drone_' + s.day)) return { state, events: [], error: 'The battery is charging. Tomorrow.' };
       setFlag(s, 'drone_' + s.day, true); const flights = s.droneFlights ?? 0; const level = Math.min(3, 1 + Math.floor(flights / 2));
       return { state: s, events: [], minigame: { key: MINIGAME_KEYS.drone, payload: { city, cityName: city.name, seed: hash32(s.seed, s.day, flights, 55), level }, difficulty: clamp(0.3 + 0.2 * level, 0, 1) } }; }
+    case 'casino': {
+      if (!city.casino) return { state, events: [], error: 'No casino in this town.' };
+      if (hasFlag(s, 'casino_' + s.day)) return { state, events: [], error: 'One night at the tables is enough. Tomorrow.' };
+      if (s.money < CASINO_MIN) return { state, events: [], error: 'The table minimum is more than you have.' };
+      setFlag(s, 'casino_' + s.day, true);
+      return { state: s, events: [], minigame: { key: MINIGAME_KEYS.casino, payload: { money: s.money, cityName: city.name, seed: hash32(s.seed, s.day, 88) }, difficulty: 0.5 } }; }
     case 'console': {
       if (!hasTag(s, 'switch')) return { state, events: [], error: 'No console in the bag.' };
       if (hasFlag(s, 'console_' + s.day)) return { state, events: [], error: 'One evening of that is enough. Tomorrow.' };
@@ -297,7 +303,7 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       /* follow-ups: a new animal friend can carry a tick; a shoreline swim can pick up a fin; a Vegas walk can end at a table */
       if (events.some(e => e.id === 'animal') && rngFor(s, 21).chance(0.15)) events.push(forceEvent(s, 'tick', rng, hasTag(s, 'firstaid')));
       if (events.some(e => e.id === 'oceanswim') && rngFor(s, 22).chance(0.1)) events.push(forceEvent(s, 'shark', rng));
-      if (s.cityId === 'lasvegas' && s.money > 100 && !hasFlag(s, 'casino_' + s.day) && rngFor(s, 23).chance(0.3)) { setFlag(s, 'casino_' + s.day, true); events.push(forceEvent(s, 'casinonight', rng)); checkEnding(s); return { state: s, events, minigame: { key: MINIGAME_KEYS.casino, payload: { money: s.money, cityName: city.name, seed: hash32(s.seed, s.day, 88) }, difficulty: 0.5 } }; }
+      if (city.casino && s.money > CASINO_MIN && !hasFlag(s, 'casino_' + s.day) && rngFor(s, 23).chance(0.3)) { setFlag(s, 'casino_' + s.day, true); events.push(forceEvent(s, 'casinonight', rng)); checkEnding(s); return { state: s, events, minigame: { key: MINIGAME_KEYS.casino, payload: { money: s.money, cityName: city.name, seed: hash32(s.seed, s.day, 88) }, difficulty: 0.5 } }; }
       break; }
     case 'rest': {
       s.workStreak = 0; events = tickDay(s, rng, { rest: true }); s.energy = clamp(s.energy + 28, 0, energyCap(s)); s.mood = clamp(s.mood + 2, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: DAILY.rest });
@@ -376,6 +382,8 @@ export function previewMinigame(s: RunState, key: string, result: MinigameResult
 /** How many days a WORK WEEK tap covers from `day`: today through Friday, at most 5. */
 export function workDaysAhead(day: number): number { let n = 0; while (n < 5 && !isWeekend(day + n)) n++; return Math.max(1, n); }
 /** Drone fines by country rule: chance and amount. */
+/** You need at least this much in the travel fund before a casino will have you. */
+export const CASINO_MIN = 100;
 export const DRONE_FINE = { banned: { chance: 0.35, fine: 400 }, permit: { chance: 0.12, fine: 150 }, ok: { chance: 0, fine: 0 } } as const;
 
 export function applyMinigameResult(state: RunState, key: string, result: MinigameResult): StepResult {

@@ -1,4 +1,5 @@
-// Tiny pixel icons for the city action buttons: 'ico_drone' (quadcopter, 14x10), 'ico_switch' (handheld, 14x10), 'ico_map' (globe, 12x12).
+// Tiny pixel icons for the city action buttons: 'ico_drone' (quadcopter, 14x10), 'ico_switch' (handheld, 14x10),
+// 'ico_casino' (two chips, 14x10), 'ico_map' (globe, 12x12).
 // buildIcons(scene) registers them once per texture manager; use with scene.add.image(x, y, 'ico_drone').setScale(2).
 import Phaser from 'phaser';
 import { PAL } from '../core/palette';
@@ -49,6 +50,17 @@ export function buildIcons(scene: Phaser.Scene) {
     'RRRGGGGGGGGBBB',
     '..............',
     '..............'], { R: PAL.red, B: PAL.sky1, G: PAL.gray0, S: PAL.neon, D: PAL.ink, A: PAL.ink });
+  tex(scene, 'ico_casino', [
+    '..............',
+    '..............',
+    '.WWWW.........',
+    'WRRRRW..www...',
+    'WRWWRW.wdddw..',
+    'WRRRRW.wdddw..',
+    '.WWWW...www...',
+    '..............',
+    '..............',
+    '..............'], { W: PAL.white, R: PAL.red, w: PAL.gray2, d: PAL.ink });
   tex(scene, 'ico_map', [
     '....OOOO....',
     '..OOWWGGOO..',
@@ -62,5 +74,5 @@ export function buildIcons(scene: Phaser.Scene) {
     '.OGWWWGGWWO.',
     '..OOGGWWOO..',
     '....OOOO....'], { O: PAL.sky0, W: PAL.sky1, G: PAL.grass1 });
-  return ['ico_drone', 'ico_switch', 'ico_map'];
+  return ['ico_drone', 'ico_switch', 'ico_casino', 'ico_map'];
 }
