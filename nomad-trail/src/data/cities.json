@@ -304,7 +304,7 @@
         "timezones": 1
       }
     ],
-    "blurb": "Where people line up to climb 14-ers like New Yorkers line up for the latest Stussy merch.",
+    "blurb": "Where people line up to climb 14-ers like New Yorkers line up for the latest Stüssy merch.",
     "stampIcon": "flatirons",
     "altitude": 1655,
     "costPerDay": 140,
@@ -395,7 +395,7 @@
         "timezones": 1
       }
     ],
-    "blurb": "A Jeep Compass, a month, and more sky than a person needs.",
+    "blurb": "Where some animal is always watching you.",
     "stampIcon": "mountain",
     "altitude": 1461,
     "costPerDay": 120,
@@ -482,7 +482,7 @@
         "timezones": 17
       }
     ],
-    "blurb": "A layover that became five days. Nobody remembers why.",
+    "blurb": "Where the most interesting conversations happen at the bar at 5:00 am.",
     "stampIcon": "dice",
     "costPerDay": 130,
     "droneRule": "ok",
@@ -555,7 +555,7 @@
         "timezones": 0
       }
     ],
-    "blurb": "Bouldering by day, stars by night, a hot tub in the desert.",
+    "blurb": "Bouldering by day, stars by night, a hot tub with a desert view.",
     "stampIcon": "cactus",
     "costPerDay": 110,
     "radon": 2,
@@ -691,7 +691,7 @@
         "timezones": 1
       }
     ],
-    "blurb": "Home. Family, laundry that someone else folds, and the Pacific as the front door.",
+    "blurb": "Cookie cutter homes and the Pacific as their front door.",
     "stampIcon": "sun",
     "costPerDay": 60,
     "droneRule": "ok",
@@ -762,7 +762,7 @@
         "timezones": 2
       }
     ],
-    "blurb": "Two weeks of bagels and the discovery that French is spoken faster here.",
+    "blurb": "Tim Hortons but with French architecture.",
     "stampIcon": "maple",
     "costPerDay": 110,
     "radon": 2,
@@ -850,7 +850,7 @@
         "timezones": 1
       }
     ],
-    "blurb": "Whale sharks, a rental car, the good kind of quiet.",
+    "blurb": "Whale sharks and the good kind of quiet.",
     "stampIcon": "whale",
     "costPerDay": 65,
     "droneRule": "ok",
@@ -931,7 +931,7 @@
         "timezones": 3
       }
     ],
-    "blurb": "Kiteboarding town. Wind every afternoon, NYE on the beach, nothing to do until 2 pm.",
+    "blurb": "Kiteboarding town. Dirt roads and wind every afternoon.",
     "stampIcon": "kite",
     "costPerDay": 70,
     "outdoorsy": true,
@@ -1006,7 +1006,7 @@
         "timezones": 1
       }
     ],
-    "blurb": "Five weeks on an island of biohackers, reef, and one road.",
+    "blurb": "An island of biohackers, world class reefs, and one road.",
     "stampIcon": "reef",
     "costPerDay": 90,
     "droneRule": "ok",
@@ -1098,7 +1098,7 @@
         "timezones": 1
       }
     ],
-    "blurb": "A week in the Andes' shadow before the wind country.",
+    "blurb": "Parks with every sport imaginable.",
     "stampIcon": "andes",
     "altitude": 520,
     "costPerDay": 90,
@@ -1167,7 +1167,7 @@
         "timezones": 0
       }
     ],
-    "blurb": "Edge City. A month at the end of the world with a hundred other people who also work on the internet.",
+    "blurb": "Mate in the mountains. What else do you need?",
     "stampIcon": "peaks",
     "costPerDay": 110,
     "outdoorsy": true,
@@ -1269,7 +1269,7 @@
         "timezones": 1
       }
     ],
-    "blurb": "DevConnect. Steak at midnight, meetings at ten, a city that never asked what time zone you were on.",
+    "blurb": "Chimichurri steak, mate and football.",
     "stampIcon": "tango",
     "costPerDay": 80,
     "droneRule": "permit",
@@ -1434,7 +1434,7 @@
         "timezones": 0
       }
     ],
-    "blurb": "The European base. Hills, tiles, a tram that arrives when it feels like it.",
+    "blurb": "Hills, tiles, a tram that arrives when it feels like it.",
     "stampIcon": "tram",
     "costPerDay": 110,
     "droneRule": "ok",
@@ -1528,7 +1528,7 @@
         "timezones": 0
       }
     ],
-    "blurb": "A week of late dinners and early meetings. The math does not work.",
+    "blurb": "Beautiful parks.",
     "stampIcon": "bull",
     "altitude": 650,
     "costPerDay": 110,

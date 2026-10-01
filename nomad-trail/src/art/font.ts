@@ -110,7 +110,7 @@ const G: Record<string, string[]> = {
 '\u00e9':['00010','00100','01110','10001','11111','10000','01110'], // é
 };
 export function __glyphs(): Record<string, string[]> { return G; }
-const EXTRA = '\u00b7\u2192\u2190\u2014\u2019\u2026\u2605\u00e9èùàáú';
+const EXTRA = '\u00b7\u2192\u2190\u2014\u2019\u2026\u2605\u00e9èùàáúü';
 export const FONT_CHARS = Array.from({ length: 95 }, (_, i) => String.fromCharCode(32 + i)).join('') + EXTRA;
 /** Make a string drawable by a given font: keep chars the table has, strip accents to the base letter otherwise (É -> E for the 5x7 font), '?' as last resort. */
 export function fitText(s: string, fontKey: string): string {

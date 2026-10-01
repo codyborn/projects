@@ -92,6 +92,9 @@ for (const city of CITY_IDS) {
   await pg.evaluate(c => { const n = window.__nomad; n.newRun('orangecounty', 'east'); n.autoPack('balanced');
     const s = n.state(); s.cityId = c; s.phase = 'city'; s.stayDays = 3; n.game.registry.set('run', s); n.goto('City'); }, city);
   await sleep(500); await audit(`city:${city}`, ['City']);
+  /* the blurb only exists on the arrival card, which needs the arrived flag: without this the audit never sees it */
+  await pg.evaluate(() => { const sc = window.__nomad.game.scene.getScene('City'); sc.scene.restart({ arrived: true }); });
+  await sleep(500); await audit(`arrival:${city}`, ['City']);
 }
 await pg.evaluate(() => window.__nomad.goto('Pack')); await sleep(800); await audit('pack', ['Pack']);
 await pg.evaluate(() => { const n = window.__nomad; n.newRun('orangecounty', 'east'); n.autoPack('balanced'); n.depart(); });
