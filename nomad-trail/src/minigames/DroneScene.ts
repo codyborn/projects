@@ -68,18 +68,17 @@ export class DroneScene extends Phaser.Scene {
     this.toastT = txt(this, W / 2, 62, '', 12, PAL.sun2).setDepth(20).setAlpha(0);
     this.btnG = this.add.graphics().setDepth(30); this.btnT = txt(this, BTN_X, BTN_Y + 14, '', 9, PAL.white).setDepth(31); this.drawBombButton();
     this.frame.scoreNow = () => this.score();
-    const bd = this.bossDef();
-    this.frame.intro(`${this.cityName.toUpperCase()} · ${this.set.name}. Fly through ${this.ringCount} photo rings, then ${bd.name} is waiting at the end of the course. ${this.set.tagline}.`, () => this.startRun(),
-      { height: 500, title: `Drone flight · level ${this.level}`, extra: (s, add) => {
-        const top = H / 2 - 250; add(s.add.sprite(W / 2, top + 118, 'dr_drone0').setScale(3));
+    /* the card says how to fly and nothing else: the pick-ups and the landing pad explain themselves on sight, and what
+       is waiting at the end of the course is better met than described */
+    this.frame.intro(`${this.cityName.toUpperCase()} · ${this.set.name}. Fly through ${this.ringCount} photo rings. ${this.set.tagline}.`, () => this.startRun(),
+      { height: 400, title: `Drone flight · level ${this.level}`, extra: (s, add) => {
+        const top = H / 2 - 200; add(s.add.sprite(W / 2, top + 112, 'dr_drone0').setScale(3));
         const ic = s.add.graphics(); add(ic);
         const row = (y: number, draw: () => void, label: string) => { ic.fillStyle(PAL.night3).fillRect(34, y - 16, 36, 32); draw(); add(txt(s, 80, y, label, 9, PAL.white, 'left')); };
-        row(top + 168, () => { ic.fillStyle(PAL.neon).fillCircle(52, top + 168, 7); ic.fillStyle(PAL.night3).fillCircle(52, top + 168, 3); ic.fillStyle(PAL.neon).fillTriangle(52, top + 155, 47, top + 162, 57, top + 162); }, 'HOLD to climb · RELEASE to sink');
-        row(top + 208, () => { ic.fillStyle(PAL.white).fillRect(44, top + 206, 8, 2).fillRect(56, top + 206, 8, 2); ic.fillStyle(PAL.sun2).fillRect(48, top + 214, 4, 4).fillRect(56, top + 214, 4, 4); }, 'auto shots · BOMB button = battery bomb (2)');
-        row(top + 248, () => { for (let i = 0; i < 3; i++) { ic.fillStyle(PAL.red).fillRect(40 + i * 9, top + 245, 6, 5).fillRect(41 + i * 9, top + 250, 4, 2).fillRect(42 + i * 9, top + 252, 2, 1); } }, '3 hearts · a hit = -1 heart, -10 points');
-        row(top + 328, () => { ic.fillStyle(PAL.sun2).fillRect(40, top + 334, 24, 4); ic.fillStyle(PAL.ink).fillRect(48, top + 328, 8, 6); ic.fillStyle(PAL.white).fillRect(50, top + 329, 4, 4); }, 'fly to the LANDING PAD at the end of the course');
-        row(top + 288, () => { ic.fillStyle(PAL.red).fillRect(38, top + 284, 8, 7); ic.fillStyle(PAL.sun2).fillRect(49, top + 284, 7, 7); ic.fillStyle(PAL.sky2).fillRect(59, top + 284, 7, 7); }, 'HEART +1 life · DOUBLE SHOT 15 s · SHIELD 1 hit');
-        add(txt(s, W / 2, top + 360, `ring = 1 shot · hearts at 0 = crash`, 9, PAL.sun1));
+        row(top + 164, () => { ic.fillStyle(PAL.neon).fillCircle(52, top + 164, 7); ic.fillStyle(PAL.night3).fillCircle(52, top + 164, 3); ic.fillStyle(PAL.neon).fillTriangle(52, top + 151, 47, top + 158, 57, top + 158); }, 'HOLD to climb · RELEASE to sink');
+        row(top + 204, () => { ic.fillStyle(PAL.white).fillRect(44, top + 202, 8, 2).fillRect(56, top + 202, 8, 2); ic.fillStyle(PAL.sun2).fillRect(48, top + 210, 4, 4).fillRect(56, top + 210, 4, 4); }, 'auto shots · BOMB button = battery bomb (2)');
+        row(top + 244, () => { for (let i = 0; i < 3; i++) { ic.fillStyle(PAL.red).fillRect(40 + i * 9, top + 241, 6, 5).fillRect(41 + i * 9, top + 246, 4, 2).fillRect(42 + i * 9, top + 248, 2, 1); } }, '3 hearts · a hit = -1 heart, -10 points');
+        add(txt(s, W / 2, top + 284, `ring = 1 shot · hearts at 0 = crash`, 9, PAL.sun1));
       } });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.tick?.remove());
   }
@@ -201,7 +200,13 @@ export class DroneScene extends Phaser.Scene {
   /** One frame of the fight: the boss moves and throws, the camera shots bite, the projectiles and the body hurt. */
   private stepFight(dt: number) {
     const b = this.boss!; if (this.ended) return;
-    this.projs.push(...stepBoss(b, dt, this.x, this.y, this.level, this.frame.hard));
+    const wasWind = b.windup, wasBeam = b.beam;
+    const thrown = stepBoss(b, dt, this.x, this.y, this.level, this.frame.hard);
+    /* the fight has to be audible: a charge while it winds up, a crack when the beam lets go, and a launch per volley */
+    if (wasWind <= 0 && b.windup > 0) Audio.playSfx('grind');
+    if (wasBeam <= 0 && b.beam > 0) { Audio.playSfx('crash'); this.frame.shake(140, 0.006); }
+    if (thrown.length) Audio.playSfx(thrown[0].kind === 'minion' ? 'pop' : 'spear');
+    this.projs.push(...thrown);
     for (const p of this.projs) stepProj(p, dt, this.x, this.y);
     const box = bossBox(b);
     // the camera shots are the only thing that hurts it
@@ -318,7 +323,8 @@ export class DroneScene extends Phaser.Scene {
     // shield ring
     if (this.shield > 0) g.lineStyle(2, PAL.sky2, this.shield < 2 ? 0.3 + 0.5 * Math.abs(Math.sin(this.t * 12)) : 0.8).strokeCircle(this.x, this.y, 20);
     // landing pad at the end of the course
-    { const px = this.padWx - this.scroll; if (px > -40 && px < W + 40) this.pad(px, BASE - terrainH(S.terrain, this.padWx, seed)); }
+    /* no pad until the boss is beaten: drawing it at the end of the course and then moving it read as a glitch */
+    if (this.bossBeaten) { const px = this.padWx - this.scroll; if (px > -40 && px < W + 40) this.pad(px, BASE - terrainH(S.terrain, this.padWx, seed)); }
     // HUD extras: hearts (empty slots up to 3, extras only while held), bombs, double-shot timer, course progress
     for (let i = 0; i < Math.max(3, this.hearts); i++) { const on = i < this.hearts; const hx = 10 + i * 13, hy = 32; g.fillStyle(on ? PAL.red : PAL.gray0).fillRect(hx, hy, 3, 3).fillRect(hx + 4, hy, 3, 3).fillRect(hx - 1, hy + 2, 9, 3).fillRect(hx + 1, hy + 5, 5, 2).fillRect(hx + 3, hy + 7, 1, 1); }
     if (this.doubleT > 0) { g.fillStyle(PAL.sun2, 0.9).fillRect(112, 34, Math.round(40 * this.doubleT / 15), 4); g.fillStyle(PAL.white).fillRect(112, 30, 8, 2).fillRect(112, 40, 8, 2); }

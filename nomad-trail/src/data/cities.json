@@ -2728,6 +2728,13 @@
         "days": 1,
         "energy": 18,
         "timezones": 1
+      },
+      {
+        "to": "mumbai",
+        "transport": "flight",
+        "days": 1,
+        "energy": 22,
+        "timezones": 4
       }
     ],
     "blurb": "A week of tagine and the realization that the movie was not filmed here.",
@@ -2813,6 +2820,13 @@
         "days": 2,
         "energy": 26,
         "timezones": 6
+      },
+      {
+        "to": "mumbai",
+        "transport": "flight",
+        "days": 2,
+        "energy": 22,
+        "timezones": 4
       }
     ],
     "blurb": "Three weeks on a lagoon in the Sahara. The French have watches.",
@@ -2822,6 +2836,105 @@
     "droneRule": "banned",
     "animal": "a stray dog",
     "coast": true
+  },
+  {
+    "id": "mumbai",
+    "name": "Mumbai",
+    "country": "India",
+    "region": "asia",
+    "lat": 19.08,
+    "lon": 72.88,
+    "hero": false,
+    "minStay": 6,
+    "suggestedStay": 9,
+    "climate": "hot",
+    "timezone": 5.5,
+    "dishes": [
+      "vadapav",
+      "thali"
+    ],
+    "activities": [
+      "bands",
+      "trailrun",
+      "swim"
+    ],
+    "hazard": "crowd",
+    "lodgings": [
+      {
+        "id": "airbnb",
+        "name": "Airbnb",
+        "cancelChance": 0.08,
+        "quiet": 2,
+        "moodPerDay": 2,
+        "energyPerDay": 1
+      },
+      {
+        "id": "hotel",
+        "name": "Hotel",
+        "cancelChance": 0.01,
+        "quiet": 3,
+        "moodPerDay": 1,
+        "energyPerDay": 3
+      },
+      {
+        "id": "hostel",
+        "name": "Hostel dorm",
+        "cancelChance": 0.0,
+        "quiet": 0,
+        "moodPerDay": -2,
+        "energyPerDay": -2
+      }
+    ],
+    "eventWeights": {
+      "foodpoisoning": 2.2,
+      "rain": 2.0,
+      "mosquito": 1.4,
+      "sleepless": 1.4
+    },
+    "legs": [
+      {
+        "to": "dakhla",
+        "transport": "flight",
+        "days": 2,
+        "energy": 22,
+        "timezones": 4
+      },
+      {
+        "to": "casablanca",
+        "transport": "flight",
+        "days": 1,
+        "energy": 22,
+        "timezones": 4
+      },
+      {
+        "to": "kathmandu",
+        "transport": "flight",
+        "days": 1,
+        "energy": 18,
+        "timezones": 0
+      },
+      {
+        "to": "bangkok",
+        "transport": "flight",
+        "days": 1,
+        "energy": 18,
+        "timezones": 2
+      },
+      {
+        "to": "hongkong",
+        "transport": "flight",
+        "days": 1,
+        "energy": 18,
+        "timezones": 2
+      }
+    ],
+    "blurb": "Twenty million people and not one of them in a hurry to let you past. The sea is right there but it's not for swimming.",
+    "stampIcon": "dome",
+    "costPerDay": 55,
+    "museum": "the Chhatrapati Shivaji museum",
+    "animal": "street dogs",
+    "coast": true,
+    "droneRule": "banned"
   },
   {
     "id": "seoul",
@@ -2911,7 +3024,7 @@
         "timezones": 17
       }
     ],
-    "blurb": "A week of food that is both spicy and a personality.",
+    "blurb": "Spicy food and damn good k-pop.",
     "stampIcon": "lantern",
     "costPerDay": 110,
     "radon": 1,
@@ -3081,6 +3194,13 @@
         "days": 1,
         "energy": 18,
         "timezones": 1
+      },
+      {
+        "to": "mumbai",
+        "transport": "flight",
+        "days": 1,
+        "energy": 18,
+        "timezones": 2
       }
     ],
     "blurb": "Street food at 1 am, a tuk-tuk at 1:05, regret at 4.",
@@ -3184,6 +3304,13 @@
         "days": 1,
         "energy": 18,
         "timezones": 1
+      },
+      {
+        "to": "mumbai",
+        "transport": "flight",
+        "days": 1,
+        "energy": 18,
+        "timezones": 2
       }
     ],
     "blurb": "Skyscrapers with hiking trails behind them. A week of dim sum and stairs.",
@@ -3436,6 +3563,13 @@
         "days": 1,
         "energy": 18,
         "timezones": 2
+      },
+      {
+        "to": "mumbai",
+        "transport": "flight",
+        "days": 1,
+        "energy": 18,
+        "timezones": 0
       }
     ],
     "blurb": "Permits, a duffel, and the Manaslu Circuit two weeks out and back: dal bhat power, twenty-four hour.",

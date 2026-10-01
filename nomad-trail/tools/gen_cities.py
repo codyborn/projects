@@ -1,6 +1,16 @@
 #!/usr/bin/env python3
-"""Generates src/data/cities.json and src/data/dishes.json. Edit here, then: python3 tools/gen_cities.py"""
-import json
+"""RETIRED. This built the first cities.json and dishes.json; the shipped data has since moved on and this file has not.
+
+Running it would: resurrect Carvoeiro and the Manaslu trek, rename Hallstatt back to Salzkammergut, bring back
+events that were deliberately removed (lost phone, sea urchin, rockfall, altitude sickness), and flatten every dish
+back to five step kinds, losing the hand-written step labels and the richer slice / grill / simmer / fold steps.
+
+**src/data/cities.json and src/data/dishes.json are the source of truth.** Edit them directly, or edit the text
+through the copy note (`npm run copy:import`). Kept for the original tables and the distance / cost maths.
+"""
+import json, sys
+if '--i-know-this-is-retired' not in sys.argv:
+    sys.exit('gen_cities.py is retired: it would overwrite newer hand-written data. See the docstring.')
 # id: (name, country, region, lat, lon, hero, minStay, suggested, climate, tz, altitude, dishes, activities, hazard, blurb, stampIcon, eventWeights)
 C = {
  'miami':('Miami','USA','northamerica',25.76,-80.19,True,3,14,'hot',-5,0,['stonecrab','cubano'],['swim','trailrun','bands'],'pigeon',"Home base, allegedly. Ninety-six days here last year and the tan never took.",'palm',{'foodpoisoning':0.6}),
@@ -19,7 +29,6 @@ C = {
  'buenosaires':('Buenos Aires','Argentina','southamerica',-34.60,-58.38,True,5,14,'temperate',-3,0,['asado','empanada'],['bands','trailrun'],'crowd',"DevConnect. Steak at midnight, meetings at ten, a city that never asked what time zone you were on.",'tango',{'lostphone':1.6,'sleepless':1.5}),
  'iguazu':('Iguazu','Argentina','southamerica',-25.69,-54.44,False,1,2,'hot',-3,0,['empanada'],['hike'],'mosquito',"Waterfalls that make Niagara look like a tap.",'falls',{'mosquito':2.0}),
  'lisbon':('Lisbon','Portugal','europe',38.72,-9.14,True,5,14,'temperate',0,0,['pasteldenata','bacalhau'],['trailrun','surf','bands'],'tram',"The European base. Hills, tiles, a tram that arrives when it feels like it.",'tram',{'airbnbcancel':2.0}),
- 'carvoeiro':('Carvoeiro','Portugal','europe',37.10,-8.47,False,3,7,'hot',0,0,['pasteldenata','bacalhau'],['swim','hike','trailrun'],'wave',"Cliffs, caves, a rental car with the turning radius of a boat.",'cliff',{'sunburn':1.5}),
  'madrid':('Madrid','Spain','europe',40.42,-3.70,False,3,7,'temperate',1,650,['paella','tortilla'],['bands','trailrun'],'crowd',"A week of late dinners and early meetings. The math does not work.",'bull',{'sleepless':1.5}),
  'granada':('Granada','Spain','europe',37.18,-3.60,True,4,10,'hot',1,740,['paella','tortilla'],['hike','boulder','trailrun'],'rock',"Free tapas with every drink. The Alhambra. The Sierra Nevada right there.",'alhambra',{'goodday':1.5}),
  'london':('London','UK','europe',51.51,-0.13,True,5,21,'rainy',0,0,['fishandchips','sundayroast'],['bands','trailrun'],'pigeon',"Six weeks of a city that charges rent on the air.",'bigben',{'rain':2.5}),
@@ -43,7 +52,6 @@ C = {
  'tokyo':('Tokyo','Japan','asia',35.68,139.65,True,5,20,'temperate',9,0,['ramen','sushi'],['trailrun','bands','boulder'],'otter',"Three weeks of convenience stores, alleys, animal cafes and trains that apologize for being early.",'torii',{'otter':1.0,'goodday':2.0}),
  'minakami':('Minakami','Japan','asia',36.78,138.99,False,2,4,'alpine',9,500,['ramen','soba'],['hike','ski','swim'],'snow',"Nikko and Minakami: onsens, snow, a train that apologizes for being early.",'onsen',{'goodday':2.0}),
  'kathmandu':('Kathmandu','Nepal','himalaya',27.72,85.32,True,2,4,'temperate',6,1400,['dalbhat','momo'],['hike','bands'],'crowd',"Permits, a duffel, the last real shower for two weeks.",'stupa',{'foodpoisoning':2.0}),
- 'manaslu':('Manaslu Circuit','Nepal','himalaya',28.55,84.56,True,1,3,'alpine',6,5106,['dalbhat','momo'],['hike'],'yak',"Fourteen days on foot around the eighth-highest mountain in the world. Dal bhat power, twenty-four hour.",'yak',{'altitude':3.0,'foodpoisoning':1.5,'goodday':2.0}),
 }
 # undirected edges: (a, b, transport, days, months?)
 E = [
@@ -53,12 +61,12 @@ E = [
  ('lasvegas','joshuatree','car',1),('joshuatree','orangecounty','car',1),('orangecounty','lapaz','flight',1),('orangecounty','tokyo','flight',2),('orangecounty','seoul','flight',2),('orangecounty','lasvegas','car',1),('orangecounty','newyork','flight',1),('orangecounty','bozeman','flight',1),('orangecounty','hongkong','flight',2),('orangecounty','laventana','flight',1),('lasvegas','tokyo','flight',1),
  ('lapaz','laventana','car',1),('laventana','santiago','flight',2),('roatan','santiago','flight',2),('lapaz','roatan','flight',1),
  ('santiago','patagonia','flight',1),('patagonia','buenosaires','flight',1),('buenosaires','iguazu','bus',1),('buenosaires','lisbon','flight',1),('buenosaires','madrid','flight',1),('iguazu','madrid','flight',1),('santiago','buenosaires','flight',1),
- ('lisbon','carvoeiro','car',1),('carvoeiro','madrid','train',1),('lisbon','madrid','train',1),('madrid','granada','train',1),('granada','marseille','flight',1),('granada','casablanca','flight',1),('lisbon','casablanca','flight',1),('lisbon','london','flight',1),('madrid','marseille','flight',1),
+ ('lisbon','madrid','train',1),('madrid','granada','train',1),('granada','marseille','flight',1),('granada','casablanca','flight',1),('lisbon','casablanca','flight',1),('lisbon','london','flight',1),('madrid','marseille','flight',1),
  ('casablanca','dakhla','flight',1),('dakhla','munich','flight',1),('casablanca','munich','flight',1),('casablanca','antibes','flight',1),('dakhla','bangkok','flight',2),
  ('london','brussels','train',1),('brussels','amsterdam','train',1),('amsterdam','munich','train',1),('london','edinburgh','train',1),('edinburgh','highlands','car',1),('highlands','reykjavik','flight',1,[6,7,8,9]),('reykjavik','london','flight',1),('edinburgh','casablanca','flight',1),('london','marseille','flight',1),
  ('marseille','hyeres','train',1),('hyeres','antibes','train',1),('antibes','munich','train',1),('antibes','innsbruck','train',1),('munich','innsbruck','train',1),('innsbruck','hallstatt','train',1),('hallstatt','munich','train',1),
  ('munich','bangkok','flight',1),('munich','tokyo','flight',1),('amsterdam','seoul','flight',1),('munich','kathmandu','flight',2),
- ('kathmandu','manaslu','trek',14,[10,11]),('kathmandu','bangkok','flight',1),('kathmandu','hongkong','flight',1),
+ ('kathmandu','bangkok','flight',1),('kathmandu','hongkong','flight',1),
  ('bangkok','chiangmai','train',1),('chiangmai','hongkong','flight',1),('bangkok','hongkong','flight',1),('hongkong','seoul','flight',1),('hongkong','tokyo','flight',1),('seoul','tokyo','flight',1),('tokyo','minakami','train',1),
  ('tokyo','lasvegas','flight',1),('seoul','lasvegas','flight',1),('hongkong','newyork','flight',1),('tokyo','miami','flight',2),
 ]
@@ -95,12 +103,12 @@ def lodgings(cid):
     return [LODGE['airbnb'], LODGE['hotel'], LODGE['hostel']]
 # ---- money: lodging + food per day (USD), realistic 2026 nomad budgets
 COST = {'tokyo':160,'newyork':180,'london':170,'miami':150,'hongkong':150,'reykjavik':170,'antibes':140,'hyeres':120,'marseille':110,'amsterdam':140,'brussels':120,'munich':130,'innsbruck':130,'hallstatt':120,
-        'edinburgh':130,'highlands':120,'boulder':140,'bozeman':120,'lasvegas':130,'joshuatree':110,'orangecounty':60,'montreal':110,'seoul':110,'madrid':110,'granada':90,'lisbon':110,'carvoeiro':100,
-        'casablanca':70,'dakhla':70,'santiago':90,'patagonia':110,'buenosaires':80,'iguazu':90,'lapaz':65,'laventana':70,'roatan':90,'bangkok':70,'chiangmai':60,'kathmandu':45,'manaslu':40,'minakami':120}
+        'edinburgh':130,'highlands':120,'boulder':140,'bozeman':120,'lasvegas':130,'joshuatree':110,'orangecounty':60,'montreal':110,'seoul':110,'madrid':110,'granada':90,'lisbon':110,
+        'casablanca':70,'dakhla':70,'santiago':90,'patagonia':110,'buenosaires':80,'iguazu':90,'lapaz':65,'laventana':70,'roatan':90,'bangkok':70,'chiangmai':60,'kathmandu':45,'minakami':120}
 # ---- radon (0..3), realistic: granite and alpine bedrock; coastal / sedimentary / basalt (Iceland) low
 RADON = {'innsbruck':3,'hallstatt':3,'boulder':3,'bozeman':3,'highlands':2,'joshuatree':2,'granada':2,'madrid':2,'montreal':2,'kathmandu':2,'munich':2,'edinburgh':1,'santiago':1,'seoul':1,'minakami':1}
 # outdoorsy = the place is about being outside; adventure gear pays off here (explicit: gyms and city trail runs do not count)
-OUTDOORSY = {'boulder','bozeman','joshuatree','laventana','patagonia','highlands','reykjavik','innsbruck','hallstatt','dakhla','minakami','kathmandu','manaslu','granada','carvoeiro','iguazu'}
+OUTDOORSY = {'boulder','bozeman','joshuatree','laventana','patagonia','highlands','reykjavik','innsbruck','hallstatt','dakhla','minakami','kathmandu','granada','iguazu'}
 cities=[]
 for cid,(name,country,region,lat,lon,hero,mins,sug,climate,tz,alt,dishes,acts,hazard,blurb,icon,ew) in C.items():
     sug=max(sug,8) if cid not in ('manaslu','marseille','edinburgh','iguazu','lasvegas','joshuatree','orangecounty') else sug
@@ -112,8 +120,20 @@ for cid,(name,country,region,lat,lon,hero,mins,sug,climate,tz,alt,dishes,acts,ha
     if RADON.get(cid): o['radon']=RADON[cid]
     if cid in OUTDOORSY: o['outdoorsy']=True
     cities.append(o)
-json.dump(cities, open('src/data/cities.json','w'), indent=1, ensure_ascii=False)
+# Fields this file does not own (museum, animal, coast, casino, droneRule and anything else added later) are carried
+# over from the existing cities.json, so a regeneration cannot quietly delete hand-written data.
+try:
+    prev = {c['id']: c for c in json.load(open('src/data/cities.json'))}
+except Exception:
+    prev = {}
+kept = 0
+for o in cities:
+    for k, v in prev.get(o['id'], {}).items():
+        if k not in o: o[k] = v; kept += 1
+json.dump(cities, open('src/data/cities.json','w'), indent=2, ensure_ascii=False)
+open('src/data/cities.json','a').write('\n')
 assert set(COST)==set(C), set(C)^set(COST)
+print('carried over', kept, 'hand-written field(s)')
 print('cities', len(cities), 'hero', sum(1 for c in cities if c['hero']), 'legs', sum(len(c['legs']) for c in cities), 'outdoorsy', sum(1 for c in cities if c.get('outdoorsy')), 'radon', sum(1 for c in cities if c.get('radon')))
 # ---- dishes
 S=lambda *steps: [dict(kind=k,count=n) for k,n in steps]
@@ -172,5 +192,21 @@ dishes=[dict(id=i,name=n,city=c,ingredients=ing,steps=st,health=h,mood=m) for (i
 ids={d['id'] for d in dishes}
 missing=[(c['id'],d) for c in cities for d in c['dishes'] if d not in ids]
 assert not missing, missing
-json.dump(dishes, open('src/data/dishes.json','w'), indent=1, ensure_ascii=False)
+# Each step's `what` (the thing being kneaded or diced) is written by hand in the copy note, not here: carry it over
+# step by step, the same way the cities keep their hand-written fields.
+try:
+    prevd = {d['id']: d for d in json.load(open('src/data/dishes.json'))}
+except Exception:
+    prevd = {}
+keptw = 0
+for d in dishes:
+    old = prevd.get(d['id'])
+    if not old: continue
+    for st, ost in zip(d['steps'], old.get('steps', [])):
+        if st['kind'] == ost.get('kind') and ost.get('what') and 'what' not in st: st['what'] = ost['what']; keptw += 1
+    for k, v in old.items():
+        if k not in d: d[k] = v
+json.dump(dishes, open('src/data/dishes.json','w'), indent=2, ensure_ascii=False)
+open('src/data/dishes.json','a').write('\n')
+print('carried over', keptw, 'hand-written step label(s)')
 print('dishes', len(dishes))

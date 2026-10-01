@@ -313,6 +313,17 @@ const CITY: Record<string, Drawer> = {
       for (let wy = tb - th + 24; wy < tb - 6; wy += 12) R(ctx, tx + 3, wy, 4, 6, tod === 'day' ? PAL.night0 : win);
       for (let k = 0; k < 10; k++) R(ctx, tx + 2 + r.int(-2, 2), tb + 2 + k * 2, tw - 4, 1, tod === 'night' ? PAL.night3 : rim); } else waterToBottom(ctx, w, hy - 40, tod, r); },   /* the Hallstätter See fills the foreground */
   casablanca: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { water(ctx, w, hy - 10, 10, tod, r); } else if (L === 'mid') { buildings(ctx, w, hy, c, win, r, 14, 34, 14, 26, 0.3); const x = Math.floor(w * 0.25); R(ctx, x, hy - 110, 12, 110, c); R(ctx, x + 2, hy - 116, 8, 6, PAL.sea2); } else { for (let x = 0; x < w; x += 20) { R(ctx, x, hy - 16, 19, 16, PAL.white); R(ctx, x + 7, hy - 22, 5, 6, PAL.white); } } },
+  mumbai: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') buildings(ctx, w, hy, c, win, r, 50, 130, 8, 16, 0.55);
+    else if (L === 'mid') { water(ctx, w, hy - 18, 18, tod, r); buildings(ctx, w, hy, c, win, r, 20, 60, 10, 22, 0.4);
+      /* the Gateway of India: a basalt arch with its four corner turrets, standing on the harbour front */
+      const x = Math.floor(w * 0.32), gh = 54, gw = 46;
+      R(ctx, x - gw / 2, hy - gh, gw, gh, c);
+      R(ctx, x - 9, hy - 26, 18, 26, PAL.night0);                                    // the arch opening
+      for (let k = 0; k < 9; k++) R(ctx, x - 9 + k * 2, hy - 26 - Math.round(Math.sqrt(Math.max(0, 81 - (k * 2 - 8) * (k * 2 - 8)))), 2, 10, PAL.night0);
+      for (const sx of [x - gw / 2 - 5, x + gw / 2 - 1]) { R(ctx, sx, hy - gh + 6, 6, gh - 6, c); R(ctx, sx + 1, hy - gh + 1, 4, 6, c); }
+      R(ctx, x - 12, hy - gh - 7, 24, 8, c); circle(ctx, x, hy - gh - 10, 7, c);      // the dome
+      line(ctx, x - gw / 2 - 6, hy, x + gw / 2 + 6, hy, PAL.ink);
+    } else { buildings(ctx, w, hy, c, win, r, 10, 30, 12, 26, 0.35); neonSigns(ctx, w, hy, r, 9); } },
   seoul: (ctx, w, hy, L, c, win, r) => { if (L === 'far') { mountains(ctx, w, hy, c, r, 70, 40); const x = Math.floor(w * 0.3); R(ctx, x, hy - 130, 4, 130, c); circle(ctx, x + 2, hy - 120, 6, c); } else if (L === 'mid') buildings(ctx, w, hy, c, win, r, 40, 90, 10, 20, 0.5); else { buildings(ctx, w, hy, c, win, r, 10, 28, 14, 30, 0.35); neonSigns(ctx, w, hy, r, 10); } },
   chiangmai: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') mountains(ctx, w, hy, c, r, 60, 50); else if (L === 'mid') { for (let i = 0; i < 3; i++) { const x = 40 + i * 120; for (let y = 0; y < 34; y++) { const hw = Math.round((1 - y / 34) * 9) + 1; R(ctx, x - hw, hy - 20 - y, hw * 2, 1, PAL.sun2); } R(ctx, x - 12, hy - 20, 24, 22, c); } trees(ctx, w, hy, c, r, 16, false); } else { grassGround(ctx, w, hy - 40, tod, r); for (let i = 0; i < 8; i++) { const x = r.int(0, w); R(ctx, x, hy - 14, 3, 12, PAL.sun1); } } },
   hongkong: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { mountains(ctx, w, hy - 40, c, r, 80, 40); buildings(ctx, w, hy, c, win, r, 90, 170, 6, 12, 0.6); }

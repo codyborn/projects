@@ -60,6 +60,35 @@ for (const [city, want] of [['miami', 'gull'], ['tokyo', 'kaiju'], ['munich', 'd
     `${r.boss ? r.boss.name + ' hp' + r.boss.maxHp : 'no boss'} projs=${r.projs} beam=${r.beam} beaten=${r.beaten} landed=${r.landed} score=${r.score}`);
   check(`${city}: its name fits the screen`, !r.nameW || r.nameW <= 352, `${r.nameW ?? '-'} px`);
 }
+// the landing pad must not be on screen until the boss is down, and minions must be shakeable
+{
+  const r = await pg.evaluate(async () => {
+    const n = window.__nomad; const city = n.review.cities.find(c => c.id === 'buenosaires');
+    n.minigame('Drone', { city, cityName: city.name, seed: 5, level: 1 }); await new Promise(r => setTimeout(r, 700));
+    const sc = n.game.scene.getScene('Drone'); sc.frame.ready(); await new Promise(r => setTimeout(r, 300));
+    sc.hearts = 999; sc.padWx = sc.scroll + sc.x + 30;
+    const orig = sc.pad.bind(sc); let padDuringFight = 0, padAfter = 0;
+    sc.pad = (...a) => { if (sc.boss) padDuringFight++; else if (sc.bossBeaten) padAfter++; return orig(...a); };
+    /* measured per simulation step, not per wall-clock frame: the loop catches up with several fixed 16 ms steps
+       in one frame, which makes a clock-timed reading look two or three times as sharp as the game is */
+    let turn = 0; const head = new Map(); const DT = 0.016;
+    const origStep = sc.step.bind(sc);
+    sc.step = (dt) => { const before = new Map(sc.projs.filter(p => p.kind === 'minion').map(p => [p, Math.atan2(p.vy, p.vx)]));
+      origStep(dt);
+      for (const p of sc.projs) { if (p.kind !== 'minion' || !before.has(p)) continue;
+        let d = Math.abs(Math.atan2(p.vy, p.vx) - before.get(p)); if (d > Math.PI) d = Math.PI * 2 - d;
+        turn = Math.max(turn, (d * 180 / Math.PI) / dt); } };
+    for (let i = 0; i < 2600; i++) {
+      await new Promise(r => setTimeout(r, 16));
+      if (sc.boss) sc.y = sc.boss.y;
+      if (sc.bossBeaten && padAfter) break;
+    }
+    sc.step = origStep;
+    return { padDuringFight, padAfter, turn: Math.round(turn), beaten: sc.bossBeaten };
+  });
+  check('no landing pad until the boss is down', r.padDuringFight === 0 && r.padAfter > 0, `${r.padDuringFight} draws during the fight, ${r.padAfter} after`);
+  check('minions turn lazily enough to shake', r.turn > 0 && r.turn <= 40, `${r.turn} deg/s`);
+}
 // the kaiju's beam must come out where it threatened to
 {
   const r = await pg.evaluate(async () => {

@@ -1355,6 +1355,78 @@
   "mood": 7
  },
  {
+  "id": "vadapav",
+  "name": "Vada pav",
+  "city": "mumbai",
+  "ingredients": [
+   "potato",
+   "pav",
+   "gram flour",
+   "green chilli",
+   "chutney"
+  ],
+  "steps": [
+   {
+    "kind": "knead",
+    "count": 6,
+    "what": "spiced potato"
+   },
+   {
+    "kind": "pour",
+    "count": 1,
+    "what": "gram flour batter"
+   },
+   {
+    "kind": "grill",
+    "count": 1,
+    "what": "vada"
+   },
+   {
+    "kind": "fold",
+    "count": 2,
+    "what": "pav"
+   }
+  ],
+  "health": 6,
+  "mood": 10
+ },
+ {
+  "id": "thali",
+  "name": "Thali",
+  "city": "mumbai",
+  "ingredients": [
+   "dal",
+   "rice",
+   "roti",
+   "sabzi",
+   "pickle"
+  ],
+  "steps": [
+   {
+    "kind": "simmer",
+    "count": 5,
+    "what": "dal"
+   },
+   {
+    "kind": "roll",
+    "count": 3,
+    "what": "roti"
+   },
+   {
+    "kind": "dice",
+    "count": 4,
+    "what": "sabzi"
+   },
+   {
+    "kind": "plate",
+    "count": 3,
+    "what": "thali"
+   }
+  ],
+  "health": 10,
+  "mood": 9
+ },
+ {
   "id": "bibimbap",
   "name": "Bibimbap",
   "city": "seoul",

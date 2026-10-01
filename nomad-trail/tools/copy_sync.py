@@ -6,7 +6,7 @@
 
 Note format: '## Section', '### id' blocks, '- key: value' lines. Lists use ' | ' as the separator.
 Newlines inside a value are written as '\\n'. Keep the {placeholders}."""
-import json, re, sys, os
+import json, re, sys, os, hashlib
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, 'src', 'data')
 NOTE = '/Users/cody.born/Documents/Obsidian Vault/Travel/Nomad/Nomad Trail Copy.md'
@@ -149,6 +149,19 @@ def import_screens(sections):
         open(path, 'w', encoding='utf-8').write(code); changed += len(edits)
     return changed, skipped
 
+STAMP = os.path.join(ROOT, 'tools', '.copy_note.sha256')
+
+def note_hash():
+    try: return hashlib.sha256(open(NOTE, 'rb').read()).hexdigest()
+    except FileNotFoundError: return None
+
+def edited_since_export():
+    """Has Cody touched the note since we last wrote it? Compares it against the hash stamped at the last export."""
+    try: last = open(STAMP).read().strip()
+    except FileNotFoundError: return False      # no stamp yet: nothing to compare against
+    cur = note_hash()
+    return cur is not None and cur != last
+
 def export():
     out = ['---', 'tags: [personal, project, nomad, game, copy]', 'created: 2026-09-24', 'status: Cody editing; sync with `npm run copy:import`', '---', '',
            '# Nomad Trail: all the words', '',
@@ -174,6 +187,7 @@ def export():
         out.append('')
     export_screens(out)
     open(NOTE, 'w', encoding='utf-8').write('\n'.join(out)); print(f'exported -> {NOTE}')
+    open(STAMP, 'w').write(note_hash() or '')   # remember what we wrote, so the next export can tell if Cody edited it 
 
 def parse_note():
     sections = {}; sec = None; blk = None
@@ -215,4 +229,11 @@ def imp():
 
 if __name__ == '__main__':
     cmd = sys.argv[1] if len(sys.argv) > 1 else 'export'
-    export() if cmd == 'export' else imp()
+    if cmd == 'export':
+        # Never overwrite edits. If the note has changed since we last wrote it, pull those changes into the game first.
+        if edited_since_export() and '--discard-note-edits' not in sys.argv:
+            print('the note has been edited since the last export: importing those changes first')
+            imp()
+        export()
+    else:
+        imp()

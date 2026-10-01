@@ -55,6 +55,9 @@ export function dragonSkin(set: SetId, region?: string): DragonSkin {
   return { name: 'THE RED WYRM', body: PAL.red, belly: PAL.sun2, fire: PAL.sun0 };
 }
 
+/** How hard a summoned minion can turn, in degrees a second. At 90 it simply caught you; this is a lazy arc that
+ *  rewards changing height and punishes holding still. */
+export const HOMING_DEG = 32;
 export interface Proj { x: number; y: number; vx: number; vy: number; r: number; kind: 'shard' | 'fire' | 'beam' | 'minion'; t: number; alive: boolean; homing?: number; }
 
 export interface BossState {
@@ -123,7 +126,7 @@ export function stepBoss(b: BossState, dt: number, droneX: number, droneY: numbe
       if (kind === 'beam') { b.beam = 0.85 + 0.1 * level; b.beamY = droneY; }
       else if (kind === 'swoop') { b.dir = Math.sign(droneY - b.y) || 1; b.y += b.dir * 6; out.push(...spread(b, droneX, droneY, 1, speed * 1.2, 'shard')); }
       else if (kind === 'spit') out.push(...spread(b, droneX, droneY, d.kind === 'dragon' ? 3 : 4, speed, d.kind === 'dragon' ? 'fire' : 'shard'));
-      else out.push(...spread(b, droneX, droneY, 2, speed * 0.75, 'minion', 90));
+      else out.push(...spread(b, droneX, droneY, 2, speed * 0.75, 'minion', HOMING_DEG));
       b.next = Math.max(1.1, d.cadence - 0.25 * level - 0.2 * hard) * (0.85 + Math.random() * 0.3);
     }
     return out;

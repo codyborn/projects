@@ -243,13 +243,13 @@
       "mood": 1
     },
     "mitigatedTextBy": {
-      "umbrella": "It rains in {city}. Up goes the umbrella, which you have resented carrying until exactly now."
+      "umbrella": "It rains in {city}. The umbrella which you have resented carrying until now finally earns its keep."
     }
   },
   {
     "id": "sunburn",
     "title": "Sunburn",
-    "text": "You forgot the sunscreen for exactly one afternoon. Your shoulders will remember it for a week.",
+    "text": "You forgot the sunscreen. Your shoulders will remember it for a week.",
     "when": "day",
     "baseChance": 0.05,
     "effects": {
@@ -263,13 +263,13 @@
     "mitigatedBy": [
       "health"
     ],
-    "mitigatedText": "SPF 30 in the morning, SPF 32 at noon. The sun tries; the routine wins.",
+    "mitigatedText": "SPF 30 in the morning. The UV index remains an afterthought.",
     "mitigatedEffects": {}
   },
   {
     "id": "sleepless",
-    "title": "The upstairs neighbour",
-    "text": "The apartment above yours in {city} is either a nightclub or a family of tap dancers. 3 am, 4 am, 5 am.",
+    "title": "The upstairs neighbor",
+    "text": "The apartment above yours in {city} is either a nightclub or a family of tap dancers.",
     "when": "day",
     "baseChance": 0.04,
     "effects": {
@@ -287,7 +287,7 @@
   {
     "id": "wildlife",
     "title": "Wildlife",
-    "text": "A moose, or a stag, or something with more legs than expected, stands in the trail outside {city} and does not move. Neither do you. Best minute of the month.",
+    "text": "A moose or a stag stands in the trail outside {city} and does not move. Neither do you. Highlight of the month.",
     "when": "action",
     "baseChance": 0.1,
     "effects": {
@@ -303,7 +303,7 @@
   {
     "id": "goodday",
     "title": "A good day",
-    "text": "Day {day}, {city}. Nothing goes wrong. The coffee is right, the light is right, the work gets done by two and the city is still out there at three. This is why.",
+    "text": "Day {day}, {city}. Nothing goes wrong. The coffee is right, the light is right, the work day hums on by.",
     "when": "day",
     "baseChance": 0.04,
     "effects": {
@@ -335,7 +335,7 @@
   {
     "id": "hostgift",
     "title": "The host",
-    "text": "Your host in {city} leaves bread, cheese and a handwritten map of the neighbourhood. The map is wrong and the cheese is perfect.",
+    "text": "Your host in {city} leaves bread, local cheese and a handwritten map of the neighborhood. The map is wrong but the cheese is perfect.",
     "when": "arrive",
     "baseChance": 0.1,
     "effects": {
@@ -357,7 +357,7 @@
   {
     "id": "flightdelay",
     "title": "Delayed",
-    "text": "The flight to {city} boards, sits, deboards, and then leaves four hours late. You learn the gate area's every outlet.",
+    "text": "The flight to {city} boards, sits, deboards, and then leaves four hours late. You learn the gate area's every outlet. None of them work.",
     "when": "flight",
     "baseChance": 0.1,
     "effects": {
@@ -472,7 +472,7 @@
   {
     "id": "gooddaymountain",
     "title": "A good day",
-    "text": "Day {day}, {city}. Nothing goes wrong. The coffee is right, the light is right, the work gets done by two and the mountain is still there at three. This is why.",
+    "text": "Day {day}, {city}. Nothing goes wrong. The coffee is right, the light is right, the mountains stand tall in the distance.",
     "when": "day",
     "baseChance": 0.03,
     "effects": {
@@ -484,7 +484,7 @@
   {
     "id": "gooddaycoast",
     "title": "A good day",
-    "text": "Day {day}, {city}. Nothing goes wrong. The coffee is right, the light is right, the work gets done by two and the water is warm at three. This is why.",
+    "text": "Day {day}, {city}. Nothing goes wrong. The coffee is right, the light is right, the warm beach beckons.",
     "when": "day",
     "baseChance": 0.03,
     "effects": {
@@ -500,7 +500,7 @@
   {
     "id": "taxibreakdown",
     "title": "The taxi dies",
-    "text": "Twenty minutes from the terminal the taxi coughs, rolls onto the shoulder and goes quiet. Out of gas, or out of will. You pay, you grab the suitcase, you run.",
+    "text": "Twenty minutes from the terminal the taxi coughs, rolls onto the shoulder and goes quiet. You pay, grab the suitcase and run.",
     "when": "flight",
     "baseChance": 0.05,
     "effects": {
@@ -512,14 +512,14 @@
     "title": "The Airbnb knife",
     "when": "arrive",
     "baseChance": 0,
-    "text": "{city}. The listing said 'fully equipped kitchen'. The kitchen has one knife, and it has never met a whetstone. Tomatoes will be bruised, not sliced. Every cut here needs to be more precise than you would like.",
+    "text": "{city}. The listing said 'fully equipped kitchen'. The kitchen has one knife and it was from the dollar store. Tomatoes will be bruised, not sliced. Every cut here needs to be more precise than you would like.",
     "effects": {
       "mood": -2
     },
     "mitigatedBy": [
       "knife"
     ],
-    "mitigatedText": "{city}. The listing said 'fully equipped kitchen'. The kitchen has one knife, and it has never met a whetstone. You unroll your own. Crisis averted, tomatoes saved.",
+    "mitigatedText": "{city}. The listing said 'fully equipped kitchen'. The kitchen has one knife and it was from the dollar store. You unroll your own. Crisis averted, tomatoes saved.",
     "mitigatedEffects": {
       "mood": 1
     }
@@ -541,7 +541,7 @@
       "iguazu",
       "buenosaires"
     ],
-    "text": "{city}. A bar of chocolate from the corner shop, eaten in bed with a film. By morning your stomach has opinions. You go to throw the wrapper away and stop: the inside of the packaging is dotted with tiny brown capsules, stuck in neat rows. Cockroach eggs. You check the sell-by date. There isn't one.",
+    "text": "{city}. A bar of chocolate from the corner shop, eaten in bed with a film. By morning your stomach is not happy. You go to throw the wrapper away and stop: the inside of the packaging is dotted with tiny brown capsules, stuck in neat rows. Cockroach eggs.",
     "effects": {
       "health": -10,
       "energy": -12,
@@ -552,7 +552,7 @@
     "mitigatedBy": [
       "meds"
     ],
-    "mitigatedText": "{city}. A bar of chocolate from the corner shop, eaten in bed with a film. By morning your stomach has opinions, and by afternoon, with the probiotics from the medicine kit, it has fewer. You go to throw the wrapper away and stop: the inside of the packaging is dotted with tiny brown capsules in neat rows. Cockroach eggs. You do not finish the film.",
+    "mitigatedText": "{city}. A bar of chocolate from the corner shop, eaten in bed with a film. By morning your stomach is not happy, and by afternoon, with the probiotics from the medicine kit, it has fewer. You go to throw the wrapper away and stop: the inside of the packaging is dotted with tiny brown capsules in neat rows. Cockroach eggs. You do not finish the film.",
     "mitigatedEffects": {
       "health": -4,
       "energy": -6,
