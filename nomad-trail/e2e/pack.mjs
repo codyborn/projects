@@ -14,8 +14,12 @@ const base = s0.placed;   /* the essentials the run starts with: everything belo
 // 1. tap the first card (Essentials page, card at x 12..172, y 374..624)
 await tap(92, 480); let s1 = await st(); if (s1.placed !== base + 1) fails.push(`tap card -> placed ${s1.placed}, wanted ${base + 1}`);
 await pg.screenshot({ path: 'e2e/layout/pack-after-tap.png' });
-// 2. tap the tile to remove it (tile at grid origin 84,56; first-fit puts it at 0,0)
-const tile = await pg.evaluate(() => { const sc = window.__nomad.game.scene.getScene('Pack'); const p = sc.placed[0]; return p ? { x: p.obj.x, y: p.obj.y, w: p.obj.width, h: p.obj.height } : null; });
+// 2a. the essentials are fixtures now: tapping one must not take it out (there is no card to put it back with)
+const fixture = await pg.evaluate(() => { const sc = window.__nomad.game.scene.getScene('Pack'); const p = sc.placed.find(x => (window.__nomad.review.items.find(i => i.id === x.id)?.tags ?? []).includes('essential')); return p ? { id: p.id, x: p.obj.x, y: p.obj.y, w: p.obj.width, h: p.obj.height } : null; });
+if (!fixture) fails.push('expected an essential in the case');
+else { await tap(fixture.x + fixture.w / 2, fixture.y + fixture.h / 2); const after = await st(); if (after.placed !== s1.placed) fails.push(`tapping ${fixture.id} removed it`); }
+// 2b. tap the tile just added to remove it (the last one placed)
+const tile = await pg.evaluate(() => { const sc = window.__nomad.game.scene.getScene('Pack'); const p = sc.placed[sc.placed.length - 1]; return p ? { x: p.obj.x, y: p.obj.y, w: p.obj.width, h: p.obj.height } : null; });
 if (tile) { await tap(tile.x + tile.w - 4, tile.y + tile.h - 4); await sleep(400); } // bottom-right corner on purpose
 let s2 = await st(); if (s2.placed !== s1.placed - 1) fails.push(`tap tile corner -> placed ${s2.placed}, wanted ${s1.placed - 1}`);
 // 3. swipe up on the tray -> next category

@@ -10,7 +10,7 @@ export interface Hazard {
   spr?: Phaser.GameObjects.Sprite;
 }
 
-export const MOVER_SPEED: Partial<Record<HazardKind, number>> = { gull: 42, pigeon: 72, eagle: 28, toucan: 55, dust: 14, steam: 22 };
+export const MOVER_SPEED: Partial<Record<HazardKind, number>> = { gull: 42, pigeon: 72, eagle: 28, toucan: 55, dust: 14, steam: 22, balloon: 10 };
 export const ZONES: HazardKind[] = ['updraft', 'gust', 'mist'];
 export const STATIC: HazardKind[] = ['kiteline', 'crane', 'laundry', 'cliff', 'cable', 'spray', 'plume', 'geyser'];
 
@@ -23,8 +23,9 @@ export function makeHazard(kind: HazardKind, wx: number, groundY: number, rng: (
     case 'eagle': h.y = 80 + rng() * 240; break;
     case 'toucan': h.y = 90 + rng() * 240; h.a = 30 + rng() * 40; break;                      // sine amplitude
     case 'steam': h.y = 80 + rng() * 280; break;
+    case 'balloon': h.y = 90 + rng() * 230; h.a = 26 + rng() * 10; h.b = 10 + rng() * 14; break;   // envelope radius, how far it rises and falls
     case 'dust': h.y = groundY; h.a = 70 + rng() * 50 + 10 * level; break;                      // column height
-    case 'kiteline': h.y = groundY; h.a = 300 + rng() * 80; break;                             // kite canopy at screen y 300..380: low over the beach, the drone climbs over it
+    case 'kiteline': h.y = groundY; h.a = 300 + rng() * 80; h.b = 22 + rng() * 14; h.c = 0.9 + rng() * 0.5; break;   // canopy height, swing width, swing speed: the kite sweeps across its line
     case 'crane': h.y = groundY; h.a = 90 + rng() * 60; h.b = rng() < 0.5 ? -1 : 1; break;      // top y, arm side
     case 'laundry': h.y = groundY; h.a = 24 + rng() * 22; break;                               // line height above roof
     case 'cliff': h.y = groundY; h.a = 90 + rng() * 70 + 10 * level; break;                     // column height
@@ -38,6 +39,13 @@ export function makeHazard(kind: HazardKind, wx: number, groundY: number, rng: (
   return h;
 }
 
+/** How far a kite has swung off its anchor right now, and the lean that goes with it. */
+export function kiteSwing(h: Hazard): { dx: number; lean: number } {
+  const k = Math.sin(h.t * h.c + h.phase);
+  return { dx: k * h.b, lean: Math.cos(h.t * h.c + h.phase) * 0.5 };
+}
+/** A balloon's drift: it rises and sinks on a long slow cycle. */
+export const balloonY = (h: Hazard) => h.y + Math.sin(h.t * 0.6 + h.phase) * h.b;
 /** Is a periodic plume up right now? (spray / geyser) 0 = down, 1 = full */
 export function plumeUp(h: Hazard): number {
   const c = (h.t + h.phase) % h.b; const upStart = h.b - 1.1;
@@ -55,8 +63,9 @@ export function boxes(h: Hazard, x: number): Phaser.Geom.Rectangle[] {
     case 'eagle': return [R(x - 11, h.y - 4, 22, 9)];
     case 'toucan': return [R(x - 8, h.y - 5, 16, 10)];
     case 'steam': return [R(x - 18, h.y - 9, 36, 18)];
+    case 'balloon': { const by = balloonY(h); return [R(x - h.a * 0.7, by - h.a, h.a * 1.4, h.a * 1.7), R(x - 7, by + h.a * 0.8, 14, 10)]; }   // envelope and basket
     case 'dust': return [R(x - 8, h.y - h.a, 16, h.a)];
-    case 'kiteline': return [R(x - 1, h.a, 3, h.y - h.a), R(x - 8, h.a - 10, 16, 12)];
+    case 'kiteline': { const sw = kiteSwing(h); return [R(x + sw.dx * 0.5 - 2, h.a + 8, 4, h.y - h.a - 8), R(x + sw.dx - 11, h.a - 13, 22, 20)]; }   // the line leans with the kite and the canopy rides at the end of it
     case 'crane': return [R(x - 3, h.a, 6, h.y - h.a), R(h.b < 0 ? x - 72 : x, h.a - 3, 72, 5)];
     case 'laundry': return [R(x - 30, h.y - h.a - 1, 60, 3)];
     case 'cliff': return [R(x - 13, h.y - h.a, 26, h.a)];

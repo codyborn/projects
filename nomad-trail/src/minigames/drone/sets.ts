@@ -4,7 +4,7 @@ import { PAL } from '../../core/palette';
 import type { City } from '../../core/types';
 
 export type SetId = 'coast' | 'city' | 'mountain' | 'desert' | 'jungle' | 'ice';
-export type HazardKind = 'gull' | 'kiteline' | 'spray' | 'crane' | 'pigeon' | 'laundry' | 'eagle' | 'cliff' | 'cable' | 'updraft' | 'dust' | 'toucan' | 'plume' | 'mist' | 'geyser' | 'gust' | 'steam';
+export type HazardKind = 'gull' | 'kiteline' | 'spray' | 'crane' | 'pigeon' | 'laundry' | 'eagle' | 'cliff' | 'cable' | 'updraft' | 'dust' | 'toucan' | 'plume' | 'mist' | 'geyser' | 'gust' | 'steam' | 'balloon';
 export type PropKind = 'palm' | 'umbrella' | 'cactus' | 'camel' | 'pine' | 'hut' | 'canopy' | 'vent' | 'rock' | 'antenna' | 'tank' | 'boat';
 export type TerrainKind = 'flat' | 'roofs' | 'jagged' | 'dunes' | 'hills' | 'lava';
 
@@ -20,10 +20,10 @@ export interface DroneSet {
 }
 
 export const SETS: Record<SetId, DroneSet> = {
-  coast:    { id: 'coast', name: 'THE COAST', tagline: 'gulls, kite lines, spray off the reef', sky: [PAL.sky1, PAL.sky3], far: PAL.sea1, farDark: PAL.sea0, ground: PAL.earth3, groundDark: PAL.earth2, terrain: 'flat', water: PAL.sea2, hazards: ['gull', 'gull', 'kiteline', 'spray'], props: ['palm', 'umbrella', 'boat'] },
-  city:     { id: 'city', name: 'THE CITY', tagline: 'rooftops, cranes, laundry lines, pigeons', sky: [PAL.night3, PAL.dusk3], far: PAL.night2, farDark: PAL.night1, ground: PAL.gray0, groundDark: PAL.ink, terrain: 'roofs', hazards: ['pigeon', 'crane', 'laundry', 'pigeon'], props: ['antenna', 'tank'] },
-  mountain: { id: 'mountain', name: 'THE MOUNTAINS', tagline: 'updrafts, cliffs, eagles, a cable car', sky: [PAL.sky0, PAL.sky2], far: PAL.gray1, farDark: PAL.gray0, ground: PAL.grass0, groundDark: PAL.earth0, terrain: 'jagged', hazards: ['eagle', 'cliff', 'updraft', 'cable'], props: ['pine', 'rock', 'hut'] },
-  desert:   { id: 'desert', name: 'THE DESERT', tagline: 'dust devils over the dunes, kite lines on the lagoon', sky: [PAL.sun1, PAL.sun3], far: PAL.earth2, farDark: PAL.earth1, ground: PAL.sun2, groundDark: PAL.earth2, terrain: 'dunes', hazards: ['dust', 'kiteline', 'updraft', 'gull'], props: ['cactus', 'camel', 'rock'] },
+  coast:    { id: 'coast', name: 'THE COAST', tagline: 'gulls, swinging kites, balloons over the bay', sky: [PAL.sky1, PAL.sky3], far: PAL.sea1, farDark: PAL.sea0, ground: PAL.earth3, groundDark: PAL.earth2, terrain: 'flat', water: PAL.sea2, hazards: ['gull', 'gull', 'kiteline', 'spray', 'balloon'], props: ['palm', 'umbrella', 'boat'] },
+  city:     { id: 'city', name: 'THE CITY', tagline: 'rooftops, cranes, laundry, pigeons, a balloon', sky: [PAL.night3, PAL.dusk3], far: PAL.night2, farDark: PAL.night1, ground: PAL.gray0, groundDark: PAL.ink, terrain: 'roofs', hazards: ['pigeon', 'crane', 'laundry', 'pigeon', 'balloon'], props: ['antenna', 'tank'] },
+  mountain: { id: 'mountain', name: 'THE MOUNTAINS', tagline: 'updrafts, cliffs, eagles, a cable car', sky: [PAL.sky0, PAL.sky2], far: PAL.gray1, farDark: PAL.gray0, ground: PAL.grass0, groundDark: PAL.earth0, terrain: 'jagged', hazards: ['eagle', 'cliff', 'updraft', 'cable', 'balloon'], props: ['pine', 'rock', 'hut'] },
+  desert:   { id: 'desert', name: 'THE DESERT', tagline: 'dust devils, kites on the lagoon, dawn balloons', sky: [PAL.sun1, PAL.sun3], far: PAL.earth2, farDark: PAL.earth1, ground: PAL.sun2, groundDark: PAL.earth2, terrain: 'dunes', hazards: ['dust', 'kiteline', 'updraft', 'gull', 'balloon', 'balloon'], props: ['cactus', 'camel', 'rock'] },
   jungle:   { id: 'jungle', name: 'THE JUNGLE', tagline: 'toucans, mist, spray off the falls', sky: [PAL.grass1, PAL.grass3], far: PAL.grass0, farDark: PAL.night2, ground: PAL.grass1, groundDark: PAL.grass0, terrain: 'hills', water: PAL.sea3, hazards: ['toucan', 'plume', 'mist', 'toucan'], props: ['canopy', 'canopy', 'hut'] },
   ice:      { id: 'ice', name: 'FIRE AND ICE', tagline: 'geysers, steam, gusts that shove you up and down', sky: [PAL.night2, PAL.sky2], far: PAL.gray2, farDark: PAL.gray1, ground: PAL.gray0, groundDark: PAL.ink, terrain: 'lava', water: PAL.sky3, hazards: ['geyser', 'gust', 'steam', 'geyser'], props: ['vent', 'rock'] },
 };

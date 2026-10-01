@@ -19,25 +19,6 @@
     ]
   },
   {
-    "id": "tablet",
-    "name": "Tablet",
-    "label": "Tablet",
-    "weightLb": 1.0,
-    "w": 2,
-    "h": 2,
-    "tags": [
-      "work",
-      "luxury"
-    ],
-    "desc": "Second monitor, e-reader, journal, cinema.",
-    "real": true,
-    "color": 3817291,
-    "benefits": [
-      "+2 mood on rest days",
-      "A second screen for work"
-    ]
-  },
-  {
     "id": "watch",
     "name": "GPS Watch",
     "label": "GPS watch",

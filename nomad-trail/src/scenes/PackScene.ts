@@ -13,16 +13,17 @@ const GRID_X = 84, GRID_Y = 56;
 const TRAY_Y = 344, TRAY_H = 640 - TRAY_Y;         // category strip + cards
 const CAT_ROW_H = 26, CARD_Y = TRAY_Y + CAT_ROW_H + 4;
 const CARD_W = 160, CARD_H = 250, CARD_GAP = 8, CARD_X0 = 12;
-const CATS = ['ESSENTIALS', 'CLOTHES', 'HEALTH', 'ACTIVITY', 'COMFORT'];
+const CATS = ['CLOTHES', 'HEALTH', 'ACTIVITY', 'COMFORT'];   /* the essentials are not a category any more: the laptop, washbag and watch are simply in the case */
 
-/** Category of a bundle: essentials, clothes, health, activity, comfort. */
+/** The essentials come with the suitcase; they are never cards in the tray. */
+export const isFixture = (it: Item) => it.tags.includes('essential');
+/** Category of a bundle: clothes, health, activity, comfort. */
 function groupOf(it: Item): number {
   const t = new Set<string>(it.tags);
-  if (t.has('essential') || t.has('work')) return 0;
-  if (['clothing', 'rain', 'cold', 'swim'].some(x => t.has(x))) return 1;
-  if (['health', 'firstaid', 'meds', 'repellent', 'sleep'].some(x => t.has(x))) return 2;
-  if (['fitness', 'kite', 'climb', 'hike', 'water', 'light', 'knife', 'camera'].some(x => t.has(x))) return 3;
-  return 4;
+  if (['clothing', 'rain', 'cold', 'swim'].some(x => t.has(x))) return 0;
+  if (['health', 'firstaid', 'meds', 'repellent', 'sleep'].some(x => t.has(x))) return 1;
+  if (['fitness', 'kite', 'climb', 'hike', 'water', 'light', 'knife', 'camera'].some(x => t.has(x))) return 2;
+  return 3;
 }
 /** Benefits shown on the card. Data-driven when the bundle has them; derived from tags otherwise. */
 function benefitsOf(it: Item): string[] {
@@ -124,7 +125,7 @@ export class PackScene extends Phaser.Scene {
   /** Unpacked bundles for a category, one card per stack (items sharing a name, e.g. the weeks of clothes). */
   private trayItems(cat: number): Item[] {
     const packed = new Set(this.placed.map(p => p.id)); const seen = new Set<string>();
-    return Data.items.filter(it => groupOf(it) === cat && !packed.has(it.id)).filter(it => { if (seen.has(it.name)) return false; seen.add(it.name); return true; });
+    return Data.items.filter(it => !isFixture(it) && groupOf(it) === cat && !packed.has(it.id)).filter(it => { if (seen.has(it.name)) return false; seen.add(it.name); return true; });
   }
   private stackLeft(it: Item) { const packed = new Set(this.placed.map(p => p.id)); return Data.items.filter(x => x.name === it.name && !packed.has(x.id)).length; }
   private renderTray() {
@@ -232,7 +233,9 @@ export class PackScene extends Phaser.Scene {
     return p;
   }
   private unpack(p: Placed) {
-    const it = Data.item(p.id)!; this.mark(p, false); this.placed = this.placed.filter(x => x !== p); Audio.playSfx('pop');
+    const it = Data.item(p.id)!;
+    /* the essentials are not in the tray, so letting them out of the case would be a one-way trip */
+    if (isFixture(it)) { Audio.playSfx('cancel'); toast(this, `${it.name} always comes`, PAL.sun1, 900); return; } this.mark(p, false); this.placed = this.placed.filter(x => x !== p); Audio.playSfx('pop');
     this.tweens.add({ targets: p.obj, y: TRAY_Y + 40, alpha: 0, scaleX: 0.6, scaleY: 0.6, duration: 220, ease: 'Quad.In', onComplete: () => p.obj.destroy() });
     this.setCat(groupOf(it)); this.renderTray(); this.refreshWeights(); toast(this, `${it.name} back on the floor`, PAL.gray2, 700);
   }

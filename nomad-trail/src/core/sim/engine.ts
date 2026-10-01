@@ -250,7 +250,6 @@ function tickDay(s: RunState, rng: Rng, opts: { rest?: boolean; work?: boolean }
   if (s.mood < 25) s.energy -= 3;
   if (hasTag(s, 'health') && s.energy > 50) s.health += 0.4;
   if (hasItem(s, 'travelkettle')) s.mood += 1;                      // tea at night; the other thing it does lives in events.json
-  if (hasItem(s, 'tablet') && opts.rest) s.mood += 2;
   s.health = clamp(s.health, 0, 100); s.energy = clamp(s.energy, 0, energyCap(s)); s.mood = clamp(s.mood, 0, 100);
   out.push(...rollEvents(s, 'day', { overweightRatio: weightRatio(s.items) }, rng, 1));
   if (s.money < 0 && !hasFlag(s, 'broke')) { setFlag(s, 'broke', true); out.push(forceEvent(s, 'broke', rng)); }

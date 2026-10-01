@@ -10,7 +10,6 @@ P = dict(night2=0x1f2a48, night3=0x2e3d66, dusk2=0x8b3a7a, dusk3=0xc4457a, sun0=
 B = [
  # ---- work + tech
  ('laptopkit',  'Laptop + Desk Kit',  'Laptop kit',   4.0, 3, 2, ['essential','work'],          0, 'The whole job, plus the stand and keyboard that keep the neck honest.', True,  'gray2', ['The job travels with you', 'Work days pay']),
- ('tablet',     'Tablet',             'Tablet',       1.0, 2, 2, ['work','luxury'],             0, 'Second monitor, e-reader, journal, cinema.', True, 'gray0', ['+2 mood on rest days', 'A second screen for work']),
  ('watch',      'GPS Watch',          'GPS watch',    0.3, 1, 1, ['essential'],                 0, 'Counts every step, judges every rest day.', True, 'night3', ['Counts every step', '+1 health from training']),
  ('dronekit',   'Drone Kit',          'Drone kit',    4.0, 3, 2, ['camera','luxury'],           0, 'The camera the year gets remembered by, its controller, and the spare batteries.', True, 'gray1', ['+4 mood in hero cities', '4 lb, 6 cells']),
  # ---- clothing

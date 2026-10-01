@@ -88,7 +88,7 @@ describe('data integrity', () => {
 describe('packing', () => {
   it('rejects out-of-bounds, overlaps, duplicates, overweight, and a bag with no essentials', () => {
     expect(Sim.validatePack([P('laptopkit', 'checked', 6, 0)]).errors[0]).toMatch(/does not fit/);
-    expect(Sim.validatePack([P('laptopkit', 'checked', 0, 0), P('tablet', 'checked', 1, 1)]).errors.join()).toMatch(/overlaps/);
+    expect(Sim.validatePack([P('laptopkit', 'checked', 0, 0), P('toiletries', 'checked', 1, 1)]).errors.join()).toMatch(/overlaps/);
     expect(Sim.validatePack([P('watch', 'checked', 0, 0), P('watch', 'checked', 2, 0)]).errors.join()).toMatch(/twice/);
     expect(Sim.validatePack([P('clothes1', 'checked')]).errors.join()).toMatch(/essential/);
     expect(Sim.validatePack([P('laptopkit', 'backpack', 0, 0)]).errors.join()).toMatch(/suitcase/);   // the backpack is gone

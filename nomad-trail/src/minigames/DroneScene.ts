@@ -4,7 +4,8 @@ import { PAL } from '../core/palette';
 import { MINIGAME_KEYS, type MinigameLaunch, type City } from '../core/types';
 import { MinigameFrame, W, H, clamp, normalizeLaunch, txt, pixTexture } from './_shared';
 import { SETS, pickSet, terrainH, farH, propAt, h32, type DroneSet, type PropKind, type HazardKind } from './drone/sets';
-import { makeHazard, boxes, cableY, plumeUp, plumeWarn, MOVER_SPEED, ZONES, type Hazard } from './drone/hazards';
+import { makeHazard, boxes, cableY, plumeUp, plumeWarn, kiteSwing, balloonY, MOVER_SPEED, ZONES, type Hazard } from './drone/hazards';
+import { pickBoss, makeBoss, BOSSES, dragonSkin, stepBoss, stepProj, bossBox, drawBoss, drawBossBeam, beamLineY, drawProj, type BossState, type Proj, type DragonSkin } from './drone/boss';
 
 /**
  * DRONE FLIGHT: the side game for the drone kit. The landscape scrolls right to left; the drone flies through photo rings
@@ -35,6 +36,8 @@ export class DroneScene extends Phaser.Scene {
   private rings: Ring[] = []; private hazards: Hazard[] = []; private pickups: Pickup[] = []; private shots: Shot[] = []; private spawnT = 0; private puT = 0; private lastStaticWx = -1e9; private rng!: () => number;
   hits = 0; collisions = 0; hearts = 3; bombs = 2; private shield = 0; private doubleT = 0; private fireT = 0; private iframes = 0; private padWx = 3000; private ended = false; private puffed = false; private landing = false; private anim = 0; private landT = 0;
   private keyUp = false; private mistK = 0; private toastUntil = 0; private btnG!: Phaser.GameObjects.Graphics; private btnT?: Phaser.GameObjects.Text; private btnFlash = 0;
+  /** the thing at the end of the course: the world stops, the drone keeps its climb and its camera, and it has to be put down */
+  private boss?: BossState; private projs: Proj[] = []; private skin!: DragonSkin; private bossBeaten = false; private bossNameT?: Phaser.GameObjects.Text;
   constructor() { super(MINIGAME_KEYS.drone); }
 
   init(data: any) {
@@ -46,13 +49,15 @@ export class DroneScene extends Phaser.Scene {
     this.scroll = 0; this.t = 0; this.x = 120; this.y = 260; this.vy = 0; this.held = false; this.rings = []; this.hazards = []; this.pickups = []; this.shots = []; this.spawnT = 2.2; this.puT = 5; this.lastStaticWx = -1e9;
     this.hits = 0; this.collisions = 0; this.hearts = 3; this.bombs = 2; this.shield = 0; this.doubleT = 0; this.fireT = 0; this.iframes = 0; this.ended = false; this.puffed = false; this.landing = false; this.anim = 0; this.landT = 0;
     this.keyUp = false; this.mistK = 0; this.toastUntil = 0; this.btnFlash = 0;
+    this.boss = undefined; this.projs = []; this.bossBeaten = false;
   }
 
   get ringCount() { return 6 + 2 * this.level; }
   create() {
     this.frame = new MinigameFrame(this, this.launch, 'Drone flight'); this.frame.musicLoop = 'drone';
     this.v = (44 + 13 * this.level) * (0.9 + 0.2 * this.launch.difficulty) * (1 + 0.1 * this.frame.hard);   // level 1 ≈ 44 px/s, level 3 ≈ 83
-    const dur = 35 + 10 * this.level; this.padWx = Math.round(this.v * dur) + this.x; this.frame.capSec = dur + 30;   // course length in scroll px: 45 / 55 / 65 s at this level's speed; the cap is only a safety net
+    const dur = 35 + 10 * this.level; this.padWx = Math.round(this.v * dur) + this.x; this.frame.capSec = dur + 75;   // course length in scroll px: 45 / 55 / 65 s at this level's speed, plus room for the boss; the cap is only a safety net
+    this.skin = dragonSkin(this.set.id, this.city?.region);
     this.cameras.main.setBackgroundColor(this.set.sky[0]);
     this.textures_();
     const N = 10; for (let i = 0; i < N; i++) { const c = Phaser.Display.Color.Interpolate.ColorWithColor(Phaser.Display.Color.ValueToColor(this.set.sky[0]), Phaser.Display.Color.ValueToColor(this.set.sky[1]), N - 1, i); const bh = (BASE - 26) / N; this.add.rectangle(W / 2, 26 + i * bh + bh / 2, W, bh + 1, Phaser.Display.Color.GetColor(c.r, c.g, c.b)).setDepth(0); }   // ten sky bands
@@ -63,8 +68,9 @@ export class DroneScene extends Phaser.Scene {
     this.toastT = txt(this, W / 2, 62, '', 12, PAL.sun2).setDepth(20).setAlpha(0);
     this.btnG = this.add.graphics().setDepth(30); this.btnT = txt(this, BTN_X, BTN_Y + 14, '', 9, PAL.white).setDepth(31); this.drawBombButton();
     this.frame.scoreNow = () => this.score();
-    this.frame.intro(`${this.cityName.toUpperCase()} · ${this.set.name}. Fly through ${this.ringCount} photo rings to the landing pad. ${this.set.tagline}.`, () => this.startRun(),
-      { height: 500, title: `Drone flight · level ${this.level}`, extra: (s, add) => {
+    const bd = this.bossDef();
+    this.frame.intro(`${this.cityName.toUpperCase()} · ${this.set.name}. Fly through ${this.ringCount} photo rings, then ${bd.name} is waiting at the end of the course. ${this.set.tagline}.`, () => this.startRun(),
+      { height: 540, title: `Drone flight · level ${this.level}`, extra: (s, add) => {
         const top = H / 2 - 250; add(s.add.sprite(W / 2, top + 118, 'dr_drone0').setScale(3));
         const ic = s.add.graphics(); add(ic);
         const row = (y: number, draw: () => void, label: string) => { ic.fillStyle(PAL.night3).fillRect(34, y - 16, 36, 32); draw(); add(txt(s, 80, y, label, 9, PAL.white, 'left')); };
@@ -73,7 +79,8 @@ export class DroneScene extends Phaser.Scene {
         row(top + 248, () => { for (let i = 0; i < 3; i++) { ic.fillStyle(PAL.red).fillRect(40 + i * 9, top + 245, 6, 5).fillRect(41 + i * 9, top + 250, 4, 2).fillRect(42 + i * 9, top + 252, 2, 1); } }, '3 hearts · a hit = -1 heart, -10 points');
         row(top + 328, () => { ic.fillStyle(PAL.sun2).fillRect(40, top + 334, 24, 4); ic.fillStyle(PAL.ink).fillRect(48, top + 328, 8, 6); ic.fillStyle(PAL.white).fillRect(50, top + 329, 4, 4); }, 'fly to the LANDING PAD at the end of the course');
         row(top + 288, () => { ic.fillStyle(PAL.red).fillRect(38, top + 284, 8, 7); ic.fillStyle(PAL.sun2).fillRect(49, top + 284, 7, 7); ic.fillStyle(PAL.sky2).fillRect(59, top + 284, 7, 7); }, 'HEART +1 life · DOUBLE SHOT 15 s · SHIELD 1 hit');
-        add(txt(s, W / 2, top + 356, `ring = 1 shot · hearts at 0 = crash`, 9, PAL.sun1));
+        row(top + 368, () => { ic.fillStyle(PAL.red).fillCircle(52, top + 368, 9); ic.fillStyle(PAL.ink).fillRect(48, top + 365, 3, 3).fillRect(55, top + 365, 3, 3); }, `BOSS: ${bd.name.toLowerCase()} · keep firing, keep moving`);
+        add(txt(s, W / 2, top + 396, `ring = 1 shot · hearts at 0 = crash`, 9, PAL.sun1));
       } });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.tick?.remove());
   }
@@ -102,11 +109,15 @@ export class DroneScene extends Phaser.Scene {
   /** Harness hooks */
   press() { this.held = true; }
   release() { this.held = false; }
-  hint() { const next = this.rings.find(r => r.state === 'open' && r.wx - this.scroll > this.x - 20); return { x: this.x, y: this.y, vy: this.vy, next: next ? { x: next.wx - this.scroll, y: next.y } : null, hits: this.hits, collisions: this.collisions, hearts: this.hearts, bombs: this.bombs, held: this.held, button: { x: BTN_X, y: BTN_Y, r: BTN_R }, shield: this.shield, double: this.doubleT, landing: this.landing, metersLeft: this.metersLeft(), set: this.set.id, pickups: this.pickups.filter(p => p.alive).map(p => ({ kind: p.kind, x: p.wx - this.scroll, y: p.y })), hazards: this.hazards.filter(h => h.solid).flatMap(h => boxes(h, h.wx - this.scroll)) }; }
-  score() { return clamp((this.hits / this.ringCount) * 100 - 10 * this.collisions, 0, 100); }
+  hint() { const next = this.rings.find(r => r.state === 'open' && r.wx - this.scroll > this.x - 20); return { x: this.x, y: this.y, vy: this.vy, next: next ? { x: next.wx - this.scroll, y: next.y } : null, hits: this.hits, collisions: this.collisions, hearts: this.hearts, bombs: this.bombs, held: this.held, button: { x: BTN_X, y: BTN_Y, r: BTN_R }, shield: this.shield, double: this.doubleT, landing: this.landing, metersLeft: this.metersLeft(), set: this.set.id,
+      boss: this.boss ? { kind: this.boss.def.kind, name: this.bossDef().name, hp: this.boss.hp, maxHp: this.boss.maxHp, x: this.boss.x, y: this.boss.y, beam: this.boss.beam, beamY: this.boss.beamY, windup: this.boss.windup, pending: this.boss.pending } : null,
+      bossBeaten: this.bossBeaten, projs: this.projs.map(p => ({ x: Math.round(p.x), y: Math.round(p.y), kind: p.kind })), pickups: this.pickups.filter(p => p.alive).map(p => ({ kind: p.kind, x: p.wx - this.scroll, y: p.y })), hazards: this.hazards.filter(h => h.solid).flatMap(h => boxes(h, h.wx - this.scroll)) }; }
+  score() { return clamp((this.hits / this.ringCount) * 100 - 10 * this.collisions + (this.bossBeaten ? 15 : 0), 0, 100); }
   update(_t: number, dt: number) { this.frame.update(dt); }
 
   metersLeft() { return Math.max(0, Math.round((this.padWx - this.scroll - this.x) / 4)); }
+  /** Who is waiting at the end of this course, and what to call it (dragons are named for where you meet them). */
+  private bossDef() { const kind = pickBoss(this.city, this.set.id); const def = BOSSES[kind]; return kind === 'dragon' ? { ...def, name: this.skin.name } : def; }
   private groundY(sx: number) { return BASE - terrainH(this.set.terrain, sx + this.scroll, this.seed); }
   private waterAt(wx: number) { return !!this.set.water && this.set.terrain !== 'hills' && h32(Math.floor(wx / 90), this.seed + 5) > 0.66; }
   private toast(msg: string, color: number = PAL.sun2) { if (!this.toastT) return; this.toastT.setText(msg).setColor('#' + color.toString(16).padStart(6, '0')).setAlpha(1).setY(62); this.toastUntil = this.t + 1.3; }
@@ -115,7 +126,7 @@ export class DroneScene extends Phaser.Scene {
   private step(dt: number) {
     if (!this.frame.active || this.ended) return; this.t += dt; const holding = this.held || this.keyUp;
     // scroll: the course is a fixed length; the landing pad scrolls in at the end and the drone sets down on it
-    if (!this.landing) this.scroll += this.v * dt;
+    if (!this.landing && !this.boss) this.scroll += this.v * dt;   /* the course stops dead when the boss arrives: the drone holds its x and fights */
     if (this.shield > 0) this.shield -= dt; if (this.doubleT > 0) this.doubleT -= dt;
     if (this.toastT && this.toastUntil > 0 && this.t > this.toastUntil - 0.4) { this.toastT.setAlpha(Math.max(0, (this.toastUntil - this.t) / 0.4)); }
     if (this.btnFlash > 0) { this.btnFlash = Math.max(0, this.btnFlash - dt * 3); this.drawBombButton(); }
@@ -137,7 +148,7 @@ export class DroneScene extends Phaser.Scene {
       if (Math.hypot(sx - this.x, r.y - this.y) < R) { r.state = 'hit'; r.flash = 0.5; this.hits++; this.frame.flash(PAL.white, 40); Audio.playSfx('shutter'); Audio.playSfx('ring'); this.frame.setProgress(`${this.hits}/${this.ringCount} shots`); }
       else if (sx < this.x - 26) { r.state = 'miss'; r.flash = 0.5; this.frame.setProgress(`${this.hits}/${this.ringCount} shots`); } }
     // spawns: hazards paced by level, a power-up every 10 to 14 s (the first one early)
-    if (!this.landing) {
+    if (!this.landing && !this.boss) {
       this.spawnT -= dt; if (this.spawnT <= 0) { this.spawnT = Math.max(1.4, 4.0 - 0.5 * this.level - 0.3 * this.launch.difficulty) * (0.8 + this.rng() * 0.4); this.spawn(); }   // ~3.5 / 3.0 / 2.5 s between hazards: the course got longer, the count per flight should not
       this.puT -= dt; if (this.puT <= 0) { this.puT = 10 + this.rng() * 4; this.spawnPickup(); }
     }
@@ -156,6 +167,7 @@ export class DroneScene extends Phaser.Scene {
       const bx = boxes(h, sx);
       // shots knock birds (and steam) out of the lane
       if (this.isBird(h.kind)) { const shot = this.shots.findIndex(sh => bx.some(b => Phaser.Geom.Rectangle.Contains(b, sh.x, sh.y))); if (shot >= 0) { this.shots.splice(shot, 1); this.poof(sx, h.y); this.kill(h); continue; } }
+      else if (h.kind === 'balloon') { const shot = this.shots.findIndex(sh => bx.some(b => Phaser.Geom.Rectangle.Contains(b, sh.x, sh.y))); if (shot >= 0) { const sh = this.shots[shot]; this.shots.splice(shot, 1); this.ping(sh.x, sh.y); } }   /* the envelope shrugs it off: balloons are dodged, not shot */
       if (this.iframes > 0 || this.landing) continue;
       let hit = bx.some(b => Phaser.Geom.Intersects.RectangleToRectangle(dr, b));
       if (!hit && h.kind === 'cable') { const cy = cableY(h, sx, this.x); if (cy !== null && Math.abs(cy - this.y) < 7) hit = true; }
@@ -167,12 +179,54 @@ export class DroneScene extends Phaser.Scene {
     this.pickups = this.pickups.filter(p => p.alive);
     if (this.iframes > 0) { this.iframes -= dt; this.drone.setAlpha(Math.sin(this.iframes * 40) > 0 ? 1 : 0.35); } else this.drone.setAlpha(1);
     // the landing pad reaches the drone: auto-land with a dust puff, then the result card
-    if (!this.landing && this.padWx - this.scroll <= this.x) this.land();
+    if (!this.landing && !this.boss && !this.bossBeaten && this.padWx - this.scroll <= this.x + 40) this.startBoss();
+    if (this.boss) this.stepFight(dt);
+    if (!this.landing && !this.boss && this.bossBeaten && this.padWx - this.scroll <= this.x) this.land();
     if (this.landing) { const ly = this.groundY(this.x) - 10; this.y += (ly - this.y) * Math.min(1, 2.2 * dt); this.vy = 0; if (Math.abs(ly - this.y) < 3) { if (!this.puffed) { this.puffed = true; this.puff(this.x, ly + 8); } if (this.t > this.landT + 1.6) this.finishRun(false); } }
-    this.frame.setTimer(this.landing ? 'landing' : `${this.metersLeft()} m to the pad`);
+    this.frame.setTimer(this.boss ? `${this.boss.def.kind === 'dragon' ? this.skin.name : this.boss.def.name}` : this.landing ? 'landing' : `${this.metersLeft()} m to the pad`);
     this.draw();
   }
+  // ---------- the boss ----------
+  /** The course ends and the thing that lives here comes out to meet you. */
+  private startBoss() {
+    const kind = pickBoss(this.city, this.set.id);
+    this.boss = makeBoss(kind, this.level, this.launch.difficulty);
+    for (const h of this.hazards) this.kill(h); this.hazards = [];   /* the sky clears for the fight */
+    Audio.playSfx('crash'); this.frame.shake(320, 0.012); this.frame.flash(PAL.red, 90);
+    const name = this.bossDef().name;
+    this.bossNameT = txt(this, W / 2, 110, name, 20, this.boss.def.tint).setDepth(22).setAlpha(0);
+    this.tweens.add({ targets: this.bossNameT, alpha: 1, scale: { from: 1.6, to: 1 }, duration: 320, ease: 'Back.Out' });
+    this.tweens.add({ targets: this.bossNameT, alpha: 0, delay: 1800, duration: 500, onComplete: () => { this.bossNameT?.destroy(); this.bossNameT = undefined; } });
+    this.toast(this.boss.def.blurb, this.boss.def.tint);
+  }
+  /** One frame of the fight: the boss moves and throws, the camera shots bite, the projectiles and the body hurt. */
+  private stepFight(dt: number) {
+    const b = this.boss!; if (this.ended) return;
+    this.projs.push(...stepBoss(b, dt, this.x, this.y, this.level, this.frame.hard));
+    for (const p of this.projs) stepProj(p, dt, this.x, this.y);
+    const box = bossBox(b);
+    // the camera shots are the only thing that hurts it
+    for (let i = this.shots.length - 1; i >= 0; i--) { const sh = this.shots[i];
+      if (Phaser.Geom.Rectangle.Contains(box, sh.x, sh.y)) { this.shots.splice(i, 1); b.hp--; b.hurt = 0.22; this.ping(sh.x, sh.y); Audio.playSfx('blip');
+        if (b.hp <= 0) { this.beatBoss(); return; } } }
+    if (this.iframes <= 0 && !this.landing) {
+      const dr = new Phaser.Geom.Rectangle(this.x - 12, this.y - 6, 24, 12);
+      if (Phaser.Geom.Intersects.RectangleToRectangle(dr, box)) this.hurt();                                   // flying into it counts
+      else if (b.beam > 0 && this.x < b.x && Math.abs(this.y - beamLineY(b)) < 11) this.hurt();                // the beam is a band, not a line
+      else { const hit = this.projs.find(p => p.alive && Math.hypot(p.x - this.x, p.y - this.y) < p.r + 9); if (hit) { hit.alive = false; this.hurt(); } }
+    }
+    this.projs = this.projs.filter(p => p.alive);
+  }
+  /** Down it goes: the sky reopens, the landing pad slides in, and the score keeps the bonus. */
+  private beatBoss() {
+    const b = this.boss!; this.boss = undefined; this.bossBeaten = true; this.projs = [];
+    Audio.playSfx('win'); this.frame.flash(PAL.white, 160); this.frame.shake(420, 0.014);
+    for (let i = 0; i < 10; i++) this.time.delayedCall(i * 60, () => this.poof(b.x + (this.rng() - 0.5) * b.def.bodyW, b.y + (this.rng() - 0.5) * b.def.bodyH));
+    this.toast(`${this.bossDef().name} DOWN · +15`, PAL.sun2);
+    this.padWx = this.scroll + this.x + 340;                 /* a short glide to the pad, so the win has a landing */
+  }
   private kill(h: Hazard) { h.alive = false; h.spr?.destroy(); }
+  private ping(x: number, y: number) { const r = this.add.circle(x, y, 3, PAL.sun2, 0.9).setDepth(7); this.tweens.add({ targets: r, scale: 1.8, alpha: 0, duration: 140, onComplete: () => r.destroy() }); }
   private poof(x: number, y: number) { const r = this.add.circle(x, y, 6, PAL.white, 0.9).setDepth(7); this.tweens.add({ targets: r, scale: 2.4, alpha: 0, duration: 220, onComplete: () => r.destroy() }); }
   private land() { if (this.landing) return; this.landing = true; Audio.playSfx('land'); this.landT = this.t; this.held = false; this.drawBombButton(); }
   private puff(x: number, y: number) { for (let i = 0; i < 6; i++) { const c = this.add.circle(x - 14 + i * 6, y, 3 + (i % 2) * 2, this.set.groundDark === PAL.ink ? PAL.gray1 : PAL.earth3, 0.8).setDepth(7); this.tweens.add({ targets: c, x: c.x + (i - 2.5) * 10, y: c.y - 8 - (i % 3) * 4, scale: 2, alpha: 0, duration: 500 + i * 40, onComplete: () => c.destroy() }); } }
@@ -193,7 +247,9 @@ export class DroneScene extends Phaser.Scene {
     this.btnT?.setText(on ? `BOMB ${this.bombs}` : 'BOMB 0').setColor(on ? '#f4f1ea' : '#6e7484');
   }
   private bomb() { if (this.bombs <= 0 || this.landing || this.ended || !this.frame.active) return; this.bombs--; this.btnFlash = 1; this.drawBombButton(); Audio.playSfx('bomb'); this.frame.flash(PAL.white, 120); this.frame.shake(200, 0.01); this.toast(`BATTERY BOMB · ${this.bombs} left`, PAL.white);
-    for (const h of this.hazards) if (h.alive && this.isBird(h.kind)) { const sx = h.wx - this.scroll; if (sx > -20 && sx < W + 20) { this.poof(sx, h.y); this.kill(h); } } this.hazards = this.hazards.filter(h => h.alive); }
+    for (const h of this.hazards) if (h.alive && this.isBird(h.kind)) { const sx = h.wx - this.scroll; if (sx > -20 && sx < W + 20) { this.poof(sx, h.y); this.kill(h); } } this.hazards = this.hazards.filter(h => h.alive);
+    /* saved for the fight, a bomb is worth four shots and wipes what is in the air */
+    if (this.boss) { this.projs = []; const b = this.boss; b.hp -= 4; b.hurt = 0.4; this.poof(b.x, b.y); if (b.hp <= 0) this.beatBoss(); } }
   private collect(kind: PuKind) {
     this.frame.flash(PAL.white, 50);
     Audio.playSfx(kind === 'heart' ? 'heart' : 'powerup');
@@ -207,9 +263,9 @@ export class DroneScene extends Phaser.Scene {
   private spawn() {
     const kinds = this.set.hazards; const kind = kinds[Math.floor(this.rng() * kinds.length)] as HazardKind;
     const wx = this.scroll + W + 40; const gy = BASE - terrainH(this.set.terrain, wx, this.seed);
-    const tall = kind === 'cliff' || kind === 'crane' || kind === 'kiteline' || kind === 'dust' || kind === 'plume' || kind === 'geyser' || kind === 'spray' || kind === 'laundry' || kind === 'cable';
+    const tall = kind === 'cliff' || kind === 'crane' || kind === 'kiteline' || kind === 'dust' || kind === 'plume' || kind === 'geyser' || kind === 'spray' || kind === 'laundry' || kind === 'cable' || kind === 'balloon';
     // keep a safe line: tall structures never sit on a ring and never closer than 170 px to the last one
-    if (tall) { if (wx - this.lastStaticWx < 170) return; if (this.rings.some(r => r.state === 'open' && Math.abs(r.wx - wx) < (kind === 'crane' || kind === 'cable' ? 110 : 56))) return; this.lastStaticWx = wx; }
+    if (tall) { if (wx - this.lastStaticWx < 170) return; if (this.rings.some(r => r.state === 'open' && Math.abs(r.wx - wx) < (kind === 'crane' || kind === 'cable' ? 110 : kind === 'balloon' ? 95 : 56))) return; this.lastStaticWx = wx; }
     const h = makeHazard(kind, wx, gy, this.rng, this.level);
     if (kind === 'gull' || kind === 'eagle' || kind === 'toucan') h.spr = this.add.sprite(W + 40, h.y, `dr_${kind}0`).setScale(2).setDepth(4);
     this.hazards.push(h);
@@ -237,6 +293,9 @@ export class DroneScene extends Phaser.Scene {
       if (p.kind === 'heart') { g.fillStyle(PAL.red).fillRect(sx - 7, py - 6, 5, 5).fillRect(sx + 2, py - 6, 5, 5).fillRect(sx - 8, py - 3, 16, 5).fillRect(sx - 5, py + 2, 10, 3).fillRect(sx - 2, py + 5, 4, 2); }
       else if (p.kind === 'double') { g.fillStyle(PAL.sun2).fillRect(sx - 8, py - 5, 16, 3).fillRect(sx - 8, py + 2, 16, 3); g.fillStyle(PAL.white).fillRect(sx + 4, py - 5, 4, 3).fillRect(sx + 4, py + 2, 4, 3); }
       else { g.fillStyle(PAL.sky2).fillRect(sx - 7, py - 8, 14, 10).fillTriangle(sx - 7, py + 2, sx + 7, py + 2, sx, py + 9); g.fillStyle(PAL.sky3).fillRect(sx - 5, py - 6, 4, 6); } }
+    // the boss, what it is throwing, and the beam
+    if (this.boss) { drawBossBeam(g, this.boss, this.skin, this.t, W); drawBoss(g, this.boss, this.skin, this.t); }
+    for (const p of this.projs) drawProj(g, p, this.boss?.def.tint ?? PAL.white, this.t);
     // shots
     g.fillStyle(PAL.white); for (const sh of this.shots) g.fillRect(sh.x - 4, sh.y - 1, 8, 2);
     // shield ring
@@ -246,7 +305,12 @@ export class DroneScene extends Phaser.Scene {
     // HUD extras: hearts (empty slots up to 3, extras only while held), bombs, double-shot timer, course progress
     for (let i = 0; i < Math.max(3, this.hearts); i++) { const on = i < this.hearts; const hx = 10 + i * 13, hy = 32; g.fillStyle(on ? PAL.red : PAL.gray0).fillRect(hx, hy, 3, 3).fillRect(hx + 4, hy, 3, 3).fillRect(hx - 1, hy + 2, 9, 3).fillRect(hx + 1, hy + 5, 5, 2).fillRect(hx + 3, hy + 7, 1, 1); }
     if (this.doubleT > 0) { g.fillStyle(PAL.sun2, 0.9).fillRect(112, 34, Math.round(40 * this.doubleT / 15), 4); g.fillStyle(PAL.white).fillRect(112, 30, 8, 2).fillRect(112, 40, 8, 2); }
-    { const prog = clamp((this.scroll + this.x - 120) / (this.padWx - 120), 0, 1); g.fillStyle(PAL.ink).fillRect(W - 86, 30, 78, 8); g.fillStyle(PAL.night3).fillRect(W - 85, 31, 76, 6); g.fillStyle(PAL.neon).fillRect(W - 85, 31, Math.round(76 * prog), 6); g.fillStyle(PAL.sun2).fillRect(W - 12, 29, 3, 10); }
+    if (this.boss) {   // the boss health bar takes the course bar's place
+      const b = this.boss, f = clamp(b.hp / b.maxHp, 0, 1);
+      g.fillStyle(PAL.ink).fillRect(W - 126, 30, 118, 8); g.fillStyle(PAL.night3).fillRect(W - 125, 31, 116, 6);
+      g.fillStyle(f > 0.5 ? b.def.tint : f > 0.25 ? PAL.sun1 : PAL.red).fillRect(W - 125, 31, Math.round(116 * f), 6);
+      for (let i = 1; i < 4; i++) g.fillStyle(PAL.ink, 0.6).fillRect(W - 125 + Math.round(116 * i / 4), 31, 1, 6);
+    } else { const prog = clamp((this.scroll + this.x - 120) / (this.padWx - 120), 0, 1); g.fillStyle(PAL.ink).fillRect(W - 86, 30, 78, 8); g.fillStyle(PAL.night3).fillRect(W - 85, 31, 76, 6); g.fillStyle(PAL.neon).fillRect(W - 85, 31, Math.round(76 * prog), 6); g.fillStyle(PAL.sun2).fillRect(W - 12, 29, 3, 10); }
   }
   /** The landing pad at the end of the course, drawn per set: beach towel, rooftop H pad, cairn, desert flag, jungle clearing, glacier beacon. */
   private pad(x: number, y: number) {
@@ -294,7 +358,26 @@ export class DroneScene extends Phaser.Scene {
   private hazard(h: Hazard, x: number) {
     const g = this.g; if (x < -220 || x > W + 60) return;
     switch (h.kind) {
-      case 'kiteline': g.lineStyle(1, PAL.gray2, 0.9).lineBetween(x, h.y, x + Math.sin(h.t + h.phase) * 6, h.a); { const kx = x + Math.sin(h.t + h.phase) * 6; g.fillStyle(h.phase > 3 ? PAL.red : PAL.sun1).fillTriangle(kx - 10, h.a - 4, kx + 10, h.a - 4, kx, h.a - 16).fillTriangle(kx - 10, h.a - 4, kx + 10, h.a - 4, kx, h.a + 4); } break;
+      case 'kiteline': {   // the kite sweeps back and forth across its line and leans into the turn, like a real one working the window
+        const sw = kiteSwing(h); const kx = x + sw.dx, ky = h.a, tilt = sw.lean * 7;
+        g.lineStyle(1, PAL.gray2, 0.9).lineBetween(x, h.y, kx, ky + 4);
+        const c = h.phase > 3 ? PAL.red : PAL.sun1, c2 = h.phase > 3 ? PAL.sun3 : PAL.sky2;
+        g.fillStyle(c).fillTriangle(kx - 11 + tilt, ky - 4, kx + 11 + tilt, ky - 4, kx + tilt * 1.6, ky - 17);
+        g.fillStyle(c2).fillTriangle(kx - 11 + tilt, ky - 4, kx + 11 + tilt, ky - 4, kx + tilt * 1.4, ky + 5);
+        g.lineStyle(1, PAL.white, 0.7).lineBetween(kx - 11 + tilt, ky - 4, kx + 11 + tilt, ky - 4);
+        g.lineStyle(1, PAL.gray2, 0.8).lineBetween(kx + tilt * 1.4, ky + 5, kx + sw.dx * 0.15, ky + 16);   // tail streamer trailing the swing
+        break; }
+      case 'balloon': {   // a hot-air balloon: too big and too full of people to shoot, so it is dodged
+        const by = balloonY(h), r = h.a, hot = Math.sin(h.t * 3 + h.phase) > 0.6;
+        g.fillStyle(PAL.ink, 0.18).fillEllipse(x, by + r * 1.5, r * 1.5, 7);
+        g.fillStyle(h.phase > 3 ? PAL.red : PAL.sky1).fillEllipse(x, by, r * 1.5, r * 1.9);
+        g.fillStyle(h.phase > 3 ? PAL.sun2 : PAL.white).fillEllipse(x - r * 0.35, by - r * 0.1, r * 0.45, r * 1.7);
+        g.fillStyle(h.phase > 3 ? PAL.sun3 : PAL.sea2).fillEllipse(x + r * 0.42, by - r * 0.1, r * 0.4, r * 1.6);
+        g.fillStyle(PAL.ink, 0.35).fillEllipse(x, by + r * 0.75, r * 1.2, r * 0.5);
+        g.lineStyle(1, PAL.ink, 0.9).lineBetween(x - r * 0.5, by + r * 0.85, x - 5, by + r * 1.3).lineBetween(x + r * 0.5, by + r * 0.85, x + 5, by + r * 1.3);
+        g.fillStyle(PAL.earth1).fillRect(x - 7, by + r * 1.3, 14, 9); g.fillStyle(PAL.earth0).fillRect(x - 7, by + r * 1.3, 14, 2);
+        if (hot) g.fillStyle(PAL.sun0, 0.8).fillTriangle(x - 4, by + r * 1.3, x + 4, by + r * 1.3, x, by + r * 0.7);   // the burner catching
+        break; }
       case 'crane': g.fillStyle(PAL.sun1).fillRect(x - 3, h.a, 6, h.y - h.a); g.fillRect(h.b < 0 ? x - 72 : x, h.a - 3, 72, 5); g.fillStyle(PAL.ink).fillRect(x - 3, h.a - 8, 6, 5); g.lineStyle(1, PAL.gray2).lineBetween(x + h.b * 50, h.a + 2, x + h.b * 50, h.a + 30); g.fillStyle(PAL.earth2).fillRect(x + h.b * 50 - 5, h.a + 30, 10, 8); break;
       case 'laundry': g.fillStyle(PAL.gray2).fillRect(x - 31, h.y - h.a - 8, 2, h.a + 8).fillRect(x + 29, h.y - h.a - 8, 2, h.a + 8); g.lineStyle(1, PAL.white).lineBetween(x - 30, h.y - h.a, x + 30, h.y - h.a); for (let i = 0; i < 5; i++) g.fillStyle([PAL.sky2, PAL.pink, PAL.sun3, PAL.grass3, PAL.white][i]).fillRect(x - 26 + i * 12, h.y - h.a + 1 + Math.sin(h.t * 3 + i) * 1, 7, 8); break;
       case 'cliff': g.fillStyle(this.set.groundDark).fillRect(x - 13, h.y - h.a, 26, h.a); g.fillStyle(this.set.ground).fillRect(x - 11, h.y - h.a + 2, 22, h.a - 2); g.fillStyle(PAL.white, 0.7).fillRect(x - 11, h.y - h.a + 2, 22, 4); break;
