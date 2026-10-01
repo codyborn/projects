@@ -61,7 +61,7 @@ export function eventChance(ev: GameEvent, s: RunState, ctx: RollCtx): { chance:
 }
 
 export const availableChoices = (s: RunState, choices: EventChoice[]) => choices.filter(c => !c.requiresTag || hasTag(s, c.requiresTag));
-/** The mitigated line to show: the wording for the item that actually saved you, if the event has one. */
+/** The mitigated line to show: mitigatedText, unless the item that actually saved you is listed as an exception. */
 export function mitigatedLine(s: RunState, ev: GameEvent): string {
   const by = ev.mitigatedTextBy;
   if (by) { for (const id of Object.keys(by)) if (s.items.some(p => p.id === id)) return by[id]; }   /* declaration order decides it when two bits of gear both apply */

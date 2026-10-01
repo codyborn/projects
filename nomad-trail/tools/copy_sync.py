@@ -36,7 +36,8 @@ dec = lambda s: s.replace('\\n', '\n')
 # (section title, json file, id key, [(note key, json key, is_list)], header note)
 SPECS = [
  ('Events', 'events.json', 'id', [('title', 'title', False), ('text', 'text', False), ('mitigatedText', 'mitigatedText', False)],
-  'What pops up on the trail. `text` is what you read without the mitigating gear, `mitigatedText` with it (only one is ever shown). Placeholders: {city} {day} {item}.'),
+  'What pops up on the trail. `text` is what you read without the mitigating gear, `mitigatedText` with it (only one is ever shown). '
+  'A `mitigatedText.<item>` line replaces it when that particular item is the one that saved you \u2014 the umbrella does not go *on*. Placeholders: {city} {day} {item}.'),
  ('Cities', 'cities.json', 'id', [('name', 'name', False), ('country', 'country', False), ('blurb', 'blurb', False)],
   'The arrival card. Blurbs describe the place, never an in-game event.'),
  ('Puzzles', 'puzzles.json', 'id', [('title', 'title', False), ('prompt', 'prompt', False), ('choices', 'choices', True), ('hint', 'hint', False), ('explain', 'explain', False)],
@@ -159,7 +160,7 @@ def export():
             out.append(f'### {row[idk]}')
             for nk, jk, is_list in fields:
                 if jk in row and row[jk] not in (None, ''): out.append(f'- {nk}: {enc(row[jk])}')
-            # per-item mitigated wording (the rain shell and the umbrella read differently)
+            # exceptions to mitigatedText for particular items (the umbrella does not 'go on')
             for item_id, line in (row.get('mitigatedTextBy') or {}).items(): out.append(f'- mitigatedText.{item_id}: {enc(line)}')
             # event choices
             for i, ch in enumerate([c for c in (row.get('choices') or []) if isinstance(c, dict)], 1):

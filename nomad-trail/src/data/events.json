@@ -238,12 +238,11 @@
     "mitigatedBy": [
       "rain"
     ],
-    "mitigatedText": "It rains in {city}. You came prepared. You are the only dry person at the bus stop.",
+    "mitigatedText": "It rains in {city}. The shell goes on. You are the only dry person at the bus stop.",
     "mitigatedEffects": {
       "mood": 1
     },
     "mitigatedTextBy": {
-      "shell": "It rains in {city}. The shell goes on. You are the only dry person at the bus stop.",
       "umbrella": "It rains in {city}. Up goes the umbrella, which you have resented carrying until exactly now."
     }
   },
