@@ -448,6 +448,24 @@
     ]
   },
   {
+    "id": "kitchenknife",
+    "name": "Kitchen Knife",
+    "label": "Knife",
+    "weightLb": 0.4,
+    "w": 1,
+    "h": 2,
+    "tags": [
+      "knife"
+    ],
+    "desc": "A sharp one in a sheath, because the drawer in the Airbnb will have four blunt ones.",
+    "real": true,
+    "color": 12862842,
+    "benefits": [
+      "Airbnb knives stop mattering",
+      "Cooking stays easy everywhere"
+    ]
+  },
+  {
     "id": "fitnesskit",
     "name": "Fitness Kit",
     "label": "Fitness kit",
@@ -463,25 +481,6 @@
     "benefits": [
       "Hotel-room workouts unlocked",
       "Slower daily wear"
-    ]
-  },
-  {
-    "id": "yogamat",
-    "name": "Yoga Mat",
-    "label": "Yoga mat",
-    "weightLb": 2.0,
-    "w": 1,
-    "h": 5,
-    "tags": [
-      "fitness"
-    ],
-    "desc": "Thin as a tortilla. Better than a carpet.",
-    "real": false,
-    "color": 12862842,
-    "benefits": [
-      "Yoga unlocked",
-      "Slower daily wear",
-      "5 cells tall"
     ]
   },
   {

@@ -19,7 +19,8 @@
       "scuba",
       "swim",
       "trailrun",
-      "bands"
+      "bands",
+      "yoga"
     ],
     "hazard": "pigeon",
     "lodgings": [
@@ -127,7 +128,8 @@
     ],
     "activities": [
       "bands",
-      "trailrun"
+      "trailrun",
+      "yoga"
     ],
     "hazard": "crowd",
     "lodgings": [
@@ -242,7 +244,8 @@
       "trailrun",
       "boulder",
       "hike",
-      "ski"
+      "ski",
+      "yoga"
     ],
     "hazard": "rock",
     "lodgings": [
@@ -333,7 +336,8 @@
     "activities": [
       "hike",
       "trailrun",
-      "ski"
+      "ski",
+      "yoga"
     ],
     "hazard": "snow",
     "lodgings": [
@@ -421,7 +425,8 @@
       "buffet"
     ],
     "activities": [
-      "bands"
+      "bands",
+      "yoga"
     ],
     "hazard": "crowd",
     "lodgings": [
@@ -506,7 +511,8 @@
     ],
     "activities": [
       "boulder",
-      "hike"
+      "hike",
+      "yoga"
     ],
     "hazard": "rock",
     "lodgings": [
@@ -580,7 +586,8 @@
     "activities": [
       "swim",
       "surf",
-      "bands"
+      "bands",
+      "yoga"
     ],
     "hazard": "wave",
     "lodgings": [
@@ -716,7 +723,8 @@
     ],
     "activities": [
       "trailrun",
-      "bands"
+      "bands",
+      "yoga"
     ],
     "hazard": "snow",
     "lodgings": [
@@ -788,7 +796,8 @@
     ],
     "activities": [
       "swim",
-      "hike"
+      "hike",
+      "yoga"
     ],
     "hazard": "wave",
     "lodgings": [
@@ -1031,7 +1040,8 @@
     "activities": [
       "hike",
       "bands",
-      "trailrun"
+      "trailrun",
+      "yoga"
     ],
     "hazard": "crowd",
     "lodgings": [
@@ -1126,7 +1136,8 @@
     "activities": [
       "hike",
       "trailrun",
-      "kite"
+      "kite",
+      "yoga"
     ],
     "hazard": "gust",
     "lodgings": [
@@ -1193,7 +1204,8 @@
     ],
     "activities": [
       "bands",
-      "trailrun"
+      "trailrun",
+      "yoga"
     ],
     "hazard": "crowd",
     "lodgings": [
@@ -1293,7 +1305,8 @@
       "empanada"
     ],
     "activities": [
-      "hike"
+      "hike",
+      "yoga"
     ],
     "hazard": "mosquito",
     "lodgings": [
@@ -1358,7 +1371,8 @@
     "activities": [
       "trailrun",
       "surf",
-      "bands"
+      "bands",
+      "yoga"
     ],
     "hazard": "tram",
     "lodgings": [
@@ -1459,7 +1473,8 @@
     ],
     "activities": [
       "bands",
-      "trailrun"
+      "trailrun",
+      "yoga"
     ],
     "hazard": "crowd",
     "lodgings": [
@@ -1555,7 +1570,8 @@
     "activities": [
       "hike",
       "boulder",
-      "trailrun"
+      "trailrun",
+      "yoga"
     ],
     "hazard": "rock",
     "lodgings": [
@@ -1637,7 +1653,8 @@
     ],
     "activities": [
       "bands",
-      "trailrun"
+      "trailrun",
+      "yoga"
     ],
     "hazard": "pigeon",
     "lodgings": [
@@ -1737,7 +1754,8 @@
       "frites"
     ],
     "activities": [
-      "bands"
+      "bands",
+      "yoga"
     ],
     "hazard": "pigeon",
     "lodgings": [
@@ -1809,7 +1827,8 @@
     ],
     "activities": [
       "bands",
-      "trailrun"
+      "trailrun",
+      "yoga"
     ],
     "hazard": "tram",
     "lodgings": [
@@ -1888,7 +1907,8 @@
     ],
     "activities": [
       "swim",
-      "hike"
+      "hike",
+      "yoga"
     ],
     "hazard": "wave",
     "lodgings": [
@@ -1967,7 +1987,8 @@
       "swim",
       "trailrun",
       "kite",
-      "bands"
+      "bands",
+      "yoga"
     ],
     "hazard": "mosquito",
     "lodgings": [
@@ -2042,7 +2063,8 @@
     "activities": [
       "swim",
       "trailrun",
-      "bands"
+      "bands",
+      "yoga"
     ],
     "hazard": "wave",
     "lodgings": [
@@ -2131,7 +2153,8 @@
     ],
     "activities": [
       "trailrun",
-      "hike"
+      "hike",
+      "yoga"
     ],
     "hazard": "pigeon",
     "lodgings": [
@@ -2205,7 +2228,8 @@
     "activities": [
       "hike",
       "trailrun",
-      "swim"
+      "swim",
+      "yoga"
     ],
     "hazard": "rock",
     "lodgings": [
@@ -2288,7 +2312,8 @@
     ],
     "activities": [
       "hike",
-      "swim"
+      "swim",
+      "yoga"
     ],
     "hazard": "ice",
     "lodgings": [
@@ -2365,7 +2390,8 @@
     "activities": [
       "bands",
       "trailrun",
-      "swim"
+      "swim",
+      "yoga"
     ],
     "hazard": "crowd",
     "lodgings": [
@@ -2492,7 +2518,8 @@
       "boulder",
       "hike",
       "ski",
-      "trailrun"
+      "trailrun",
+      "yoga"
     ],
     "hazard": "rock",
     "lodgings": [
@@ -2577,7 +2604,8 @@
     "activities": [
       "hike",
       "swim",
-      "trailrun"
+      "trailrun",
+      "yoga"
     ],
     "hazard": "rock",
     "lodgings": [
@@ -2654,7 +2682,8 @@
     ],
     "activities": [
       "bands",
-      "trailrun"
+      "trailrun",
+      "yoga"
     ],
     "hazard": "crowd",
     "lodgings": [
@@ -2856,7 +2885,8 @@
     "activities": [
       "bands",
       "trailrun",
-      "swim"
+      "swim",
+      "yoga"
     ],
     "hazard": "crowd",
     "lodgings": [
@@ -2955,7 +2985,8 @@
     "activities": [
       "bands",
       "trailrun",
-      "hike"
+      "hike",
+      "yoga"
     ],
     "hazard": "crowd",
     "lodgings": [
@@ -3126,7 +3157,8 @@
     ],
     "activities": [
       "bands",
-      "swim"
+      "swim",
+      "yoga"
     ],
     "hazard": "tuktuk",
     "lodgings": [
@@ -3230,7 +3262,8 @@
     "activities": [
       "hike",
       "trailrun",
-      "swim"
+      "swim",
+      "yoga"
     ],
     "hazard": "crowd",
     "lodgings": [
@@ -3339,7 +3372,8 @@
     "activities": [
       "trailrun",
       "bands",
-      "boulder"
+      "boulder",
+      "yoga"
     ],
     "hazard": "otter",
     "lodgings": [
@@ -3442,7 +3476,8 @@
     "activities": [
       "hike",
       "ski",
-      "swim"
+      "swim",
+      "yoga"
     ],
     "hazard": "snow",
     "lodgings": [
@@ -3510,7 +3545,8 @@
     ],
     "activities": [
       "hike",
-      "bands"
+      "bands",
+      "yoga"
     ],
     "hazard": "crowd",
     "lodgings": [

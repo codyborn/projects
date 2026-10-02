@@ -35,7 +35,7 @@ export function buildPack(style: PackStyle, rng: Rng): PackedItem[] {
     const pool = ITEMS.filter(i => !ids.includes(i.id) && !i.tags.includes('clothing')).map(i => i.id);
     const shuffled = [...pool].sort(() => rng.next() - 0.5);
     if (style === 'heavy') {
-      add(['kitegear', 'dronekit', 'books', 'hikingboots', 'travelkettle', 'hostgifts', 'yogamat']);
+      add(['kitegear', 'dronekit', 'books', 'hikingboots', 'travelkettle', 'hostgifts', 'kitchenknife']);
       const target = rng.int(46, 50);
       for (const id of shuffled) { if (ids.includes(id) || idsWeight(ids) + ITEM[id].weightLb > target) continue; ids.push(id); }
     } else {

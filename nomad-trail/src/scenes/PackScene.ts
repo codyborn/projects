@@ -147,8 +147,7 @@ export class PackScene extends Phaser.Scene {
     c.add(txt(this, CARD_W / 2, 86, it.name, 10, PAL.white, { align: 'center', wrap: CARD_W - 8 }).setOrigin(0.5, 0) as any);
     c.add(txt(this, CARD_W / 2, 114, `${it.weightLb.toFixed(1)} lb · ${it.w}x${it.h}`, 8, PAL.sun2, { align: 'center' }).setOrigin(0.5, 0) as any);
     const lines = benefitsOf(it); let by = 132;
-    for (const l of lines) { if (by > CARD_H - 40) break; c.add(this.add.rectangle(8, by + 3, 3, 3, PAL.neon).setOrigin(0, 0)); const t = txt(this, 14, by, l, 8, PAL.gray2, { wrap: CARD_W - 22 }).setOrigin(0, 0); c.add(t as any); by += Math.max(11, Math.round(((t as any).height ?? 8) + 3)); }
-    c.add(txt(this, CARD_W / 2, CARD_H - 26, 'TAP TO PACK', 8, PAL.sea2, { align: 'center' }).setOrigin(0.5, 0) as any);
+    for (const l of lines) { if (by > CARD_H - 16) break;   /* the card ends at the benefits now; the TAP TO PACK line that used to sit here covered them */ c.add(this.add.rectangle(8, by + 3, 3, 3, PAL.neon).setOrigin(0, 0)); const t = txt(this, 14, by, l, 8, PAL.gray2, { wrap: CARD_W - 22 }).setOrigin(0, 0); c.add(t as any); by += Math.max(11, Math.round(((t as any).height ?? 8) + 3)); }
     (c as any).item = it; return c;
   }
   private setupTrayInput(zone: Phaser.GameObjects.Zone) {

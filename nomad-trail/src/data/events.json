@@ -519,9 +519,13 @@
     "mitigatedBy": [
       "knife"
     ],
-    "mitigatedText": "{city}. The listing said 'fully equipped kitchen'. The kitchen has one knife and it was from the dollar store. You unroll your own. Crisis averted, tomatoes saved.",
+    "mitigatedText": "{city}. The listing said 'fully equipped kitchen'. The kitchen has one knife and it was from the dollar store. Good thing you brought your own. Crisis averted, tomatoes saved.",
     "mitigatedEffects": {
       "mood": 1
+    },
+    "mitigatedTextBy": {
+      "adventure": "{city}. The listing said 'fully equipped kitchen'. The kitchen has one knife and it was from the dollar store. You unroll the adventure kit. Crisis averted, tomatoes saved.",
+      "kitchenknife": "{city}. The listing said 'fully equipped kitchen'. The kitchen has one knife and it was from the dollar store. Yours comes out of its sheath. Crisis averted, tomatoes saved."
     }
   },
   {

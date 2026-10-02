@@ -101,7 +101,7 @@ describe('packing', () => {
   it('a sensible full kit (laptop included) fits in one suitcase at ~30 lb; a greedy kit exceeds 50 lb or the grid', () => {
     const sensible = shelfPack(['laptopkit', 'toiletries', 'watch', 'airmonitor', 'clothes1', 'clothes2', 'shell', 'protein', 'supplements', 'skincare', 'sleepkit', 'coffeekit', 'adventure', 'fitnesskit', 'firstaid', 'medkit', 'packingcubes']);
     expect(sensible).not.toBeNull(); const w = Sim.bagWeight(sensible!); expect(w).toBeGreaterThan(27); expect(w).toBeLessThan(35); expect(Sim.validatePack(sensible!).ok).toBe(true);
-    const greedy = ['kitegear', 'dronekit', 'books', 'hikingboots', 'adventure', 'protein', 'clothes1', 'clothes2', 'hostgifts', 'laptopkit', 'coffeekit', 'travelkettle', 'yogamat'];
+    const greedy = ['kitegear', 'dronekit', 'books', 'hikingboots', 'adventure', 'protein', 'clothes1', 'clothes2', 'hostgifts', 'laptopkit', 'coffeekit', 'travelkettle', 'kitchenknife'];
     expect(shelfPack(greedy) === null || Sim.idsWeight(greedy) > GRID.checked.maxLb).toBe(true);
   });
   it('accepts a valid pack, computes weight and clothes days, starts with money, moves to the route phase, always at home', () => {
@@ -193,7 +193,9 @@ describe('events', () => {
         for (const other of ids) {
           if (other === id) continue;
           const word = (ITEM[other]?.label ?? '').split(' ').pop()!.toLowerCase();
-          if (word.length > 3) expect(line.toLowerCase(), `${e.id} with ${id}`).not.toContain(word);
+          /* a word that is already in the event's own un-mitigated text is scenery, not a claim about the player's gear:
+             the dull-knives kitchen has a knife of its own, whoever packed what */
+          if (word.length > 3 && !e.text.toLowerCase().includes(word)) expect(line.toLowerCase(), `${e.id} with ${id}`).not.toContain(word);
         }
       }
     }
@@ -421,7 +423,7 @@ describe('round 3: money, weekends, streaks, weight, outdoors, radon', () => {
     const gone = Sim.cityAction({ ...s, money: -OVERDRAFT + 10 }, 'rest'); expect(gone.state.ending?.kind).toBe('broke');
   });
   it('a full suitcase roughly doubles the travel energy drain of a light one', () => {
-    const light = packed(); const heavy = packed(shelfPack(['kitegear', 'dronekit', 'books', 'hikingboots', 'adventure', 'protein', 'clothes1', 'laptopkit', 'hostgifts', 'yogamat', 'coffeekit'])!);
+    const light = packed(); const heavy = packed(shelfPack(['kitegear', 'dronekit', 'books', 'hikingboots', 'adventure', 'protein', 'clothes1', 'laptopkit', 'hostgifts', 'kitchenknife', 'coffeekit'])!);
     expect(Sim.weightRatio(heavy.items)).toBeGreaterThan(0.85);
     const leg = Sim.availableLegs(light)[0];
     // same seed, same leg events for both; only the weight term differs: 0.8 * leg.energy * (ratioHeavy - ratioLight)
