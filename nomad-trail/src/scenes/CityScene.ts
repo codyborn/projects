@@ -43,17 +43,17 @@ export class CityScene extends Phaser.Scene {
     new Panel(this, 12, 244, 336, 118, { fill: PAL.night1, border: PAL.night3 }).setDepth(5); this.logLbl = txt(this, 20, 250, '', 8, PAL.gray2, { wrap: 320 }).setDepth(6); this.refreshLog();
     /* slot 6 (where MAP lives) belongs to the evening's diversions: the drone and the handheld if they are packed, and the
        casino in the towns that have one. One gets the full slot with its label; two or three share it as icons. */
-    const side: { a: CityAction; label: string; key: string; alt: string }[] = [];
+    const side: { a: CityAction; label: string; key: string; alt: string; scale?: number }[] = [];
     if (Sim.hasItem(run, 'dronekit')) side.push({ a: 'drone', label: 'DRONE', key: 'ico_drone', alt: 'DRN' });
     if (Sim.hasTag(run, 'switch')) side.push({ a: 'console', label: 'PLAY', key: 'ico_switch', alt: 'PLAY' });
-    if (city?.casino) side.push({ a: 'casino', label: 'CASINO', key: 'ico_casino', alt: 'BET' });
+    if (city?.casino) side.push({ a: 'casino', label: 'CASINO', key: 'ico_casino', alt: 'BET', scale: 1 });   /* the chip is drawn at its final size */
     this.btnActs = [];
     ACTIONS.forEach((act, i) => {
       const x = 96 + (i % 2) * 168, y = 392 + Math.floor(i / 2) * 56;
       if (act.a === 'map' && side.length) {
-        if (side.length === 1) { const sd = side[0]; this.btns.push(new Button(this, x, y, sd.label, () => this.act(sd.a), { w: 160, h: 48, size: 12, iconKey: sd.key, fill: PAL.night2 })); this.btnActs.push(sd.a); return; }
+        if (side.length === 1) { const sd = side[0]; this.btns.push(new Button(this, x, y, sd.label, () => this.act(sd.a), { w: 160, h: 48, size: 12, iconKey: sd.key, iconScale: sd.scale, fill: PAL.night2 })); this.btnActs.push(sd.a); return; }
         const bw = side.length === 2 ? 78 : 52, gap = 4, total = side.length * bw + (side.length - 1) * gap;
-        side.forEach((sd, k) => { this.btns.push(new Button(this, x - total / 2 + bw / 2 + k * (bw + gap), y, '', () => this.act(sd.a), { w: bw, h: 48, size: 12, iconKey: sd.key, icon: this.textures.exists(sd.key) ? undefined : sd.alt, fill: PAL.night2 })); this.btnActs.push(sd.a); });
+        side.forEach((sd, k) => { this.btns.push(new Button(this, x - total / 2 + bw / 2 + k * (bw + gap), y, '', () => this.act(sd.a), { w: bw, h: 48, size: 12, iconKey: sd.key, iconScale: sd.scale, icon: this.textures.exists(sd.key) ? undefined : sd.alt, fill: PAL.night2 })); this.btnActs.push(sd.a); });
         return;
       }
       this.btns.push(new Button(this, x, y, act.label, () => this.act(act.a), { w: 160, h: 48, size: 12, iconKey: act.a === 'map' ? 'ico_map' : undefined, fill: act.a === 'moveon' ? PAL.sea0 : PAL.night2 })); this.btnActs.push(act.a);

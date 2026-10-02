@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { Audio } from '../audio/synth';
 import { PAL, txt, type Label, type Size } from './theme';
-export interface ButtonOpts { w?: number; h?: number; fill?: number; fillDown?: number; textColor?: number; size?: Size; disabled?: boolean; icon?: string; iconKey?: string; }   /* iconKey: a registered pixel texture drawn left of the label */
+export interface ButtonOpts { w?: number; h?: number; fill?: number; fillDown?: number; textColor?: number; size?: Size; disabled?: boolean; icon?: string; iconKey?: string; iconScale?: number; }   /* iconKey: a registered pixel texture drawn left of the label; iconScale 1 for a texture already drawn at final size */
 /** Pixel bevel button, min 44px tall, squash tween on press. */
 export class Button extends Phaser.GameObjects.Container {
   private g: Phaser.GameObjects.Graphics; label: Label; private icon?: Phaser.GameObjects.Image; private iconX = 0; private labelX = 0; private opts: Required<Pick<ButtonOpts, 'w' | 'h' | 'fill' | 'fillDown' | 'textColor' | 'size'>>; private _disabled = false;
@@ -10,7 +10,7 @@ export class Button extends Phaser.GameObjects.Container {
     this.opts = { w: o.w ?? 200, h: Math.max(44, o.h ?? 44), fill: o.fill ?? PAL.night3, fillDown: o.fillDown ?? PAL.dusk0, textColor: o.textColor ?? PAL.white, size: o.size ?? 14 };
     this.g = scene.add.graphics(); this.add(this.g);
     this.label = txt(scene, 0, 0, (o.icon ? o.icon + ' ' : '') + text, this.opts.size, this.opts.textColor, { align: 'center' }).setOrigin(0.5); this.add(this.label as any);
-    if (o.iconKey && scene.textures.exists(o.iconKey)) { const img = scene.add.image(0, 0, o.iconKey).setOrigin(0.5).setScale(2); const gap = text ? 6 : 0; const tw = text ? ((this.label as any).width ?? 0) : 0; const total = tw + gap + img.displayWidth; this.iconX = -total / 2 + img.displayWidth / 2; this.labelX = total / 2 - tw / 2; img.setPosition(this.iconX, 0); this.add(img); this.icon = img; }
+    if (o.iconKey && scene.textures.exists(o.iconKey)) { const img = scene.add.image(0, 0, o.iconKey).setOrigin(0.5).setScale(o.iconScale ?? 2); const gap = text ? 6 : 0; const tw = text ? ((this.label as any).width ?? 0) : 0; const total = tw + gap + img.displayWidth; this.iconX = -total / 2 + img.displayWidth / 2; this.labelX = total / 2 - tw / 2; img.setPosition(this.iconX, 0); this.add(img); this.icon = img; }
     this.draw(false); this.setSize(this.opts.w, this.opts.h);
     // Phaser adds displayOrigin (w/2, h/2) to the local point before testing a Container's hit area, so the
     // rectangle must start at (0, 0) to cover the whole button. A centered rect only covers the top-left quarter.

@@ -307,10 +307,10 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       const bonus = outdoors && geared; s.energy = clamp(s.energy - (bonus ? 10 : 14), 0, energyCap(s)); s.mood = clamp(s.mood + 5 + (bonus ? 5 : 0), 0, 100);
       s.log.push({ day: s.day, city: s.cityId, text: bonus ? `You go out with the whole kit. ${city.name} is built for it.` : DAILY.explore });
       if (outdoors && !geared && rng.chance(0.3)) { s.mood = clamp(s.mood - 3, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: STR.log.wrongShoes }); }
-      /* exploring is the day you go looking for something to happen, so it rolls the action pool twice at full odds
-         (every other action rolls it once, damped by EVENT_RATE). If both come up empty, the city hands you a small
-         good thing anyway: a day out should never read the same as a rest day. */
-      events.push(...rollEvents(s, 'action', ctx, rngFor(s, 4), 2, undefined, 1.35));
+      /* exploring is the day you go looking for something to happen: the action pool rolls at better odds, but still
+         only one thing surfaces — two cards back to back on one tap reads as a bug. If the day tick already produced
+         something, explore adds nothing; if nothing has happened at all, the city hands you a small good thing. */
+      if (!events.length) events.push(...rollEvents(s, 'action', ctx, rngFor(s, 4), 1, undefined, 1.9));
       if (!events.length) events.push(forceEvent(s, outdoors ? 'goodday' : city.coast ? 'gooddaycoast' : 'goodday', rng));
       /* follow-ups: a new animal friend can carry a tick; a shoreline swim can pick up a fin; a Vegas walk can end at a table */
       if (events.some(e => e.id === 'animal') && rngFor(s, 21).chance(0.15)) events.push(forceEvent(s, 'tick', rng, hasTag(s, 'firstaid')));

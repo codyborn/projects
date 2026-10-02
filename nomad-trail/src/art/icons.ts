@@ -1,5 +1,5 @@
 // Tiny pixel icons for the city action buttons: 'ico_drone' (quadcopter, 14x10), 'ico_switch' (handheld, 14x10),
-// 'ico_casino' (poker chip, 14x14), 'ico_map' (globe, 12x12).
+// 'ico_casino' (poker chip, drawn with arcs at 28x28 and used at scale 1), 'ico_map' (globe, 12x12).
 // buildIcons(scene) registers them once per texture manager; use with scene.add.image(x, y, 'ico_drone').setScale(2).
 import Phaser from 'phaser';
 import { PAL } from '../core/palette';
@@ -9,6 +9,24 @@ function tex(scene: Phaser.Scene, key: string, rows: string[], map: Record<strin
   const h = rows.length, w = Math.max(...rows.map(r => r.length)); const g = scene.add.graphics();
   rows.forEach((r, y) => [...r].forEach((c, x) => { if (c !== '.' && map[c] !== undefined) g.fillStyle(map[c]).fillRect(x, y, 1, 1); }));
   g.generateTexture(key, w, h); g.destroy(); return key;
+}
+
+/** The casino chip, drawn with arcs at its final 28 px rather than as a 14 px grid blown up: at icon size the
+ *  curve is the whole read, and a 14 px circle has four flat sides. Everything else here stays a pixel grid. */
+function chip(scene: Phaser.Scene) {
+  const key = 'ico_casino'; if (scene.textures.exists(key)) return key;
+  const S = 28, c = S / 2, g = scene.add.graphics();
+  g.fillStyle(PAL.ink).fillCircle(c, c, 13.5);                               // a dark edge so it reads on any button
+  g.fillStyle(PAL.red).fillCircle(c, c, 12.5);
+  /* six cream dashes set into the rim, drawn as wedges and then cut back to the inner radius */
+  for (let i = 0; i < 6; i++) {
+    const a0 = (i * 60 - 13) * Math.PI / 180, a1 = (i * 60 + 13) * Math.PI / 180;
+    g.fillStyle(PAL.white).beginPath(); g.arc(c, c, 12.5, a0, a1, false); g.arc(c, c, 8.5, a1, a0, true); g.closePath(); g.fillPath();
+  }
+  g.fillStyle(PAL.ink).fillCircle(c, c, 8.5); g.fillStyle(PAL.red).fillCircle(c, c, 8);   // the face, ringed
+  g.fillStyle(PAL.white).fillCircle(c, c, 6); g.fillStyle(PAL.red).fillCircle(c, c, 4.5);
+  g.fillStyle(PAL.white).fillCircle(c, c, 1.6);                              // the pip in the middle
+  g.generateTexture(key, S, S); g.destroy(); return key;
 }
 
 export function buildIcons(scene: Phaser.Scene) {
@@ -50,21 +68,7 @@ export function buildIcons(scene: Phaser.Scene) {
     'RRRGGGGGGGGBBB',
     '..............',
     '..............'], { R: PAL.red, B: PAL.sky1, G: PAL.gray0, S: PAL.neon, D: PAL.ink, A: PAL.ink });
-  tex(scene, 'ico_casino', [          // a poker chip, face on: four white edge dashes, a white inner ring, red body
-    '.....WWWW.....',
-    '...RRWWWWRR...',
-    '..RRRRRRRRRR..',
-    '.RRRRWWWWRRRR.',
-    '.RRRWRRRRWRRR.',
-    'WWRWRRRRRRWRWW',
-    'WWRWRRRRRRWRWW',
-    'WWRWRRRRRRWRWW',
-    'WWRWRRRRRRWRWW',
-    '.RRRWRRRRWRRR.',
-    '.RRRRWWWWRRRR.',
-    '..RRRRRRRRRR..',
-    '...RRWWWWRR...',
-    '.....WWWW.....'], { W: PAL.white, R: PAL.red });
+  chip(scene);
   tex(scene, 'ico_map', [
     '....OOOO....',
     '..OOWWGGOO..',

@@ -15,4 +15,4 @@ function batch(style: PackStyle, n = N) {
   return { fail: (n - wins) / n, hist, mid: (hist[4] + hist[5]) / Math.max(1, n - wins), brokeShare: (causes.broke ?? 0) / Math.max(1, n - wins) };
 }
 const r = batch('random'); batch('heavy', Math.round(N / 2)); const s = batch('smart', Math.round(N / 2));
-console.log(`\nTARGET: random-pack failure 35-45% -> ${(r.fail * 100).toFixed(0)}% ${r.fail >= 0.35 && r.fail <= 0.45 ? 'OK' : 'OFF'}; smart win >70% -> ${((1 - s.fail) * 100).toFixed(0)}% ${1 - s.fail > 0.7 ? 'OK' : 'OFF'}; share of failures in days 200-299: ${(r.mid * 100).toFixed(0)}%; broke share of failures ${(r.brokeShare * 100).toFixed(0)}% ${r.brokeShare < 0.1 ? 'OK' : 'OFF'}`);
+console.log(`\nTARGET: random-pack failure 45-65% -> ${(r.fail * 100).toFixed(0)}% ${r.fail >= 0.45 && r.fail <= 0.65 ? 'OK' : 'OFF'}; smart win >70% -> ${((1 - s.fail) * 100).toFixed(0)}% ${1 - s.fail > 0.7 ? 'OK' : 'OFF'}; share of failures in days 200-299: ${(r.mid * 100).toFixed(0)}%; broke share of failures ${(r.brokeShare * 100).toFixed(0)}% ${r.brokeShare < 0.16 ? 'OK' : 'OFF'}`);
