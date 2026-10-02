@@ -6,3 +6,4 @@ e2e/layout/
 e2e/*.log
 e2e/*.png
 tools/__pycache__/
+.copy_note_backups/

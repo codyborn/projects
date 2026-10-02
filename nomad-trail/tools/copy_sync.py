@@ -180,6 +180,20 @@ def changed_since_export():
     if ln is None: return False, False          # no stamp yet: nothing to compare against
     return note_hash() != ln, (ld is not None and data_hash() != ld)
 
+BACKUPS = os.path.join(ROOT, 'tools', '.copy_note_backups')
+
+def back_up_note(why):
+    """Keep the note before overwriting it. Cheap, and the one thing that makes a wrong call recoverable."""
+    import datetime, shutil
+    if not os.path.exists(NOTE): return None
+    os.makedirs(BACKUPS, exist_ok=True)
+    dst = os.path.join(BACKUPS, datetime.datetime.now().strftime('%Y%m%d-%H%M%S') + f'-{why}.md')
+    shutil.copy(NOTE, dst)
+    keep = sorted(os.listdir(BACKUPS))[-20:]                    # twenty is plenty of rope
+    for f in os.listdir(BACKUPS):
+        if f not in keep: os.remove(os.path.join(BACKUPS, f))
+    return dst
+
 def export():
     out = ['---', 'tags: [personal, project, nomad, game, copy]', 'created: 2026-09-24', 'status: Cody editing; sync with `npm run copy:import`', '---', '',
            '# Nomad Trail: all the words', '',
@@ -251,14 +265,18 @@ if __name__ == '__main__':
         note_moved, data_moved = changed_since_export()
         # Both sides moved: exporting would overwrite the game's copy with the note's, importing the other way round.
         # Whoever is running this has to say which one is right, because the tool cannot know.
-        if note_moved and data_moved and not ({'--note-wins', '--data-wins'} & set(sys.argv)):
+        OVERRIDE = '--overwrite-cody-s-note-edits'
+        override = OVERRIDE in sys.argv
+        if note_moved and data_moved and not override:
             sys.exit('the note AND the game copy have both changed since the last export.\n'
-                     '  the note is newer  -> npm run copy:import   (then export)\n'
-                     '  the game is newer  -> python3 tools/copy_sync.py export --data-wins\n'
-                     'exporting blindly would throw one of them away.')
-        if note_moved and not data_moved and '--data-wins' not in sys.argv:
+                     '  the note holds edits that are not in the game -> npm run copy:import, then export\n'
+                     '  you are certain the game is right            -> export ' + OVERRIDE + '\n'
+                     'exporting blindly would throw one of them away. The right answer is almost always import.')
+        if note_moved and not override:
             print('the note has been edited since the last export: importing those changes first')
             imp()
+        if note_moved and override:
+            print('WARNING: overwriting note edits. A copy is in', back_up_note('overwritten'))
         export()
     else:
         imp(); write_stamp()

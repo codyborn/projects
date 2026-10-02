@@ -47,7 +47,7 @@
       "camera",
       "luxury"
     ],
-    "desc": "The camera the year gets remembered by, its controller, and the spare batteries.",
+    "desc": "A flying camera, its controller, and the spare batteries.",
     "real": true,
     "color": 7238788,
     "benefits": [
@@ -158,7 +158,7 @@
       "cold",
       "clothing"
     ],
-    "desc": "Stuffs into its own pocket. Saves October in the Alps.",
+    "desc": "Stuffs into its own pocket. You'll want it for Iceland.",
     "real": false,
     "color": 15900236,
     "benefits": [
@@ -177,7 +177,7 @@
       "hike",
       "cold"
     ],
-    "desc": "Ankles for the Himalaya. Dead weight everywhere else.",
+    "desc": "Essential for the Himalaya. Dead weight everywhere else.",
     "real": false,
     "color": 7031346,
     "benefits": [
@@ -268,7 +268,7 @@
     "tags": [
       "health"
     ],
-    "desc": "The routine that survives a hostel sink.",
+    "desc": "The routine that let's you survive a hostel sink.",
     "real": true,
     "color": 9425908,
     "benefits": [

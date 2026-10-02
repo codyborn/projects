@@ -2037,7 +2037,7 @@
         "timezones": 0
       }
     ],
-    "blurb": "Riviera views at village pace. Bread is the answer to most things.",
+    "blurb": "Riviera views at village pace. The wild flamingos make the mosquitos almost worth it.",
     "stampIcon": "palm",
     "costPerDay": 120,
     "droneRule": "permit",
@@ -2201,7 +2201,7 @@
         "timezones": 1
       }
     ],
-    "blurb": "A castle on a volcano, and rain whichever way you leave.",
+    "blurb": "A castle on a volcano, and rain in every direction.",
     "stampIcon": "castle",
     "costPerDay": 130,
     "radon": 1,
@@ -2489,7 +2489,7 @@
         "timezones": 5
       }
     ],
-    "blurb": "Oktoberfest is in September. Nothing here makes sense and all of it runs on time.",
+    "blurb": "Where sausage on a bread roll with a beer counts as a light snack.",
     "stampIcon": "pretzel",
     "altitude": 520,
     "costPerDay": 130,
@@ -2858,7 +2858,7 @@
         "timezones": 4
       }
     ],
-    "blurb": "A lagoon in the Sahara where the wind is punctual and nobody else is.",
+    "blurb": "A lagoon in the Sahara where the wind is the only punctual thing there.",
     "stampIcon": "dune",
     "costPerDay": 70,
     "outdoorsy": true,
@@ -3235,7 +3235,7 @@
         "timezones": 2
       }
     ],
-    "blurb": "Street food at 1 am, a tuk-tuk at 1:05, regret at 4.",
+    "blurb": "Where a taxi, a moving truck and the family mini-van are all just scooters.",
     "stampIcon": "tuktuk",
     "costPerDay": 70,
     "droneRule": "permit",
