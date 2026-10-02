@@ -101,7 +101,9 @@ const POSE_NAMES = ['DOWNWARD DOG', 'COBRA', 'WARRIOR II', 'PLANK'];
 export class PoseMatch extends Micro {
   readonly id = 'pose'; readonly word = META.pose.word; readonly instr = META.pose.instr; readonly durationSec = META.pose.durationSec;
   /** the wheel position, 0..3 continuous; the nearest integer is the pose the figure shows */
-  pos = 3; private snapped = -1; target = 0; private hold = 0; private matched = 0; private need = 3; private dragging = false;
+  pos = 3; private snapped = -1; target = 0; private hold = 0; private matched = 0; private need = 6; private dragging = false;
+  /** poses settled on that were not the one asked for, and when the round started: a slow, scattergun run should not score 100 */
+  private wrong = 0; private roundAt = 0; private times: number[] = [];
   private figure!: Phaser.GameObjects.Image; private shadow!: Phaser.GameObjects.Image; private nameLbl!: Phaser.GameObjects.Text; private keys: string[] = []; private icons: Phaser.GameObjects.Image[] = [];
   private buildPoses() {
     const sc = this.ctx.scene; const map = { o: PAL.earth3, h: PAL.earth0, s: PAL.sun0, p: PAL.night3, k: PAL.ink };
@@ -125,18 +127,18 @@ export class PoseMatch extends Micro {
     this.nameLbl = this.label(cx, 150, '', 12, PAL.gray2); this.label(W - 58, 150, 'WHEEL', 9, PAL.gray1); this.label(W - 58, 470, 'drag up / down', 8, PAL.gray1);
     // right: the vertical wheel of the four poses, a window in the middle shows the current one
     this.icons = this.keys.map(k => this.add(sc.add.image(W - 58, cy, k).setDepth(6).setScale(0.45)));
-    const nextT = () => { let t = Math.floor(this.ctx.rng() * 4); if (t === this.target && this.matched > 0) t = (t + 1) % 4; this.target = t; this.hold = 0; this.shadow.setTexture(this.keys[t]); this.nameLbl.setText(POSE_NAMES[t]); };
-    let ly = 0; this.on('pointerdown', (p: any) => { ly = p.y; this.dragging = true; }); this.on('pointermove', (p: any) => { if (!p.isDown || !this.dragging) return; this.pos = clamp(this.pos + (p.y - ly) / 70, 0, 3); ly = p.y; });   // drag down = scroll the strip down = next pose
+    const nextT = () => { let t = Math.floor(this.ctx.rng() * 4); if (t === this.target && this.matched > 0) t = (t + 1) % 4; this.target = t; this.hold = 0; this.roundAt = this.t; this.shadow.setTexture(this.keys[t]); this.nameLbl.setText(POSE_NAMES[t]); };
+    let ly = 0; this.on('pointerdown', (p: any) => { ly = p.y; this.dragging = true; }); this.on('pointermove', (p: any) => { if (!p.isDown || !this.dragging) return; this.pos = clamp(this.pos - (p.y - ly) / 70, 0, 3); ly = p.y; }   /* drag down, the strip comes down with the finger */);   // drag down = scroll the strip down = next pose
     this.on('pointerup', () => { this.dragging = false; });
-    this.key('keydown-UP', () => { this.pos = clamp(Math.round(this.pos) - 1, 0, 3); }); this.key('keydown-DOWN', () => { this.pos = clamp(Math.round(this.pos) + 1, 0, 3); });
+    this.key('keydown-UP', () => { this.pos = clamp(Math.round(this.pos) + 1, 0, 3); }); this.key('keydown-DOWN', () => { this.pos = clamp(Math.round(this.pos) - 1, 0, 3); });
     (this as any).setPose = (i: number) => { this.pos = clamp(i, 0, 3); this.dragging = false; };
     nextT();
     this.loop(dt => {
       if (!this.dragging) { const sn = Math.round(this.pos); this.pos += (sn - this.pos) * Math.min(1, dt * 14); }   // snap with a settle
       const sn = Math.round(this.pos);
-      if (sn !== this.snapped) { this.snapped = sn; this.figure.setTexture(this.keys[sn]); sc.tweens.add({ targets: this.figure, scaleX: { from: 0.85, to: 1 }, scaleY: { from: 1.15, to: 1 }, duration: 120, ease: 'Back.Out' }); this.ctx.frame.flash(PAL.night3, 20); }
+      if (sn !== this.snapped) { if (this.snapped >= 0 && sn !== this.target) this.wrong++; this.snapped = sn; this.figure.setTexture(this.keys[sn]); sc.tweens.add({ targets: this.figure, scaleX: { from: 0.85, to: 1 }, scaleY: { from: 1.15, to: 1 }, duration: 120, ease: 'Back.Out' }); this.ctx.frame.flash(PAL.night3, 20); }
       const ok = sn === this.target && Math.abs(this.pos - sn) < 0.25;
-      if (ok) { this.hold += dt; if (this.hold > 0.5) { this.matched++; this.pop(cx, 200, 'MATCH'); this.ctx.frame.setProgress(`${this.matched}/${this.need}`); if (this.matched >= this.need) { this.after(250, () => this.finish(this.scoreNow())); return; } nextT(); } } else this.hold = 0;
+      if (ok) { this.hold += dt; if (this.hold > 0.5) { this.matched++; this.times.push(this.t - this.roundAt); this.roundAt = this.t; this.pop(cx, 200, 'MATCH'); this.ctx.frame.setProgress(`${this.matched}/${this.need}`); if (this.matched >= this.need) { this.after(250, () => this.finish(this.scoreNow())); return; } nextT(); } } else this.hold = 0;
       this.shadow.setTint(ok ? PAL.grass0 : PAL.night3).setAlpha(ok ? 0.75 : 0.6); (this.shadow as any).tintFill = true;
       this.g.clear(); this.backdrop(390, 410); this.g.fillStyle(PAL.earth0).fillRect(0, 392, W - 110, 4);   // the mat
       // the wheel: a strip with the four icons stacked, scrolled by pos; the middle window is the current pose
@@ -146,6 +148,13 @@ export class PoseMatch extends Micro {
       this.g.fillStyle(PAL.gray2).fillTriangle(wx, 178, wx - 6, 186, wx + 6, 186).fillTriangle(wx, 462, wx - 6, 454, wx + 6, 454);
       this.g.fillStyle(PAL.ink).fillRect(cx - 40, 480, 80, 6); this.g.fillStyle(PAL.neon).fillRect(cx - 40, 480, 80 * clamp(this.hold / 0.5, 0, 1), 6); });
   }
-  protected scoreNow() { return clamp(this.matched / this.need, 0, 1); }
+  /** Getting there eventually is not the same as flowing through it: the share of poses matched, docked for every
+   *  pose you stopped on by mistake and for dawdling past about four seconds a pose. */
+  protected scoreNow() {
+    const got = this.matched / this.need;
+    const avg = this.times.length ? this.times.reduce((a, b) => a + b, 0) / this.times.length : this.t;
+    const pace = clamp(1 - Math.max(0, avg - 4) / 8, 0.6, 1);
+    return clamp(got * pace - this.wrong * 0.04, 0, 1);
+  }
   destroy() { this.ctx.athlete.show(true); super.destroy(); }
 }

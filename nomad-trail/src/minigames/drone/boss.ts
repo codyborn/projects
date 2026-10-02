@@ -58,6 +58,10 @@ export function dragonSkin(set: SetId, region?: string): DragonSkin {
 /** How hard a summoned minion can turn, in degrees a second. At 90 it simply caught you; this is a lazy arc that
  *  rewards changing height and punishes holding still. */
 export const HOMING_DEG = 32;
+/** How fast a boss may swing its body onto a shot, px a second. A proportional lerp covered a full-screen gap in one
+ *  lurch; a speed cap makes it lean into the aim instead. */
+export const AIM_PXS = 150;
+const toward = (v: number, want: number, step: number) => v + Math.sign(want - v) * Math.min(Math.abs(want - v), step);
 export interface Proj { x: number; y: number; vx: number; vy: number; r: number; kind: 'shard' | 'fire' | 'beam' | 'minion'; t: number; alive: boolean; homing?: number; }
 
 export interface BossState {
@@ -113,7 +117,7 @@ export function stepBoss(b: BossState, dt: number, droneX: number, droneY: numbe
   // the beam, once it is out, sweeps gently toward the drone so standing still is not safe
   if (b.beam > 0) {
     b.beam -= dt; b.beamY += Math.sign(droneY - b.beamY) * Math.min(26 * dt, Math.abs(droneY - b.beamY));
-    b.y = Math.max(top, Math.min(bot, b.beamY - d.muzzle));   /* it aims with its whole body, so the beam comes out of its face */
+    b.y = toward(b.y, Math.max(top, Math.min(bot, b.beamY - d.muzzle)), AIM_PXS * dt);   /* follow the sweep at a walking pace, never snap to it */
     return out; }
 
   // attack clock: a telegraphed wind-up, then the attack itself
@@ -121,11 +125,11 @@ export function stepBoss(b: BossState, dt: number, droneX: number, droneY: numbe
     b.windup -= dt;
     /* aim during the wind-up, not at the moment of firing: the warning line used to sit at the drone's height while the
        beam came out of a mouth that had not moved there yet, so it fired from somewhere other than where it threatened */
-    if (b.pending === 'beam') { const want = Math.max(top, Math.min(bot, b.beamY - d.muzzle)); b.y += (want - b.y) * Math.min(1, 6 * dt); }
+    if (b.pending === 'beam') b.y = toward(b.y, Math.max(top, Math.min(bot, b.beamY - d.muzzle)), AIM_PXS * dt);
     if (b.windup <= 0) {
       const kind = b.pending ?? 'spit'; b.pending = undefined;
       const speed = 150 + 18 * level + 20 * hard;
-      if (kind === 'beam') { b.beam = 0.85 + 0.1 * level; b.beamY = droneY; }
+      if (kind === 'beam') b.beam = 0.85 + 0.1 * level;   /* fire where the wind-up aimed: re-reading the drone's position here made the body jump to meet it */
       else if (kind === 'swoop') { b.dir = Math.sign(droneY - b.y) || 1; b.y += b.dir * 6; out.push(...spread(b, droneX, droneY, 1, speed * 1.2, 'shard')); }
       else if (kind === 'spit') { if (d.kind === 'gull') b.turn = 0.8; out.push(...spread(b, droneX, droneY, d.kind === 'dragon' ? 3 : 4, speed, d.kind === 'dragon' ? 'fire' : 'shard')); }
       else out.push(...spread(b, droneX, droneY, 2, speed * 0.75, 'minion', HOMING_DEG));

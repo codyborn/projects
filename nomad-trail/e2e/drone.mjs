@@ -56,7 +56,7 @@ const watchSky = async (cityId) => pg.evaluate(async (id) => {
 for (const [city, want] of [['miami', 'gull'], ['tokyo', 'kaiju'], ['munich', 'dragon'], ['buenosaires', 'quetzal'], ['casablanca', 'anubis'], ['kathmandu', 'dragon']]) {
   const r = await fight(city);
   check(`${city}: ${want} turns up, fights back, and goes down`,
-    r.boss?.kind === want && r.projs > 0 && r.beaten && r.landed,
+    r.boss?.kind === want && (r.projs > 0 || r.beam) && r.beaten && r.landed,   /* a beam boss can win a round without throwing anything */
     `${r.boss ? r.boss.name + ' hp' + r.boss.maxHp : 'no boss'} projs=${r.projs} beam=${r.beam} beaten=${r.beaten} landed=${r.landed} score=${r.score}`);
   check(`${city}: its name fits the screen`, !r.nameW || r.nameW <= 352, `${r.nameW ?? '-'} px`);
 }
@@ -109,6 +109,20 @@ for (const [city, want] of [['miami', 'gull'], ['tokyo', 'kaiju'], ['munich', 'd
     return null;
   });
   check('the beam fires from where it warned', r && r.fired !== null && r.drift < 12, r ? `warned at ${r.warned?.toFixed(0)}, fired at ${r.fired?.toFixed(0)}` : 'no beam seen');
+  /* and the body never teleports to meet it: measured per simulation step, the same way the minion turn rate is */
+  const jump = await pg.evaluate(async () => {
+    const n = window.__nomad; const city = n.review.cities.find(c => c.id === 'tokyo');
+    n.minigame('Drone', { city, cityName: city.name, seed: 7, level: 2 }); await new Promise(r => setTimeout(r, 700));
+    const sc = n.game.scene.getScene('Drone'); sc.frame.ready(); await new Promise(r => setTimeout(r, 300));
+    sc.hearts = 999; sc.padWx = sc.scroll + sc.x + 30;
+    let worst = 0, beams = 0; const orig = sc.step.bind(sc);
+    sc.step = (dt) => { const was = sc.boss?.y, wasBeam = sc.boss?.beam ?? 0; orig(dt);
+      if (sc.boss && was !== undefined) { const d = Math.abs(sc.boss.y - was); if (sc.boss.beam > 0 || sc.boss.windup > 0) worst = Math.max(worst, d);
+        if (wasBeam <= 0 && sc.boss.beam > 0) beams++; } };
+    for (let i = 0; i < 2000 && beams < 3; i++) { await new Promise(r => setTimeout(r, 16)); if (sc.boss) sc.y = 120 + (i % 240); }
+    sc.step = orig; return { worst: Math.round(worst), beams };
+  });
+  check('the kaiju does not jump when it fires', jump.beams > 0 && jump.worst <= 6, `${jump.beams} beams, worst step ${jump.worst} px`);
 }
 const sky = await watchSky('dakhla');
 check('balloons drift through the course', sky.kinds.includes('balloon'), sky.kinds.join(','));

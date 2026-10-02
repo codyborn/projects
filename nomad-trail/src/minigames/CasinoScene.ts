@@ -7,7 +7,7 @@ import { MinigameFrame, W, H, normalizeLaunch, panel, pixTexture } from './_shar
 import { txt, type Label } from '../ui/theme';
 import { WHEEL, pocketColor, spinWheel, rouletteNet, CHIP_SIZES, type RouletteBet, type RouletteBetKind, REEL, PULL_COST, pullReels, slotReturn, PAYTABLE_LINES, MAX_ROUNDS, scoreFor, type Symbol } from './casino/tables';
 
-/** Las Vegas, stumbled on while exploring: a neon floor with two tables. ROULETTE (European wheel; red/black, odd/even, one number;
+/** A casino in any town that has one, stumbled on while exploring or walked into on purpose: a neon floor with two tables. ROULETTE (European wheel; red/black, odd/even, one number;
  *  chips $25/$50/$100) and SLOTS (three reels, $25 a pull). You gamble the run's actual bankroll (payload.money). The session ends on
  *  WALK AWAY, a bust, or 12 rounds; the frame gets score 50 + net/20 and `resultExtra.money = net` (signed dollars).
  *  Harness hooks: bet(kind, number?), setChip(i), spin(), pull(), tab('roulette'|'slots'), walkAway(). */
@@ -28,10 +28,11 @@ export class CasinoScene extends Phaser.Scene {
     this.rng = makeRng(hash32(Number(p.seed) || 1, this.start)); this.table = 'roulette'; this.bets = []; this.chip = 1; this.pick = 17; this.history = []; this.tabs = []; this.betLbls = {}; this.chipRects = []; this.reelImgs = []; this.reelPos = [0, 0, 0];
   }
   create() {
-    this.frame = new MinigameFrame(this, this.launch, `${this.launch.payload?.cityName ?? 'Las Vegas'} casino`); this.cameras.main.setBackgroundColor(PAL.night0);
+    const city = String(this.launch.payload?.cityName ?? 'Las Vegas');
+    this.frame = new MinigameFrame(this, this.launch, `${city} casino`); this.cameras.main.setBackgroundColor(PAL.night0);
     this.frame.capSec = 100000; this.frame.scoreNow = () => scoreFor(this.bank - this.start);
     this.buildSymbols(); this.buildFloor(); this.frame.hud();
-    this.frame.intro(`A casino on the way back from the Strip. You are playing with your own $${this.start}. Walk away whenever you like.`, () => this.setMsg('Place a bet.'), { height: 300 });
+    this.frame.intro(`A casino in ${city}. You are playing with your own $${this.start}. Walk away whenever you like.`, () => this.setMsg('Place a bet.'), { height: 300 });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.tabs = []; this.reelImgs = []; });
   }
   update(_t: number, dt: number) { this.frame.update(dt); }
