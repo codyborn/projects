@@ -68,7 +68,7 @@ export interface RunState {
   phase: 'pack' | 'route' | 'city' | 'travel' | 'ended'; ending?: Ending;
   stayDays: number; pendingEvent?: string;
   puzzlesSeen?: string[]; droneFlights?: number; eventsFired?: string[];   /* every event id that fired this run, in order (credits page) */   /* work-week puzzles already shown this run; drone flights so far (sets the level) */
-  pendingDish?: string; pendingGate?: string; pendingConsole?: 'carryon' | 'tetris'; dirtyDays?: number;   /* which cartridge the console handed over, so the result knows what was played */   // consecutive days in dirty clothes (mood drain grows)              // gate for the airport dash after a taxi breakdown                              // dish id chosen when Cook was tapped; the mini-game and the result must use the same one
+  pendingDish?: string; pendingGate?: string; pendingConsole?: 'carryon' | 'tetris'; pendingFollowUp?: string; dirtyDays?: number;   /* a consequence waiting for tomorrow: the tick from the animal, the fin after the swim — only one event ever surfaces in a day */   /* which cartridge the console handed over, so the result knows what was played */   // consecutive days in dirty clothes (mood drain grows)              // gate for the airport dash after a taxi breakdown                              // dish id chosen when Cook was tapped; the mini-game and the result must use the same one
 }
 export interface LogLine { day: number; city: string; text: string; }
 export type Ending = { kind: 'win' | 'hospital' | 'flewhome' | 'outofdays' | 'broke' | 'quit'; text: string; score: number; cause?: string; };  // cause: the one-line reason shown on the share card

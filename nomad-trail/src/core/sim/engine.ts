@@ -260,8 +260,13 @@ function tickDay(s: RunState, rng: Rng, opts: { rest?: boolean; work?: boolean }
   if (hasTag(s, 'health') && s.energy > 50) s.health += 0.4;
   if (hasItem(s, 'travelkettle')) s.mood += 1;                      // tea at night; the other thing it does lives in events.json
   s.health = clamp(s.health, 0, 100); s.energy = clamp(s.energy, 0, energyCap(s)); s.mood = clamp(s.mood, 0, 100);
-  out.push(...rollEvents(s, 'day', { overweightRatio: weightRatio(s.items) }, rng, 1));
-  if (s.money < 0 && !hasFlag(s, 'broke')) { setFlag(s, 'broke', true); out.push(forceEvent(s, 'broke', rng)); }
+  /* One event a day, whatever its source. A consequence parked by yesterday takes today's slot (and the tick really
+     does show up later); otherwise the day pool rolls — but only if nothing has already been forced this tick, which
+     is where the radon notice and the day roll used to arrive together. */
+  if (s.pendingFollowUp) { const id = s.pendingFollowUp; s.pendingFollowUp = undefined; out.length = 0; out.push(forceEvent(s, id, rng, id === 'tick' && hasTag(s, 'firstaid'))); }
+  else if (!out.length) out.push(...rollEvents(s, 'day', { overweightRatio: weightRatio(s.items) }, rng, 1));
+  /* running out of money outranks whatever else today held: it replaces the card rather than adding a second */
+  if (s.money < 0 && !hasFlag(s, 'broke')) { setFlag(s, 'broke', true); out.length = 0; out.push(forceEvent(s, 'broke', rng)); }
   return out;
 }
 const DAILY: Record<string, string> = STR.daily;
@@ -307,15 +312,19 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       const bonus = outdoors && geared; s.energy = clamp(s.energy - (bonus ? 10 : 14), 0, energyCap(s)); s.mood = clamp(s.mood + 5 + (bonus ? 5 : 0), 0, 100);
       s.log.push({ day: s.day, city: s.cityId, text: bonus ? `You go out with the whole kit. ${city.name} is built for it.` : DAILY.explore });
       if (outdoors && !geared && rng.chance(0.3)) { s.mood = clamp(s.mood - 3, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: STR.log.wrongShoes }); }
-      /* exploring is the day you go looking for something to happen: the action pool rolls at better odds, but still
-         only one thing surfaces — two cards back to back on one tap reads as a bug. If the day tick already produced
-         something, explore adds nothing; if nothing has happened at all, the city hands you a small good thing. */
+      /* One event a day, and exploring is the day most likely to have one. The day tick gets first refusal; in a
+         casino town a walk can end at the tables *instead of* whatever else the day held, never on top of it; then
+         the action pool at better odds; and if none of that lands, the city hands you a small good thing. */
+      if (!events.length && city.casino && s.money > CASINO_MIN && !hasFlag(s, 'casino_' + s.day) && rngFor(s, 23).chance(0.3)) {
+        setFlag(s, 'casino_' + s.day, true); events.push(forceEvent(s, 'casinonight', rng)); checkEnding(s);
+        return { state: s, events, minigame: { key: MINIGAME_KEYS.casino, payload: { money: s.money, cityName: city.name, seed: hash32(s.seed, s.day, 88) }, difficulty: 0.5 } };
+      }
       if (!events.length) events.push(...rollEvents(s, 'action', ctx, rngFor(s, 4), 1, undefined, 1.9));
       if (!events.length) events.push(forceEvent(s, outdoors ? 'goodday' : city.coast ? 'gooddaycoast' : 'goodday', rng));
-      /* follow-ups: a new animal friend can carry a tick; a shoreline swim can pick up a fin; a Vegas walk can end at a table */
-      if (events.some(e => e.id === 'animal') && rngFor(s, 21).chance(0.15)) events.push(forceEvent(s, 'tick', rng, hasTag(s, 'firstaid')));
-      if (events.some(e => e.id === 'oceanswim') && rngFor(s, 22).chance(0.1)) events.push(forceEvent(s, 'shark', rng));
-      if (city.casino && s.money > CASINO_MIN && !hasFlag(s, 'casino_' + s.day) && rngFor(s, 23).chance(0.3)) { setFlag(s, 'casino_' + s.day, true); events.push(forceEvent(s, 'casinonight', rng)); checkEnding(s); return { state: s, events, minigame: { key: MINIGAME_KEYS.casino, payload: { money: s.money, cityName: city.name, seed: hash32(s.seed, s.day, 88) }, difficulty: 0.5 } }; }
+      /* consequences wait for tomorrow so they never make a second card today: the tick from the animal you petted,
+         the fin after the swim */
+      if (events.some(e => e.id === 'animal') && rngFor(s, 21).chance(0.15)) s.pendingFollowUp = 'tick';
+      if (events.some(e => e.id === 'oceanswim') && rngFor(s, 22).chance(0.1)) s.pendingFollowUp = 'shark';
       break; }
     case 'rest': {
       s.workStreak = 0; events = tickDay(s, rng, { rest: true }); s.energy = clamp(s.energy + 20, 0, energyCap(s)); s.mood = clamp(s.mood + 2, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: DAILY.rest });

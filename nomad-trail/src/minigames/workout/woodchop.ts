@@ -1,6 +1,6 @@
 /* WOOD CHOP (Bozeman): Cody chopped wood in Montana. Seen from above, looking down at the chopping block: the round of
-   firewood is end-grain up with the splitting line marked across it, and the axe head circles the round on the end of
-   its handle, sweeping through about ±40° of the line. SWIPE DOWN, tap or SPACE to chop when the head is over the line.
+   firewood is end-grain up with the splitting line marked across it, and the axe head circles the round on the end of a
+   handle that runs down to the chopper at the bottom of the screen, sweeping through about ±40° of the line. SWIPE DOWN, tap or SPACE to chop when the head is over the line.
    Within ±6° = a clean split (the round opens along the line and the halves slide apart); ±6° to ±18° = glancing (the
    head bites across the grain and the round only cracks); beyond = a miss (the head skids off the edge, 0.6 s lost).
    Eight rounds; the sweep speeds up each round and after round 4 the period jitters so it cannot be pure rhythm. Split
@@ -15,7 +15,7 @@ import { META } from './pools';
 
 const ROUNDS = 8, ARC = 40, CLEAN = 6, GLANCE = 18;
 /* everything is measured from the middle of the block, looking straight down at it */
-const CX = W / 2, CY = 338, STUMP_R = 92, ROUND_R = 54, GUIDE_R = 74, HEAD_R = 66, HANDLE_R = 190;
+const CX = W / 2, CY = 338, STUMP_R = 92, ROUND_R = 54, GUIDE_R = 74, HEAD_R = 66, HANDLE_R = 400;   /* long enough that the handle always leaves the bottom of the screen, whatever the angle */
 const V = (pts: { x: number; y: number }[]) => pts.map(q => new Phaser.Math.Vector2(q.x, q.y));
 
 export class WoodChop extends Micro {
@@ -75,12 +75,12 @@ export class WoodChop extends Micro {
   private draw() {
     const g = this.g; g.clear(); const ax = this.axeG; ax.clear(); const fx = this.fx; fx.clear();
     const R = Phaser.Math.DegToRad;
-    /* the yard from above: grass, scattered chips and bark, the woodpile off to the left */
+    /* the yard from above: grass, scattered chips and bark, the woodpile up at the top where the handle never sweeps */
     g.fillStyle(PAL.grass1).fillRect(0, 26, W, 614);
     for (let i = 0; i < 46; i++) { const x = (i * 97) % W, y = 40 + (i * 131) % 580; g.fillStyle(i % 3 ? PAL.grass2 : PAL.grass0, 0.6).fillRect(x, y, 3 + (i % 3), 2); }
     for (let i = 0; i < 10; i++) { const x = 30 + (i * 71) % (W - 60), y = 70 + (i * 157) % 520; g.fillStyle(PAL.earth2, 0.5).fillRect(x, y, 5, 3); }
     /* the woodpile: split rounds seen end-on, stacked in rows */
-    this.pile.forEach((_, i) => { const row = Math.floor(i / 2), col = i % 2; const px = 34 + col * 26, py = 560 - row * 26;
+    this.pile.forEach((_, i) => { const row = Math.floor(i / 2), col = i % 2; const px = 34 + col * 26, py = 76 + row * 26;
       g.fillStyle(PAL.earth1).fillCircle(px, py, 11); g.fillStyle(PAL.earth2).fillCircle(px, py, 9);
       g.lineStyle(1, PAL.earth3, 0.7); g.strokeCircle(px, py, 5); g.strokeCircle(px, py, 8); });
     /* the chopping block: end grain with rings and a chewed-up top */
@@ -89,10 +89,10 @@ export class WoodChop extends Micro {
     g.lineStyle(1, PAL.earth0, 0.8); for (let r = 16; r < STUMP_R - 6; r += 13) g.strokeCircle(CX, CY, r);
     for (let i = 0; i < 14; i++) { const a = R(i * 26 + 7), rr = STUMP_R - 10 - (i % 4) * 9; g.fillStyle(PAL.earth0, 0.7).fillRect(CX + Math.cos(a) * rr, CY + Math.sin(a) * rr, 4, 3); }
     /* the guide ring: the whole sweep in ink, the glancing band amber, the splitting line green */
-    fx.lineStyle(3, PAL.ink, 0.45); fx.beginPath(); fx.arc(CX, CY, GUIDE_R, R(-90 - ARC), R(-90 + ARC), false); fx.strokePath();
-    fx.lineStyle(4, PAL.sun1, 0.55); fx.beginPath(); fx.arc(CX, CY, GUIDE_R, R(-90 - GLANCE), R(-90 - CLEAN), false); fx.strokePath();
-    fx.beginPath(); fx.arc(CX, CY, GUIDE_R, R(-90 + CLEAN), R(-90 + GLANCE), false); fx.strokePath();
-    fx.lineStyle(6, PAL.grass2, 0.9); fx.beginPath(); fx.arc(CX, CY, GUIDE_R, R(-90 - CLEAN), R(-90 + CLEAN), false); fx.strokePath();
+    fx.lineStyle(3, PAL.ink, 0.45); fx.beginPath(); fx.arc(CX, CY, GUIDE_R, R(90 - ARC), R(90 + ARC), false); fx.strokePath();
+    fx.lineStyle(4, PAL.sun1, 0.55); fx.beginPath(); fx.arc(CX, CY, GUIDE_R, R(90 - GLANCE), R(90 - CLEAN), false); fx.strokePath();
+    fx.beginPath(); fx.arc(CX, CY, GUIDE_R, R(90 + CLEAN), R(90 + GLANCE), false); fx.strokePath();
+    fx.lineStyle(6, PAL.grass2, 0.9); fx.beginPath(); fx.arc(CX, CY, GUIDE_R, R(90 - CLEAN), R(90 + CLEAN), false); fx.strokePath();
     /* the round of firewood, end-grain up, with the splitting line across it */
     const split = this.halves.length > 0;
     if (!split && this.phase !== 'done') {
@@ -102,7 +102,7 @@ export class WoodChop extends Micro {
       /* the line you are aiming at, dashed up and down the grain */
       g.fillStyle(this.crack ? PAL.ink : PAL.earth3, this.crack ? 1 : 0.8);
       for (let d = -ROUND_R + 6; d < ROUND_R - 6; d += 9) g.fillRect(CX - 1, CY + d, 2, 6);
-      if (this.crack) { const ca = R(this.stuckAngle - 90); g.lineStyle(2, PAL.ink, 0.9).lineBetween(CX, CY, CX + Math.cos(ca) * (ROUND_R - 6), CY + Math.sin(ca) * (ROUND_R - 6)); }
+      if (this.crack) { const ca = R(this.stuckAngle + 90); g.lineStyle(2, PAL.ink, 0.9).lineBetween(CX, CY, CX + Math.cos(ca) * (ROUND_R - 6), CY + Math.sin(ca) * (ROUND_R - 6)); }
     }
     /* halves sliding off the block after a split: each is a round with a flat face */
     for (const h of this.halves) {
@@ -119,7 +119,7 @@ export class WoodChop extends Micro {
     let a = this.phase === 'swing' ? this.angle : this.stuckAngle;
     if (this.phase === 'anim' && this.wobble > 0) { this.wobble = Math.max(0, this.wobble - 0.04); a = this.stuckAngle + Math.sin(this.t * 40) * 7 * this.wobble; }
     if (this.phase === 'done') a = ARC + 18;
-    const rad = R(a - 90), cos = Math.cos(rad), sin = Math.sin(rad);
+    const rad = R(a + 90), cos = Math.cos(rad), sin = Math.sin(rad);   /* +90: the handle runs down to the chopper standing at the bottom of the screen */
     const hx = CX + cos * HEAD_R, hy = CY + sin * HEAD_R;
     ax.lineStyle(7, PAL.earth1, 1); ax.lineBetween(CX + cos * (HEAD_R + 6), CY + sin * (HEAD_R + 6), CX + cos * HANDLE_R, CY + sin * HANDLE_R);
     ax.lineStyle(3, PAL.earth2, 1); ax.lineBetween(CX + cos * (HEAD_R + 8), CY + sin * (HEAD_R + 8), CX + cos * HANDLE_R, CY + sin * HANDLE_R);
