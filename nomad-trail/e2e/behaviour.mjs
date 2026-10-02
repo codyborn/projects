@@ -87,6 +87,21 @@ await inCity('lasvegas', true);
 await page.evaluate(() => window.__nomad.act('casino')); await sleep(1800);
 check('the button opens the tables', (await page.evaluate(() => window.__nomad.activeScenes())).includes('Casino'));
 
+// wood chop, rebuilt top-down in round 100: a chop on the line still splits the round
+{
+  const r = await page.evaluate(async () => {
+    const n = window.__nomad; n.minigame('Workout', { activity: 'hike', city: 'Bozeman', day: 3, plan: ['woodchop'] });
+    await new Promise(r => setTimeout(r, 900)); const sc = n.game.scene.getScene('Workout'); sc.frame.ready();
+    await new Promise(r => setTimeout(r, 700)); const m = sc.current; if (!m) return null;
+    let swept = 0;
+    for (let i = 0; i < 700; i++) { await new Promise(r => setTimeout(r, 16)); const h = m.hint();
+      swept = Math.max(swept, h.absDeg); if (h.phase === 'swing' && h.absDeg < 3) { m.chop(); break; } }
+    await new Promise(r => setTimeout(r, 300)); const h = m.hint();
+    return { clean: h.clean, swept: Math.round(swept) };
+  });
+  check('wood chop: the axe sweeps and a chop on the line splits the round', r && r.clean === 1 && r.swept > 20, r ? `clean ${r.clean}, swept ${r.swept} deg` : 'no micro');
+}
+
 console.log(errs.length ? 'ERRORS:\n' + errs.join('\n') : 'no page errors');
 await browser.close();
 process.exit(fails.length || errs.length ? 1 : 0);
