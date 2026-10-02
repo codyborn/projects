@@ -2,14 +2,14 @@
 import type { ActivityId } from '../../core/types';
 export interface MicroMeta { /** the micro-game's own name: the HUD title */ name: string; /** kept for the harness only: nothing displays it since round 10 */ word: string; instr: string; /** one line (<= 32 chars) shown in the HUD strip for the whole game */ hint?: string; durationSec: number; }
 export const META: Record<string, MicroMeta> = {
-  pushup:      { name: 'Push-ups',      word: 'TAP!',      instr: 'Tap when the ring lands on the target.', hint: 'TAP when the rings meet', durationSec: 7 },
+  pushup:      { name: 'Jumping Jacks', word: 'TAP!',      instr: 'Tap when the ring lands on the target.', hint: 'TAP when the rings meet', durationSec: 7 },
   plank:       { name: 'Plank',         word: 'HOLD!',     instr: 'Hold. Drag left/right to keep the marker centred.', hint: 'HOLD - drag left/right', durationSec: 7 },
   curls:       { name: 'Curls',         word: 'SWIPE!',    instr: 'Swipe UP on the side the arrow shows. Before it fades.', hint: 'SWIPE UP on the arrow side', durationSec: 8 },
   burpee:      { name: 'Burpees',       word: 'CHAIN!',    instr: 'Five burpees. Each one is three moves cued on screen: DROP (swipe down), PLANK (hold 0.6 s), JUMP (swipe up). Score = clean moves out of 15.', hint: 'DROP - PLANK - JUMP x5', durationSec: 16 },
   squat:       { name: 'Squats',        word: 'HOLD!',     instr: 'Hold to lower. Let go inside the green band.', hint: 'HOLD - let go in the green', durationSec: 8 },
   sprint:      { name: 'Sprint & Stop', word: 'GO!',       instr: 'Tap fast to sprint. When the whistle flashes: STOP tapping.', hint: 'TAP fast - STOP on the whistle', durationSec: 8 },
-  stretch:     { name: 'Stretch',       word: 'EASY!',     instr: 'Drag the slider all the way across. Slowly. Jerks fail it.', hint: 'DRAG slowly - lifting pauses', durationSec: 8 },
-  boulderbeta: { name: 'Boulder Beta',  word: 'MEMORISE!', instr: 'Watch the holds light up. Then tap them back in the same order before your grip runs out.', hint: 'WATCH, then TAP the holds', durationSec: 9 },
+  stretch:     { name: 'Stretch',       word: 'EASY!',     instr: 'Drag the slider all the way across. Keep it smooth; a yank costs you ground.', hint: 'DRAG slowly - lifting pauses', durationSec: 8 },
+  boulderbeta: { name: 'Boulder Beta',  word: 'MEMORISE!', instr: 'Watch the holds light up. Then tap them back in the same order before your grip runs out. Four problems, each one longer.', hint: 'WATCH, then TAP the holds', durationSec: 20 },
   dyno:        { name: 'Dyno',          word: 'CATCH!',    instr: 'Tap at the top of the swing to catch the next hold.', hint: 'TAP at the top of the swing', durationSec: 8 },
   riverstones: { name: 'River Stones',  word: 'HOP!',      instr: 'Tap when the next stone lights up.', hint: 'TAP when the stone is lit', durationSec: 8 },
   swimbreath:  { name: 'Swim Breathing', word: 'STROKE!',  instr: "Tap LEFT, RIGHT, LEFT... When the bubble appears, DON'T tap: breathe.", hint: 'TAP L, R, L - not on the bubble', durationSec: 8 },
@@ -23,7 +23,7 @@ export const META: Record<string, MicroMeta> = {
 export const MICRO_IDS = Object.keys(META);
 export const POOLS: Partial<Record<ActivityId, string[]>> = {
   bands: ['pushup', 'plank', 'curls', 'burpee', 'squat', 'sprint', 'stretch'],   // hotel room: the seven
-  boulder: ['boulderbeta', 'dyno'],
+  boulder: ['boulderbeta'],   /* the dyno was a different game bolted on the end; bouldering is the beta */
   trailrun: ['runner', 'riverstones'],
   hike: ['sprint', 'stretch', 'riverstones', 'balance'],
   swim: ['swimbreath'],

@@ -69,13 +69,15 @@ export interface BossState {
   /** set while a beam is actually firing, counts down */ beam: number;
   beamY: number;
   hurt: number;                 // flash timer
+  /** the gull swings round to aim its tail at you before a volley, and stays that way while it is dropping */
+  turn: number;
   entering: boolean;
 }
 
 export function makeBoss(kind: BossKind, level: number, difficulty: number): BossState {
   const def = BOSSES[kind];
   const hp = Math.round(def.hp * (0.8 + 0.25 * level) * (0.9 + 0.2 * difficulty));
-  return { def, hp, maxHp: hp, x: 430, y: 240, t: 0, dir: 1, next: 1.6, windup: 0, beam: 0, beamY: 240, hurt: 0, entering: true };
+  return { def, hp, maxHp: hp, x: 430, y: 240, t: 0, dir: 1, next: 1.6, windup: 0, beam: 0, beamY: 240, hurt: 0, turn: 0, entering: true };
 }
 
 /** The body box, in screen space. */
@@ -85,7 +87,7 @@ export function bossBox(b: BossState): Phaser.Geom.Rectangle {
 
 /** One frame of boss behaviour. Returns the projectiles it threw this frame (the scene owns the list). */
 export function stepBoss(b: BossState, dt: number, droneX: number, droneY: number, level: number, hard: number): Proj[] {
-  const out: Proj[] = []; const d = b.def; b.t += dt; if (b.hurt > 0) b.hurt -= dt;
+  const out: Proj[] = []; const d = b.def; b.t += dt; if (b.hurt > 0) b.hurt -= dt; if (b.turn > 0) b.turn -= dt;
   const homeX = 430 - 150;                                   // where it settles after flying in from off screen
   if (b.entering) { b.x += (homeX - b.x) * Math.min(1, 2.4 * dt); if (Math.abs(b.x - homeX) < 2) { b.x = homeX; b.entering = false; } }
 
@@ -125,7 +127,7 @@ export function stepBoss(b: BossState, dt: number, droneX: number, droneY: numbe
       const speed = 150 + 18 * level + 20 * hard;
       if (kind === 'beam') { b.beam = 0.85 + 0.1 * level; b.beamY = droneY; }
       else if (kind === 'swoop') { b.dir = Math.sign(droneY - b.y) || 1; b.y += b.dir * 6; out.push(...spread(b, droneX, droneY, 1, speed * 1.2, 'shard')); }
-      else if (kind === 'spit') out.push(...spread(b, droneX, droneY, d.kind === 'dragon' ? 3 : 4, speed, d.kind === 'dragon' ? 'fire' : 'shard'));
+      else if (kind === 'spit') { if (d.kind === 'gull') b.turn = 0.8; out.push(...spread(b, droneX, droneY, d.kind === 'dragon' ? 3 : 4, speed, d.kind === 'dragon' ? 'fire' : 'shard')); }
       else out.push(...spread(b, droneX, droneY, 2, speed * 0.75, 'minion', HOMING_DEG));
       b.next = Math.max(1.1, d.cadence - 0.25 * level - 0.2 * hard) * (0.85 + Math.random() * 0.3);
     }
@@ -165,15 +167,19 @@ export function drawBoss(g: G, b: BossState, skin: DragonSkin, t: number) {
   const wing = Math.sin(t * 5) * 10, charging = b.windup > 0;
   switch (b.def.kind) {
     case 'gull': {
-      g.fillStyle(PAL.gray2).fillTriangle(x + 4, y - 4, x - 44, y - 12 - wing, x - 10, y + 6);        // far wing
-      g.fillStyle(flash ? PAL.white : PAL.gray1).fillEllipse(x, y, 62, 30);                            // body
-      g.fillStyle(flash ? PAL.white : PAL.white).fillEllipse(x - 4, y + 2, 52, 20);
-      g.fillStyle(PAL.gray2).fillTriangle(x + 2, y - 2, x + 10, y + 26, x - 26, y + 10);               // tail
-      g.fillStyle(flash ? PAL.red : PAL.white).fillEllipse(x + 26, y - 10, 28, 24);                    // head
-      g.fillStyle(PAL.sun1).fillTriangle(x + 38, y - 12, x + 38, y - 4, x + 58, y - 7);                // beak
-      g.fillStyle(PAL.ink).fillRect(x + 28, y - 16, 4, 4);
-      g.fillStyle(PAL.white).fillTriangle(x + 4, y - 6, x - 40, y - 20 + wing, x - 6, y + 2);          // near wing
-      g.fillStyle(PAL.gray1).fillTriangle(x - 10, y - 12 + wing * 0.6, x - 40, y - 20 + wing, x - 14, y - 4);
+      /* it faces the drone, which is off to the left — until it is about to drop something, when it swings its tail round */
+      const away = b.turn > 0 || (b.windup > 0 && b.pending === 'spit');
+      const f = away ? 1 : -1;                                   // f = -1 points the head left, at the drone
+      const X = (dx: number) => x + dx * f;
+      g.fillStyle(PAL.gray2).fillTriangle(X(4), y - 4, X(-44), y - 12 - wing, X(-10), y + 6);       // far wing
+      g.fillStyle(flash ? PAL.white : PAL.gray1).fillEllipse(x, y, 62, 30);                         // body
+      g.fillStyle(PAL.white).fillEllipse(X(-4), y + 2, 52, 20);
+      g.fillStyle(PAL.gray2).fillTriangle(X(2), y - 2, X(10), y + 26, X(-26), y + 10);              // tail
+      g.fillStyle(flash ? PAL.red : PAL.white).fillEllipse(X(26), y - 10, 28, 24);                  // head
+      g.fillStyle(PAL.sun1).fillTriangle(X(38), y - 12, X(38), y - 4, X(58), y - 7);                // beak
+      g.fillStyle(PAL.ink).fillRect(X(28) - 2, y - 16, 4, 4);
+      g.fillStyle(PAL.white).fillTriangle(X(4), y - 6, X(-40), y - 20 + wing, X(-6), y + 2);        // near wing
+      g.fillStyle(PAL.gray1).fillTriangle(X(-10), y - 12 + wing * 0.6, X(-40), y - 20 + wing, X(-14), y - 4);
       break; }
     case 'kaiju': {
       /* built on one grid so the pieces meet: torso x±24 / y-26..+54, head on top of it and offset toward the

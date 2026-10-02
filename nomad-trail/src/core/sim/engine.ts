@@ -304,17 +304,21 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       return { state: s, events: [], minigame: { key: MINIGAME_KEYS.carryon, payload: { game, level: lvl, city: city.id, cityName: city.name, hazard: city.hazard, climate: city.climate, seed: hash32(s.seed, ci, s.day, 99) }, difficulty: diff } }; }
     case 'explore': {
       s.workStreak = 0; events = tickDay(s, rng);
-      const bonus = outdoors && geared; s.energy = clamp(s.energy - (bonus ? 9 : 12), 0, energyCap(s)); s.mood = clamp(s.mood + 7 + (bonus ? 6 : 0), 0, 100);
+      const bonus = outdoors && geared; s.energy = clamp(s.energy - (bonus ? 10 : 14), 0, energyCap(s)); s.mood = clamp(s.mood + 5 + (bonus ? 5 : 0), 0, 100);
       s.log.push({ day: s.day, city: s.cityId, text: bonus ? `You go out with the whole kit. ${city.name} is built for it.` : DAILY.explore });
       if (outdoors && !geared && rng.chance(0.3)) { s.mood = clamp(s.mood - 3, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: STR.log.wrongShoes }); }
-      events.push(...rollEvents(s, 'action', ctx, rngFor(s, 4), 1));
+      /* exploring is the day you go looking for something to happen, so it rolls the action pool twice at full odds
+         (every other action rolls it once, damped by EVENT_RATE). If both come up empty, the city hands you a small
+         good thing anyway: a day out should never read the same as a rest day. */
+      events.push(...rollEvents(s, 'action', ctx, rngFor(s, 4), 2, undefined, 1.35));
+      if (!events.length) events.push(forceEvent(s, outdoors ? 'goodday' : city.coast ? 'gooddaycoast' : 'goodday', rng));
       /* follow-ups: a new animal friend can carry a tick; a shoreline swim can pick up a fin; a Vegas walk can end at a table */
       if (events.some(e => e.id === 'animal') && rngFor(s, 21).chance(0.15)) events.push(forceEvent(s, 'tick', rng, hasTag(s, 'firstaid')));
       if (events.some(e => e.id === 'oceanswim') && rngFor(s, 22).chance(0.1)) events.push(forceEvent(s, 'shark', rng));
       if (city.casino && s.money > CASINO_MIN && !hasFlag(s, 'casino_' + s.day) && rngFor(s, 23).chance(0.3)) { setFlag(s, 'casino_' + s.day, true); events.push(forceEvent(s, 'casinonight', rng)); checkEnding(s); return { state: s, events, minigame: { key: MINIGAME_KEYS.casino, payload: { money: s.money, cityName: city.name, seed: hash32(s.seed, s.day, 88) }, difficulty: 0.5 } }; }
       break; }
     case 'rest': {
-      s.workStreak = 0; events = tickDay(s, rng, { rest: true }); s.energy = clamp(s.energy + 28, 0, energyCap(s)); s.mood = clamp(s.mood + 2, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: DAILY.rest });
+      s.workStreak = 0; events = tickDay(s, rng, { rest: true }); s.energy = clamp(s.energy + 20, 0, energyCap(s)); s.mood = clamp(s.mood + 2, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: DAILY.rest });
       break; }
     case 'laundry': {
       if (locked) return { state, events: [], error: 'The clothes are in the suitcase. The suitcase is somewhere else.' };

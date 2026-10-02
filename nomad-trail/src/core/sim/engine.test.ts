@@ -313,7 +313,10 @@ describe('city loop, minigames, endings', () => {
   it('no clothes packed: allowed, one outfit, dirty from day two, laundry only buys a day', () => {
     const s0 = packed(shelfPack(['laptopkit', 'toiletries'])!); expect(s0.maxClothes).toBe(0); expect(s0.cleanClothes).toBe(0);
     let s = hop(s0); s = { ...s, day: 5, mood: 80 };
-    const a = Sim.cityAction(s, 'explore').state; expect(a.dirtyDays).toBe(1); expect(a.mood).toBeLessThan(s.mood + 7);   // explore is +7 mood; dirt eats into it
+    /* the claim is that dirt costs mood, so measure it against the same day in clean clothes rather than against a
+       fixed number: explore's own mood swing moves whenever the action is tuned */
+    const clean = Sim.cityAction({ ...s, maxClothes: 10, cleanClothes: 10 }, 'explore').state;
+    const a = Sim.cityAction(s, 'explore').state; expect(a.dirtyDays).toBe(1); expect(a.mood).toBeLessThan(clean.mood);
     const b = Sim.cityAction(a, 'rest').state; expect(b.dirtyDays).toBe(2); expect(b.mood).toBeLessThan(a.mood + 2);
     const r = Sim.cityAction(b, 'laundry'); const done = Sim.applyMinigameResult(r.state, 'Laundry', { score: 100, perfect: true, failed: false }).state;
     expect(done.cleanClothes).toBe(1); expect(Sim.cityAction(done, 'rest').state.dirtyDays).toBe(0); expect(Sim.cityAction(Sim.cityAction(done, 'rest').state, 'rest').state.dirtyDays).toBe(1);
@@ -450,10 +453,11 @@ describe('round 3: money, weekends, streaks, weight, outdoors, radon', () => {
     let s = bare; for (let i = 0; i < 4; i++) s = Sim.cityAction(s, 'rest').state; const fifth = Sim.cityAction(s, 'rest'); expect(fifth.events.some(e => e.id === 'radonheadache')).toBe(true);
     const lisbon = Sim.cityAction({ ...inCity([], 'lisbon', 5), stayDays: 0 }, 'rest'); expect(lisbon.events.some(e => e.id.startsWith('radon'))).toBe(false);
   });
-  it('the headless first-timer fails 35 to 45% with broke under a tenth of failures; the learned player wins', () => {
+  it('the headless first-timer fails 45 to 65% with broke under a sixth of failures; the learned player still wins', () => {
     const outs = Array.from({ length: 120 }, (_, i) => playRun(1000 + i * 7919, 'random'));
     const fails = outs.filter(o => o.ending !== 'win'); const broke = fails.filter(o => o.ending === 'broke').length;
-    expect(fails.length / outs.length).toBeGreaterThan(0.25); expect(fails.length / outs.length).toBeLessThan(0.55); expect(broke / Math.max(1, fails.length)).toBeLessThan(0.15);
+    /* round 97: Cody asked for a harder game, so the band moved up with it — dearer travel and slower recovery */
+    expect(fails.length / outs.length).toBeGreaterThan(0.45); expect(fails.length / outs.length).toBeLessThan(0.70); expect(broke / Math.max(1, fails.length)).toBeLessThan(0.15);
     const smart = Array.from({ length: 30 }, (_, i) => playRun(1000 + i * 7919, 'smart')); expect(smart.filter(o => o.ending === 'win').length / 30).toBeGreaterThan(0.7);
   });
 });

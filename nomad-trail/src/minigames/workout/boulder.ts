@@ -6,7 +6,7 @@ import { META } from './pools';
 
 export class BoulderBeta extends Micro {
   readonly id = 'boulderbeta'; readonly word = META.boulderbeta.word; readonly instr = META.boulderbeta.instr; readonly durationSec = META.boulderbeta.durationSec;
-  private holds: { x: number; y: number }[] = []; private seq: number[] = []; private showing = true; private showIdx = -1; private input: number[] = []; private grip = 1; private rounds = 0; private need = 2; private correct = 0; private dyno = false; private ph = 0; private caught = false;
+  private holds: { x: number; y: number }[] = []; private seq: number[] = []; private showing = true; private showIdx = -1; private input: number[] = []; private grip = 1; private rounds = 0; private need = 4;   /* four problems, not two: it was over before it started */ private correct = 0; private dyno = false; private ph = 0; private caught = false;
   protected begin() {
     const cols = [70, 140, 210, 280], rows = [140, 230, 320, 410]; this.holds = []; for (const y of rows) for (const x of cols) this.holds.push({ x: x + (this.ctx.rng() * 20 - 10), y });
     this.ctx.athlete.show(true).pose(2);
@@ -14,11 +14,11 @@ export class BoulderBeta extends Micro {
       const show = () => { this.showIdx = k; k++; if (k <= this.seq.length) this.after(520 / this.ctx.speed, show); else this.after(300, () => { this.showing = false; this.showIdx = -1; this.grip = 1; }); }; this.after(300, show); };
     const tapHold = (i: number) => { if (this.showing || this.dyno) return; this.input.push(i); const pos = this.input.length - 1; if (this.seq[pos] !== i) { this.pop(this.holds[i].x, this.holds[i].y - 30, 'WRONG', PAL.red); this.ctx.frame.shake(120, 0.005); this.rounds++; this.ctx.frame.setProgress(`${this.correct}/${this.need}`); if (this.rounds >= this.need) this.after(300, () => this.finish(this.scoreNow())); else startRound(); return; }
       this.ctx.athlete.at(this.holds[i].x, this.holds[i].y + 40); this.pop(this.holds[i].x, this.holds[i].y - 30, 'OK');
-      if (this.input.length === this.seq.length) { this.correct++; this.rounds++; this.ctx.frame.setProgress(`${this.correct}/${this.need}`); if (this.rounds >= this.need) { this.dyno = true; this.ph = 0; } else startRound(); } };
+      if (this.input.length === this.seq.length) { this.correct++; this.rounds++; this.ctx.frame.setProgress(`${this.correct}/${this.need}`); if (this.rounds >= this.need) this.after(400, () => this.finish(this.scoreNow())); else startRound(); } };   /* no dyno finale: this is the memory problem, start to finish */
     this.on('pointerdown', (p: any) => { if (this.dyno) { if (this.caught) return; this.caught = true; const up = Math.sin(this.ph); const ok = up > 1 - (0.3 * this.ctx.window + 0.1); this.pop(W / 2, 100, ok ? 'DYNO!' : 'SLIP', ok ? PAL.neon : PAL.red); if (ok) this.correct += 0.5; this.after(400, () => this.finish(this.scoreNow())); return; }
       let best = -1, bd = 1e9; this.holds.forEach((h, i) => { const d = (h.x - p.x) ** 2 + (h.y - p.y) ** 2; if (d < bd) { bd = d; best = i; } }); if (bd < 40 * 40) tapHold(best); });
     startRound();
-    this.loop(dt => { if (!this.showing && !this.dyno) { this.grip -= dt * (0.16 + 0.08 * this.rounds) * this.ctx.speed; if (this.grip <= 0) { this.pop(W / 2, 480, 'PUMPED OUT', PAL.red); this.rounds++; if (this.rounds >= this.need) { this.after(300, () => this.finish(this.scoreNow())); return; } startRound(); } }
+    this.loop(dt => { if (!this.showing && !this.dyno) { this.grip -= dt * (0.13 + 0.035 * this.rounds) * this.ctx.speed;   /* the old ramp made the fourth problem unplayable */ if (this.grip <= 0) { this.pop(W / 2, 480, 'PUMPED OUT', PAL.red); this.rounds++; if (this.rounds >= this.need) { this.after(300, () => this.finish(this.scoreNow())); return; } startRound(); } }
       if (this.dyno) this.ph += 2.6 * this.ctx.speed * dt;
       this.g.clear(); this.g.fillStyle(PAL.gray0).fillRect(0, 26, W, 614); for (let i = 0; i < 9; i++) this.g.fillStyle(PAL.night3, 0.5).fillRect(0, 60 + i * 64, W, 5);
       this.holds.forEach((h, i) => { const lit = this.showing && this.seq[this.showIdx] === i; const done = !this.showing && this.input.includes(i); this.drawHold(h.x, h.y, i % 4, lit ? PAL.sun2 : done ? PAL.grass1 : PAL.night3, lit ? PAL.sun1 : done ? PAL.grass0 : PAL.night2); });

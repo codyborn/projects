@@ -29,7 +29,10 @@ export class CityScene extends Phaser.Scene {
     /* the plate is cut to the labels, not to a per-character guess: at 13 px a character it was short for
        16 of 39 cities, and ORANGE COUNTY and SCOTTISH HIGHLANDS ran right off the end of it */
     { const name = txt(this, 14, 96, (city?.name ?? run.cityId).toUpperCase(), 16, PAL.white).setDepth(3);
-      const sub = txt(this, 14, 124, `${city?.country ?? ''} · stay day ${run.stayDays + 1}${Sim.dullKnives(run) ? ' · dull knife' : ''}`, 8, PAL.gray2).setDepth(3);
+      /* how far into the minimum stay you are, so MOVE ON stops being a guess */
+      const stay = run.stayDays + 1, need = city?.minStay ?? 0;
+      const stayTxt = stay >= need ? `day ${stay} · free to move on` : `day ${stay} of ${need}`;
+      const sub = txt(this, 14, 124, `${city?.country ?? ''} · ${stayTxt}${Sim.dullKnives(run) ? ' · dull knife' : ''}`, 8, PAL.gray2).setDepth(3);
       const plateW = Math.min(348, Math.max(150, 16 + Math.max(name.width, sub.width)));
       const plate = this.add.graphics().setDepth(2); plate.fillStyle(PAL.night0, 0.82); plate.fillRect(6, 90, plateW, 48); plate.fillStyle(PAL.sun1, 1); plate.fillRect(6, 90, 3, 48);
       (plate as any).__rect = { x: 6, y: 90, w: plateW, h: 48 };   /* the text-fit audit reads this */ }

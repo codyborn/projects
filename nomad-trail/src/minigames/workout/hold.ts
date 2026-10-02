@@ -61,24 +61,24 @@ export class Stretch extends Micro {
   release() { this.holding = false; }
   move(x: number) {
     if (!this.holding) return; const dx = x - this.last; this.last = x; this.speed = Math.abs(dx) / 0.016;
-    if (this.speed > this.limit) { this.jerks++; this.pop(W / 2, 200, 'TOO FAST', PAL.red); this.ctx.frame.shake(100, 0.004); this.pos = clamp(this.pos - this.dir * 0.3, 0, 1); return; }   // a jerk costs 30% of the pass, not the whole slider
+    if (this.speed > this.limit) { this.jerks++; this.pop(W / 2, 200, 'TOO FAST', PAL.red); this.ctx.frame.shake(100, 0.004); this.pos = clamp(this.pos - this.dir * 0.2, 0, 1); return; }   // a jerk costs 20% of the pass, not the whole slider
     this.pos = clamp(this.pos + dx / (W - 80), 0, 1);
     if ((this.dir > 0 && this.pos >= 1) || (this.dir < 0 && this.pos <= 0)) { this.passes++; this.dir *= -1; this.pop(W / 2, 200, 'AHH'); this.ctx.frame.setProgress(`${this.passes}/${this.need}`); if (this.passes >= this.need) this.after(300, () => this.finish(this.scoreNow())); }
   }
-  private limit = 160;
+  private limit = 260;   /* px a second before it counts as a jerk: 160 tripped on an ordinary drag */
   protected begin() {
-    const y = 250; this.ctx.athlete.at(W / 2, 380).pose(3).show(true); this.limit = 160 * (0.6 + 0.4 * this.ctx.window) * (1 / this.ctx.speed); this.ctx.frame.setHint('DRAG slowly · lifting pauses');
+    const y = 250; this.ctx.athlete.at(W / 2, 380).pose(3).show(true); this.limit = 260 * (0.75 + 0.25 * this.ctx.window) * (1 / this.ctx.speed); this.ctx.frame.setHint('DRAG slowly · lifting pauses');
     this.on('pointerdown', (p: any) => this.press(p.x)); this.on('pointerup', () => this.release()); this.on('pointermove', (p: any) => this.move(p.x));
     this.key('keydown-RIGHT', () => { this.pos = clamp(this.pos + 0.08, 0, 1); }); this.key('keydown-LEFT', () => { this.pos = clamp(this.pos - 0.08, 0, 1); });
     this.loop(dt => { this.speed *= 0.8;
       // lifting the finger does NOT reset the stretch: the slider slips back toward the start of this pass at 25%/s until you press again
-      if (!this.holding && this.passes < this.need) { const start = this.dir > 0 ? 0 : 1; this.pos = start + (this.pos - start) * Math.max(0, 1 - 0.25 * dt); }
+      if (!this.holding && this.passes < this.need) { const start = this.dir > 0 ? 0 : 1; this.pos = start + (this.pos - start) * Math.max(0, 1 - 0.15 * dt); }
       this.g.clear(); this.backdrop(430, 450); const x0 = 40, w = W - 80; this.g.fillStyle(PAL.ink).fillRect(x0, y, w, 12); this.g.fillStyle(this.holding ? PAL.sea2 : PAL.sea1).fillRect(x0, y, this.pos * w, 12); this.g.fillStyle(PAL.white).fillRect(x0 + this.pos * w - 5, y - 6, 10, 24);
       this.g.fillStyle(PAL.gray2).fillTriangle(this.dir > 0 ? W - 30 : 30, y + 6, this.dir > 0 ? W - 44 : 44, y - 2, this.dir > 0 ? W - 44 : 44, y + 14);
       const f = clamp(this.speed / this.limit, 0, 1); this.g.fillStyle(PAL.ink).fillRect(x0, 300, w, 8); this.g.fillStyle(f > 0.85 ? PAL.red : f > 0.6 ? PAL.sun1 : PAL.neon).fillRect(x0, 300, w * f, 8); this.ctx.athlete.sprite.scaleX = 1 + this.pos * 0.25;
       if (!this.holding) this.ctx.frame.setProgress(`${this.passes}/${this.need} · paused`); else this.ctx.frame.setProgress(`${this.passes}/${this.need}`); });
   }
-  protected scoreNow() { return clamp(this.passes / this.need - this.jerks * 0.25, 0, 1); }
+  protected scoreNow() { return clamp(this.passes / this.need - this.jerks * 0.15, 0, 1); }
   destroy() { this.ctx.athlete.sprite.scaleX = 1; super.destroy(); }
 }
 
@@ -91,15 +91,15 @@ export class BalanceBoard extends Micro {
     const cx = W / 2, cy = 330; this.ctx.athlete.at(cx, cy - 30).pose(0).show(true);
     this.on('pointerdown', (p: any) => { this.hL = p.x < W / 2; this.hR = !this.hL; }); this.on('pointermove', (p: any) => { if (p.isDown) { this.hL = p.x < W / 2; this.hR = !this.hL; } }); this.on('pointerup', () => { this.hL = this.hR = false; });
     this.key('keydown-LEFT', () => { this.hL = true; }); this.key('keyup-LEFT', () => { this.hL = false; }); this.key('keydown-RIGHT', () => { this.hR = true; }); this.key('keyup-RIGHT', () => { this.hR = false; });
-    this.loop(dt => { this.total += dt; if (this.t > this.nextG) { this.gust = (this.ctx.rng() < 0.5 ? -1 : 1) * (120 + this.ctx.rng() * 120) * this.ctx.speed; this.gustT = 0.5 + this.ctx.rng() * 0.5; this.nextG = this.t + 0.9 + this.ctx.rng() * 0.9; }
+    this.loop(dt => { this.total += dt; if (this.t > this.nextG) { this.gust = (this.ctx.rng() < 0.5 ? -1 : 1) * (95 + this.ctx.rng() * 95) * this.ctx.speed; this.gustT = 0.45 + this.ctx.rng() * 0.45; this.nextG = this.t + 1.2 + this.ctx.rng() * 1.0; }
       if (this.gustT > 0) this.gustT -= dt; const wind = this.gustT > 0 ? this.gust : 0; const lean = (this.hL ? -1 : 0) + (this.hR ? 1 : 0); this.v += (wind + lean * 190 + this.x * 1.6) * dt; this.v *= 0.94; this.x = clamp(this.x + this.v * dt, -110, 110);
-      const okB = Math.abs(this.x) < 30; if (!okB) this.off += dt; if (Math.abs(this.x) >= 110) { this.finish(this.scoreNow() * 0.5); return; }
+      const okB = Math.abs(this.x) < 46;   /* the steady band: 30 px of 220 asked for more than the board can give */ if (!okB) this.off += dt; if (Math.abs(this.x) >= 110) { this.finish(this.scoreNow() * 0.5); return; }
       this.g.clear(); this.backdrop(400, 420); this.g.fillStyle(PAL.ink).fillRect(cx - 100, cy + 40, 200, 10); this.g.fillStyle(PAL.earth2).fillRect(cx - 100, cy + 40, 200, 8); this.g.fillStyle(PAL.gray1).fillTriangle(cx - 20, cy + 70, cx, cy + 48, cx + 20, cy + 70);
       this.g.fillStyle(okB ? PAL.neon : PAL.red).fillCircle(cx + this.x, cy + 30, 10); this.ctx.athlete.at(cx + this.x, cy - 30); this.ctx.athlete.sprite.angle = this.x * 0.15;
       if (this.gustT > 0) { this.g.lineStyle(1, PAL.sky3, 0.8); for (let k = 0; k < 7; k++) { const yy = 60 + ((k * 61 + this.t * 300) % 500); const xx = ((k * 97 + this.t * 600 * Math.sign(wind)) % W + W) % W; this.g.lineBetween(xx, yy, xx + 24 * Math.sign(wind), yy); } }
       this.ctx.frame.setProgress(okB ? 'STEADY' : 'LEAN!'); });
   }
-  protected scoreNow() { return clamp(1 - this.off / Math.max(0.5, this.total) * 1.6, 0, 1) * clamp(this.total / (this.durationSec * 0.7), 0, 1); }
+  protected scoreNow() { return clamp(1 - this.off / Math.max(0.5, this.total) * 1.15, 0, 1) * clamp(this.total / (this.durationSec * 0.7), 0, 1); }
   destroy() { this.ctx.athlete.sprite.angle = 0; super.destroy(); }
 }
 

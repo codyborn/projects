@@ -7,7 +7,7 @@ import { launchOnTop } from '../ui/overlay';
 import { buildTravelScape, type TravelScape } from '../art/skyline';
 /** Travel: 2.5 s side-scrolling leg, then resolves the leg in the sim, shows baggage beat + events, then City. */
 export class TravelScene extends Phaser.Scene {
-  static KEY = 'Travel'; private scape?: TravelScape; private craft?: Phaser.GameObjects.Container; private moving = true; private t0 = 0; private pending?: { res: ReturnType<typeof Sim.travelTo>; beats: string[] };
+  static KEY = 'Travel'; private scape?: TravelScape; private craft?: Phaser.GameObjects.Container; private moving = true; private t0 = 0; private pending?: { res: ReturnType<typeof Sim.travelTo> };
   constructor() { super(TravelScene.KEY); }
   create(data: { leg: Leg }) {
     this.moving = false; this.cameras.main.fadeIn(200);
@@ -20,14 +20,13 @@ export class TravelScene extends Phaser.Scene {
     this.add.rectangle(180, 71, 360, 52, PAL.night0, 0.45).setOrigin(0.5);
     txt(this, 180, 60, `${from?.name ?? run.cityId} → ${to?.name ?? data.leg.to}`, 11, PAL.white, { align: 'center', wrap: 340 }).setOrigin(0.5);
     txt(this, 180, 82, `${data.leg.days} day${data.leg.days > 1 ? 's' : ''} by ${data.leg.transport}`, 10, PAL.gray2).setOrigin(0.5);
-    const tip = txt(this, 180, 560, this.tipFor(data.leg), 9, PAL.sun3, { align: 'center', wrap: 300 }).setOrigin(0.5); this.tweens.add({ targets: tip, alpha: 0.6, duration: 800, yoyo: true, repeat: -1 });
     /* the leg resolves up front so the gate dash can run before the vehicle leaves: the taxi died on the way to the airport,
        so the sprint through the terminal belongs before the flight, not after it */
     this.settle(data.leg);
     const dash = this.pending?.res.minigame;
     if (dash) this.runDash(dash, () => this.depart(data.leg)); else this.depart(data.leg);
   }
-  /** The crossing itself: engine note, one pass out of the frame, then the arrival beats. */
+  /** The crossing itself: engine note, one pass out of the frame, then whatever the leg threw up. */
   private depart(leg: Leg) {
     Audio.playLoop('travel'); Audio.playSfx(leg.transport === 'flight' ? 'plane' : leg.transport === 'train' ? 'train' : 'whoosh');
     this.moving = true; this.t0 = this.time.now;
@@ -44,26 +43,21 @@ export class TravelScene extends Phaser.Scene {
     launchOnTop(this, dash.key, launch); this.scene.pause();
   }
   update(_t: number, dt: number) { if (!this.moving || !this.scape) return; this.scape.update(dt); const p = (this.time.now - this.t0) / 2500; this.scape.setProgress(0.5 - 0.5 * Math.cos(Math.PI * Math.min(1, p))); }
-  private tipFor(leg: Leg) {
-    const tips = ['Window seat. Always.', 'The bag is heavier than it was this morning. It is not.', 'Somewhere below, a laundromat you will never see.', 'You reread the Airbnb confirmation. Twice.', 'Jet lag is just time zones with feelings.'];
-    if (leg.transport === 'trek') return 'One foot, then the other one.'; if (leg.transport === 'campervan') return 'The van is the hotel. The hotel is the van.'; return tips[Math.floor(Math.random() * tips.length)];
-  }
-  /** Run the leg through the sim up front and keep the arrival beats: the gate dash needs its answer before the vehicle moves. */
+  /** Run the leg through the sim up front: the gate dash needs its answer before the vehicle moves. */
   private settle(leg: Leg) {
     const run = getRun(this); const before = { locked: run.bagLockedDays, wheel: run.wheelBroken };
     const res = Sim.travelTo(run, leg.to); putRun(this, res.state);
-    const after = res.state; const beats: string[] = [];
-    if (leg.transport === 'flight') { if (after.wheelBroken && !before.wheel) beats.push('Your suitcase arrives on three wheels.'); else if (after.bagLockedDays > before.locked) beats.push(`Bag: delayed ${after.bagLockedDays} day${after.bagLockedDays > 1 ? 's' : ''}. Clothes, kitchen and gym are on hold.`); else beats.push('Bag: on the belt. Small miracle.'); }
-    this.pending = { res, beats };
+    /* no baggage bulletin and no travel aphorism: the HUD already says the bag is delayed, and the trip reads better
+       as a picture of a plane crossing a landscape than as two lines of text over it */
+    void before; this.pending = { res };
   }
-  /** Landed: the baggage beat, then the leg's events, then the city. */
+  /** Landed: the leg's events, then the city. */
   private arrive(_leg: Leg) {
-    this.moving = false; const beats = this.pending?.beats ?? []; const events = [...(this.pending?.res.events ?? [])];
-    const showBeats = (i: number, then: () => void) => { if (i >= beats.length) return then(); const t = txt(this, 180, 470, beats[i], 11, PAL.sun2, { align: 'center', wrap: 300 }).setOrigin(0.5).setAlpha(0); this.tweens.add({ targets: t, alpha: 1, y: 462, duration: 250 }); this.time.delayedCall(1500, () => showBeats(i + 1, then)); };
+    this.moving = false; const events = [...(this.pending?.res.events ?? [])];
     const runEvents = () => { const id = events.shift();
       if (!id) { const end = Sim.checkEnding(getRun(this)); if (end) { const r = getRun(this); r.ending = end; r.phase = 'ended'; putRun(this, r); return this.scene.start('Credits', { next: 'End' }); } return this.scene.start('City', { arrived: true }); }
       launchOnTop(this, 'Event', { eventId: id, onDone: () => { this.scene.stop('Event'); runEvents(); } }); };
-    showBeats(0, runEvents);
+    runEvents();
   }
 }
 export default TravelScene;

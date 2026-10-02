@@ -1,5 +1,5 @@
 // Tiny pixel icons for the city action buttons: 'ico_drone' (quadcopter, 14x10), 'ico_switch' (handheld, 14x10),
-// 'ico_casino' (two chips, 14x10), 'ico_map' (globe, 12x12).
+// 'ico_casino' (poker chip, 10x10), 'ico_map' (globe, 12x12).
 // buildIcons(scene) registers them once per texture manager; use with scene.add.image(x, y, 'ico_drone').setScale(2).
 import Phaser from 'phaser';
 import { PAL } from '../core/palette';
@@ -50,17 +50,17 @@ export function buildIcons(scene: Phaser.Scene) {
     'RRRGGGGGGGGBBB',
     '..............',
     '..............'], { R: PAL.red, B: PAL.sky1, G: PAL.gray0, S: PAL.neon, D: PAL.ink, A: PAL.ink });
-  tex(scene, 'ico_casino', [
-    '..............',
-    '..............',
-    '.WWWW.........',
-    'WRRRRW..www...',
-    'WRWWRW.wdddw..',
-    'WRRRRW.wdddw..',
-    '.WWWW...www...',
-    '..............',
-    '..............',
-    '..............'], { W: PAL.white, R: PAL.red, w: PAL.gray2, d: PAL.ink });
+  tex(scene, 'ico_casino', [          // a poker chip, face on: white edge spots round a red rim and a dark inlay
+    '...WWWW...',
+    '.WWRRRRWW.',
+    '.WRRWWRRW.',
+    'WRWWddWWRW',
+    'WRWddddWRW',
+    'WRWddddWRW',
+    'WRWWddWWRW',
+    '.WRRWWRRW.',
+    '.WWRRRRWW.',
+    '...WWWW...'], { W: PAL.white, R: PAL.red, d: PAL.ink });
   tex(scene, 'ico_map', [
     '....OOOO....',
     '..OOWWGGOO..',

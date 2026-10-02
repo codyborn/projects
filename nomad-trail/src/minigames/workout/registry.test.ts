@@ -3,7 +3,7 @@ import { META, MICRO_IDS, POOLS, DENSE_CITIES, PINNACLE_CITIES, WOODCHOP_CITIES,
 describe('workout micro-game pools', () => {
   it('every pool entry has metadata; every micro has a name, a command word, an instruction and a 4 to 9 s duration', () => {
     for (const [act, ids] of Object.entries(POOLS)) for (const id of ids!) expect(META[id], `${act}:${id}`).toBeDefined();
-    for (const id of MICRO_IDS) { const m = META[id]; expect(m.name.length).toBeGreaterThan(2); expect(m.word.endsWith('!')).toBe(true); expect(m.instr.length).toBeGreaterThan(10); if (!['pinnacle', 'woodchop'].includes(id)) { expect((m.hint ?? '').length, `${id} hint`).toBeGreaterThan(6); expect((m.hint ?? '').length, `${id} hint length`).toBeLessThanOrEqual(32); } expect(m.durationSec).toBeGreaterThanOrEqual(4); expect(m.durationSec).toBeLessThanOrEqual(id === 'cityrun' ? 28 : id === 'burpee' ? 16 : id === 'runner' ? 14 : id === 'pinnacle' ? 3600 : id === 'woodchop' ? 22 : id === 'pose' ? 40 : 9); }   // City Run (25 s), Wood Chop (22 s) and Yoga (40 s) are single games; the Pinnacle has no clock at all (it ends at the summit or in the fog)
+    for (const id of MICRO_IDS) { const m = META[id]; expect(m.name.length).toBeGreaterThan(2); expect(m.word.endsWith('!')).toBe(true); expect(m.instr.length).toBeGreaterThan(10); if (!['pinnacle', 'woodchop'].includes(id)) { expect((m.hint ?? '').length, `${id} hint`).toBeGreaterThan(6); expect((m.hint ?? '').length, `${id} hint length`).toBeLessThanOrEqual(32); } expect(m.durationSec).toBeGreaterThanOrEqual(4); expect(m.durationSec).toBeLessThanOrEqual(id === 'cityrun' ? 28 : id === 'burpee' ? 16 : id === 'runner' ? 14 : id === 'pinnacle' ? 3600 : id === 'woodchop' ? 22 : id === 'pose' ? 40 : id === 'boulderbeta' ? 20 : 9); }   // City Run (25 s), Wood Chop (22 s), Yoga (40 s) and Boulder Beta (20 s) are single games; the Pinnacle has no clock at all (it ends at the summit or in the fog)
     expect(MICRO_IDS.length).toBeGreaterThanOrEqual(14); expect(META.kettlebell).toBeUndefined(); expect(MICRO_IDS.includes('kettlebell')).toBe(false); expect(MICRO_IDS.includes('pace')).toBe(false);
   });
   it('hotel room and hike sessions chain THREE different games; every other activity is one game; unknown activities use the hotel room', () => {
@@ -15,7 +15,8 @@ describe('workout micro-game pools', () => {
   });
   it('the game matches the real workout', () => {
     expect(POOLS.bands).toEqual(['pushup', 'plank', 'curls', 'burpee', 'squat', 'sprint', 'stretch']);
-    expect(POOLS.boulder).toEqual(['boulderbeta', 'dyno']); expect(POOLS.trailrun).toEqual(['runner', 'riverstones']); expect(POOLS.hike).toEqual(['sprint', 'stretch', 'riverstones', 'balance']); expect(META.pace).toBeUndefined();
+    expect(POOLS.boulder).toEqual(['boulderbeta']);   /* the dyno came off the end of the bouldering problem */
+    expect(POOLS.trailrun).toEqual(['runner', 'riverstones']); expect(POOLS.hike).toEqual(['sprint', 'stretch', 'riverstones', 'balance']); expect(META.pace).toBeUndefined();
     expect(POOLS.swim).toEqual(['swimbreath']); for (const a of ['yoga', 'surf', 'ski'] as const) expect(POOLS[a]).toEqual(['balance', 'pose']);
   });
   it('dense cities turn a run into City Run (Frogger); other cities keep the trail runner; the pick is seeded', () => {

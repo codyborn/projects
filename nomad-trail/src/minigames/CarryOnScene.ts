@@ -76,7 +76,8 @@ export class CarryOnScene extends Phaser.Scene {
     this.cart.controls.forEach((line, i) => card.add(txt(this, W / 2, SCREEN.y + 196 + i * 18, line, 9, PAL.gray2)));
     const go = txt(this, W / 2, SCREEN.bottom - 30, 'PRESS START · A · OR TAP THE SCREEN', 9, PAL.neon); card.add(go); this.tweens.add({ targets: go, alpha: 0.35, yoyo: true, repeat: -1, duration: 600 });
     const tap = (p: Phaser.Input.Pointer) => { if (Phaser.Geom.Rectangle.Contains(SCREEN, p.x, p.y)) this.beginPlay(); }; this.input.on('pointerdown', tap); (this as any)._tapToStart = tap;
-    this.frame.hud(); this.frame.setProgress(''); this.frame.setTimer('');
+    /* no frame HUD strip here: the console *is* the frame, and a second title bar above the bezel read as a seam */
+    this.frame.setProgress(''); this.frame.setTimer('');
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.cart?.destroy(); this.cart = undefined; try { this.cameras.remove(this.gameCam); } catch { /* */ } });
   }
 
@@ -86,19 +87,21 @@ export class CarryOnScene extends Phaser.Scene {
   private drawBezel() {
     const g = this.add.graphics().setDepth(20);
     // body
-    g.fillStyle(PAL.gray0).fillRect(0, 28, W, SCREEN.y - 28).fillRect(0, SCREEN.bottom, W, H - SCREEN.bottom);
-    g.fillStyle(PAL.gray1, 0.35).fillRect(0, 28, W, 2); g.fillStyle(PAL.ink).fillRect(0, H - 3, W, 3);
+    g.fillStyle(PAL.gray0).fillRect(0, 0, W, SCREEN.y).fillRect(0, SCREEN.bottom, W, H - SCREEN.bottom);
+    g.fillStyle(PAL.gray1, 0.35).fillRect(0, 0, W, 2); g.fillStyle(PAL.ink).fillRect(0, H - 3, W, 3);
     // screen frame
     // screen frame: bands above and below only (the screen itself is the cartridge's, depth 2..19)
     g.fillStyle(PAL.night0).fillRect(0, SCREEN.y - 10, W, 10).fillRect(0, SCREEN.bottom, W, 10); g.fillStyle(PAL.ink).fillRect(0, SCREEN.y - 2, W, 2).fillRect(0, SCREEN.bottom, W, 2);
     g.fillStyle(PAL.gray1, 0.5).fillRect(0, SCREEN.y - 10, W, 1).fillRect(0, SCREEN.bottom + 9, W, 1);
     // label strip
-    txt(this, 12, 44, 'NOMAD BOY', 10, PAL.gray2, 'left').setDepth(21); txt(this, 12, 60, this.cityName.toUpperCase().slice(0, 18), 9, PAL.gray1, 'left').setDepth(21);
-    this.led = this.add.arc(W - 20, 44, 5, 0, 360, false, PAL.red).setDepth(21); txt(this, W - 34, 44, 'PWR', 8, PAL.gray1, 'right').setDepth(21);
-    this.heartsG = this.add.graphics().setDepth(21); this.statusT = txt(this, W - 12, 60, '', 10, PAL.sun2, 'right').setDepth(21);
+    /* the cartridge names itself on the title card; the bezel carries the console, the city and the status */
+    txt(this, 12, 30, 'NOMAD BOY', 10, PAL.gray2, 'left').setDepth(21);
+    txt(this, 12, 50, this.cityName.toUpperCase().slice(0, 18), 9, PAL.gray1, 'left').setDepth(21);
+    this.led = this.add.arc(W - 20, 30, 5, 0, 360, false, PAL.red).setDepth(21); txt(this, W - 34, 30, 'PWR', 8, PAL.gray1, 'right').setDepth(21);
+    this.heartsG = this.add.graphics().setDepth(21); this.statusT = txt(this, W - 12, 50, '', 10, PAL.sun2, 'right').setDepth(21);
     // speaker grille
-    for (let i = 0; i < 5; i++) g.fillStyle(PAL.ink, 0.5).fillRect(W - 60 + i * 6, 86, 2, 12);
-    txt(this, 12, 92, 'HANDHELD · TAKE IT ANYWHERE', 8, PAL.gray1, 'left').setDepth(21).setAlpha(0.7);
+    for (let i = 0; i < 5; i++) g.fillStyle(PAL.ink, 0.5).fillRect(W - 60 + i * 6, 84, 2, 14);
+    txt(this, 12, 88, 'HANDHELD · TAKE IT ANYWHERE', 8, PAL.gray1, 'left').setDepth(21).setAlpha(0.7);
     // START / SELECT pills
     for (const [r, label] of [[LAYOUT.select, 'SELECT'], [LAYOUT.start, 'START']] as [Phaser.Geom.Rectangle, string][]) { panel(this, r.x, r.y, r.width, r.height, PAL.gray1, PAL.gray2, PAL.ink).setDepth(21); txt(this, r.centerX, r.bottom + 8, label, 7, PAL.gray2).setDepth(21); }
   }
@@ -119,7 +122,7 @@ export class CarryOnScene extends Phaser.Scene {
     }
     if (!this.children.getByName('lblA')) { txt(this, L.a.x, L.a.y + L.a.r + 10, 'A', 9, PAL.gray2).setDepth(25).setName('lblA'); txt(this, L.b.x, L.b.y + L.b.r + 10, 'B', 9, PAL.gray2).setDepth(25).setName('lblB'); }
   }
-  private drawHearts(n: number, max: number) { const g = this.heartsG; g.clear(); for (let i = 0; i < max; i++) { const x = W / 2 - 20 + i * 14, y = 44; g.fillStyle(i < n ? PAL.red : PAL.night1).fillRect(x - 5, y - 3, 4, 3).fillRect(x + 1, y - 3, 4, 3).fillRect(x - 6, y, 12, 3).fillRect(x - 4, y + 3, 8, 2).fillRect(x - 2, y + 5, 4, 2); } }
+  private drawHearts(n: number, max: number) { const g = this.heartsG; g.clear(); for (let i = 0; i < max; i++) { const x = W / 2 - 20 + i * 14, y = 32; g.fillStyle(i < n ? PAL.red : PAL.night1).fillRect(x - 5, y - 3, 4, 3).fillRect(x + 1, y - 3, 4, 3).fillRect(x - 6, y, 12, 3).fillRect(x - 4, y + 3, 8, 2).fillRect(x - 2, y + 5, 4, 2); } }
   private onPadPress(k: PadKey) {
     if ((k === 'start' || k === 'a') && (this.frame as any).continueHandler) { (this.frame as any).continueHandler(); return; }   // result card: START / A = CONTINUE
     if ((k === 'start' || k === 'a') && !this.started && this.titleCard) { this.beginPlay(); return; }
