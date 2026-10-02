@@ -21,7 +21,7 @@ const TELEGRAPH = 0.7, FALL_HOLD = 0.6, EDGE = 100, RED = 68, WALK_SEC = 14, TAP
 const VX = W / 2, VY = 214, ATH_Y = 486, LANE_NEAR_Y = H;
 const V = (pts: { x: number; y: number }[]) => pts.map(q => new Phaser.Math.Vector2(q.x, q.y));
 const INTRO_TITLE = 'THE INACCESSIBLE PINNACLE';
-const INTRO_LINES = ['Sgùrr Dearg, Isle of Skye. The only Munro', 'summit that needs a rope. A blade of basalt', '50 metres long, a few metres wide.', 'The wind has opinions.', 'Cody climbed it in fog, July 2025.'];
+const INTRO_LINES = ['Sgùrr Dearg, Isle of Skye. The only Munro', 'summit that needs a rope. A blade of basalt', '50 metres long, a few metres wide.', 'The wind does what it likes.', 'Cody climbed it in fog, July 2025.'];
 
 export class Pinnacle extends Micro {
   readonly id = 'pinnacle'; readonly word = META.pinnacle.word; readonly instr = META.pinnacle.instr; readonly durationSec = META.pinnacle.durationSec;

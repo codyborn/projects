@@ -1610,7 +1610,7 @@
         "timezones": 0
       }
     ],
-    "blurb": "Free tapas with every drink. The Alhambra. The Sierra Nevada right there.",
+    "blurb": "Order a drink, get fed. The Alhambra up the hill, the Sierra Nevada behind it.",
     "stampIcon": "alhambra",
     "altitude": 740,
     "costPerDay": 90,
@@ -1713,7 +1713,7 @@
         "timezones": 1
       }
     ],
-    "blurb": "Six weeks of a city that charges rent on the air.",
+    "blurb": "A city that charges rent on the air, then apologizes for the weather.",
     "stampIcon": "bigben",
     "costPerDay": 170,
     "droneRule": "banned",
@@ -1785,7 +1785,7 @@
         "timezones": 0
       }
     ],
-    "blurb": "A week. Fries as a food group.",
+    "blurb": "Where fries are a food group and the waffles are load-bearing.",
     "stampIcon": "waffle",
     "costPerDay": 120,
     "droneRule": "permit",
@@ -1940,7 +1940,7 @@
         "timezones": 0
       }
     ],
-    "blurb": "One night. The bouillabaisse was worth the night.",
+    "blurb": "The bouillabaisse is worth the detour. Nothing else here is in a hurry.",
     "stampIcon": "port",
     "costPerDay": 110,
     "droneRule": "permit",
@@ -2016,7 +2016,7 @@
         "timezones": 0
       }
     ],
-    "blurb": "Twenty-six days on the Riviera. Bread is the answer to most things.",
+    "blurb": "Riviera views at village pace. Bread is the answer to most things.",
     "stampIcon": "palm",
     "costPerDay": 120,
     "droneRule": "permit",
@@ -2105,7 +2105,7 @@
         "timezones": 0
       }
     ],
-    "blurb": "Nice, Monaco, the sea every morning. If you can't beat 'em.",
+    "blurb": "Nice on one side, Monaco on the other, the sea every morning.",
     "stampIcon": "yacht",
     "costPerDay": 140,
     "droneRule": "permit",
@@ -2178,7 +2178,7 @@
         "timezones": 1
       }
     ],
-    "blurb": "A night between the Highlands and Morocco. Rain both ways.",
+    "blurb": "A castle on a volcano, and rain whichever way you leave.",
     "stampIcon": "castle",
     "costPerDay": 130,
     "radon": 1,
@@ -2261,7 +2261,7 @@
         ]
       }
     ],
-    "blurb": "Aviemore, Skye, Glencoe. Six weeks, twelve dry hours, the best of them all.",
+    "blurb": "Aviemore, Skye, Glencoe. Twelve dry hours and worth every soaking.",
     "stampIcon": "stag",
     "costPerDay": 120,
     "radon": 2,
@@ -2337,7 +2337,7 @@
         "timezones": 0
       }
     ],
-    "blurb": "A campervan, the ring road, sleep that never gets dark.",
+    "blurb": "The ring road, a campervan, and a sun that refuses to set.",
     "stampIcon": "geyser",
     "costPerDay": 170,
     "outdoorsy": true,
@@ -2463,7 +2463,7 @@
         "timezones": 5
       }
     ],
-    "blurb": "Oktoberfest in September. Nothing about this city makes sense and all of it is on time.",
+    "blurb": "Oktoberfest is in September. Nothing here makes sense and all of it runs on time.",
     "stampIcon": "pretzel",
     "altitude": 520,
     "costPerDay": 130,
@@ -2548,7 +2548,7 @@
         "timezones": 0
       }
     ],
-    "blurb": "The Nordkette out the window. Via ferrata on Saturdays, the climbing gym on Tuesdays. The best month of the year.",
+    "blurb": "Via ferrata on Saturdays, the climbing gym on Tuesdays, the Nordkette out every window.",
     "stampIcon": "edelweiss",
     "altitude": 574,
     "costPerDay": 130,
@@ -2626,7 +2626,7 @@
         "timezones": 0
       }
     ],
-    "blurb": "Bad Goisern, Gosau, lakes you can drink from. Cut from a month to a week and still worth it.",
+    "blurb": "Lakes you can drink from and a tour bus every nine minutes.",
     "stampIcon": "lake",
     "altitude": 511,
     "costPerDay": 120,
@@ -2737,7 +2737,7 @@
         "timezones": 4
       }
     ],
-    "blurb": "A week of tagine and the realization that the movie was not filmed here.",
+    "blurb": "Tagine on every corner and the slow realization that the movie was filmed in Burbank.",
     "stampIcon": "lantern",
     "costPerDay": 70,
     "droneRule": "banned",
@@ -2829,7 +2829,7 @@
         "timezones": 4
       }
     ],
-    "blurb": "Three weeks on a lagoon in the Sahara. The French have watches.",
+    "blurb": "A lagoon in the Sahara where the wind is punctual and nobody else is.",
     "stampIcon": "dune",
     "costPerDay": 70,
     "outdoorsy": true,
@@ -3100,7 +3100,7 @@
         "timezones": 1
       }
     ],
-    "blurb": "Nomad capital, cafés per capita off the charts, khao soi for breakfast.",
+    "blurb": "More cafes than people. Khao soi for breakfast.",
     "stampIcon": "temple",
     "altitude": 310,
     "costPerDay": 60,
@@ -3313,7 +3313,7 @@
         "timezones": 2
       }
     ],
-    "blurb": "Skyscrapers with hiking trails behind them. A week of dim sum and stairs.",
+    "blurb": "Skyscrapers with hiking trails behind them. Dim sum and stairs.",
     "stampIcon": "junk",
     "costPerDay": 150,
     "droneRule": "banned",
@@ -3416,7 +3416,7 @@
         "timezones": 0
       }
     ],
-    "blurb": "Three weeks of convenience stores, alleys, animal cafes and trains that apologize for being early.",
+    "blurb": "Convenience stores, alleys, animal cafes, and trains that apologize for being early.",
     "stampIcon": "torii",
     "costPerDay": 160,
     "droneRule": "banned",
@@ -3483,7 +3483,7 @@
         "timezones": 0
       }
     ],
-    "blurb": "Nikko and Minakami: onsens, snow, a train that apologizes for being early.",
+    "blurb": "Onsens, snow, and a vending machine on every mountain road.",
     "stampIcon": "onsen",
     "altitude": 500,
     "costPerDay": 120,
@@ -3572,7 +3572,7 @@
         "timezones": 0
       }
     ],
-    "blurb": "Permits, a duffel, and the Manaslu Circuit two weeks out and back: dal bhat power, twenty-four hour.",
+    "blurb": "Permits, a duffel, and dal bhat power, twenty-four hour.",
     "stampIcon": "stupa",
     "altitude": 1400,
     "costPerDay": 45,

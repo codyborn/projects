@@ -155,12 +155,30 @@ def note_hash():
     try: return hashlib.sha256(open(NOTE, 'rb').read()).hexdigest()
     except FileNotFoundError: return None
 
-def edited_since_export():
-    """Has Cody touched the note since we last wrote it? Compares it against the hash stamped at the last export."""
-    try: last = open(STAMP).read().strip()
-    except FileNotFoundError: return False      # no stamp yet: nothing to compare against
-    cur = note_hash()
-    return cur is not None and cur != last
+def data_hash():
+    """One hash over every file the note can write to, so an edit made straight to the JSON is visible too."""
+    h = hashlib.sha256()
+    for fn in sorted([f for _, f, *_ in SPECS] + ['strings.json']):
+        try: h.update(open(os.path.join(DATA, fn), 'rb').read())
+        except FileNotFoundError: pass
+    for rel in src_files():
+        try: h.update(open(os.path.join(SRC, rel), 'rb').read())
+        except FileNotFoundError: pass
+    return h.hexdigest()
+
+def stamped():
+    try: parts = open(STAMP).read().split()
+    except FileNotFoundError: return None, None
+    return (parts + [None, None])[0], (parts + [None, None])[1]
+
+def write_stamp():
+    open(STAMP, 'w').write(f'{note_hash()}\n{data_hash()}\n')
+
+def changed_since_export():
+    """(note edited, game edited) since the last export. Both means the two have diverged and one would eat the other."""
+    ln, ld = stamped()
+    if ln is None: return False, False          # no stamp yet: nothing to compare against
+    return note_hash() != ln, (ld is not None and data_hash() != ld)
 
 def export():
     out = ['---', 'tags: [personal, project, nomad, game, copy]', 'created: 2026-09-24', 'status: Cody editing; sync with `npm run copy:import`', '---', '',
@@ -187,7 +205,7 @@ def export():
         out.append('')
     export_screens(out)
     open(NOTE, 'w', encoding='utf-8').write('\n'.join(out)); print(f'exported -> {NOTE}')
-    open(STAMP, 'w').write(note_hash() or '')   # remember what we wrote, so the next export can tell if Cody edited it 
+    write_stamp()   # remember both sides, so the next export can tell which of them moved 
 
 def parse_note():
     sections = {}; sec = None; blk = None
@@ -230,10 +248,17 @@ def imp():
 if __name__ == '__main__':
     cmd = sys.argv[1] if len(sys.argv) > 1 else 'export'
     if cmd == 'export':
-        # Never overwrite edits. If the note has changed since we last wrote it, pull those changes into the game first.
-        if edited_since_export() and '--discard-note-edits' not in sys.argv:
+        note_moved, data_moved = changed_since_export()
+        # Both sides moved: exporting would overwrite the game's copy with the note's, importing the other way round.
+        # Whoever is running this has to say which one is right, because the tool cannot know.
+        if note_moved and data_moved and not ({'--note-wins', '--data-wins'} & set(sys.argv)):
+            sys.exit('the note AND the game copy have both changed since the last export.\n'
+                     '  the note is newer  -> npm run copy:import   (then export)\n'
+                     '  the game is newer  -> python3 tools/copy_sync.py export --data-wins\n'
+                     'exporting blindly would throw one of them away.')
+        if note_moved and not data_moved and '--data-wins' not in sys.argv:
             print('the note has been edited since the last export: importing those changes first')
             imp()
         export()
     else:
-        imp()
+        imp(); write_stamp()
