@@ -1,31 +1,32 @@
 // CITY RUN (round 10, Frogger): top-down street crossing on a 9 x 9 grid of 40 px tiles. Start on the bottom kerb, hop one tile per
-// D-pad press (the console's Pad, read-only), cross three lanes of traffic, rest on the median, cross three more, reach the coffee shop on
+// tap, cross three lanes of traffic, rest on the median, cross three more, reach the coffee shop on
 // the far kerb. Cabs, buses, cyclists, scooters (and a tram in Lisbon / Amsterdam) scroll left or right at their own speeds. Nothing is
 // telegraphed: it is Frogger. A hit costs a life and puts you back on the kerb; 3 lives. One crossing wins it (round 12: three crossings
 // plus a per-crossing clock made it the hardest thing in the game, and the session timer is limit enough). Score = 70 for the coffee plus
 // 10 a life left, so an untouched crossing is 100. READY card and result flow as usual.
+// Round 102: the drawn D-pad is gone and the WHOLE SCREEN is the pad. A tap is read against the runner's own position —
+// above them hops up, below hops down, to either side hops sideways — so your thumb never has to find a widget and can
+// stay out of the lane you are watching. Arrow keys still work.
 import Phaser from 'phaser';
 import { Audio } from '../../audio/synth';
 import { PAL } from '../../core/palette';
 import { W, clamp } from '../_shared';
 import { Micro } from './micro';
 import { META } from './pools';
-import { Pad, type PadKey, type PadLayout } from '../console/input';
 
 type Kind = 'cab' | 'bus' | 'bike' | 'scooter' | 'tram';
 interface Car { x: number; w: number; color: number; }
 interface Lane { row: number; kind: Kind; dir: 1 | -1; speed: number; cars: Car[]; gap: number; }
-const TILE = 40, COLS = 9, ROWS = 9, Y0 = 56;                    // row r centre = Y0 + r*TILE + 20; rows 0 far kerb, 1-3 lanes, 4 median, 5-7 lanes, 8 start kerb
+const TILE = 40, COLS = 9, ROWS = 9, Y0 = 148;   /* the board sits in the middle of the screen now that the D-pad widget has gone: the space it used to fill is the space your thumb taps in */                    // row r centre = Y0 + r*TILE + 20; rows 0 far kerb, 1-3 lanes, 4 median, 5-7 lanes, 8 start kerb
 const START = { row: 8, col: 4 }; const LANE_ROWS = [1, 2, 3, 5, 6, 7];
 const TRAM_CITIES = new Set(['lisbon', 'amsterdam']);
-const LAYOUT: PadLayout = { dpad: { x: W / 2, y: 548, r: 62 }, a: { x: -200, y: -200, r: 0 }, b: { x: -200, y: -200, r: 0 }, start: new Phaser.Geom.Rectangle(-1, -1, 0, 0), select: new Phaser.Geom.Rectangle(-1, -1, 0, 0), screen: new Phaser.Geom.Rectangle(0, Y0, W, ROWS * TILE) };
 const cx = (c: number) => 20 + c * TILE, cy = (r: number) => Y0 + r * TILE + 20;
 
 export class CityRun extends Micro {
   readonly id = 'cityrun'; readonly word = META.cityrun.word; readonly instr = META.cityrun.instr; readonly durationSec = META.cityrun.durationSec;
   private row = START.row; private col = START.col; private px = cx(START.col); private py = cy(START.row); private hopT = 0; private lanes: Lane[] = [];
   private lives = 3; private crossings = 0; private inv = 0; private busy = false; private ended = false; private mult = 1;
-  private pad?: Pad; private padG?: Phaser.GameObjects.Graphics; private lastPad = ''; private handlers: Array<[string, (...a: any[]) => void]> = []; private sd?: { x: number; y: number };
+  private handlers: Array<[string, (...a: any[]) => void]> = []; private guide = 2.6;   /* seconds the four arrows stay up around the runner, long enough to read once */
   /** harness: the grid state and every vehicle */
   hint() { return { row: this.row, col: this.col, lives: this.lives, crossings: this.crossings, hopping: this.hopT > 0 || this.busy, t: this.t, lanes: this.lanes.map(L => ({ row: L.row, dir: L.dir, speed: L.speed * this.mult, cars: L.cars.map(c => ({ x: c.x, w: c.w })) })) }; }
   /** one hop */
@@ -53,15 +54,19 @@ export class CityRun extends Micro {
     this.lanes = LANE_ROWS.map((row, i) => { const kind = kinds[i]; const dir: 1 | -1 = i % 2 ? -1 : 1; const base = kind === 'bike' ? 70 : kind === 'scooter' ? 90 : kind === 'cab' ? 80 : kind === 'bus' ? 50 : 60;
       return { row, kind, dir, speed: base * (0.9 + rng() * 0.2), cars: [], gap: (kind === 'bus' || kind === 'tram' ? 3.4 : kind === 'cab' ? 2.6 : 2.2) * TILE }; });   // fair gaps: at least 2.2 tiles of road between vehicles
     for (const L of this.lanes) { let x = -80 + rng() * 60; while (x < W + 80) { const c = this.mk(L); c.x = x; L.cars.push(c); x += c.w + L.gap * (1 + rng() * 0.6); } }
-    ath.at(this.px, this.py).pose(0).show(true); ath.sprite.setDepth(6).setScale(0.4); this.progress(); this.ctx.frame.setHint('D-PAD to hop · get coffee');
-    this.pad = new Pad(sc, LAYOUT); this.padG = this.add(sc.add.graphics().setDepth(7)); this.drawPad();
-    const down = (p: Phaser.Input.Pointer) => { this.sd = p.y < Y0 + ROWS * TILE ? { x: p.x, y: p.y } : undefined; };
-    const up = (p: Phaser.Input.Pointer) => { const s = this.sd; this.sd = undefined; if (!s) return; const dx = p.x - s.x, dy = p.y - s.y; if (Math.abs(dx) < 24 && Math.abs(dy) < 24) return; if (Math.abs(dx) >= Math.abs(dy)) this.act(dx < 0 ? 'left' : 'right'); else if (dy > 0) this.act('down'); };   // swipes on the street (the Pad's swipe-up = hop up)
-    sc.input.on('pointerdown', down); sc.input.on('pointerup', up); this.handlers.push(['pointerdown', down], ['pointerup', up]);
+    ath.at(this.px, this.py).pose(0).show(true); ath.sprite.setDepth(6).setScale(0.4); this.progress(); this.ctx.frame.setHint('TAP a side to hop · coffee');
+    /* the whole screen is the D-pad: the tap is read against where the runner is standing, so the quadrant you mean is
+       the quadrant you point at. A tap right on top of them is ignored rather than guessed at. */
+    const down = (p: Phaser.Input.Pointer) => { const dx = p.x - this.px, dy = p.y - this.py;
+      if (Math.abs(dx) < 14 && Math.abs(dy) < 14) return;
+      this.guide = 0; this.act(Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down')); };
+    sc.input.on('pointerdown', down); this.handlers.push(['pointerdown', down]);
+    this.key('keydown-LEFT', () => this.act('left')); this.key('keydown-RIGHT', () => this.act('right'));
+    this.key('keydown-UP', () => this.act('up')); this.key('keydown-DOWN', () => this.act('down'));
+    this.key('keydown-SPACE', () => this.act('up'));
     this.loop(dt => {
       if (this.ended) return;
-      this.pad!.update(); for (const k of ['left', 'right', 'up', 'down'] as const) if (this.pad!.justPressed(k)) this.act(k); if (this.pad!.justPressed('a')) this.act('up');
-      const sig = JSON.stringify(this.pad!.pressed); if (sig !== this.lastPad) { this.lastPad = sig; this.drawPad(); }
+      if (this.guide > 0) this.guide -= dt;
       if (this.inv > 0) this.inv -= dt; if (this.hopT > 0) { this.hopT -= dt; if (this.hopT <= 0 && !this.busy) ath.pose(0); }
       // traffic
       for (const L of this.lanes) { const v = L.speed * this.mult * L.dir; for (const c of L.cars) c.x += v * dt; L.cars = L.cars.filter(c => c.x > -260 && c.x < W + 260);
@@ -96,20 +101,16 @@ export class CityRun extends Micro {
         if (L.kind === 'cab' && c.color === PAL.sun2) g.fillStyle(PAL.ink).fillRect(x + w / 2 - 5, y - 3, 10, 6); g.fillStyle(L.dir > 0 ? PAL.sun3 : PAL.red).fillRect(L.dir > 0 ? x + w - 3 : x, y - 12, 3, 8).fillRect(L.dir > 0 ? x + w - 3 : x, y + 4, 3, 8); } }
     // the session clock under the grid: standing still costs nothing now, only the traffic can end it
     const f = clamp(1 - this.t / this.durationSec, 0, 1); g.fillStyle(PAL.ink).fillRect(40, Y0 + ROWS * TILE + 8, W - 80, 6); g.fillStyle(f > 0.3 ? PAL.neon : PAL.red).fillRect(40, Y0 + ROWS * TILE + 8, (W - 80) * f, 6);
+    this.drawGuide();
     if ((window as any).__hitboxes) { g.lineStyle(1, PAL.neon, 1); g.strokeRect(this.px - 10, this.py - 12, 20, 24); g.lineStyle(1, PAL.red, 1); for (const L of this.lanes) for (const c of L.cars) g.strokeRect(c.x, cy(L.row) - 14, c.w, 28); }
   }
-  /** The D-pad in the console's style (CarryOnScene.drawPad): a cross with lit arms, a hub dot, four arrows. */
-  private drawPad() {
-    const g = this.padG; if (!g) return; g.clear(); const p = this.pad?.pressed; const L = LAYOUT.dpad; const arm = 40, len = 116;
-    g.fillStyle(PAL.night1).fillRect(0, Y0 + ROWS * TILE + 22, W, 640); g.fillStyle(PAL.night3).fillRect(0, Y0 + ROWS * TILE + 22, W, 2);
-    const lit = (k: PadKey) => (p && p[k]) ? PAL.gray2 : PAL.night0;
-    g.fillStyle(PAL.ink).fillRoundedRect(L.x - len / 2 - 2, L.y - arm / 2 - 2, len + 4, arm + 4, 6).fillRoundedRect(L.x - arm / 2 - 2, L.y - len / 2 - 2, arm + 4, len + 4, 6);
-    g.fillStyle(lit('left')).fillRect(L.x - len / 2, L.y - arm / 2, len / 2 - arm / 2, arm); g.fillStyle(lit('right')).fillRect(L.x + arm / 2, L.y - arm / 2, len / 2 - arm / 2, arm);
-    g.fillStyle(lit('up')).fillRect(L.x - arm / 2, L.y - len / 2, arm, len / 2 - arm / 2); g.fillStyle(lit('down')).fillRect(L.x - arm / 2, L.y + arm / 2, arm, len / 2 - arm / 2);
-    g.fillStyle(PAL.night1).fillRect(L.x - arm / 2, L.y - arm / 2, arm, arm); g.fillStyle(PAL.gray1, 0.6).fillCircle(L.x, L.y, 5);
-    g.fillStyle(PAL.gray1, 0.9); g.fillTriangle(L.x - 44, L.y, L.x - 30, L.y - 9, L.x - 30, L.y + 9); g.fillTriangle(L.x + 44, L.y, L.x + 30, L.y - 9, L.x + 30, L.y + 9);
-    g.fillTriangle(L.x, L.y - 44, L.x - 9, L.y - 30, L.x + 9, L.y - 30); g.fillTriangle(L.x, L.y + 44, L.x - 9, L.y + 30, L.x + 9, L.y + 30);
+  /** The first seconds show where the taps are: four arrows around the runner, which fade once you have used one. */
+  private drawGuide() {
+    if (this.guide <= 0) return; const g = this.g; const a = clamp(this.guide / 2.6, 0, 1) * 0.75;
+    const arrow = (dx: number, dy: number) => { const bx = this.px + dx, by = this.py + dy;
+      g.fillStyle(PAL.white, a); g.fillTriangle(bx + dx * 0.22, by + dy * 0.22, bx - dy * 0.14 - dx * 0.1, by + dx * 0.14 - dy * 0.1, bx + dy * 0.14 - dx * 0.1, by - dx * 0.14 - dy * 0.1); };
+    arrow(0, -52); arrow(0, 52); arrow(-52, 0); arrow(52, 0);
   }
   protected scoreNow() { return clamp((this.crossings ? 70 + this.lives * 10 : this.lives * 10) / 100, 0, 1); }
-  destroy() { const inp = this.ctx.scene.input; for (const [ev, fn] of this.handlers) inp.off(ev, fn); this.handlers = []; this.pad?.destroy(); this.pad = undefined; this.ctx.athlete.sprite.setAlpha(1).setDepth(5).setScale(1).setFlipX(false); this.ctx.athlete.pose(0); super.destroy(); }
+  destroy() { const inp = this.ctx.scene.input; for (const [ev, fn] of this.handlers) inp.off(ev, fn); this.handlers = []; this.ctx.athlete.sprite.setAlpha(1).setDepth(5).setScale(1).setFlipX(false); this.ctx.athlete.pose(0); super.destroy(); }
 }

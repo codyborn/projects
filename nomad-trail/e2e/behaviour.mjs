@@ -102,6 +102,42 @@ check('the button opens the tables', (await page.evaluate(() => window.__nomad.a
   check('wood chop: the axe sweeps and a chop on the line splits the round', r && r.clean === 1 && r.swept > 20, r ? `clean ${r.clean}, swept ${r.swept} deg` : 'no micro');
 }
 
+// the ski day is a ski game now (round 102): steering through a gate scores it, and the piste edge no longer ends the run
+{
+  const r = await page.evaluate(async () => {
+    const n = window.__nomad; n.minigame('Workout', { activity: 'ski', city: 'innsbruck', day: 3, plan: ['slalom'] });
+    await new Promise(r => setTimeout(r, 900)); const sc = n.game.scene.getScene('Workout'); sc.frame.ready();
+    for (let i = 0; i < 40 && !sc.current; i++) await new Promise(r => setTimeout(r, 100));
+    const m = sc.current; if (!m) return null;
+    let offPiste = 0;
+    for (let i = 0; i < 400; i++) {                       // steer toward the next gate, and shove into the edge once
+      const h = m.hint(); if (h.judged >= 3) break;
+      if (i === 60) { for (let k = 0; k < 60; k++) { m.steer(-1); await new Promise(r => setTimeout(r, 16)); } offPiste = 1; }
+      m.steer(h.next && h.next.cx > h.x + 6 ? 1 : h.next && h.next.cx < h.x - 6 ? -1 : 0);
+      await new Promise(r => setTimeout(r, 16));
+    }
+    const h = m.hint(); return { judged: h.judged, clean: h.clean, over: h.over, offPiste };
+  });
+  check('slalom: gates are judged, and a trip into the deep snow does not end the run', r && r.judged >= 3 && !r.over, r ? `judged ${r.judged}, clean ${r.clean}, over ${r.over}` : 'no micro');
+}
+
+// City Run: the whole screen is the D-pad, read against the runner (round 102)
+{
+  const r = await page.evaluate(async () => {
+    const n = window.__nomad; n.minigame('Workout', { activity: 'trailrun', city: 'tokyo', day: 3, plan: ['cityrun'] });
+    await new Promise(r => setTimeout(r, 900)); const sc = n.game.scene.getScene('Workout'); sc.frame.ready();
+    for (let i = 0; i < 40 && !sc.current; i++) await new Promise(r => setTimeout(r, 100));
+    const m = sc.current; if (!m) return null;
+    const r0 = m.hint().row;
+    sc.input.emit('pointerdown', { x: 180, y: 120 });     // a tap well above the runner
+    await new Promise(r => setTimeout(r, 260)); const up = m.hint().row;
+    sc.input.emit('pointerdown', { x: 330, y: m.hint().row * 40 + 168 });   // and one to the right of them
+    await new Promise(r => setTimeout(r, 260)); const right = m.hint().col;
+    return { r0, up, right };
+  });
+  check('city run: a tap above the runner hops up and a tap to the side hops sideways', r && r.up === r.r0 - 1 && r.right === 5, r ? `row ${r.r0} -> ${r.up}, col -> ${r.right}` : 'no micro');
+}
+
 console.log(errs.length ? 'ERRORS:\n' + errs.join('\n') : 'no page errors');
 await browser.close();
 process.exit(fails.length || errs.length ? 1 : 0);

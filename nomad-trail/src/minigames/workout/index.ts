@@ -8,10 +8,11 @@ import { Runner } from './legacy';
 import { CityRun } from './cityrun';
 import { Pinnacle } from './pinnacle';
 import { WoodChop } from './woodchop';
+import { Slalom } from './slalom';
 export { POOLS, META, MICRO_IDS, SESSION_GAMES, sessionLen, DENSE_CITIES, PINNACLE_CITIES, WOODCHOP_CITIES, pickSession, pickOne, seededRng, hashStr } from './pools';
 
 export const MICRO_REGISTRY: Record<string, () => Micro> = {
   pushup: () => new PushUp(), plank: () => new Plank(), curls: () => new Curls(), burpee: () => new Burpee(), squat: () => new Squat(),
   sprint: () => new SprintStop(), stretch: () => new Stretch(), boulderbeta: () => new BoulderBeta(), dyno: () => new Dyno(),
-  riverstones: () => new RiverStones(), swimbreath: () => new SwimBreath(), balance: () => new BalanceBoard(), pose: () => new PoseMatch(), runner: () => new Runner(), cityrun: () => new CityRun(), pinnacle: () => new Pinnacle(), woodchop: () => new WoodChop(),
+  riverstones: () => new RiverStones(), swimbreath: () => new SwimBreath(), balance: () => new BalanceBoard(), pose: () => new PoseMatch(), runner: () => new Runner(), cityrun: () => new CityRun(), pinnacle: () => new Pinnacle(), woodchop: () => new WoodChop(), slalom: () => new Slalom(),
 };

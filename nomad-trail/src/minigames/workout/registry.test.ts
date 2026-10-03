@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { META, MICRO_IDS, POOLS, DENSE_CITIES, PINNACLE_CITIES, WOODCHOP_CITIES, pickSession, pickOne, seededRng, sessionLen, SESSION_GAMES } from './pools';
+import ITEMS from '../../data/items.json';
 describe('workout micro-game pools', () => {
   it('every pool entry has metadata; every micro has a name, a command word, an instruction and a 4 to 9 s duration', () => {
     for (const [act, ids] of Object.entries(POOLS)) for (const id of ids!) expect(META[id], `${act}:${id}`).toBeDefined();
-    for (const id of MICRO_IDS) { const m = META[id]; expect(m.name.length).toBeGreaterThan(2); expect(m.word.endsWith('!')).toBe(true); expect(m.instr.length).toBeGreaterThan(10); if (!['pinnacle', 'woodchop'].includes(id)) { expect((m.hint ?? '').length, `${id} hint`).toBeGreaterThan(6); expect((m.hint ?? '').length, `${id} hint length`).toBeLessThanOrEqual(32); } expect(m.durationSec).toBeGreaterThanOrEqual(4); expect(m.durationSec).toBeLessThanOrEqual(id === 'cityrun' ? 28 : id === 'burpee' ? 16 : id === 'runner' ? 14 : id === 'pinnacle' ? 3600 : id === 'woodchop' ? 22 : id === 'pose' ? 40 : id === 'boulderbeta' ? 20 : 9); }   // City Run (25 s), Wood Chop (22 s), Yoga (40 s) and Boulder Beta (20 s) are single games; the Pinnacle has no clock at all (it ends at the summit or in the fog)
+    for (const id of MICRO_IDS) { const m = META[id]; expect(m.name.length).toBeGreaterThan(2); expect(m.word.endsWith('!')).toBe(true); expect(m.instr.length).toBeGreaterThan(10); if (!['pinnacle', 'woodchop'].includes(id)) { expect((m.hint ?? '').length, `${id} hint`).toBeGreaterThan(6); expect((m.hint ?? '').length, `${id} hint length`).toBeLessThanOrEqual(32); } expect(m.durationSec).toBeGreaterThanOrEqual(4); expect(m.durationSec).toBeLessThanOrEqual(id === 'cityrun' ? 28 : id === 'burpee' ? 16 : id === 'runner' ? 14 : id === 'pinnacle' ? 3600 : id === 'woodchop' ? 22 : id === 'slalom' ? 24 : id === 'pose' ? 40 : id === 'boulderbeta' ? 20 : 9); }   // City Run (25 s), Wood Chop (22 s), Yoga (40 s) and Boulder Beta (20 s) are single games; the Pinnacle has no clock at all (it ends at the summit or in the fog)
     expect(MICRO_IDS.length).toBeGreaterThanOrEqual(14); expect(META.kettlebell).toBeUndefined(); expect(MICRO_IDS.includes('kettlebell')).toBe(false); expect(MICRO_IDS.includes('pace')).toBe(false);
   });
   it('hotel room and hike sessions chain THREE different games; every other activity is one game; unknown activities use the hotel room', () => {
@@ -17,7 +18,8 @@ describe('workout micro-game pools', () => {
     expect(POOLS.bands).toEqual(['pushup', 'plank', 'curls', 'burpee', 'squat', 'sprint', 'stretch']);
     expect(POOLS.boulder).toEqual(['boulderbeta']);   /* the dyno came off the end of the bouldering problem */
     expect(POOLS.trailrun).toEqual(['runner', 'riverstones']); expect(POOLS.hike).toEqual(['sprint', 'stretch', 'riverstones', 'balance']); expect(META.pace).toBeUndefined();
-    expect(POOLS.swim).toEqual(['swimbreath']); for (const a of ['yoga', 'surf', 'ski'] as const) expect(POOLS[a]).toEqual(['balance', 'pose']);
+    expect(POOLS.swim).toEqual(['swimbreath']); for (const a of ['yoga', 'surf'] as const) expect(POOLS[a]).toEqual(['balance', 'pose']);
+    expect(POOLS.ski).toEqual(['slalom']);   /* round 102: a ski day is a ski game */
   });
   it('dense cities turn a run into City Run (Frogger); other cities keep the trail runner; the pick is seeded', () => {
     expect(META.cityrun.word).toBe('HOP!'); expect(META.cityrun.name).toBe('City Run'); expect(DENSE_CITIES.has('newyork')).toBe(true);
@@ -35,6 +37,30 @@ describe('workout micro-game pools', () => {
     expect(WOODCHOP_CITIES.has('bozeman')).toBe(true); expect(META.woodchop.word).toBe('CHOP!');
     for (let s = 1; s <= 12; s++) for (const a of ['hike', 'trailrun', 'bands']) expect(pickSession(a, seededRng(s), 'bozeman')).toEqual(['woodchop']);
     expect(pickSession('bands', seededRng(3), 'boulder')).not.toContain('woodchop'); expect(pickSession('swim', seededRng(3), 'bozeman')).toEqual(['swimbreath']);
+  });
+  /* Round 102: the down jacket's benefit line said "Skiing unlocked" and a ski day played a balance board. Any gear
+     that promises an activity by name has to lead to a game that is actually that activity, so the mapping is written
+     down here and the gear is checked against it. */
+  it('every activity a bundle promises by name leads to a game that is that activity', () => {
+    const ANSWERED_BY: Record<string, string> = {
+      ski: 'slalom', boulder: 'boulderbeta', ferrata: 'WorkoutScene.ferrata', kite: 'Kite scene', scuba: 'Scuba scene',
+      swim: 'swimbreath', yoga: 'pose', surf: 'balance/pose', hike: 'circuit', bands: 'circuit', trailrun: 'runner/riverstones',
+    };
+    const WORD: Record<string, string> = { skiing: 'ski', bouldering: 'boulder', ferrata: 'ferrata', kite: 'kite', scuba: 'scuba', surfing: 'surf', yoga: 'yoga', swim: 'swim', 'hotel-room': 'bands', hiking: 'hike' };
+    const items = (ITEMS as unknown as { id: string; benefits?: string[] }[]);
+    let claims = 0;
+    for (const it of items) for (const b of it.benefits ?? []) {
+      if (!/unlocked/i.test(b)) continue;
+      const named = Object.keys(WORD).filter(w => new RegExp(`\\b${w}\\b`, 'i').test(b));
+      expect(named.length, `${it.id}: "${b}" promises something unlocked but names no activity`).toBeGreaterThan(0);
+      for (const w of named) {
+        const act = WORD[w]; claims++;
+        expect(ANSWERED_BY[act], `${it.id} promises ${act} and nothing answers it`).toBeDefined();
+        /* the pool-based ones must point at the right micro, not a stand-in */
+        if (['ski', 'boulder', 'swim', 'yoga'].includes(act)) expect(POOLS[act as 'ski']).toContain(ANSWERED_BY[act]);
+      }
+    }
+    expect(claims).toBeGreaterThanOrEqual(4);   // the down jacket, the climbing kit (x2) and the kite gear
   });
   it('three of the longest hotel-room games plus result banners stay under the 36 s session cap', () => {
     const top3 = POOLS.bands!.map(id => META[id].durationSec).sort((a, b) => b - a).slice(0, 3); expect(top3.reduce((a, b) => a + b, 0) + 0.65 * 3 + 1.5).toBeLessThanOrEqual(36);

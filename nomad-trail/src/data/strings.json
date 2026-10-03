@@ -74,5 +74,31 @@
     "circumnavigated": "CIRCUMNAVIGATED",
     "tagline1": "PACK LIGHT.",
     "tagline2": "TRUST NO KETTLE."
+  },
+  "badges": {
+    "_note": "Passport badge names. The run records these; before round 102 nothing ever showed them.",
+    "fivecontinents": "FIVE CONTINENTS",
+    "ironbody": "IRON BODY",
+    "chef": "CHEF",
+    "lionfish": "REEF CLEARED",
+    "kitemaster": "KITE MASTER",
+    "kite": "THE WIND DAY",
+    "dronepilot": "DRONE PILOT",
+    "dronefine": "FINED FOR FLYING",
+    "highroller": "HIGH ROLLER",
+    "gatedash": "MADE THE GATE",
+    "icecave": "THE ICE CAVE",
+    "otter": "THE OTTER",
+    "otter_lived": "THE OTTER, SURVIVED",
+    "shark": "THE FIN",
+    "jellyfish": "STUNG",
+    "tick": "THE TICK",
+    "cockroach": "THE CHOCOLATE",
+    "batpoop": "DIRECT HIT",
+    "sandflies": "SANDFLIES",
+    "flu": "FLATTENED BY FLU",
+    "back": "THE BAG WON",
+    "kettle": "TEA IN EVERY ROOM",
+    "pinkshirts": "EVERYTHING IS PINK"
   }
 }

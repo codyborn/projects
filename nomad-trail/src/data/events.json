@@ -80,6 +80,10 @@
     "id": "foodpoisoning",
     "title": "Food poisoning",
     "text": "Day {day}, {city}. What rhymes with cryarrhea and is coming out of you right now? You spend two days learning the bathroom tile pattern by heart.",
+    "texts": [
+      "Day {day}, {city}. Something you ate had plans of its own. Two days pass within sprinting distance of a bathroom.",
+      "Day {day}, {city}. The cheap place with the long queue was cheap, and had a long queue, for two unrelated reasons. Two days gone."
+    ],
     "when": "action",
     "baseChance": 0.135,
     "effects": {
@@ -92,11 +96,13 @@
     "mitigatedBy": [
       "meds"
     ],
-    "mitigatedText": "Day {day}, {city}. That lukewarm salmon mayo bowl was a mistake. The probiotics fight back. One rough night, not two days.",
+    "mitigatedText": "Day {day}, {city}. That lukewarm salmon mayo bowl was a mistake. The probiotics fight back and hold the line at one bad night instead of two bad days.",
     "mitigatedEffects": {
-      "health": -7,
-      "energy": -10,
-      "mood": -4
+      "health": -8,
+      "energy": -14,
+      "mood": -5,
+      "days": 1,
+      "sick": 1
     }
   },
   {
@@ -132,6 +138,10 @@
     "id": "mosquito",
     "title": "The swarm",
     "text": "Sunset in {city}. The mosquitoes arrive like a scene from Jumanji. You wake up with a constellation on each ankle and the sleep of a hunted animal.",
+    "texts": [
+      "Dusk in {city}. You are the most interesting thing in the room to roughly forty flying needles, and they tell their friends.",
+      "{city} after dark. Something finds the one patch of skin outside the sheet and works it like a shift."
+    ],
     "when": "day",
     "baseChance": 0.07,
     "effects": {
@@ -225,6 +235,10 @@
     "id": "rain",
     "title": "It rains",
     "text": "It rains in {city}. Not dramatically. Continuously. Everything you own is slightly damp.",
+    "texts": [
+      "It rains in {city}. You wait it out under an awning with four strangers, all of you pretending to check your phones.",
+      "It rains in {city}. Your shoes take it personally and stay damp for three days."
+    ],
     "when": "day",
     "baseChance": 0.05,
     "effects": {
@@ -250,6 +264,10 @@
     "id": "sunburn",
     "title": "Sunburn",
     "text": "You forgot the sunscreen. Your shoulders will remember it for a week.",
+    "texts": [
+      "An hour longer than you meant, under a sun stronger than you thought. Your neck files its report tomorrow.",
+      "The cloud looked like cover. It was not cover."
+    ],
     "when": "day",
     "baseChance": 0.05,
     "effects": {
@@ -270,6 +288,10 @@
     "id": "sleepless",
     "title": "The upstairs neighbor",
     "text": "The apartment above yours in {city} is either a nightclub or a family of tap dancers.",
+    "texts": [
+      "Something upstairs in {city} is being dragged across a wooden floor at 2 am. Repeatedly. No explanation fits.",
+      "{city}, 3 am. A dog starts. A scooter answers. Somewhere a gate bangs in agreement."
+    ],
     "when": "day",
     "baseChance": 0.04,
     "effects": {
@@ -304,6 +326,12 @@
     "id": "goodday",
     "title": "A good day",
     "text": "Day {day}, {city}. Nothing goes wrong. The coffee is right, the light is right, the work day hums on by.",
+    "texts": [
+      "Day {day}, {city}. You find the right bench at the right hour and sit on it like it is a job.",
+      "Day {day}, {city}. Nothing happens. Nothing needs to. The laptop shuts at a reasonable hour and the evening goes on a while.",
+      "Day {day}, {city}. Somebody holds a door, the bakery still has the good one left, the wifi never drops. A day with no story in it.",
+      "Day {day}, {city}. You get the small things right in the right order and the whole day just works."
+    ],
     "when": "day",
     "baseChance": 0.04,
     "effects": {
@@ -432,12 +460,15 @@
   {
     "id": "dirtyclothes",
     "title": "Running low",
-    "text": "Everything in the bag has been worn twice. You rotate the least offensive shirt to the front and hope for a laundromat.",
+    "text": "{city}. You hold up the last shirt, consider it, and put it back on. Today is a laundry day whether you planned one or not.",
     "when": "day",
     "baseChance": 0.0,
     "effects": {
       "mood": -4
-    }
+    },
+    "texts": [
+      "{city}. Nothing in the bag is clean. You pick the least objectionable option and keep your arms down."
+    ]
   },
   {
     "id": "radonmonitor",
@@ -473,6 +504,10 @@
     "id": "gooddaymountain",
     "title": "A good day",
     "text": "Day {day}, {city}. Nothing goes wrong. The coffee is right, the light is right, the mountains stand tall in the distance.",
+    "texts": [
+      "Day {day}, {city}. Cold air, a clean line of peaks, legs that want to go up something.",
+      "Day {day}, {city}. The valley does the thing where the cloud sits below you. You stand there a while."
+    ],
     "when": "day",
     "baseChance": 0.03,
     "effects": {
@@ -485,6 +520,10 @@
     "id": "gooddaycoast",
     "title": "A good day",
     "text": "Day {day}, {city}. Nothing goes wrong. The coffee is right, the light is right, the warm beach beckons.",
+    "texts": [
+      "Day {day}, {city}. The sea is flat and the air is salt and you are in it before you have really decided to be.",
+      "Day {day}, {city}. You eat lunch looking at water. That is the entire day and it is plenty."
+    ],
     "when": "day",
     "baseChance": 0.03,
     "effects": {
@@ -920,5 +959,123 @@
       "energy": -4,
       "unlockAchievement": "batpoop"
     }
+  },
+  {
+    "id": "market",
+    "title": "Market morning",
+    "text": "{city}. You go in for fruit and come out an hour later with fruit, a bag you did not need and a conversation you only half followed. Worth every minute.",
+    "texts": [
+      "{city}. The market is three streets of shouting and one perfect peach. You pay too much and feel wealthy about it."
+    ],
+    "when": "action",
+    "baseChance": 0.09,
+    "effects": {
+      "mood": 7,
+      "energy": -5,
+      "money": -18
+    }
+  },
+  {
+    "id": "viewpoint",
+    "title": "The viewpoint",
+    "text": "{city}. You climb the stairs everyone climbs, at the hour everyone climbs them, and it is still worth it. The whole city goes orange and then blue.",
+    "texts": [
+      "{city}. You find the hill the locals go to at sunset. Nobody talks much up there."
+    ],
+    "when": "action",
+    "baseChance": 0.08,
+    "effects": {
+      "mood": 8,
+      "energy": -7
+    }
+  },
+  {
+    "id": "stranger",
+    "title": "A long conversation",
+    "text": "{city}. Someone asks what you do and then actually listens to the answer. Two hours later you are still there and the coffee has gone cold twice.",
+    "texts": [
+      "{city}. A stranger adopts you for an afternoon, explains the whole neighborhood, and refuses to let you pay for anything."
+    ],
+    "when": "action",
+    "baseChance": 0.07,
+    "effects": {
+      "mood": 9,
+      "energy": -4
+    }
+  },
+  {
+    "id": "bookshop",
+    "title": "The bookshop",
+    "text": "{city}. A secondhand shop with a cat and a shelf of English paperbacks nobody has touched since 2011. You leave with two.",
+    "when": "action",
+    "baseChance": 0.06,
+    "effects": {
+      "mood": 6,
+      "energy": -3,
+      "money": -14
+    }
+  },
+  {
+    "id": "wrongbus",
+    "title": "The wrong bus",
+    "text": "{city}. You get on with confidence and off with none, forty minutes away, in a neighborhood that is not in any guide. It turns out to be the good part of the day.",
+    "when": "action",
+    "baseChance": 0.07,
+    "effects": {
+      "mood": 5,
+      "energy": -10
+    }
+  },
+  {
+    "id": "haircut",
+    "title": "The haircut",
+    "text": "{city}. You mime the length you want. You get a different length. It is, annoyingly, better.",
+    "when": "action",
+    "baseChance": 0.05,
+    "effects": {
+      "mood": 5,
+      "money": -22
+    }
+  },
+  {
+    "id": "admin",
+    "title": "Admin day",
+    "text": "{city}. A bank, a form, a queue, a second queue for the stamp that proves you were in the first queue. The day is simply gone.",
+    "when": "action",
+    "baseChance": 0.07,
+    "effects": {
+      "mood": -7,
+      "energy": -8
+    }
+  },
+  {
+    "id": "overcharged",
+    "title": "The tourist price",
+    "text": "{city}. You work out two streets later that the fare was roughly four times the fare. Tuition.",
+    "texts": [
+      "{city}. The menu you were handed and the menu on the wall are not the same menu. You notice at the till."
+    ],
+    "when": "action",
+    "baseChance": 0.07,
+    "effects": {
+      "mood": -5,
+      "money": -45
+    }
+  },
+  {
+    "id": "blister",
+    "title": "Blister",
+    "text": "{city}. New ground, old socks. By the walk home you have invented a limp that will last three days.",
+    "when": "action",
+    "baseChance": 0.06,
+    "effects": {
+      "health": -3,
+      "mood": -4,
+      "energy": -6
+    },
+    "mitigatedBy": [
+      "hike"
+    ],
+    "mitigatedText": "{city}. New ground, and the footwear that has already done the miles takes it without comment. The feet get home in one piece."
   }
 ]

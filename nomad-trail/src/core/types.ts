@@ -22,7 +22,7 @@ export const CONTINENT_OF: Record<Region, Continent> = { northamerica: 'North Am
 export type Hazard = 'otter' | 'mosquito' | 'gust' | 'rock' | 'tuktuk' | 'wave' | 'ice' | 'pigeon' | 'tram' | 'snow' | 'crowd' | 'yak';
 export interface City {
   id: string; name: string; country: string; region: Region; lat: number; lon: number;
-  hero: boolean; minStay: number; suggestedStay: number;
+  hero: boolean; suggestedStay: number;   /* no minimum any more: leaving early is allowed and costs you (see settle() in sim/events) */
   climate: 'hot' | 'temperate' | 'cold' | 'alpine' | 'rainy'; timezone: number; altitude?: number;
   radon?: 0 | 1 | 2 | 3;                              // realistic radon exposure (granite/alpine regions); daily health drain unless an air monitor is packed
   outdoorsy?: boolean;                                // adventure gear pays off here
@@ -35,6 +35,9 @@ export interface City {
 export type ActivityId = 'kite' | 'boulder' | 'ferrata' | 'trailrun' | 'swim' | 'hike' | 'bands' | 'ski' | 'surf' | 'yoga' | 'scuba';   // scuba: spear lionfish (Roatán, Miami; needs the swim kit) -> Scuba scene
 export interface GameEvent {
   id: string; title: string; text: string;            // text may use {city}, {day}, {item}
+  /** Alternates for `text`, picked at random when the event fires. The repeat an event can survive is a different sentence,
+   *  not a different event: the commonest cards in the game were being read word for word a dozen times a run. */
+  texts?: string[];
   when: 'leg' | 'arrive' | 'day' | 'leave' | 'flight' | 'action';
   baseChance: number; requiresTag?: ItemTag; requiresCity?: string; requiresCities?: string[]; requiresClimate?: City['climate'][]; requiresOverweight?: boolean;
   requiresOutdoorsy?: boolean; requiresActivity?: ActivityId[]; requiresTransport?: Transport[];   // setting gates: mountains, water sports, train legs
@@ -67,7 +70,7 @@ export interface RunState {
   achievements: string[]; log: LogLine[]; workStreak: number; coffeeMornings: number;
   phase: 'pack' | 'route' | 'city' | 'travel' | 'ended'; ending?: Ending;
   stayDays: number; pendingEvent?: string;
-  puzzlesSeen?: string[]; droneFlights?: number; eventsFired?: string[];   /* every event id that fired this run, in order (credits page) */   /* work-week puzzles already shown this run; drone flights so far (sets the level) */
+  puzzlesSeen?: string[]; droneFlights?: number; eventsFired?: string[]; lastEvent?: Record<string, number>;   /* day each event last fired, so the same card does not come round twice in a fortnight */   /* every event id that fired this run, in order (credits page) */   /* work-week puzzles already shown this run; drone flights so far (sets the level) */
   pendingDish?: string; pendingGate?: string; pendingConsole?: 'carryon' | 'tetris'; pendingFollowUp?: string; dirtyDays?: number;   /* a consequence waiting for tomorrow: the tick from the animal, the fin after the swim — only one event ever surfaces in a day */   /* which cartridge the console handed over, so the result knows what was played */   // consecutive days in dirty clothes (mood drain grows)              // gate for the airport dash after a taxi breakdown                              // dish id chosen when Cook was tapped; the mini-game and the result must use the same one
 }
 export interface LogLine { day: number; city: string; text: string; }
@@ -94,4 +97,4 @@ export const SAVE_KEY = 'nomadtrail.save.v2';  // v2: money, single bag
 export const SETTINGS_KEY = 'nomadtrail.settings.v1';
 export interface Settings { muted: boolean; runs: number; bestScore: number; history: { ending: Ending['kind']; day: number; score: number }[];
   /** career record, cumulative across every run: the passport keeps its stamps and the recipe book its best scores */
-  career?: { stamps: Record<string, 'plain' | 'gold'>; dishes: Record<string, number> }; }
+  career?: { stamps: Record<string, 'plain' | 'gold'>; dishes: Record<string, number>; badges?: Record<string, true> }; }   /* badges: every achievement ever earned — the run was recording them and nothing showed them until round 102 */

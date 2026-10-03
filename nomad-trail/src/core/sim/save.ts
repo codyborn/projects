@@ -13,16 +13,22 @@ export function loadRun(): RunState | null {
 }
 export function hasSave(): boolean { return loadRun() !== null; }
 export function clearRun(): void { store.del(SAVE_KEY); }
-const DEFAULT_SETTINGS: Settings = { muted: false, runs: 0, bestScore: 0, history: [], career: { stamps: {}, dishes: {} } };
+const DEFAULT_SETTINGS: Settings = { muted: false, runs: 0, bestScore: 0, history: [], career: { stamps: {}, dishes: {}, badges: {} } };
 export function loadSettings(): Settings {
   const raw = store.get(SETTINGS_KEY); if (!raw) return { ...DEFAULT_SETTINGS, history: [] };
-  try { const p = JSON.parse(raw) as Partial<Settings>; return { ...DEFAULT_SETTINGS, ...p, career: { stamps: {}, dishes: {}, ...(p.career ?? {}) } }; } catch { return { ...DEFAULT_SETTINGS, history: [], career: { stamps: {}, dishes: {} } }; }
+  try { const p = JSON.parse(raw) as Partial<Settings>; return { ...DEFAULT_SETTINGS, ...p, career: { stamps: {}, dishes: {}, badges: {}, ...(p.career ?? {}) } }; } catch { return { ...DEFAULT_SETTINGS, history: [], career: { stamps: {}, dishes: {}, badges: {} } }; }
 }
 export function saveSettings(s: Settings): void { store.set(SETTINGS_KEY, JSON.stringify(s)); }
 /** Fold a run's stamps into the career passport. Gold always wins over plain. */
 export function recordStamps(stamps: Record<string, 'plain' | 'gold'>): Settings {
   const s = loadSettings(); const c = s.career!;
   for (const [id, kind] of Object.entries(stamps)) if (kind === 'gold' || !c.stamps[id]) c.stamps[id] = kind;
+  saveSettings(s); return s;
+}
+/** Fold a run's badges into the career passport: once earned, always on the page. */
+export function recordBadges(ids: string[]): Settings {
+  const s = loadSettings(); const c = s.career!; c.badges ??= {};
+  for (const id of ids) if (!id.startsWith('gold_')) c.badges[id] = true;   /* gold city stamps already show as stamps */
   saveSettings(s); return s;
 }
 /** Remember the best score for a dish the player has cooked. */

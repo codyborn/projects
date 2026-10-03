@@ -6,7 +6,7 @@ import STRINGS from '../../data/strings.json';
 export const STR = STRINGS as typeof STRINGS;
 /** Fill {placeholders} in a copy string. */
 export function tpl(t: string, vars: Record<string, string | number>): string { return t.replace(/\{(\w+)\}/g, (_, k) => (k in vars ? String(vars[k]) : `{${k}}`)); }
-import { rollEvents, applyEffects, hasTag, hasFlag, setFlag, clamp, monthOf, energyCap, recomputeClothes, fmt, mitigatedLine, accessibleItems, visibleAchievements, availableChoices, forceEvent, LODGING_DEPENDENT, type ResolvedEvent } from './events';
+import { rollEvents, applyEffects, hasTag, hasFlag, setFlag, clamp, monthOf, energyCap, recomputeClothes, fmt, mitigatedLine, accessibleItems, visibleAchievements, availableChoices, forceEvent, forceOneOf, settle, settleLabel, gain, churn, LODGING_DEPENDENT, type ResolvedEvent } from './events';
 import { saveRun, loadRun, clearRun } from './save';
 import { GRID, TOTAL_DAYS, HOME_PROGRESS_DEG, HOME_CITY, HOME_MIN_CONTINENTS, START_MONEY, OVERDRAFT, WORK_PAY, DEFAULT_COST_PER_DAY, FARE, WORK_ENERGY, WORK_MOOD, weekdayOf, isWeekend, OUTDOOR_ACTIVITIES } from './consts';
 import { shelfPack, buildPack, randomPack, idsWeight } from './pack';
@@ -192,15 +192,17 @@ export function travelTo(state: RunState, cityId: string): StepResult {
   const s = clone(state); const rng = rngFor(s, 1); const events: ResolvedEvent[] = [];
   const from = CITY[s.cityId];
   if (directionUndecided(s)) { s.direction = wrap(leg.city.lon - from.lon) >= 0 ? 'east' : 'west'; s.directionSet = true; }   // the first city decides
-  // fatigue: legs in the last 30 days, before this one
-  s.legsLast30 = s.legsLast30.filter(d => s.day - d <= 45); s.fatigue = s.legsLast30.length;
-  const fatigueEnergy = 6 * s.fatigue, fatigueMood = 4 * s.fatigue;
+  /* What recent movement costs. Nothing forces a minimum stay any more, so this is the brake: the hops you have taken
+     in the last fortnight, not the last month and a half, and each one makes the next arrival worse. */
+  s.legsLast30 = s.legsLast30.filter(d => s.day - d <= 45); s.fatigue = churn(s);
+  const fatigueEnergy = 8 * s.fatigue, fatigueMood = 6 * s.fatigue, fatigueHealth = 2.2 * s.fatigue;   /* churning should put you in a hospital before it puts you in an overdraft */
   const ratio0 = weightRatio(s.items); const legEnergy = Math.round(leg.energy * (0.8 + 0.8 * ratio0));   // a full suitcase roughly doubles the drain of a light one
   s.energy = clamp(s.energy - legEnergy - fatigueEnergy - (s.wheelBroken ? 8 : 0), 0, energyCap(s));
+  s.health = clamp(s.health - fatigueHealth, 0, 100);
   const fare = fareFor(from, leg); s.money -= fare; s.workStreak = 0;
-  if (hasTag(s, 'luxury') && s.items.some(p => p.id === 'ereader')) s.mood = clamp(s.mood + 2, 0, 100);
+  if (hasTag(s, 'luxury') && s.items.some(p => p.id === 'ereader')) s.mood = clamp(s.mood + gain(s, 2), 0, 100);
   s.mood = clamp(s.mood - fatigueMood - (s.wheelBroken ? 3 : 0), 0, 100);
-  s.day += leg.days; s.legsLast30.push(s.day); s.fatigue = s.legsLast30.length;
+  s.day += leg.days; s.legsLast30.push(s.day); s.fatigue = churn(s);
   s.cleanClothes = Math.max(0, s.cleanClothes - leg.days);
   const ratio = weightRatio(s.items);
   const ctx = { transport: leg.transport, timezones: leg.timezones, overweightRatio: ratio };
@@ -226,8 +228,7 @@ export function travelTo(state: RunState, cityId: string): StepResult {
   }
   const conts = continentsVisited(s);
   if (conts.length === CONTINENTS_ALL.length && !s.achievements.includes('fivecontinents')) { s.achievements.push('fivecontinents'); s.log.push({ day: s.day, city: cityId, text: STR.log.fiveContinents }); }
-  if (leg.city.altitude && leg.city.altitude >= 3500 && !events.some(e => e.id === 'altitude')) { /* altitude event already weighted; nothing */ }
-  if (hasItem(s, 'hostgifts') && (leg.city.lodgings[0]?.id === 'airbnb' || leg.city.lodgings[0]?.id === 'coliving')) s.mood = clamp(s.mood + 3, 0, 100);
+  if (hasItem(s, 'hostgifts') && (leg.city.lodgings[0]?.id === 'airbnb' || leg.city.lodgings[0]?.id === 'coliving')) s.mood = clamp(s.mood + gain(s, 3), 0, 100);
   if (leg.home) { s.log.push({ day: s.day, city: cityId, text: tpl(STR.log.homeAgain, { day: s.day, city: leg.city.name }) }); }
   checkEnding(s);
   return dash ? { state: s, events, minigame: dash } : { state: s, events };
@@ -240,25 +241,29 @@ function tickDay(s: RunState, rng: Rng, opts: { rest?: boolean; work?: boolean }
   s.money -= city.costPerDay ?? DEFAULT_COST_PER_DAY;
   const locked = s.bagLockedDays > 0;
   if (locked) { s.energy -= 8; }                                   // living out of one carry-on outfit
-  else { s.cleanClothes -= 1; const dirty = s.cleanClothes < 0; if (dirty) { s.cleanClothes = 0; s.dirtyDays = (s.dirtyDays ?? 0) + 1; s.mood -= Math.min(10, 4 + s.dirtyDays); s.health -= 1; } else s.dirtyDays = 0; }
+  else { s.cleanClothes -= 1; const dirty = s.cleanClothes < 0; if (dirty) { s.cleanClothes = 0; s.dirtyDays = (s.dirtyDays ?? 0) + 1; s.mood -= Math.min(10, 4 + s.dirtyDays); s.health -= 1;
+      /* the first morning with nothing clean says so out loud, once in a run: the mood drain used to happen in silence,
+         and once the player has met it the clothes meter in the HUD is the reminder */
+      if (s.dirtyDays === 1 && !hasFlag(s, 'dirtyseen')) { setFlag(s, 'dirtyseen', true); out.push(forceEvent(s, 'dirtyclothes', rng)); }
+    } else s.dirtyDays = 0; }
   // radon: granite and alpine bedrock, realistic. The air monitor turns it into a window you open.
   const radon = city.radon ?? 0;
   if (radon) {
     if (hasItem(s, 'airmonitor')) { if (s.stayDays === 1 && !hasFlag(s, 'radon_' + s.cityId)) { setFlag(s, 'radon_' + s.cityId, true); out.push(forceEvent(s, 'radonmonitor', rng)); } }
     else { s.health -= 0.15 * radon; if (radon >= 2 && s.stayDays === 5 && !hasFlag(s, 'radon_' + s.cityId)) { setFlag(s, 'radon_' + s.cityId, true); out.push(forceEvent(s, 'radonheadache', rng)); } }
   }
-  s.energy += 5 + (lodging?.energyPerDay ?? 0) + (opts.rest ? 0 : 0);
-  s.mood += (lodging?.moodPerDay ?? 0) - 1;
+  s.energy += gain(s, 5 + (lodging?.energyPerDay ?? 0));
+  s.mood += gain(s, lodging?.moodPerDay ?? 0) - 1;
   // slow wear: the year itself is the opponent. Routine (training, cooking, supplements) pushes back.
   s.health -= 0.24 + s.day * 0.0026 + (s.energy < 40 ? (opts.work ? 0.15 : 0.35) : 0) + (hasTag(s, 'fitness') ? 0 : 0.2);   /* wear nudged up when the event rate went to 0.65 */   /* a laptop week indoors wears less than a tired day out */
-  if (coffeePacked(s)) { s.energy += 15; s.mood += 2; s.coffeeMornings += 1; }
+  if (coffeePacked(s)) { s.energy += gain(s, 15); s.mood += gain(s, 2); s.coffeeMornings += 1; }
   if (s.sickDays > 0) { s.sickDays -= 1; s.health -= 4; s.energy -= 5; }
   if (s.backInjuryDays > 0) s.backInjuryDays -= 1;
   if (s.bagLockedDays > 0) { s.bagLockedDays -= 1; if (s.bagLockedDays === 0) s.log.push({ day: s.day, city: s.cityId, text: STR.log.suitcaseArrives }); }
   if (s.energy < 25) { s.health -= 2; s.mood -= 3; }
   if (s.mood < 25) s.energy -= 3;
-  if (hasTag(s, 'health') && s.energy > 50) s.health += 0.4;
-  if (hasItem(s, 'travelkettle')) s.mood += 1;                      // tea at night; the other thing it does lives in events.json
+  if (hasTag(s, 'health') && s.energy > 50) s.health += gain(s, 0.4);
+  if (hasItem(s, 'travelkettle')) s.mood += gain(s, 1);                      // tea at night; the other thing it does lives in events.json
   s.health = clamp(s.health, 0, 100); s.energy = clamp(s.energy, 0, energyCap(s)); s.mood = clamp(s.mood, 0, 100);
   /* One event a day, whatever its source. A consequence parked by yesterday takes today's slot (and the tick really
      does show up later); otherwise the day pool rolls — but only if nothing has already been forced this tick, which
@@ -269,6 +274,10 @@ function tickDay(s: RunState, rng: Rng, opts: { rest?: boolean; work?: boolean }
   if (s.money < 0 && !hasFlag(s, 'broke')) { setFlag(s, 'broke', true); out.length = 0; out.push(forceEvent(s, 'broke', rng)); }
   return out;
 }
+/* What an uneventful walk can turn into instead of the same card every time. eventChance() does the gating, so a
+   coast city can surface the swim and a Reykjavik walk the ice cave; anything that cannot happen here drops out. */
+const GOOD_WALK = ['market', 'viewpoint', 'stranger', 'bookshop', 'wrongbus', 'haircut', 'longwalk', 'museum', 'coffeeshop',
+  'animal', 'wildlife', 'matcha', 'oceanswim', 'dolphins', 'icecave', 'goodday', 'gooddaycoast', 'gooddaymountain'];
 const DAILY: Record<string, string> = STR.daily;
 export function cityAction(state: RunState, action: CityAction): StepResult {
   if (state.phase !== 'city') return { state, events: [], error: 'not in a city' };
@@ -309,7 +318,7 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       return { state: s, events: [], minigame: { key: MINIGAME_KEYS.carryon, payload: { game, level: lvl, city: city.id, cityName: city.name, hazard: city.hazard, climate: city.climate, seed: hash32(s.seed, ci, s.day, 99) }, difficulty: diff } }; }
     case 'explore': {
       s.workStreak = 0; events = tickDay(s, rng);
-      const bonus = outdoors && geared; s.energy = clamp(s.energy - (bonus ? 10 : 14), 0, energyCap(s)); s.mood = clamp(s.mood + 5 + (bonus ? 5 : 0), 0, 100);
+      const bonus = outdoors && geared; s.energy = clamp(s.energy - (bonus ? 10 : 14), 0, energyCap(s)); s.mood = clamp(s.mood + gain(s, 5 + (bonus ? 5 : 0)), 0, 100);
       s.log.push({ day: s.day, city: s.cityId, text: bonus ? `You go out with the whole kit. ${city.name} is built for it.` : DAILY.explore });
       if (outdoors && !geared && rng.chance(0.3)) { s.mood = clamp(s.mood - 3, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: STR.log.wrongShoes }); }
       /* One event a day, and exploring is the day most likely to have one. The day tick gets first refusal; in a
@@ -320,14 +329,17 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
         return { state: s, events, minigame: { key: MINIGAME_KEYS.casino, payload: { money: s.money, cityName: city.name, seed: hash32(s.seed, s.day, 88) }, difficulty: 0.5 } };
       }
       if (!events.length) events.push(...rollEvents(s, 'action', ctx, rngFor(s, 4), 1, undefined, 1.9));
-      if (!events.length) events.push(forceEvent(s, outdoors ? 'goodday' : city.coast ? 'gooddaycoast' : 'goodday', rng));
+      /* nothing rolled: the walk still produced something. One of the small good things this city can offer, the ones
+         it has not handed you recently first — "A good day" on its own was 7 cards a run, the commonest thing in the game. */
+      if (!events.length) { const good = forceOneOf(s, GOOD_WALK, ctx, rngFor(s, 24));
+        events.push(good ?? forceEvent(s, outdoors ? 'gooddaymountain' : city.coast ? 'gooddaycoast' : 'goodday', rng)); }
       /* consequences wait for tomorrow so they never make a second card today: the tick from the animal you petted,
          the fin after the swim */
       if (events.some(e => e.id === 'animal') && rngFor(s, 21).chance(0.15)) s.pendingFollowUp = 'tick';
       if (events.some(e => e.id === 'oceanswim') && rngFor(s, 22).chance(0.1)) s.pendingFollowUp = 'shark';
       break; }
     case 'rest': {
-      s.workStreak = 0; events = tickDay(s, rng, { rest: true }); s.energy = clamp(s.energy + 20, 0, energyCap(s)); s.mood = clamp(s.mood + 2, 0, 100); s.log.push({ day: s.day, city: s.cityId, text: DAILY.rest });
+      s.workStreak = 0; events = tickDay(s, rng, { rest: true }); s.energy = clamp(s.energy + gain(s, 20), 0, energyCap(s)); s.mood = clamp(s.mood + gain(s, 2), 0, 100); s.log.push({ day: s.day, city: s.cityId, text: DAILY.rest });
       break; }
     case 'laundry': {
       if (locked) return { state, events: [], error: 'The clothes are in the suitcase. The suitcase is somewhere else.' };
@@ -355,7 +367,6 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       return { state: s, events: [], minigame: { key: MINIGAME_KEYS.cooking, payload: { dish, city: city.id, dullKnives: dull }, difficulty: clamp(diff + (dull ? 0.15 : 0), 0.5, 1.6) } }; }
     case 'checkroom': setFlag(s, 'roomchecked', true); s.energy = clamp(s.energy - 2, 0, energyCap(s)); s.log.push({ day: s.day, city: s.cityId, text: STR.log.checkRoom }); return { state: s, events: [] };
     case 'moveon': {
-      if (s.stayDays < city.minStay) return { state, events: [], error: `Stay at least ${city.minStay} days in ${city.name}.` };
       events = rollEvents(s, 'leave', ctx, rng, 1); setFlag(s, 'roomchecked', false); s.phase = 'route';
       s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.leave, { city: city.name, stayDays: s.stayDays }) });
       break; }
@@ -390,6 +401,9 @@ export function minigameRewards(s: RunState, key: string, result: MinigameResult
     case MINIGAME_KEYS.casino: { const net = Math.round(result.money ?? 0); r.money = net; r.mood = net > 0 ? 6 : net < 0 ? -4 : 0; r.notes.push(net > 0 ? 'the house lost tonight' : net < 0 ? 'the house always wins' : 'walked away even'); break; }
     case MINIGAME_KEYS.airport: if (result.failed) { r.days = 1; r.energy = -15; r.mood = -10; r.notes.push('missed the flight'); } else { r.mood = 6; r.energy = -6; r.notes.push('made the flight'); } break;
   }
+  /* A good session while you are bouncing between cities gives back less of itself. Scaled here rather than at the
+     point of application so the result card promises exactly what lands. Money and lost days are not improvements. */
+  r.health = Math.round(gain(s, r.health)); r.mood = Math.round(gain(s, r.mood)); r.energy = Math.round(gain(s, r.energy));
   return r;
 }
 /** Result-card lines for a mini-game outcome, e.g. ["+5 health · +7 mood · -5 energy", "a day passes"]. */
@@ -535,7 +549,7 @@ export const Sim = {
   fmt, mitigatedLine,
   shelfPack, buildPack, randomPack, idsWeight, weekdayOf, isWeekend, nextWorkdays, fareFor, directionUndecided, setDirection,
   availableLegs, travelTo, cityAction, applyMinigameResult, resolveChoice, pendingChoices, checkEnding, score, progress, homeUnlocked, homeRequirements, continentsVisited, endingCause, monthOf,
-  visibleAchievements, energyCap, accessibleItems,
+  visibleAchievements, energyCap, accessibleItems, settle, settleLabel, churn,
   save: saveRun, load: loadRun, clear: clearRun,
 };
 export type SimApi = typeof Sim;

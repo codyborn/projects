@@ -6,7 +6,7 @@ import { Button } from '../ui/Button';
 import { Panel, dimmer } from '../ui/Panel';
 import { Hud } from '../ui/hud';
 import { toast } from '../ui/Toast';
-import { Sim, Data, getRun, putRun, recordStamps, recordDish } from '../ui/simBridge';
+import { Sim, Data, getRun, putRun, recordStamps, recordDish, recordBadges } from '../ui/simBridge';
 import { launchOnTop } from '../ui/overlay';
 import { buildIcons } from '../art/icons';
 const ACTIONS: { a: CityAction | 'map'; label: string; tip: string }[] = [
@@ -29,10 +29,10 @@ export class CityScene extends Phaser.Scene {
     /* the plate is cut to the labels, not to a per-character guess: at 13 px a character it was short for
        16 of 39 cities, and ORANGE COUNTY and SCOTTISH HIGHLANDS ran right off the end of it */
     { const name = txt(this, 14, 96, (city?.name ?? run.cityId).toUpperCase(), 16, PAL.white).setDepth(3);
-      /* how far into the minimum stay you are, so MOVE ON stops being a guess */
-      const stay = run.stayDays + 1, need = city?.minStay ?? 0;
-      const stayTxt = stay >= need ? `day ${stay} · free to move on` : `day ${stay} of ${need}`;
-      const sub = txt(this, 14, 124, `${city?.country ?? ''} · ${stayTxt}${Sim.dullKnives(run) ? ' · dull knife' : ''}`, 8, PAL.gray2).setDepth(3);
+      /* how long you have been here, and what the last fortnight of moving is costing you. There is no minimum stay
+         to count down to any more: the number that matters is how much of every good thing still sticks. */
+      const st = Sim.settleLabel(run);
+      const sub = txt(this, 14, 124, `${city?.country ?? ''} · day ${run.stayDays + 1} · ${st.word}${st.drop ? ` -${st.drop}%` : ''}${Sim.dullKnives(run) ? ' · dull knife' : ''}`, 8, PAL.gray2).setDepth(3);
       const plateW = Math.min(348, Math.max(150, 16 + Math.max(name.width, sub.width)));
       const plate = this.add.graphics().setDepth(2); plate.fillStyle(PAL.night0, 0.82); plate.fillRect(6, 90, plateW, 48); plate.fillStyle(PAL.sun1, 1); plate.fillRect(6, 90, 3, 48);
       (plate as any).__rect = { x: 6, y: 90, w: plateW, h: 48 };   /* the text-fit audit reads this */ }
@@ -61,7 +61,7 @@ export class CityScene extends Phaser.Scene {
     this.btns.forEach(b => b.setDepth(10));   /* above the vista (depth 1), which is rebuilt on day changes and would otherwise cover them */
     txt(this, 180, 620, '1 action = 1 day · work week = 5 days', 8, PAL.gray0).setOrigin(0.5).setDepth(5);
     this.refreshWorkBtn(run.day);
-    if (data.arrived) { try { recordStamps(getRun(this).stamps ?? {}); } catch { /* ignore */ } this.arrivalCard(); (this.sys.settings.data as any).arrived = false; }   /* STAY / BACK restart the scene without data; do not welcome the player twice */
+    if (data.arrived) { try { const r0 = getRun(this); recordStamps(r0.stamps ?? {}); recordBadges(Sim.visibleAchievements(r0)); } catch { /* ignore */ } this.arrivalCard(); (this.sys.settings.data as any).arrived = false; }   /* STAY / BACK restart the scene without data; do not welcome the player twice */
   }
   // ---- the vista cycles day → dusk → night → dawn as days pass, crossfading between skylines ----
   private sky?: any; private skyUpd?: (t: number, dt: number) => void;
@@ -122,7 +122,7 @@ export class CityScene extends Phaser.Scene {
       const run = getRun(this); const before = JSON.parse(JSON.stringify(run)) as RunState;
       const finish = (r: MinigameResult) => { if (r.cancelled) { putRun(this, before); this.hud.refresh(before); this.refreshLog(); toast(this, 'Another time.', PAL.gray2, 800); resolve(); return; } const s = Sim.applyMinigameResult(getRun(this), m.key, r); putRun(this, s);
         /* career record: the passport and the recipe book outlive the run */
-        try { recordStamps(s.stamps ?? {}); if (m.key === 'Cooking') { const d = m.payload?.dish?.id ?? m.payload?.id; if (d) recordDish(d, r.score); } } catch { /* storage can be unavailable */ } this.hud.refresh(s); toast(this, r.failed ? 'that did not go well' : r.perfect ? 'PERFECT' : `score ${Math.round(r.score)}`, r.failed ? PAL.red : PAL.neon); resolve(); };
+        try { recordStamps(s.stamps ?? {}); recordBadges(Sim.visibleAchievements(s)); if (m.key === 'Cooking') { const d = m.payload?.dish?.id ?? m.payload?.id; if (d) recordDish(d, r.score); } } catch { /* storage can be unavailable */ } this.hud.refresh(s); toast(this, r.failed ? 'that did not go well' : r.perfect ? 'PERFECT' : `score ${Math.round(r.score)}`, r.failed ? PAL.red : PAL.neon); resolve(); };
       if (!this.scene.get(m.key)) { toast(this, `(${m.key} not installed yet)`, PAL.gray2, 900); finish({ score: 50, perfect: false, failed: false }); return; }
       const launch: MinigameLaunch = { energy: run.energy, difficulty: m.difficulty, payload: m.payload, extraLives: m.extraLives, preview: (r) => Sim.previewMinigame(run, m.key, r), onDone: (r) => { if (this.scene.isActive(m.key) || this.scene.isPaused(m.key)) this.scene.stop(m.key); this.scene.resume(); Audio.playLoop(this.cityTrack()); finish(r); } };
       launchOnTop(this, m.key, launch); this.scene.pause();
@@ -138,7 +138,7 @@ export class CityScene extends Phaser.Scene {
     const end = Sim.checkEnding(run); if (end) { run.ending = end; run.phase = 'ended'; putRun(this, run); this.cameras.main.fadeOut(300, 0, 0, 0); this.time.delayedCall(320, () => this.scene.start('Credits', { next: 'End' })); return; }
     if (a === 'moveon' || run.phase === 'route') { this.cameras.main.fadeOut(200, 0, 0, 0); this.time.delayedCall(210, () => this.scene.start('Route')); return; }
     if (run.cleanClothes <= 0) toast(this, 'Out of clean clothes. Laundry, or consequences.', PAL.sun1, 1400);
-    this.busy = false; this.btns.forEach(b => b.setDisabled(false)); this.refreshButtons(); this.refreshWorkBtn(run.day); const lbl = this.children.list.find(o => (o as any).text?.startsWith?.(Data.city(run.cityId)?.country ?? '')) as Label | undefined; lbl?.setText(`${Data.city(run.cityId)?.country ?? ''} · stay day ${run.stayDays + 1}${Sim.dullKnives(run) ? ' · dull knife' : ''}`);
+    this.busy = false; this.btns.forEach(b => b.setDisabled(false)); this.refreshButtons(); this.refreshWorkBtn(run.day); const lbl = this.children.list.find(o => (o as any).text?.startsWith?.(Data.city(run.cityId)?.country ?? '')) as Label | undefined; const st = Sim.settleLabel(run); lbl?.setText(`${Data.city(run.cityId)?.country ?? ''} · day ${run.stayDays + 1} · ${st.word}${st.drop ? ` -${st.drop}%` : ''}${Sim.dullKnives(run) ? ' · dull knife' : ''}`);
   }
 }
 export default CityScene;

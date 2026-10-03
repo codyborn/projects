@@ -35,9 +35,11 @@ dec = lambda s: s.replace('\\n', '\n')
 
 # (section title, json file, id key, [(note key, json key, is_list)], header note)
 SPECS = [
- ('Events', 'events.json', 'id', [('title', 'title', False), ('text', 'text', False), ('mitigatedText', 'mitigatedText', False)],
+ ('Events', 'events.json', 'id', [('title', 'title', False), ('text', 'text', False), ('texts', 'texts', True), ('mitigatedText', 'mitigatedText', False)],
   'What pops up on the trail. `text` is what you read without the mitigating gear, `mitigatedText` with it (only one is ever shown). '
-  'A `mitigatedText.<item>` line replaces it when that particular item is the one that saved you \u2014 the umbrella does not go *on*. Placeholders: {city} {day} {item}.'),
+  'A `mitigatedText.<item>` line replaces it when that particular item is the one that saved you \u2014 the umbrella does not go *on*. '
+  '`texts` holds alternate tellings of `text`, separated by ` | `: one of them is picked at random each time the event fires, so the commonest cards do not read word for word the same a dozen times a run. '
+  'Placeholders: {city} {day} {item}.'),
  ('Cities', 'cities.json', 'id', [('name', 'name', False), ('country', 'country', False), ('blurb', 'blurb', False)],
   'The arrival card. Blurbs describe the place, never an in-game event.'),
  ('Puzzles', 'puzzles.json', 'id', [('title', 'title', False), ('prompt', 'prompt', False), ('choices', 'choices', True), ('hint', 'hint', False), ('explain', 'explain', False)],

@@ -172,6 +172,25 @@ function tokyoTrainTexture(scene: Phaser.Scene, tod: TimeOfDay, win: number, fra
     if (i === cars - 1) R(ctx, x + cw - 2, 9, 2, 2, PAL.red); } });
   scene.textures.addCanvas(key, cv); return key;
 }
+/* Victoria Harbour is never still, so the junk is a sprite rather than part of the painted layer: it sails across the
+   water and comes back the other way a while later (round 102). Baseline at the bottom of the hull, origin (0,1). */
+const HK_WATER_DY = 26;   /* the foreground harbour: the near layer paints water from horizonY-40 down and would cover a junk any higher */
+function hkJunkTexture(scene: Phaser.Scene, tod: TimeOfDay, flip: boolean): string {
+  const key = `hk_junk_${tod}_${flip ? 'w' : 'e'}`; if (scene.textures.exists(key)) return key;
+  const W2 = 40, H2 = 40, hull = tod === 'night' ? PAL.night1 : PAL.ink, deck = PAL.earth0;
+  const sail = tod === 'night' ? PAL.dusk2 : PAL.red, batten = tod === 'day' ? PAL.earth0 : PAL.ink;
+  const cv = makeCanvas(W2, H2, ctx => {
+    const jx = 18, jy = H2 - 4;
+    R(ctx, jx - 16, jy - 4, 34, 5, hull); R(ctx, jx - 12, jy - 7, 26, 3, deck);
+    for (let k = 0; k < 4; k++) R(ctx, jx + 14 + k, jy - 8 + k, 1, 4, hull);          // the raised stern
+    for (const [mx, mh, mw] of [[-8, 20, 9], [2, 26, 11], [12, 18, 8]] as [number, number, number][]) {
+      R(ctx, jx + mx, jy - 7 - mh, 1, mh, hull);
+      for (let y = 0; y < mh; y++) { const sw = Math.round(mw * (0.4 + 0.6 * y / mh)); R(ctx, jx + mx + 1, jy - 7 - mh + y, sw, 1, y % 4 === 0 ? batten : sail); } }
+  });
+  if (!flip) { scene.textures.addCanvas(key, cv); return key; }
+  const m = makeCanvas(W2, H2, ctx => { ctx.save(); ctx.translate(W2, 0); ctx.scale(-1, 1); ctx.drawImage(cv as unknown as CanvasImageSource, 0, 0); ctx.restore(); });
+  scene.textures.addCanvas(key, m); return key;
+}
 /** Cities that paint their own ground in the near layer (ocean to the bottom, resort tiles). */
 const NO_GROUND = new Set(['orangecounty', 'roatan', 'miami', 'laventana', 'hyeres', 'scotland', 'montana', 'patagonia', 'iguazu', 'chiangmai', 'lasvegas', 'joshuatree', 'lapaz', 'iceland', 'salzkammergut', 'dakhla', 'hongkong', 'minakami', 'riviera']);
 /** Blocky 3x5 letters for signs. */
@@ -327,11 +346,7 @@ const CITY: Record<string, Drawer> = {
   seoul: (ctx, w, hy, L, c, win, r) => { if (L === 'far') { mountains(ctx, w, hy, c, r, 70, 40); const x = Math.floor(w * 0.3); R(ctx, x, hy - 130, 4, 130, c); circle(ctx, x + 2, hy - 120, 6, c); } else if (L === 'mid') buildings(ctx, w, hy, c, win, r, 40, 90, 10, 20, 0.5); else { buildings(ctx, w, hy, c, win, r, 10, 28, 14, 30, 0.35); neonSigns(ctx, w, hy, r, 10); } },
   chiangmai: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') mountains(ctx, w, hy, c, r, 60, 50); else if (L === 'mid') { for (let i = 0; i < 3; i++) { const x = 40 + i * 120; for (let y = 0; y < 34; y++) { const hw = Math.round((1 - y / 34) * 9) + 1; R(ctx, x - hw, hy - 20 - y, hw * 2, 1, PAL.sun2); } R(ctx, x - 12, hy - 20, 24, 22, c); } trees(ctx, w, hy, c, r, 16, false); } else { grassGround(ctx, w, hy - 40, tod, r); for (let i = 0; i < 8; i++) { const x = r.int(0, w); R(ctx, x, hy - 14, 3, 12, PAL.sun1); } } },
   hongkong: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { mountains(ctx, w, hy - 40, c, r, 80, 40); buildings(ctx, w, hy, c, win, r, 90, 170, 6, 12, 0.6); }
-    else if (L === 'mid') { buildings(ctx, w, hy - 20, c, win, r, 50, 120, 8, 16, 0.6); water(ctx, w, hy - 20, 20, tod, r);
-      // a red-sailed junk in the harbour
-      const jx = Math.floor(w * 0.4), jy = hy - 8; R(ctx, jx - 16, jy - 4, 34, 5, PAL.ink); R(ctx, jx - 12, jy - 7, 26, 3, PAL.earth0); for (let k = 0; k < 4; k++) R(ctx, jx + 14 + k, jy - 8 + k, 1, 4, PAL.ink);
-      for (const [mx, mh, mw] of [[-8, 20, 9], [2, 26, 11], [12, 18, 8]]) { R(ctx, jx + mx, jy - 7 - mh, 1, mh, PAL.ink); for (let y = 0; y < mh; y++) { const sw = Math.round(mw * (0.4 + 0.6 * y / mh)); R(ctx, jx + mx + 1, jy - 7 - mh + y, sw, 1, y % 4 === 0 ? PAL.earth0 : PAL.red); } }
-    } else { waterToBottom(ctx, w, hy - 40, tod, r); for (let i = 0; i < 4; i++) { const x = r.int(0, w), y = hy + r.int(-8, 50); R(ctx, x, y, 20, 6, c); R(ctx, x + 4, y - 6, 12, 6, c); P(ctx, x + 8, y - 4, win); R(ctx, x - 2, y + 6, 24, 1, PAL.night1); } } },   /* sampans on the harbour, which now runs to the bottom */
+    else if (L === 'mid') { buildings(ctx, w, hy - 20, c, win, r, 50, 120, 8, 16, 0.6); water(ctx, w, hy - 20, 20, tod, r); }   /* the junk sails: it is a sprite in buildSkyline, not paint */ else { waterToBottom(ctx, w, hy - 40, tod, r); for (let i = 0; i < 4; i++) { const x = r.int(0, w), y = hy + r.int(-8, 50); R(ctx, x, y, 20, 6, c); R(ctx, x + 4, y - 6, 12, 6, c); P(ctx, x + 8, y - 4, win); R(ctx, x - 2, y + 6, 24, 1, PAL.night1); } } },   /* sampans on the harbour, which now runs to the bottom */
   kathmandu: (ctx, w, hy, L, c, win, r, tod) => { if (L === 'far') { const mc = tod === 'day' ? PAL.night3 : tod === 'night' ? PAL.night2 : PAL.dusk0; peaks(ctx, w, hy, mc, r, 76, 22, PAL.white, 0.7); R(ctx, 0, hy - 2, w, 4, mc); }   // the Himalaya: bases at the horizon, summits inside the frame, snow on the caps only
     else if (L === 'mid') { // Boudhanath: white dome, gold harmika with the eyes, thirteen-step spire, prayer flags
       const x = Math.floor(w * 0.3), by = hy - 6; R(ctx, x - 44, by - 8, 88, 10, PAL.gray2); for (let y = 0; y < 30; y++) { const hw = Math.round(Math.sqrt(1 - Math.pow(1 - y / 30, 2)) * 40); R(ctx, x - hw, by - 8 - 30 + y, hw * 2, 1, PAL.white); }
@@ -462,6 +477,9 @@ export function buildSkyline(scene: Phaser.Scene, cityIdOrRegion: string, tod: T
   if (key === 'tokyo') { trainFrames.push(tokyoTrainTexture(scene, tod, win, 0), tokyoTrainTexture(scene, tod, win, 1));
     train = scene.add.image(-200, horizonY + TOKYO_TRACK_DY, trainFrames[0]).setOrigin(0, 1).setVisible(false); container.addAt(train, 3); anim.push(train);
     const rr = rng(seedOf(key + tod + 'train')); trainWait = rr.int(2, 7); }
+  /* Hong Kong: the junk crosses the harbour, waits out of frame, and comes back the other way */
+  let junk: Phaser.GameObjects.Image | undefined; let junkX = 0, junkDur = 26, junkDir: 1 | -1 = 1, junkWait = 0;
+  if (key === 'hongkong') { junk = scene.add.image(-80, horizonY + HK_WATER_DY, hkJunkTexture(scene, tod, false)).setOrigin(0, 1); container.add(junk); anim.push(junk); }
   const speeds = [0.15, 0.4, 1];
   const sl: Skyline = {
     container, layers: [far, mid, near], sky, horizonY, width: w, height: h,
@@ -469,6 +487,11 @@ export function buildSkyline(scene: Phaser.Scene, cityIdOrRegion: string, tod: T
     update(dt) { t += dt / 1000;
       if (rain) { rain.clear(); rain.lineStyle(1, PAL.sky2, 0.55); const rr = rng(Math.floor(t * 12)); for (let i = 0; i < 40; i++) { const x = rr.int(0, w), y = rr.int(0, h); rain.lineBetween(x, y, x - 2, y + 9); } }
       for (const n of neon) n.setVisible(Math.sin(t * 3 + (n as any).__ph) > -0.7);
+      if (junk) { const dt2 = dt / 1000;
+        if (junkWait > 0) { junkWait -= dt2; junk.setVisible(false); }
+        else { junk.setVisible(true); junkX += dt2 / junkDur; const span = w + 100;
+          junk.setPosition(Math.round(junkDir > 0 ? -50 + junkX * span : w + 10 - junkX * span), horizonY + HK_WATER_DY + (Math.sin(t * 1.7) > 0 ? 0 : 1));   /* a 1 px roll on the swell */
+          if (junkX >= 1) { junkX = 0; junkDir = junkDir > 0 ? -1 : 1; junk.setTexture(hkJunkTexture(scene, tod, junkDir < 0)); junkWait = 6 + rng(Math.floor(t * 1000) + 5).next() * 8; junkDur = 22 + rng(Math.floor(t * 1000) + 9).next() * 12; } } }
       if (train) { const dt2 = dt / 1000;
         if (!train.visible) { trainWait -= dt2; if (trainWait <= 0) { const rr = rng(Math.floor(t * 1000) + 7); trainDir = rr.chance(0.5) ? 1 : -1; trainDur = 4 + rr.next() * 2; trainX = 0; train.setFlipX(trainDir < 0).setVisible(true); } }
         else { trainX += dt2 / trainDur; const span = w + 130; const px = trainDir > 0 ? -110 + trainX * span : w + 110 - trainX * span;

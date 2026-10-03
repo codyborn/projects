@@ -70,7 +70,11 @@ describe('laundry pays for skill', () => {
     const r = Sim.cityAction(s, 'laundry'); expect(r.minigame?.key).toBe('Laundry'); expect(r.state.cleanClothes).toBe(0);
     const great = Sim.applyMinigameResult(r.state, 'Laundry', { score: 100, perfect: true, failed: false }).state; expect(great.cleanClothes).toBe(Math.min(great.maxClothes + 3, great.maxClothes + 3));
     const bad = Sim.applyMinigameResult(r.state, 'Laundry', { score: 20, perfect: false, failed: true }).state; expect(bad.cleanClothes).toBeLessThan(great.cleanClothes); expect(bad.cleanClothes).toBeGreaterThan(0);
-    let d = { ...s, cleanClothes: 0, mood: 80 }; const m0 = d.mood; d = Sim.cityAction(d, 'rest').state; const drop1 = m0 - d.mood + 2; d = Sim.cityAction(d, 'rest').state; const drop2 = (m0 - drop1 + 2) - d.mood + 2;
-    expect(drop2).toBeGreaterThan(drop1 - 1);
+    /* the escalation is measured from the second dirty day on: the first one also carries the one-off "nothing clean"
+       notice (round 102), which is a card rather than part of the slope */
+    let d = { ...s, cleanClothes: 0, mood: 80 }; d = Sim.cityAction(d, 'rest').state;
+    const m1 = d.mood; d = Sim.cityAction(d, 'rest').state; const drop2 = m1 - d.mood;
+    const m2 = d.mood; d = Sim.cityAction(d, 'rest').state; const drop3 = m2 - d.mood;
+    expect(drop3).toBeGreaterThan(drop2 - 1);
   });
 });

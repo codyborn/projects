@@ -57,7 +57,10 @@ export function playRun(seed: number, style: PackStyle, opts: { start?: string; 
       const city = Sim.CITY[s.cityId];
       /* a player watches the days-left counter: with continents still to cross, stays shrink toward the minimum as the year runs down */
       const contsLeft = Math.max(0, 4 - Sim.continentsVisited(s).length); const daysLeft = 365 - s.day; const pace = contsLeft > 0 ? daysLeft / (contsLeft * 4 + 4) : Math.max(4, daysLeft / 4);   /* about 5 cities per continent at the start, then head home */
-      const target = Math.max(city.minStay, Math.min(city.suggestedStay + rng.int(-3, 3), Math.round(pace)));
+      /* nothing stops you leaving on day one now. The learned player knows what that costs and keeps to roughly one
+         move a fortnight; the first-timer goes by the guidebook number and the calendar, and pays for it */
+      const want = Math.min(city.suggestedStay + rng.int(-3, 3), Math.round(pace));
+      const target = smart ? Math.max(8, want) : Math.max(2, want);
       let action: CityAction;
       if (s.stayDays >= target) action = smart && s.stayDays === Math.ceil(target) && !Sim.hasFlag(s, 'roomchecked') && !Sim.hasTag(s, 'organizer') ? 'checkroom' : 'moveon';
       else if (s.cleanClothes <= (smart ? 1 : 0)) action = 'laundry';

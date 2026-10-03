@@ -15,9 +15,10 @@ export const META: Record<string, MicroMeta> = {
   swimbreath:  { name: 'Swim Breathing', word: 'STROKE!',  instr: "Tap LEFT, RIGHT, LEFT... When the bubble appears, DON'T tap: breathe.", hint: 'TAP L, R, L - not on the bubble', durationSec: 8 },
   balance:     { name: 'Balance Board', word: 'STEADY!',   instr: 'Hold LEFT or RIGHT to lean against the gusts. Stay centred.', hint: 'HOLD left/right vs gusts', durationSec: 7 },
   pose:        { name: 'Yoga',          word: 'YOGA!',     instr: 'Scroll the wheel on the right to the pose the shadow shows: Downward Dog, Cobra, Warrior II or Plank. Hold it half a second.', hint: 'SCROLL the wheel - hold it', durationSec: 40 }   /* a proper session, not a cameo: five times the old eight seconds */,
-  cityrun:     { name: 'City Run',      word: 'HOP!',      instr: 'Frogger. D-PAD to hop one square: cross the traffic, rest on the median, reach the coffee shop. Make it across once and the coffee is yours. 3 lives. Swipes work too.', hint: 'D-PAD to hop - get coffee', durationSec: 28 },
+  cityrun:     { name: 'City Run',      word: 'HOP!',      instr: 'Frogger. The whole screen is the D-pad: TAP above, below or to either side of the runner to hop one square. Cross the traffic, rest on the median, reach the coffee shop. Make it across once and the coffee is yours. 3 lives.', hint: 'TAP a side to hop - coffee', durationSec: 28 },
   runner:      { name: 'Trail Run',     word: 'RUN!',      instr: 'TAP to jump the rocks. Press and HOLD to duck under the branches; let go and you jump.', hint: 'TAP jump - HOLD duck', durationSec: 13 },
   woodchop:    { name: 'Wood Chop',     word: 'CHOP!',     instr: 'The axe circles the round. SWIPE DOWN (or tap) when the head is over the green splitting line. Eight rounds; it gets faster.', durationSec: 22 },
+  slalom:      { name: 'Slalom',        word: 'CARVE!',   instr: 'HOLD the left or right half of the screen to carve (arrow keys work too). Through the poles on twelve gates. The skis keep their line after you let go, so turn early.', hint: 'HOLD left/right to carve', durationSec: 24 },
   pinnacle:    { name: 'The In Pinn',   word: 'STEADY!',   instr: 'HOLD anywhere to walk. TILT the phone left / right to balance (or tap the halves). When the fog streaks and the arrow appear: STOP. Wind while walking is almost impossible to balance. Reach the end of the ridge. Or fall.', durationSec: 3600 },
 };
 export const MICRO_IDS = Object.keys(META);
@@ -27,7 +28,8 @@ export const POOLS: Partial<Record<ActivityId, string[]>> = {
   trailrun: ['runner', 'riverstones'],
   hike: ['sprint', 'stretch', 'riverstones', 'balance'],
   swim: ['swimbreath'],
-  yoga: ['balance', 'pose'], surf: ['balance', 'pose'], ski: ['balance', 'pose'],
+  yoga: ['balance', 'pose'], surf: ['balance', 'pose'],
+  ski: ['slalom'],   /* round 102: the warm layer unlocks skiing, so skiing has to be skiing and not a balance board */
 };
 /** How many different games a session chains, each played once at normal speed: hotel room and hike play three, everything else one. */
 export const SESSION_GAMES: Partial<Record<ActivityId, number>> = { bands: 3, hike: 3 };

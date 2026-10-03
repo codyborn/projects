@@ -1,4 +1,6 @@
-// Passport spread: stamps per visited city (plain/gold), swipe to flip pages. Reads registry 'run' and 'cities'.
+// Passport spread: stamps per visited city (plain/gold), then a final BADGES page, swipe to flip. Reads registry 'run' and 'cities'.
+// Round 102: the run had been recording two dozen achievements since the beginning and nothing in the game ever showed
+// one. They live in the career store now (settings.career.badges) and get the last page of the book.
 import Phaser from 'phaser';
 import { getSettings } from '../ui/simBridge';
 import { PAL } from '../core/palette';
@@ -8,6 +10,7 @@ import { stampTexture } from '../art/sprites';
 import { buildPixelFont, ptext } from '../art/font';
 import { px, R, rng, seedOf } from '../art/pixel';
 import { Audio } from '../audio/synth';
+import strings from '../data/strings.json';
 
 export class PassportScene extends Phaser.Scene {
   private page = 0; private pageObjs: Phaser.GameObjects.GameObject[] = []; private onClose?: () => void; private backKey?: string;
@@ -27,9 +30,27 @@ export class PassportScene extends Phaser.Scene {
     for (const [id, k] of Object.entries(run?.stamps ?? {})) if (k === 'gold' || !stamps[id]) stamps[id] = k as 'plain' | 'gold';
     const visited = Object.keys(stamps);
     const entries = visited.map(id => cities.find(c => c.id === id)).filter((c): c is City => !!c);
-    const perPage = 12; const pages = Math.max(1, Math.ceil(entries.length / perPage));
+    /* badges: this run's, folded into everything earned in earlier runs */
+    const BADGE_NAMES = strings.badges as Record<string, string>;
+    const earned: Record<string, true> = { ...(career as { badges?: Record<string, true> }).badges };
+    for (const a of (run?.achievements ?? [])) if (!a.startsWith('_') && !a.startsWith('gold_')) earned[a] = true;
+    const badges = Object.keys(earned).filter(id => BADGE_NAMES[id]).sort((a, b) => BADGE_NAMES[a].localeCompare(BADGE_NAMES[b]));
+    const perPage = 12; const stampPages = Math.max(1, Math.ceil(entries.length / perPage));
+    const pages = stampPages + (badges.length ? 1 : 0);
+    const renderBadges = () => {
+      this.pageObjs.push(ptext(this, GAME_W / 2, 132, 'BADGES', PAL.gray0, 2).setOrigin(0.5));
+      badges.slice(0, 24).forEach((id, i) => {
+        const half = Math.floor(i / 12), j = i % 12;
+        const x = half === 0 ? 46 : 196, y = 168 + j * 26;   // inside the white of each page, clear of the book's edges
+        const t = ptext(this, x, y, BADGE_NAMES[id].slice(0, 20), PAL.gray0, 1).setAlpha(0); this.pageObjs.push(t);
+        this.tweens.add({ targets: t, alpha: 1, duration: 160, delay: i * 30 });
+        this.pageObjs.push(ptext(this, x - 10, y, '*', PAL.sun0, 1));
+      });
+      this.pageObjs.push(ptext(this, GAME_W / 2, GAME_H / 2 + 182, `${badges.length} OF ${Object.keys(BADGE_NAMES).filter(k => k !== '_note').length}`, PAL.gray0, 1).setOrigin(0.5));
+    };
     const render = () => {
       this.pageObjs.forEach(o => o.destroy()); this.pageObjs = [];
+      if (badges.length && this.page === pages - 1) { renderBadges(); this.pageObjs.push(ptext(this, GAME_W / 2, GAME_H / 2 + 196, `${this.page + 1} / ${pages}`, PAL.gray1, 1).setOrigin(0.5)); return; }
       const slice = entries.slice(this.page * perPage, (this.page + 1) * perPage);
       // Two facing pages (book spans x 20..340, spine at 180, white from 28 to 332). Each page: 2 columns x 3 rows of stamps, well inside the white.
       slice.forEach((c, i) => {

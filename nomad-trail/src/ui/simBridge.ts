@@ -11,6 +11,8 @@ export interface SimApi {
   createRun(seed: number, startCity: string, direction: 'east' | 'west'): RunState;
   /** this city's Airbnb came with the dull knife (cooking is tighter here) */
   dullKnives(state: RunState): boolean;
+  /** how much of every improvement still sticks, given how much the run has moved lately, and the word for it */
+  settleLabel(state: RunState): { word: string; drop: number };
   hasItem(state: RunState, id: string): boolean;
   hasTag(state: RunState, tag: string): boolean;
   /** where the route corridor goes after this continent (undefined before the first leg) */
@@ -44,14 +46,15 @@ export interface SimApi {
   /** Fare for a leg, if the engine prices legs. */
   legCost(state: RunState, leg: Leg): number | undefined;
 }
-import { loadSettings as _loadSettings, saveSettings as _saveSettings, recordRun, recordStamps, recordDish } from '../core/sim';
-export { recordRun, recordStamps, recordDish };
+import { loadSettings as _loadSettings, saveSettings as _saveSettings, recordRun, recordStamps, recordDish, recordBadges } from '../core/sim';
+export { recordRun, recordStamps, recordDish, recordBadges };
 const E = Engine as any;
 /** Adapter: the engine returns StepResult {state, events: ResolvedEvent[]} and mutates nothing; scenes expect ids + plain states. */
 export const Sim: SimApi = {
   gridSpecs: E.GRID,
   createRun: (seed, start, dir) => E.createRun(seed, start, dir),
   dullKnives: (state) => E.dullKnives(state),
+  settleLabel: (state) => E.settleLabel(state),
   hasItem: (state, id) => E.hasItem(state, id),
   hasTag: (state, tag) => E.hasTag(state, tag as any),
   nextContinent: (state) => E.nextContinent(state),
