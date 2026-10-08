@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cross-chain hops as routable edges</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#161922; --line:#242838; --ink:#e6e4df; --mute:#8b8f9e;
+    --accent:#f0b429; --accent-dim:#6b5520; --good:#4ba36a; --bad:#c2564b; --wire:#2e3447;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.6 ui-sans-serif,-apple-system,"SF Pro Text",Inter,system-ui,sans-serif}
+  .wrap{max-width:1040px;margin:0 auto;padding:40px 24px 80px}
+  header{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:34px}
+  h1{font-size:25px;margin:0 0 8px;letter-spacing:-.02em;font-weight:600}
+  .sub{color:var(--mute);font-size:15px;max-width:64ch;margin:0}
+  .tag{display:inline-block;font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--accent-dim);border-radius:3px;
+    padding:3px 8px;margin-bottom:14px}
+  h2{font-size:12px;letter-spacing:.11em;text-transform:uppercase;color:var(--mute);
+    margin:38px 0 14px;font-weight:600}
+  .thesis{background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--accent);
+    border-radius:4px;padding:18px 20px;margin:0 0 10px}
+  .thesis p{margin:0;max-width:72ch}
+  .thesis .before{color:var(--mute)}
+  /* route diagram */
+  .route{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;margin:18px 0 6px}
+  .node{background:var(--panel);border:1px solid var(--line);border-radius:4px;
+    padding:13px 15px;min-width:132px;flex:1;transition:border-color .25s,background .25s}
+  .node.lit{border-color:var(--accent);background:#1d2030}
+  .node.done{border-color:var(--good)}
+  .node .chain{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute)}
+  .node .op{font-size:14px;margin-top:5px;font-weight:500}
+  .node .detail{font-size:12px;color:var(--mute);margin-top:3px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .arrow{display:flex;align-items:center;padding:0 9px;color:var(--wire);font-size:17px;
+    transition:color .25s}
+  .arrow.lit{color:var(--accent)}
+  .hopline{font-size:11px;color:var(--mute);text-align:center;margin-top:4px}
+  /* controls */
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:20px 0 6px}
+  button{background:var(--accent);color:#17130a;border:0;border-radius:4px;
+    padding:9px 17px;font:inherit;font-weight:600;font-size:14px;cursor:pointer}
+  button:hover{filter:brightness(1.07)}
+  button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:500}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  label.tog{display:inline-flex;gap:7px;align-items:center;color:var(--mute);font-size:13px;
+    cursor:pointer;user-select:none}
+  /* log */
+  .log{background:#0b0d12;border:1px solid var(--line);border-radius:4px;padding:15px 17px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;line-height:1.85;
+    min-height:260px;max-height:360px;overflow:auto}
+  .log .t{color:#5a6075}
+  .log .ok{color:var(--good)}
+  .log .warn{color:var(--accent)}
+  .log .err{color:var(--bad)}
+  .log .dim{color:var(--mute)}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:860px){.cols{grid-template-columns:1fr}}
+  pre{background:#0b0d12;border:1px solid var(--line);border-radius:4px;padding:15px 17px;
+    overflow-x:auto;font-size:12.5px;line-height:1.7;margin:0}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .k{color:var(--accent)}
+  .c{color:#5a6075}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  td,th{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--mute);font-weight:500;font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+  td.m{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;color:var(--mute)}
+  .gap{border:1px solid var(--line);border-left:2px solid var(--bad);background:var(--panel);
+    border-radius:4px;padding:16px 19px}
+  .gap ul{margin:9px 0 0;padding-left:19px}
+  .gap li{margin:6px 0;color:var(--mute)}
+  .gap li b{color:var(--ink);font-weight:500}
+  footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--line);
+    color:var(--mute);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="tag">Proof of concept</div>
+  <h1>Cross-chain hops as routable edges</h1>
+  <p class="sub">A Uniswap v4 hook that wraps Across, so the router can price and path through a
+  bridge the same way it prices any other pool.</p>
+</header>
+
+<div class="thesis">
+  <p class="before">Today a cross-chain route is <b>swap, bridge, swap</b>, stitched together by an
+  orchestrator. The bridge is a system the router calls.</p>
+  <p style="margin-top:10px">Here the bridge <b>is a pool</b>. The cross-chain hop becomes one more
+  edge in the graph, so Uniroute and GuideStar can optimise across it with the pathfinding that
+  already exists.</p>
+</div>
+
+<h2>The route</h2>
+<div class="route" id="route">
+  <div class="node" data-step="0">
+    <div class="chain">Base</div><div class="op">USDC &rarr; WETH</div>
+    <div class="detail">ordinary v4 pool</div>
+  </div>
+  <div class="arrow" data-arrow="0">&rarr;</div>
+  <div class="node" data-step="1">
+    <div class="chain">Base</div><div class="op">Bridge hook</div>
+    <div class="detail">beforeSwap, custom accounting</div>
+  </div>
+  <div class="arrow" data-arrow="1">&rarr;</div>
+  <div class="node" data-step="2">
+    <div class="chain">Across</div><div class="op">Intent filled</div>
+    <div class="detail">relayer fronts capital</div>
+  </div>
+  <div class="arrow" data-arrow="2">&rarr;</div>
+  <div class="node" data-step="3">
+    <div class="chain">Unichain</div><div class="op">WETH &rarr; UNI</div>
+    <div class="detail">from message calldata</div>
+  </div>
+</div>
+<div class="hopline">one quoted path &middot; the user signs once</div>
+
+<div class="controls">
+  <button id="run">Run route</button>
+  <button id="reset" class="ghost">Reset</button>
+  <label class="tog"><input type="checkbox" id="fail"> simulate onward swap reverting</label>
+</div>
+
+<div class="cols">
+  <div>
+    <h2>Execution trace</h2>
+    <div class="log" id="log"><span class="dim">Idle. Press Run route.</span></div>
+  </div>
+  <div>
+    <h2>The intent, encoded at source</h2>
+    <pre><code><span class="c">// hookData on the v4 swap</span>
+BridgeIntent {
+  destinationChainId: <span class="k">130</span>,      <span class="c">// Unichain</span>
+  recipient:          RouteContinuation,
+  outputToken:        WETH,
+  fillDeadlineOffset: <span class="k">1800</span>,
+  message:            Continuation {
+    target:         UniversalRouter,
+    callData:       swap(WETH &rarr; UNI),
+    finalRecipient: user
+  }
+}</code></pre>
+    <h2 style="margin-top:26px">Why this is priceable</h2>
+    <table>
+      <tr><th>Across field</th><th>Why it matters</th></tr>
+      <tr><td class="m">outputAmount</td><td>Set by the <b>caller</b>, not an oracle. The hook
+        states the output it will accept, so the leg is simulatable on-chain with no API call.</td></tr>
+      <tr><td class="m">message</td><td>Arbitrary calldata run on arrival. The onward route
+        travels with the intent.</td></tr>
+      <tr><td class="m">outputToken</td><td>May differ from the input, so bridge and swap
+        collapse into one intent.</td></tr>
+    </table>
+  </div>
+</div>
+
+<h2>Known gaps, stated plainly</h2>
+<div class="gap">
+  <ul>
+    <li><b>The source leg quotes zero output.</b> The output exists on another chain, which is
+      honest accounting but means <code>amountOutMinimum</code> is meaningless here. Production
+      wants a claim token so the leg has a real quoted output and somewhere to hold a refund.
+      This is what Hop's hToken is.</li>
+    <li><b>The fee is a constant.</b> Real deployments should read Across suggested-fees rather
+      than a fixed basis-point cut.</li>
+    <li><b>No refund path on the source side.</b> If no relayer fills before
+      <code>fillDeadline</code>, Across refunds the depositor, which is the hook. The hook has
+      no logic to return those funds to the user.</li>
+    <li><b>Custom accounting needs trace-based simulation.</b> Events report a swap value of
+      zero, so routing must simulate rather than read events.</li>
+    <li><b>Not audited, never deployed.</b> The destination half is unit tested; the hook has
+      not been exercised against a live PoolManager.</li>
+  </ul>
+</div>
+
+<footer>
+  Hook calls a deployed Across SpokePool. Across contracts are BUSL-1.1, which restricts copying,
+  not calling; only the function signature is reproduced, and the destination handler interface is
+  MIT. Built for the Uniswap Fall Onsite hackathon.
+</footer>
+
+</div>
+
+<script>
+const steps = [
+  {t:0,    s:null, cls:'dim',  m:'swap() → PoolManager.unlock'},
+  {t:260,  s:0,    cls:'',     m:'[Base] USDC → WETH  ·  ordinary v4 pool  ·  out 2.481 WETH'},
+  {t:900,  s:1,    cls:'',     m:'[Base] hook.beforeSwap()  ·  hookData decoded'},
+  {t:1180, s:1,    cls:'dim',  m:'        intent → chain 130, continuation present'},
+  {t:1430, s:1,    cls:'',     m:'        poolManager.take(WETH, hook, 2.481)'},
+  {t:1700, s:1,    cls:'warn', m:'        BeforeSwapDelta(+2.481, 0)  ← consumes input, no local output'},
+  {t:2000, s:1,    cls:'',     m:'        spokePool.depositV3(outputAmount = 2.475)'},
+  {t:2260, s:1,    cls:'dim',  m:'        fee 6 bps withheld  ·  fillDeadline +1800s'},
+  {t:2560, s:2,    cls:'',     m:'[Across] intent open, awaiting relayer'},
+  {t:3200, s:2,    cls:'ok',   m:'[Across] filled by relayer  ·  capital fronted on destination'},
+  {t:3560, s:3,    cls:'',     m:'[Unichain] handleV3AcrossMessage(WETH, 2.475, relayer, msg)'},
+  {t:3800, s:3,    cls:'dim',  m:'           msg.sender == spokePool  ✓'}
+];
+const ok   = [
+  {t:4060, s:3, cls:'',   m:'           continuation decoded → UniversalRouter'},
+  {t:4340, s:3, cls:'ok', m:'[Unichain] WETH → UNI  ·  out 41.92 UNI → user'},
+  {t:4620, s:3, cls:'ok', m:'ContinuationExecuted  ·  route complete, one signature'}
+];
+const bad  = [
+  {t:4060, s:3, cls:'',    m:'           continuation decoded → UniversalRouter'},
+  {t:4340, s:3, cls:'err', m:'[Unichain] onward swap REVERTED'},
+  {t:4620, s:3, cls:'warn',m:'           approval cleared, 2.475 WETH → user'},
+  {t:4900, s:3, cls:'ok',  m:'ContinuationSkipped  ·  user holds bridged asset, not stuck'}
+];
+
+const log=document.getElementById('log'), runBtn=document.getElementById('run');
+let timers=[];
+
+function clearAll(){
+  timers.forEach(clearTimeout); timers=[];
+  document.querySelectorAll('.node').forEach(n=>n.classList.remove('lit','done'));
+  document.querySelectorAll('.arrow').forEach(a=>a.classList.remove('lit'));
+}
+function reset(){
+  clearAll();
+  log.innerHTML='<span class="dim">Idle. Press Run route.</span>';
+  runBtn.disabled=false;
+}
+function line(cls,m){
+  if(log.querySelector('.dim') && log.children.length===1 && log.textContent.startsWith('Idle')) log.innerHTML='';
+  const ts=new Date().toISOString().substr(14,9);
+  const d=document.createElement('div');
+  d.innerHTML='<span class="t">'+ts+'</span>  <span class="'+cls+'">'+m+'</span>';
+  log.appendChild(d); log.scrollTop=log.scrollHeight;
+}
+function light(i){
+  if(i===null) return;
+  document.querySelectorAll('.node').forEach((n,j)=>{
+    n.classList.toggle('lit', j===i);
+    if(j<i) {n.classList.add('done'); n.classList.remove('lit');}
+  });
+  document.querySelectorAll('.arrow').forEach((a,j)=>a.classList.toggle('lit', j<i));
+}
+function run(){
+  clearAll(); log.innerHTML=''; runBtn.disabled=true;
+  const tail = document.getElementById('fail').checked ? bad : ok;
+  const all = steps.concat(tail);
+  all.forEach(s=>{
+    timers.push(setTimeout(()=>{ light(s.s); line(s.cls,s.m); },s.t));
+  });
+  timers.push(setTimeout(()=>{
+    document.querySelectorAll('.node').forEach(n=>{n.classList.remove('lit');n.classList.add('done');});
+    runBtn.disabled=false;
+  }, all[all.length-1].t+420));
+}
+runBtn.onclick=run;
+document.getElementById('reset').onclick=reset;
+</script>
+</body>
+</html>
