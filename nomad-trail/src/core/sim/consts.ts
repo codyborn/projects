@@ -1,6 +1,6 @@
 // Tunables shared by the engine, the packer and the headless policy. No imports (keeps the module graph acyclic).
 export const GRID = {
-  checked: { cols: 8, rows: 10, maxLb: 50, label: 'Suitcase' },
+  checked: { cols: 8, rows: 10, maxLb: 47, label: 'Suitcase' },   /* round 103: the 12 lb kite bundle left the packing list, so the heaviest legal bag fell from 52.7 lb to 47.4. At the old 50 the limit became unreachable — the weight bar could never go red — and at 45 the ratio rose enough on every bag to drain travel energy and send a fifth of failures to the overdraft. 47 keeps the limit just reachable with the broke share at 14%. */
 } as const;
 export type PackBag = keyof typeof GRID;          // the only bag that exists now: the suitcase
 export const TOTAL_DAYS = 365;

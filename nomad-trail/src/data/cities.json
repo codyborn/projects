@@ -107,7 +107,8 @@
     "costPerDay": 150,
     "droneRule": "ok",
     "museum": "the Pérez Art Museum",
-    "coast": true
+    "coast": true,
+    "seaSwim": true
   },
   {
     "id": "newyork",
@@ -696,7 +697,8 @@
     "costPerDay": 60,
     "droneRule": "ok",
     "museum": "the Bowers Museum",
-    "coast": true
+    "coast": true,
+    "seaSwim": true
   },
   {
     "id": "montreal",
@@ -854,7 +856,8 @@
     "stampIcon": "whale",
     "costPerDay": 65,
     "droneRule": "ok",
-    "coast": true
+    "coast": true,
+    "seaSwim": true
   },
   {
     "id": "laventana",
@@ -935,7 +938,8 @@
     "costPerDay": 70,
     "outdoorsy": true,
     "droneRule": "ok",
-    "coast": true
+    "coast": true,
+    "seaSwim": true
   },
   {
     "id": "roatan",
@@ -1008,7 +1012,8 @@
     "stampIcon": "reef",
     "costPerDay": 90,
     "droneRule": "ok",
-    "coast": true
+    "coast": true,
+    "seaSwim": true
   },
   {
     "id": "santiago",
@@ -1437,7 +1442,8 @@
     "costPerDay": 110,
     "droneRule": "ok",
     "museum": "the Tile Museum",
-    "coast": true
+    "coast": true,
+    "seaSwim": true
   },
   {
     "id": "madrid",
@@ -1943,7 +1949,8 @@
     "costPerDay": 110,
     "droneRule": "permit",
     "museum": "MUCEM",
-    "coast": true
+    "coast": true,
+    "seaSwim": true
   },
   {
     "id": "hyeres",
@@ -2019,7 +2026,8 @@
     "costPerDay": 120,
     "droneRule": "permit",
     "museum": "Villa Noailles",
-    "coast": true
+    "coast": true,
+    "seaSwim": true
   },
   {
     "id": "antibes",
@@ -2109,7 +2117,8 @@
     "droneRule": "permit",
     "museum": "the Picasso Museum",
     "coast": true,
-    "casino": true
+    "casino": true,
+    "seaSwim": true
   },
   {
     "id": "edinburgh",
@@ -2741,7 +2750,8 @@
     "droneRule": "banned",
     "museum": "the Hassan II Mosque",
     "animal": "a stray dog",
-    "coast": true
+    "coast": true,
+    "seaSwim": true
   },
   {
     "id": "dakhla",
@@ -2832,7 +2842,8 @@
     "outdoorsy": true,
     "droneRule": "banned",
     "animal": "a stray dog",
-    "coast": true
+    "coast": true,
+    "seaSwim": true
   },
   {
     "id": "mumbai",
@@ -3314,7 +3325,8 @@
     "costPerDay": 150,
     "droneRule": "banned",
     "museum": "M+",
-    "coast": true
+    "coast": true,
+    "seaSwim": true
   },
   {
     "id": "tokyo",

@@ -150,7 +150,7 @@ export class WorkoutScene extends Phaser.Scene {
       if (mx < F.wallPad + F.radius) { mx = F.wallPad + F.radius; vx = 0; } if (mx > W - F.wallPad - F.radius) { mx = W - F.wallPad - F.radius; vx = 0; }
       if (vy > 0) for (let i = 0; i < ledges.length; i++) { const l = ledges[i]; if (prevY + F.radius <= l.y + 1 && my + F.radius >= l.y && mx >= l.x - 3 && mx <= l.x + l.w + 3) {
         my = l.y - F.radius; vy = -F.bounce; landedT = 0.14; if (-l.y > best) best = -l.y; if (i > bestIdx) bestIdx = i;
-        if (l.kind === 'anchor' && i > anchorIdx) { anchorIdx = i; this.frame.flash(PAL.neon, 40); }
+        if (l.kind === 'anchor' && i > anchorIdx) { anchorIdx = i; this.frame.pulse(PAL.neon, 200); }
         if (i === ledges.length - 1) win(); break; } }
       // fell well below the last anchor: no life lost, back to the anchor and a few seconds gone
       if (my > ledges[anchorIdx].y + 200) respawn();

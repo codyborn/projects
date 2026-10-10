@@ -51,6 +51,7 @@
     "real": true,
     "color": 7238788,
     "benefits": [
+      "Drone flights unlocked",
       "+4 mood in hero cities",
       "4 lb, 6 cells"
     ]
@@ -133,7 +134,7 @@
     "label": "Rain shell",
     "weightLb": 0.4,
     "w": 2,
-    "h": 2,
+    "h": 1,
     "tags": [
       "rain",
       "clothing"
@@ -481,26 +482,6 @@
     "benefits": [
       "Hotel-room workouts unlocked",
       "Slower daily wear"
-    ]
-  },
-  {
-    "id": "kitegear",
-    "name": "Kite Gear",
-    "label": "Kite gear",
-    "weightLb": 12.0,
-    "w": 4,
-    "h": 3,
-    "tags": [
-      "kite",
-      "luxury"
-    ],
-    "desc": "Twelve pounds. Turns every wind day into the best day of the month.",
-    "real": false,
-    "color": 4889558,
-    "benefits": [
-      "Wind days become the best days",
-      "Kite workouts unlocked",
-      "+12 lb"
     ]
   },
   {

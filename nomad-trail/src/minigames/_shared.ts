@@ -201,7 +201,16 @@ export class MinigameFrame {
   /** A one-line control hint in the HUD strip's centre slot for the whole game (hold-type micros): smaller so it clears the progress text. */
   setHint(t: string) { this.hudTimer?.setText(t).setFontSize(8); }
   shake(ms = 120, intensity = 0.004) { this.scene.cameras.main.shake(ms, intensity); }
+  /** Whites out the whole screen. Round 103: this is for TAKING DAMAGE only — Cody found it on every ring, coin and
+   *  correct answer and it was exhausting. Anything good uses pulse(). */
   flash(color: number = PAL.red, ms = 80) { this.scene.cameras.main.flash(ms, (color >> 16) & 255, (color >> 8) & 255, color & 255); }
+  /** The good-news cue: a quick glow around the edge of the play area. It reads at a glance and leaves the picture
+   *  alone, so it can fire as often as the game likes. */
+  pulse(color: number = PAL.neon, ms = 220) {
+    const s = this.scene, g = s.add.graphics().setDepth(899).setScrollFactor(0);
+    const draw = (a: number) => { g.clear(); for (let i = 0; i < 5; i++) { g.lineStyle(2, color, a * (1 - i / 5) * 0.55); g.strokeRect(1 + i * 2, 27 + i * 2, W - 2 - i * 4, H - 29 - i * 4); } };
+    draw(1); s.tweens.addCounter({ from: 1, to: 0, duration: ms, ease: 'Quad.Out', onUpdate: t => draw(t.getValue() as number), onComplete: () => g.destroy() });
+  }
 
   /** Call every frame: subtle camera wobble when tired. */
   update(dt: number) {

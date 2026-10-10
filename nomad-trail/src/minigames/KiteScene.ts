@@ -76,7 +76,7 @@ export class KiteScene extends Phaser.Scene {
     if (!this.frame.active || this.airborne > 0 || this.recover > 0) return;
     if (this.speed < 0.25) { this.hop = 0.3; this.msg.setText('hop').setColor('#b4b9c4'); return; }
     const crest = this.wavePhase() > 0.55; this.hang = (0.5 + this.speed * 1.4) * (crest ? 1.3 : 1); this.airborne = this.hang; this.jumps++;
-    this.msg.setText(crest ? 'BOOST!' : 'AIR').setColor(crest ? '#f7cf6b' : '#f4f1ea'); this.frame.flash(PAL.white, 40); Audio.playSfx(crest ? 'powerup' : 'whoosh', 120);
+    this.msg.setText(crest ? 'BOOST!' : 'AIR').setColor(crest ? '#f7cf6b' : '#f4f1ea'); this.frame.pulse(PAL.sun2, 200); Audio.playSfx(crest ? 'powerup' : 'whoosh', 120);
     for (let i = 0; i < 14; i++) this.spray.push({ x: W / 2 + (Math.random() - 0.5) * 30, y: 470, vx: (Math.random() - 0.5) * 120, vy: -60 - Math.random() * 90, t: 0.6 });
   }
   private step(dt: number) {
@@ -93,7 +93,7 @@ export class KiteScene extends Phaser.Scene {
     else this.speed = clamp(this.speed - dt / (this.held ? 1.5 : 1.2), 0, 1);
     this.waveOff += dt * (0.7 + this.speed * 1.4);
     // air
-    if (this.airborne > 0) { this.airborne -= dt * (this.held ? 2.2 : 1); if (this.airborne <= 0) { this.airborne = 0; this.held = false; /* a drop press ends at touchdown: hold again to power up */ const trough = this.wavePhase() < -0.5; if (trough) { this.wipeouts++; this.recover = 1.5; this.speed = 0; this.msg.setText('WIPEOUT').setColor('#d63c3c'); this.frame.shake(200, 0.008); for (let i = 0; i < 26; i++) this.spray.push({ x: W / 2 + (Math.random() - 0.5) * 50, y: 470, vx: (Math.random() - 0.5) * 220, vy: -80 - Math.random() * 160, t: 0.9 }); } else { this.clean++; this.airTotal += this.hang; this.speed *= 0.55; this.msg.setText(`+${this.hang.toFixed(1)}s`).setColor('#3ef0c8'); this.frame.flash(PAL.neon, 30); } } }
+    if (this.airborne > 0) { this.airborne -= dt * (this.held ? 2.2 : 1); if (this.airborne <= 0) { this.airborne = 0; this.held = false; /* a drop press ends at touchdown: hold again to power up */ const trough = this.wavePhase() < -0.5; if (trough) { this.wipeouts++; this.recover = 1.5; this.speed = 0; this.msg.setText('WIPEOUT').setColor('#d63c3c'); this.frame.shake(200, 0.008); for (let i = 0; i < 26; i++) this.spray.push({ x: W / 2 + (Math.random() - 0.5) * 50, y: 470, vx: (Math.random() - 0.5) * 220, vy: -80 - Math.random() * 160, t: 0.9 }); } else { this.clean++; this.airTotal += this.hang; this.speed *= 0.55; this.msg.setText(`+${this.hang.toFixed(1)}s`).setColor('#3ef0c8'); this.frame.pulse(PAL.neon, 180); } } }
     if (this.hop > 0) this.hop -= dt;
     // spray while riding fast
     if (this.airborne <= 0 && this.recover <= 0 && this.speed > 0.3 && Math.random() < this.speed) this.spray.push({ x: W / 2 - 14, y: 468, vx: -60 - Math.random() * 90 * this.speed, vy: -20 - Math.random() * 50, t: 0.35 });

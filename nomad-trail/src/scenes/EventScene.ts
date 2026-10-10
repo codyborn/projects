@@ -36,15 +36,22 @@ export class EventScene extends Phaser.Scene {
     const title = txt(this, 180, TOP + 28, fill(ev.title).toUpperCase(), 12, PAL.sun2, { align: 'center', wrap: 290 }).setOrigin(0.5, 0);
     const bodyY = TOP + 28 + Math.max(14, title.height) + 12;
     const body = txt(this, PX + 16, bodyY, text, 10, PAL.white, { wrap: PW - 32 }); const bodyH = Math.max(40, body.height); body.setText('');
-    const ROW = 72; const choiceRows = choices.length ? Math.min(3, choices.length) : 1; const footerH = choices.length ? choiceRows * ROW + 8 : 78;
-    const panelH = Math.min(520, bodyY - TOP + bodyH + 16 + footerH);
+    const ROW = 72; const choiceRows = choices.length ? Math.min(3, choices.length) : 1;
+    /* measure the effects line before sizing anything: at two lines it used to run under the CONTINUE button, which
+       sat at a fixed offset. Now the button is placed below whatever the line actually measures. */
+    const effText = this.fmt(mitigated && ev.mitigatedEffects ? ev.mitigatedEffects : ev.effects);
+    const effProbe = txt(this, 180, 0, effText, 8, PAL.gray2, { align: 'center', wrap: 296 }).setOrigin(0.5, 0);
+    const effH = Math.ceil(effProbe.height); effProbe.destroy();
+    const footerH = choices.length ? choiceRows * ROW + 8 : effH + 14 + 44 + 16;   // line, gap, button, padding
+    const panelH = Math.min(560, bodyY - TOP + bodyH + 16 + footerH);
     dimmer(this, 0.7).setDepth(-2); const p = new Panel(this, PX, TOP, PW, panelH, { fill: PAL.night1, border: PAL.sun1 }); p.setDepth(-1); p.setScale(0.96); this.tweens.add({ targets: p, scaleX: 1, scaleY: 1, duration: 140, ease: 'Back.Out' });
     header.setDepth(1); title.setDepth(1); body.setDepth(1);
     const tw = typewrite(this, body, text, 60); this.input.once('pointerdown', () => tw.skip());
     tw.done.then(() => {
       let y = bodyY + bodyH + 16 + 22;
       if (choices.length) choices.slice(0, 3).forEach((c, i) => { const b = new Button(this, 180, y, c.label, () => { const s = Sim.resolveChoice(getRun(this), ev.id, i); putRun(this, s); data.onDone(); }, { w: 296, h: 44, fill: PAL.dusk0, size: 10 }); const eff = txt(this, 180, y + 28, this.fmt(c.effects), 8, PAL.gray2, { align: 'center', wrap: 296 }).setOrigin(0.5, 0); b.setAlpha(0); eff.setAlpha(0); this.tweens.add({ targets: [b, eff], alpha: 1, duration: 200, delay: i * 80 }); y += ROW; });
-      else { txt(this, 180, y - 8, this.fmt(mitigated && ev.mitigatedEffects ? ev.mitigatedEffects : ev.effects), 8, PAL.gray2, { align: 'center', wrap: 296 }).setOrigin(0.5, 0); new Button(this, 180, y + 30, 'CONTINUE', () => data.onDone(), { w: 296, h: 44, fill: PAL.dusk0 }); }
+      else { const eff = txt(this, 180, y - 8, effText, 8, PAL.gray2, { align: 'center', wrap: 296 }).setOrigin(0.5, 0);
+        new Button(this, 180, eff.y + effH + 14 + 22, 'CONTINUE', () => data.onDone(), { w: 296, h: 44, fill: PAL.dusk0 }); }
     });
   }
   private choices: any[] = []; private onDone: () => void = () => {}; private evId = '';

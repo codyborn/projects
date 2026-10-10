@@ -1,7 +1,7 @@
 {
   "_readme": "Game copy that is not in events/cities/items/dishes. Placeholders in {braces} are filled by the engine. Edit text, not keys.",
   "ui": {
-    "tagline": "Circumnavigate the planet\nin 365 days.\nPack light. Come home.",
+    "tagline": "Circumnavigate the planet\nin 365 days.\nExplore the world.",
     "basedOn": "Based on actual events.",
     "production": "A Citizen Earth production"
   },
@@ -72,8 +72,7 @@
     "quit": "QUIT. ORANGE COUNTY IS NICE.",
     "didNotMakeIt": "DID NOT MAKE IT",
     "circumnavigated": "CIRCUMNAVIGATED",
-    "tagline1": "PACK LIGHT.",
-    "tagline2": "TRUST NO KETTLE."
+    "tagline1": "EXPLORE THE WORLD."
   },
   "badges": {
     "_note": "Passport badge names. The run records these; before round 102 nothing ever showed them.",

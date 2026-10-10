@@ -181,28 +181,24 @@
   {
     "id": "windday",
     "title": "Wind day",
-    "text": "The wind arrives promptly at 2 pm. Everyone in {city} disappears to the water. You watch enviously from the shoreline.",
+    "text": "The wind fills in off {city} and the whole bay turns into a kite school. You rig up with everyone else and come in at dusk with arms that will not work tomorrow.",
     "when": "day",
     "baseChance": 0.08,
     "effects": {
-      "mood": -6
+      "mood": 15,
+      "energy": -12,
+      "unlockAchievement": "kite"
     },
     "requiresClimate": [
       "hot",
       "cold"
     ],
-    "mitigatedBy": [
-      "kite"
-    ],
-    "mitigatedText": "The wind arrives promptly at 2 pm. You rig up. Best day of the month.",
-    "mitigatedEffects": {
-      "mood": 15,
-      "energy": -12,
-      "unlockAchievement": "kite"
-    },
     "requiresActivity": [
       "kite",
       "surf"
+    ],
+    "texts": [
+      "{city} is blown out, which here means open for business. You rent a kite off the beach and spend the afternoon being dragged happily around the bay."
     ]
   },
   {
@@ -790,29 +786,21 @@
     "when": "action",
     "baseChance": 0.05,
     "requiresCities": [
-      "amsterdam",
-      "antibes",
-      "bangkok",
-      "buenosaires",
-      "casablanca",
-      "dakhla",
-      "edinburgh",
-      "highlands",
-      "hongkong",
-      "hyeres",
       "lapaz",
       "laventana",
-      "lisbon",
-      "marseille",
-      "miami",
-      "newyork",
-      "orangecounty",
-      "patagonia",
-      "reykjavik",
       "roatan",
-      "santiago",
-      "seoul",
-      "tokyo"
+      "patagonia",
+      "dakhla",
+      "miami",
+      "orangecounty",
+      "hyeres",
+      "antibes",
+      "marseille",
+      "lisbon",
+      "reykjavik",
+      "edinburgh",
+      "highlands",
+      "casablanca"
     ],
     "text": "{city}. Out on the water before the wind picks up, and a fin, then three, then a whole pod cutting through the swell thirty feet out.",
     "effects": {
@@ -894,31 +882,6 @@
     "title": "Ocean swim",
     "when": "action",
     "baseChance": 0.06,
-    "requiresCities": [
-      "amsterdam",
-      "antibes",
-      "bangkok",
-      "buenosaires",
-      "casablanca",
-      "dakhla",
-      "edinburgh",
-      "highlands",
-      "hongkong",
-      "hyeres",
-      "lapaz",
-      "laventana",
-      "lisbon",
-      "marseille",
-      "miami",
-      "newyork",
-      "orangecounty",
-      "patagonia",
-      "reykjavik",
-      "roatan",
-      "santiago",
-      "seoul",
-      "tokyo"
-    ],
     "text": "{city}. A long swim down the shoreline, the town sliding past on the right, nothing in your head for once. You come out salt-crusted and inspired.",
     "effects": {
       "mood": 6,

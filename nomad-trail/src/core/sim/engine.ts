@@ -207,25 +207,30 @@ export function travelTo(state: RunState, cityId: string): StepResult {
   const ratio = weightRatio(s.items);
   const ctx = { transport: leg.transport, timezones: leg.timezones, overweightRatio: ratio };
   s.log.push({ day: s.day, city: cityId, text: tpl(STR.log.travel, { transport: leg.transport === 'trek' ? STR.log.trek : leg.transport[0].toUpperCase() + leg.transport.slice(1), from: from.name, to: leg.city.name, fare }) + (ratio0 >= 0.85 ? STR.log.travelHeavy : '') + (s.fatigue >= 3 ? STR.log.travelFatigue : '') });
-  if (leg.transport === 'flight') events.push(...rollEvents(s, 'flight', ctx, rng, 1));
+  /* The flight home ends the run; nothing that happens in the air can matter any more, and a delay card after the
+     win screen reads as a bug. The one thing kept is the taxi dying on the way to the airport, because that happens
+     before the gate and the dash through the terminal is still a real stake. */
+  const lastLeg = !!leg.home;
+  if (leg.transport === 'flight') events.push(...rollEvents(s, 'flight', ctx, rng, 1, lastLeg ? e => e.id === 'taxibreakdown' : undefined));
   // the taxi died on the way to the airport: the gate dash (Temple Run through the terminal) decides whether you make the flight
   let dash: MinigameRequest | undefined;
   if (events.some(e => e.id === 'taxibreakdown')) { const gate = `${'ABCDEF'[rng.int(0, 5)]}${rng.int(1, 99)}`; s.pendingGate = gate; dash = { key: MINIGAME_KEYS.airport, payload: { gate }, difficulty: clamp(0.3 + s.day / 600, 0, 0.8) }; }
-  events.push(...rollEvents(s, 'leg', ctx, rng, 2));
+  if (!lastLeg) events.push(...rollEvents(s, 'leg', ctx, rng, 2));
   // arrive
   s.cityId = cityId; s.route.push(cityId); if (!s.visited.includes(cityId)) s.visited.push(cityId);
   if (!s.stamps[cityId]) s.stamps[cityId] = 'plain';
   s.stayDays = 0; s.phase = 'city';
   const lodging = leg.city.lodgings[0];
   const arriveCtx = { ...ctx, lodgingCancel: lodging?.cancelChance ?? 0 };
-  const cancelled = rollEvents(s, 'arrive', arriveCtx, rngFor(s, 2), 1, e => e.id === 'airbnbcancel');
-  events.push(...cancelled, ...rollEvents(s, 'arrive', arriveCtx, rngFor(s, 7), cancelled.length ? 1 : 2, e => e.id !== 'airbnbcancel' && !(cancelled.length && LODGING_DEPENDENT.has(e.id))));
+  const cancelled = lastLeg ? [] : rollEvents(s, 'arrive', arriveCtx, rngFor(s, 2), 1, e => e.id === 'airbnbcancel');
+  if (!lastLeg) events.push(...cancelled, ...rollEvents(s, 'arrive', arriveCtx, rngFor(s, 7), cancelled.length ? 1 : 2, e => e.id !== 'airbnbcancel' && !(cancelled.length && LODGING_DEPENDENT.has(e.id))));
   // Airbnb kitchens: about a third come with one knife that has never been sharpened. Known on arrival; every cooking step in this city
   // needs more precision until you move on. The adventure bundle's knife cancels it.
-  if (lodging?.id === 'airbnb' && !cancelled.length && rngFor(s, 13).chance(0.3)) {
+  if (!lastLeg && lodging?.id === 'airbnb' && !cancelled.length && rngFor(s, 13).chance(0.3)) {
     if (hasTag(s, 'knife')) events.push(forceEvent(s, 'dullknives', rng, true));
     else { setFlag(s, 'dullknives_' + cityId, true); events.push(forceEvent(s, 'dullknives', rng)); }
   }
+  if (events.some(e => e.id === 'nowifi')) setFlag(s, 'nowifi_' + cityId, true);   /* the work action checks this all stay */
   const conts = continentsVisited(s);
   if (conts.length === CONTINENTS_ALL.length && !s.achievements.includes('fivecontinents')) { s.achievements.push('fivecontinents'); s.log.push({ day: s.day, city: cityId, text: STR.log.fiveContinents }); }
   if (hasItem(s, 'hostgifts') && (leg.city.lodgings[0]?.id === 'airbnb' || leg.city.lodgings[0]?.id === 'coliving')) s.mood = clamp(s.mood + gain(s, 3), 0, 100);
@@ -290,6 +295,9 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
   switch (action) {
     case 'work': {
       if (isWeekend(s.day)) return { state, events: [], error: 'It is the weekend. Nobody is paying.' };
+      /* the router was in a drawer: hotspotting through a work week does not happen, so most days here the laptop
+         stays shut. The flag is set when the arrival card fires and clears when you move on. */
+      if (hasFlag(s, 'nowifi_' + s.cityId) && rngFor(s, 26).chance(0.5)) return { state, events: [], error: 'The hotspot drops every ten minutes. Not today.' };
       // the work week is a puzzle before standup (Professor Layton, Uniswap flavour); the result scales the whole week's pay (applyMinigameResult)
       const seen = new Set(s.puzzlesSeen ?? []); let pool = PUZZLES.filter(pz => !seen.has(pz.id)); if (!pool.length) { pool = PUZZLES; s.puzzlesSeen = []; }
       const puzzle = pool[hash32(s.seed, s.day, 41) % pool.length]; s.puzzlesSeen = [...(s.puzzlesSeen ?? []), puzzle.id];
@@ -350,7 +358,9 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       if (locked) return { state, events: [], error: 'The gear is in the suitcase. The suitcase is somewhere else.' };
       if (s.backInjuryDays > 0) return { state, events: [], error: 'Your back says no. Not today.' };
       if (s.energy < 20) return { state, events: [], error: 'Too tired to train. Rest first.' };
-      const acts = city.activities.filter(a => (a !== 'kite' || hasTag(s, 'kite')) && (a !== 'boulder' && a !== 'ferrata' || hasTag(s, 'climb')) && (a !== 'swim' && a !== 'scuba' || hasTag(s, 'swim')) && (a !== 'bands' || hasTag(s, 'fitness')) && (a !== 'ski' || hasTag(s, 'cold')) && (a !== 'yoga' || hasTag(s, 'fitness')));
+      /* round 103: the kite gear came out of the suitcase. A kite town has schools and rental on the beach, so the
+         kite day belongs to the town, not to twelve pounds of your own gear. */
+      const acts = city.activities.filter(a => (a !== 'boulder' && a !== 'ferrata' || hasTag(s, 'climb')) && (a !== 'swim' && a !== 'scuba' || hasTag(s, 'swim')) && (a !== 'bands' || hasTag(s, 'fitness')) && (a !== 'ski' || hasTag(s, 'cold')) && (a !== 'yoga' || hasTag(s, 'fitness')));
       // kite cities with the kite packed: the first training day is a kite day, then rotate
       const ordered = acts.includes('kite') ? ['kite', ...acts.filter(a => a !== 'kite')] : acts;
       const activity = ordered.length ? ordered[(s.stayDays + s.day) % ordered.length] : 'trailrun';
@@ -367,7 +377,7 @@ export function cityAction(state: RunState, action: CityAction): StepResult {
       return { state: s, events: [], minigame: { key: MINIGAME_KEYS.cooking, payload: { dish, city: city.id, dullKnives: dull }, difficulty: clamp(diff + (dull ? 0.15 : 0), 0.5, 1.6) } }; }
     case 'checkroom': setFlag(s, 'roomchecked', true); s.energy = clamp(s.energy - 2, 0, energyCap(s)); s.log.push({ day: s.day, city: s.cityId, text: STR.log.checkRoom }); return { state: s, events: [] };
     case 'moveon': {
-      events = rollEvents(s, 'leave', ctx, rng, 1); setFlag(s, 'roomchecked', false); s.phase = 'route';
+      events = rollEvents(s, 'leave', ctx, rng, 1); setFlag(s, 'roomchecked', false); setFlag(s, 'nowifi_' + s.cityId, false); s.phase = 'route';
       s.log.push({ day: s.day, city: s.cityId, text: tpl(STR.log.leave, { city: city.name, stayDays: s.stayDays }) });
       break; }
   }
@@ -506,7 +516,8 @@ export function score(s: RunState): number {
   const gold = Object.values(s.stamps).filter(v => v === 'gold').length;
   const conts = continentsVisited(s).length;
   const base = s.visited.length * 25 + gold * 30 + visibleAchievements(s).length * 40 + s.coffeeMornings + conts * 150 + (conts === CONTINENTS_ALL.length ? 500 : 0);
-  return s.ending?.kind === 'win' ? base + daysLeft * 2 + s.health * 3 + s.mood + 500 + Math.max(0, Math.round(s.money / 20)) : Math.round(base * 0.6);
+  /* health and mood are carried as floats (daily wear is fractional), so a win score used to come out as 3552.5000000005 */
+  return Math.round(s.ending?.kind === 'win' ? base + daysLeft * 2 + s.health * 3 + s.mood + 500 + Math.max(0, Math.round(s.money / 20)) : base * 0.6);
 }
 export function checkEnding(s: RunState): Ending | undefined {
   if (s.phase === 'ended') return s.ending;

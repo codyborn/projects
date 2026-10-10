@@ -16,7 +16,7 @@ export type AttackKind = 'swoop' | 'beam' | 'spit' | 'summon';
 
 export interface BossDef {
   kind: BossKind; name: string; blurb: string;
-  hp: number;                 // at level 1; the scene scales by level
+  hp: number;                 // at level 1; the scene scales by level. Round 103: up ~70% — a bomb no longer takes a bite out of it, so the fight is the camera alone
   bodyW: number; bodyH: number;
   speed: number;              // vertical drift, px/s
   attacks: AttackKind[];
@@ -26,11 +26,11 @@ export interface BossDef {
 }
 
 export const BOSSES: Record<BossKind, BossDef> = {
-  gull:    { kind: 'gull',    name: 'THE GULL',            blurb: 'It has seen your sandwich.',                  hp: 14, bodyW: 86, bodyH: 46, speed: 54, attacks: ['swoop', 'spit'],            cadence: 2.5, tint: PAL.white, muzzle: -8 },
-  kaiju:   { kind: 'kaiju',   name: 'THE THING IN THE BAY', blurb: 'Tokyo has an evacuation plan for this.',      hp: 18, bodyW: 92, bodyH: 120, speed: 26, attacks: ['beam', 'spit'],            cadence: 2.9, tint: PAL.neon, muzzle: -30 },
-  dragon:  { kind: 'dragon',  name: 'THE WYRM',            blurb: 'Older than the cathedral it sleeps on.',      hp: 16, bodyW: 96, bodyH: 54, speed: 62, attacks: ['spit', 'swoop'],            cadence: 2.4, tint: PAL.sun0, muzzle: -4 },
-  quetzal: { kind: 'quetzal', name: 'QUETZALCOATL',        blurb: 'The feathered serpent is awake, and curious.', hp: 16, bodyW: 104, bodyH: 48, speed: 70, attacks: ['spit', 'summon'],          cadence: 2.3, tint: PAL.grass2, muzzle: 2 },
-  anubis:  { kind: 'anubis',  name: 'ANUBIS',              blurb: 'He weighs your heart against a feather.',     hp: 17, bodyW: 76, bodyH: 108, speed: 34, attacks: ['summon', 'beam'],          cadence: 2.6, tint: PAL.sun2, muzzle: -62 },
+  gull:    { kind: 'gull',    name: 'THE GULL',            blurb: 'It has seen your sandwich.',                  hp: 24, bodyW: 86, bodyH: 46, speed: 54, attacks: ['swoop', 'spit'],            cadence: 2.5, tint: PAL.white, muzzle: -8 },
+  kaiju:   { kind: 'kaiju',   name: 'THE THING IN THE BAY', blurb: 'Tokyo has an evacuation plan for this.',      hp: 30, bodyW: 92, bodyH: 120, speed: 26, attacks: ['beam', 'spit'],            cadence: 2.9, tint: PAL.neon, muzzle: -30 },
+  dragon:  { kind: 'dragon',  name: 'THE WYRM',            blurb: 'Older than the cathedral it sleeps on.',      hp: 27, bodyW: 96, bodyH: 54, speed: 62, attacks: ['spit', 'swoop'],            cadence: 2.4, tint: PAL.sun0, muzzle: -4 },
+  quetzal: { kind: 'quetzal', name: 'QUETZALCOATL',        blurb: 'The feathered serpent is awake, and curious.', hp: 27, bodyW: 104, bodyH: 48, speed: 70, attacks: ['spit', 'summon'],          cadence: 2.3, tint: PAL.grass2, muzzle: 2 },
+  anubis:  { kind: 'anubis',  name: 'ANUBIS',              blurb: 'He weighs your heart against a feather.',     hp: 28, bodyW: 76, bodyH: 108, speed: 34, attacks: ['summon', 'beam'],          cadence: 2.6, tint: PAL.sun2, muzzle: -62 },
 };
 
 /** Which boss a city answers to. Region first (that is what Cody asked for); the landscape only breaks ties. */
@@ -103,7 +103,10 @@ export function stepBoss(b: BossState, dt: number, droneX: number, droneY: numbe
       if (!b.entering) b.x = homeX + Math.sin(b.t * 0.9) * 26;
       break;
     case 'quetzal':
-      b.y = 250 + Math.sin(b.t * 1.1) * 150; if (!b.entering) b.x = homeX + Math.cos(b.t * 0.7) * 34;
+      /* round 103: this was 150 x 1.1 = 165 px/s of vertical travel against 13-62 for every other boss. The camera's
+         shots fly flat, so the serpent had simply moved out of their line by the time they arrived and the fight ran
+         three times as long as the rest. 120 x 0.8 = 96 px/s still makes it the quickest thing in the sky. */
+      b.y = 250 + Math.sin(b.t * 0.8) * 120; if (!b.entering) b.x = homeX + Math.cos(b.t * 0.7) * 34;
       break;
     case 'kaiju':
       b.y = 418 + Math.sin(b.t * 0.8) * 16;   /* feet on the rooftops: it wades, it does not fly */ if (!b.entering) b.x = homeX + Math.sin(b.t * 0.5) * 10;

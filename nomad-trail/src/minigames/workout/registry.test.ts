@@ -43,10 +43,10 @@ describe('workout micro-game pools', () => {
      down here and the gear is checked against it. */
   it('every activity a bundle promises by name leads to a game that is that activity', () => {
     const ANSWERED_BY: Record<string, string> = {
-      ski: 'slalom', boulder: 'boulderbeta', ferrata: 'WorkoutScene.ferrata', kite: 'Kite scene', scuba: 'Scuba scene',
+      ski: 'slalom', boulder: 'boulderbeta', ferrata: 'WorkoutScene.ferrata', kite: 'Kite scene', scuba: 'Scuba scene', drone: 'Drone scene',
       swim: 'swimbreath', yoga: 'pose', surf: 'balance/pose', hike: 'circuit', bands: 'circuit', trailrun: 'runner/riverstones',
     };
-    const WORD: Record<string, string> = { skiing: 'ski', bouldering: 'boulder', ferrata: 'ferrata', kite: 'kite', scuba: 'scuba', surfing: 'surf', yoga: 'yoga', swim: 'swim', 'hotel-room': 'bands', hiking: 'hike' };
+    const WORD: Record<string, string> = { skiing: 'ski', bouldering: 'boulder', ferrata: 'ferrata', kite: 'kite', scuba: 'scuba', surfing: 'surf', yoga: 'yoga', swim: 'swim', 'hotel-room': 'bands', hiking: 'hike', drone: 'drone', flights: 'drone' };
     const items = (ITEMS as unknown as { id: string; benefits?: string[] }[]);
     let claims = 0;
     for (const it of items) for (const b of it.benefits ?? []) {

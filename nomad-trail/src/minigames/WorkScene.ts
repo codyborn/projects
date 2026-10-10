@@ -114,7 +114,7 @@ export class WorkScene extends Phaser.Scene {
   answer(v: number) {
     if (!this.frame.active || this.ended || this.hintObjs.length) return;
     const pz = this.puzzle; const ok = pz.kind === 'number' ? Math.round(v * 100) === Math.round(pz.answer * 100) : v === pz.answer;
-    if (ok) { this.solved = true; this.frame.flash(PAL.neon, 60); this.choiceBtns.forEach(b => { if (b.idx === v) b.rect.setFillStyle(PAL.sea1); }); this.time.delayedCall(350, () => this.explain(true)); return; }
+    if (ok) { this.solved = true; this.frame.pulse(PAL.neon, 260); this.choiceBtns.forEach(b => { if (b.idx === v) b.rect.setFillStyle(PAL.sea1); }); this.time.delayedCall(350, () => this.explain(true)); return; }
     this.wrong += 1; this.frame.shake(160, 0.006);
     if (pz.kind === 'choice') { const b = this.choiceBtns.find(c => c.idx === v); if (b) { b.rect.setFillStyle(PAL.gray0).disableInteractive(); b.label.setAlpha(0.45); } }
     else { this.entry = ''; this.display?.setText('_'); }

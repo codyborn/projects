@@ -136,7 +136,7 @@ export class PoseMatch extends Micro {
     this.loop(dt => {
       if (!this.dragging) { const sn = Math.round(this.pos); this.pos += (sn - this.pos) * Math.min(1, dt * 14); }   // snap with a settle
       const sn = Math.round(this.pos);
-      if (sn !== this.snapped) { if (this.snapped >= 0 && sn !== this.target) this.wrong++; this.snapped = sn; this.figure.setTexture(this.keys[sn]); sc.tweens.add({ targets: this.figure, scaleX: { from: 0.85, to: 1 }, scaleY: { from: 1.15, to: 1 }, duration: 120, ease: 'Back.Out' }); this.ctx.frame.flash(PAL.night3, 20); }
+      if (sn !== this.snapped) { if (this.snapped >= 0 && sn !== this.target) this.wrong++; this.snapped = sn; this.figure.setTexture(this.keys[sn]); sc.tweens.add({ targets: this.figure, scaleX: { from: 0.85, to: 1 }, scaleY: { from: 1.15, to: 1 }, duration: 120, ease: 'Back.Out' }); }
       const ok = sn === this.target && Math.abs(this.pos - sn) < 0.25;
       if (ok) { this.hold += dt; if (this.hold > 0.5) { this.matched++; this.times.push(this.t - this.roundAt); this.roundAt = this.t; this.pop(cx, 200, 'MATCH'); this.ctx.frame.setProgress(`${this.matched}/${this.need}`); if (this.matched >= this.need) { this.after(250, () => this.finish(this.scoreNow())); return; } nextT(); } } else this.hold = 0;
       this.shadow.setTint(ok ? PAL.grass0 : PAL.night3).setAlpha(ok ? 0.75 : 0.6); (this.shadow as any).tintFill = true;

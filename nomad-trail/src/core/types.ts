@@ -3,7 +3,7 @@ export const GAME_W = 360, GAME_H = 640;
 
 // ---------- Content data (src/data/*.json) ----------
 export type Bag = 'checked' | 'backpack';
-export type ItemTag = 'essential' | 'work' | 'clothing' | 'health' | 'fitness' | 'sleep' | 'coffee' | 'rain' | 'cold' | 'swim' | 'kite' | 'climb' | 'firstaid' |
+export type ItemTag = 'essential' | 'work' | 'clothing' | 'health' | 'fitness' | 'sleep' | 'coffee' | 'rain' | 'cold' | 'swim' | 'climb' | 'firstaid' |
   'meds' | 'repellent' | 'switch' | 'kettle' | 'camera' | 'organizer' | 'luxury' | 'trap' | 'water' | 'light' | 'knife' | 'hike' | 'laundry';
 export interface Item {
   id: string; name: string; label: string;            // label: short (<= 16 chars) for the grid

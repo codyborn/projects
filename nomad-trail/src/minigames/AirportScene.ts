@@ -90,7 +90,7 @@ export class AirportScene extends Phaser.Scene {
   /** Dismiss the card and start the boarding clock (also called by the harness). */
   startRun() {
     if (!this.waiting) return; this.waiting = false; this.card.forEach(o => o.destroy()); this.card = [];
-    this.frame.resumeCap(); this.setupInput(); this.frame.flash(PAL.neon, 60); Audio.playSfx('boarding');
+    this.frame.resumeCap(); this.setupInput(); this.frame.pulse(PAL.neon, 260); Audio.playSfx('boarding');
   }
 
   // ---------- input ----------
@@ -141,7 +141,7 @@ export class AirportScene extends Phaser.Scene {
     const ok = this.lane === f.correct; this.turning = { dir: this.lane === 0 ? -1 : 1, t: 0, ok, wall: f }; this.obstacles = []; this.fork = undefined; this.runner.setFrame(0); this.jumpT = -1; this.slideT = -1;
   }
   private forkPassed() {
-    this.stage++; this.frame.setProgress(`fork ${Math.min(this.stage, 5)}/5`); this.frame.flash(PAL.neon, 40); Audio.playSfx('confirm');
+    this.stage++; this.frame.setProgress(`fork ${Math.min(this.stage, 5)}/5`); this.frame.pulse(PAL.neon, 200); Audio.playSfx('confirm');
     if (this.stage >= 5) { this.boarding(); return; }
     this.fork = undefined; this.nextForkAt = this.elapsed + FORK_GAP; this.nextObAt = Math.max(this.nextObAt, this.elapsed + 0.8);   // 0.8 s clear window after a wall
   }
@@ -205,7 +205,7 @@ export class AirportScene extends Phaser.Scene {
     const airborne = this.jumpT > 0.2 && this.jumpT < 0.8;
     for (const o of this.obstacles) {
       if (o.z < 0.07 && o.z > -0.02 && o.lane === this.lane && !o.hit && !o.used) {
-        if (o.kind === 'walkway') { o.used = true; this.boost = 1.8; this.frame.flash(PAL.neon, 30); Audio.playSfx('powerup'); this.say('MOVING WALKWAY', PAL.neon); }
+        if (o.kind === 'walkway') { o.used = true; this.boost = 1.8; this.frame.pulse(PAL.neon, 180); Audio.playSfx('powerup'); this.say('MOVING WALKWAY', PAL.neon); }
         else if ((o.kind === 'bag' || o.kind === 'rope') && airborne) { /* jumped */ }
         else if (o.kind === 'rope' && this.slideT >= 0.1 && this.slideT < 0.85) { /* slid under the tape */ }
         else if (this.iframes <= 0) { o.hit = true; this.collisions++; this.penalty += 1.5; this.stunned = 0.7; this.iframes = 1; Audio.playSfx('hurt'); this.frame.shake(120, 0.005); this.say(o.kind === 'traveller' ? 'SORRY!' : o.kind === 'cart' ? 'CLEANING CART' : 'OOF', PAL.sun1); }

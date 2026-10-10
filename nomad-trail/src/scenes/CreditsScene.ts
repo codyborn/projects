@@ -31,9 +31,11 @@ export class CreditsScene extends Phaser.Scene {
     const won = run?.ending?.kind === 'win';
     if (run?.ending) {
       add(txt(this, W / 2, y, won ? 'SUCCESS' : 'GAME OVER', 26, won ? PAL.neon : PAL.red).setOrigin(0.5)); y += 34;
-      add(txt(this, W / 2, y, run.ending.text ?? '', 9, PAL.gray2, { align: 'center', wrap: 300 }).setOrigin(0.5, 0)); y += 52;
+      const why = txt(this, W / 2, y, run.ending.text ?? '', 9, PAL.gray2, { align: 'center', wrap: 300 }).setOrigin(0.5, 0);
+      add(why); y += Math.ceil(why.height) + 46;   /* the verdict can run to three lines; a fixed 52 put the next heading on top of it */
     }
-    add(txt(this, W / 2, y, 'WHAT REALLY HAPPENED', 16, PAL.sun2).setOrigin(0.5)); y += 34;
+    /* setOrigin(0.5) centres this one vertically, so it needs half its own height of clearance above */
+    y += 14; add(txt(this, W / 2, y, 'WHAT REALLY HAPPENED', 16, PAL.sun2).setOrigin(0.5)); y += 34;
     add(txt(this, W / 2, y, rows.length ? 'Every event in your run happened to Cody on the trip.' : 'Nothing that happened to you this run has happened to Cody. Yet.', 8, PAL.gray2, { align: 'center', wrap: 300 }).setOrigin(0.5, 0)); y += rows.length ? 48 : 60;
     for (const r of rows) {
       add(txt(this, W / 2, y, r.title.toUpperCase(), 10, PAL.white, { align: 'center' }).setOrigin(0.5, 0)); y += 18;

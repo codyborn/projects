@@ -38,7 +38,7 @@ export class CityRun extends Micro {
     if (this.row === 0) this.arrive();
   }
   private arrive() {
-    this.crossings++; this.busy = true; Audio.playSfx('coin'); this.pop(cx(this.col), cy(0) - 24, 'COFFEE!', PAL.sun2); this.ctx.frame.flash(PAL.sun2, 40); this.progress();
+    this.crossings++; this.busy = true; Audio.playSfx('coin'); this.pop(cx(this.col), cy(0) - 24, 'COFFEE!', PAL.sun2); this.ctx.frame.pulse(PAL.sun2, 300); this.progress();
     this.ended = true; this.after(600, () => this.finish(this.scoreNow()));
   }
   private lose(why: string) {

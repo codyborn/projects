@@ -143,7 +143,7 @@ export class DroneScene extends Phaser.Scene {
     for (const sh of this.shots) { sh.x += 270 * dt; sh.y += sh.vy * dt; } this.shots = this.shots.filter(sh => sh.x < W + 10);
     // rings
     for (const r of this.rings) { const sx = r.wx - this.scroll; if (r.flash > 0) r.flash -= dt; if (r.state !== 'open') continue; const R = 16 * this.frame.window + 12;
-      if (Math.hypot(sx - this.x, r.y - this.y) < R) { r.state = 'hit'; r.flash = 0.5; this.hits++; this.frame.flash(PAL.white, 40); Audio.playSfx('shutter'); Audio.playSfx('ring'); this.frame.setProgress(`${this.hits}/${this.ringCount} shots`); }
+      if (Math.hypot(sx - this.x, r.y - this.y) < R) { r.state = 'hit'; r.flash = 0.5; this.hits++; this.frame.pulse(PAL.sky2, 150); Audio.playSfx('shutter'); Audio.playSfx('ring'); this.frame.setProgress(`${this.hits}/${this.ringCount} shots`); }
       else if (sx < this.x - 26) { r.state = 'miss'; r.flash = 0.5; this.frame.setProgress(`${this.hits}/${this.ringCount} shots`); } }
     // spawns: hazards paced by level, a power-up every 10 to 14 s (the first one early)
     if (!this.landing && !this.boss) {
@@ -224,7 +224,7 @@ export class DroneScene extends Phaser.Scene {
   /** Down it goes: the sky reopens, the landing pad slides in, and the score keeps the bonus. */
   private beatBoss() {
     const b = this.boss!; this.boss = undefined; this.bossBeaten = true; this.projs = [];
-    Audio.playSfx('win'); this.frame.flash(PAL.white, 160); this.frame.shake(420, 0.014);
+    Audio.playSfx('win'); this.frame.pulse(PAL.sun2, 420); this.frame.shake(420, 0.014);
     for (let i = 0; i < 10; i++) this.time.delayedCall(i * 60, () => this.poof(b.x + (this.rng() - 0.5) * b.def.bodyW, b.y + (this.rng() - 0.5) * b.def.bodyH));
     this.toast(`${this.bossDef().name} DOWN · +15`, PAL.sun2);
     this.padWx = this.scroll + this.x + 340;                 /* a short glide to the pad, so the win has a landing */
@@ -250,12 +250,13 @@ export class DroneScene extends Phaser.Scene {
     for (let i = 0; i < this.bombs; i++) g.fillStyle(PAL.sun2).fillRect(BTN_X - 5, BTN_Y + 3 - i * 8, 10, 6);
     this.btnT?.setText(on ? `BOMB ${this.bombs}` : 'BOMB 0').setColor(on ? '#f4f1ea' : '#6e7484');
   }
-  private bomb() { if (this.bombs <= 0 || this.landing || this.ended || !this.frame.active) return; this.bombs--; this.btnFlash = 1; this.drawBombButton(); Audio.playSfx('bomb'); this.frame.flash(PAL.white, 120); this.frame.shake(200, 0.01); this.toast(`BATTERY BOMB · ${this.bombs} left`, PAL.white);
+  private bomb() { if (this.bombs <= 0 || this.landing || this.ended || !this.frame.active) return; this.bombs--; this.btnFlash = 1; this.drawBombButton(); Audio.playSfx('bomb'); this.frame.shake(200, 0.01); this.toast(`BATTERY BOMB · ${this.bombs} left`, PAL.white);
     for (const h of this.hazards) if (h.alive && this.isBird(h.kind)) { const sx = h.wx - this.scroll; if (sx > -20 && sx < W + 20) { this.poof(sx, h.y); this.kill(h); } } this.hazards = this.hazards.filter(h => h.alive);
-    /* saved for the fight, a bomb is worth four shots and wipes what is in the air */
-    if (this.boss) { this.projs = []; const b = this.boss; b.hp -= 4; b.hurt = 0.4; this.poof(b.x, b.y); if (b.hp <= 0) this.beatBoss(); } }
+    /* in the fight a bomb is a panic button, not damage: it clears every projectile in the air and leaves the boss
+       untouched, so the only way through its health is the camera. */
+    if (this.boss) { for (const pr of this.projs) this.poof(pr.x, pr.y); this.projs = []; this.toast('PROJECTILES CLEARED', PAL.sky2); } }
   private collect(kind: PuKind) {
-    this.frame.flash(PAL.white, 50);
+    this.frame.pulse(PAL.sun2, 200);
     Audio.playSfx(kind === 'heart' ? 'heart' : 'powerup');
     if (kind === 'heart') { if (this.hearts < MAX_HEARTS) { this.hearts++; this.toast('+1 LIFE', PAL.red); } else this.toast('HEARTS FULL', PAL.red); }
     else if (kind === 'double') { this.doubleT = 15; this.toast('DOUBLE SHOT · 15 s', PAL.sun2); }

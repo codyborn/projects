@@ -30,7 +30,7 @@ export class EndScene extends Phaser.Scene {
       this.tweens.add({ targets: img, alpha: 1, scaleX: s, scaleY: s, duration: 400, ease: 'Quad.Out' });
     } else {
       txt(this, 180, 120, end.text, 10, PAL.white, { align: 'center', wrap: 300 }).setOrigin(0.5);
-      txt(this, 180, 200, `SCORE ${end.score}`, 16, PAL.sun2).setOrigin(0.5);
+      txt(this, 180, 200, `SCORE ${Math.round(end.score)}`, 16, PAL.sun2).setOrigin(0.5);
     }
     const cv = canvas;
     new Button(this, 96, 574, 'SHARE', async () => { if (!cv) return toast(this, 'card not ready', PAL.red); const r = await shareOrDownload(cv); if (r === 'failed') toast(this, 'could not export', PAL.red); }, { w: 160, h: 44, fill: PAL.sea1, size: 12 });

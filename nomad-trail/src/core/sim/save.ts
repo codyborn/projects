@@ -13,10 +13,13 @@ export function loadRun(): RunState | null {
 }
 export function hasSave(): boolean { return loadRun() !== null; }
 export function clearRun(): void { store.del(SAVE_KEY); }
-const DEFAULT_SETTINGS: Settings = { muted: false, runs: 0, bestScore: 0, history: [], career: { stamps: {}, dishes: {}, badges: {} } };
+/* A function, not a shared const: every caller must get its own objects. As a const, `{ ...DEFAULT_SETTINGS }` handed
+   out the SAME career object every time, so the first recordDish() mutated the defaults for the rest of the session —
+   stamps and recipes survived a cleared save and leaked between runs. */
+const defaults = (): Settings => ({ muted: false, runs: 0, bestScore: 0, history: [], career: { stamps: {}, dishes: {}, badges: {} } });
 export function loadSettings(): Settings {
-  const raw = store.get(SETTINGS_KEY); if (!raw) return { ...DEFAULT_SETTINGS, history: [] };
-  try { const p = JSON.parse(raw) as Partial<Settings>; return { ...DEFAULT_SETTINGS, ...p, career: { stamps: {}, dishes: {}, badges: {}, ...(p.career ?? {}) } }; } catch { return { ...DEFAULT_SETTINGS, history: [], career: { stamps: {}, dishes: {}, badges: {} } }; }
+  const raw = store.get(SETTINGS_KEY); if (!raw) return defaults();
+  try { const p = JSON.parse(raw) as Partial<Settings>; const d = defaults(); return { ...d, ...p, career: { ...d.career!, ...(p.career ?? {}) } }; } catch { return defaults(); }
 }
 export function saveSettings(s: Settings): void { store.set(SETTINGS_KEY, JSON.stringify(s)); }
 /** Fold a run's stamps into the career passport. Gold always wins over plain. */

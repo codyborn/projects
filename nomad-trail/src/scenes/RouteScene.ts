@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { Audio } from '../audio/synth';
+import { Audio, cityLoop } from '../audio/synth';
 import type { City, Leg } from '../core/types';
 import { PAL, txt, rect, TRANSPORT_GLYPH, MONTHS } from '../ui/theme';
 import { Button } from '../ui/Button';
@@ -28,6 +28,9 @@ export class RouteScene extends Phaser.Scene {
     txt(this, 12, 296, 'CONTINENTS', 8, PAL.gray2); const cw = (360 - 116) / ALL.length;
     ALL.forEach((name, i) => { const lit = visited.has(name); const x0 = 116 + i * cw; rect(this, x0, 292, cw - 4, 16, lit ? PAL.night3 : PAL.night1, lit ? PAL.neon : PAL.night3); txt(this, x0 + (cw - 4) / 2, 300, short[name] ?? name.slice(0, 4).toUpperCase(), 8, lit ? PAL.neon : PAL.gray0).setOrigin(0.5); });
     const legs = Sim.availableLegs(run); const m = Sim.monthOf(run.day);
+    /* the player is looking at a short list of places they might go, so the track for each one can be on its way
+       down before they pick: arriving used to mean a cold fetch and several silent seconds */
+    try { Audio.preloadLoops(legs.map(l => cityLoop(l.to, Data.city(l.to)?.region))); } catch { /* audio is optional */ }
     this.firstPick = !this.preview && Sim.directionUndecided(run);
     txt(this, 12, 322, this.preview ? 'FROM HERE YOU COULD GO' : this.firstPick ? 'EAST OR WEST?' : legs.length ? 'NEXT STOP' : 'NO ROUTES THIS MONTH', 10, PAL.sun2);
     { const nc = Sim.nextContinent(run); if (nc && legs.length) txt(this, 348, 324, `then ${nc}`, 8, PAL.gray2).setOrigin(1, 0); }   /* the corridor: where the trail goes after this continent */
@@ -73,7 +76,11 @@ export class RouteScene extends Phaser.Scene {
     if ((leg as any).longHaul) p.add(txt(this, 200, 12, 'LONG HAUL', 8, PAL.pink) as any);
 
     /* keep the detail line clear of the fare / GO column on the right: drop the optional bits, then trim */
-    const bits = [`${leg.days}d`, `energy −${leg.energy}`];
+    /* the days and the energy cost always show: they are the price of the leg. Only the extras are droppable, and
+       when even those are not enough the country name gets trimmed instead — before this, a long country name pushed
+       "energy −N" off the end of the row entirely. */
+    const must = [`${leg.days}d`, `energy −${leg.energy}`];
+    const bits: string[] = [];
     if (leg.timezones) bits.push(`${Math.abs(leg.timezones)}h lag`);
     if (leg.months) bits.push('in season');
     /* the first leg sets the direction for the whole year, so each card says which way it goes. The tag leads the
@@ -84,9 +91,12 @@ export class RouteScene extends Phaser.Scene {
       const tag = txt(this, subX, 30, east ? 'EAST →' : '← WEST', 8, east ? PAL.sun2 : PAL.sky2);
       p.add(tag as any); subX += Math.round(tag.width) + 8; budget = 23;
     }
-    let sub = [c?.country ?? '', ...bits].join(' · ');
-    while (sub.length > budget && bits.length > 1) { bits.pop(); sub = [c?.country ?? '', ...bits].join(' · '); }
-    if (sub.length > budget) sub = sub.slice(0, budget - 1) + '…';
+    let country = c?.country ?? '';
+    const line = () => [country, ...must, ...bits].filter(Boolean).join(' · ');
+    let sub = line();
+    while (sub.length > budget && bits.length) { bits.pop(); sub = line(); }
+    while (sub.length > budget && country.length > 3) { country = country.slice(0, -2) + '…'; sub = line(); }
+    if (sub.length > budget) { country = ''; sub = line(); }
     p.add(txt(this, subX, 30, sub, 8, PAL.gray2) as any);
     if (typeof fare === 'number') p.add(txt(this, 326, 12, `$${Math.round(fare)}`, 8, PAL.sun2).setOrigin(1, 0.5) as any);
     if (!this.preview) p.add(txt(this, 326, 36, 'GO →', 12, PAL.neon).setOrigin(1, 0.5) as any);

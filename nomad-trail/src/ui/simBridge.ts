@@ -114,6 +114,10 @@ export const Data = {
 /** Registry helpers: the run lives in scene.registry under 'run'. */
 export function getRun(scene: Phaser.Scene): RunState { return scene.registry.get('run') as RunState; }
 export function putRun(scene: Phaser.Scene, s: RunState) { scene.registry.set('run', s); Sim.save(s); }
-export function getSettings(scene: Phaser.Scene): Settings { let s = scene.registry.get('settings') as Settings | undefined; if (!s) { s = Sim.loadSettings(); scene.registry.set('settings', s); } return s; }
+/* Always read through to storage. recordDish/recordStamps/recordBadges write straight to localStorage and return a
+   fresh Settings, so the registry copy goes stale the moment one of them runs — which is why a dish cooked this
+   session was missing from the recipe book until the page was reloaded. Called once per scene create, never in a
+   loop, so the parse costs nothing worth caching. */
+export function getSettings(scene: Phaser.Scene): Settings { const s = Sim.loadSettings(); scene.registry.set('settings', s); return s; }
 export function putSettings(scene: Phaser.Scene, s: Settings) { scene.registry.set('settings', s); Sim.saveSettings(s); }
 import type Phaser from 'phaser';

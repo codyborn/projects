@@ -58,15 +58,15 @@ export async function renderShareCard(state: RunState, cities: City[], settings?
     body(ctx, ENDING_TEXT[state.ending?.kind || 'quit'] || '', 24, 316, state.ending?.kind === 'win' ? PAL.sun2 : PAL.red);
     // the reason, three lines max (27 cols in the wider font), then score
     wrapLines(causeOf(state), 27, 3).forEach((l, i) => body(ctx, l, 24, 330 + i * 12, PAL.white));
-    body(ctx, `SCORE ${state.ending?.score ?? 0}`, 24, 368, PAL.white);
-    if (settings?.bestScore) body(ctx, `BEST ${settings.bestScore}`, 120, 368, PAL.gray1);
+    body(ctx, `SCORE ${Math.round(state.ending?.score ?? 0)}`, 24, 368, PAL.white);   /* belt and braces: an old save can still hold a float */
+    if (settings?.bestScore) body(ctx, `BEST ${Math.round(settings.bestScore)}`, 120, 368, PAL.gray1);
     // continents: the second goal
     { const visited = new Set(state.visited.map(id => cities.find(c => c.id === id)).filter((c): c is City => !!c).map(c => CONTINENT_OF[c.region] as string));
       const all: [string, string][] = [['North America', 'N.AM'], ['South America', 'S.AM'], ['Europe', 'EUR'], ['Africa', 'AFR'], ['Asia', 'ASIA']];
       let x = 24; all.forEach(([name, short]) => { const lit = visited.has(name); R(ctx, x, 387, 4, 4, lit ? PAL.neon : PAL.gray0); body(ctx, short, x + 6, 384, lit ? PAL.neon : PAL.gray0); x += 6 + short.length * 8 + 6; }); }
     // QR + url
     { const qr = QRCode.create('https://cit.earth/trail', { errorCorrectionLevel: 'L' }); const n = qr.modules.size, m = 2, pad = 3, box = n * m + pad * 2; const qx = W - 16 - box, qy = 392; R(ctx, qx, qy, box, box, PAL.white); for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (qr.modules.get(y, x)) R(ctx, qx + pad + x * m, qy + pad + y * m, m, m, PAL.ink); }
-    body(ctx, 'PLAY AT', 24, 404, PAL.gray1); body(ctx, 'CIT.EARTH/TRAIL', 24, 416, PAL.neon); body(ctx, STRINGS.share.tagline1, 24, 434, PAL.gray1); body(ctx, STRINGS.share.tagline2, 24, 446, PAL.gray1);
+    body(ctx, 'PLAY AT', 24, 404, PAL.gray1); body(ctx, 'CIT.EARTH/TRAIL', 24, 416, PAL.neon); body(ctx, STRINGS.share.tagline1, 24, 434, PAL.gray1);
   });
   const big = document.createElement('canvas'); big.width = W * 4; big.height = H * 4; const bc = big.getContext('2d')!; bc.imageSmoothingEnabled = false; bc.drawImage(small, 0, 0, big.width, big.height);
   return big;

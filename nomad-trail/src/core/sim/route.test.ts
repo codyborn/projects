@@ -44,7 +44,7 @@ describe('cooking badly can poison you', () => {
 
 describe('kiteboarding', () => {
   it('training in a kite city with the kite packed launches the Kite game first', () => {
-    let s = Sim.createRun(3, 'orangecounty', 'east'); s = Sim.setPack(s, Sim.shelfPack(['laptopkit', 'clothes1', 'kitegear', 'toiletries'])!).state!; s = Sim.setDirection(s, 'east');
+    let s = Sim.createRun(3, 'orangecounty', 'east'); s = Sim.setPack(s, Sim.shelfPack(['laptopkit', 'clothes1', 'books', 'toiletries'])!).state!; s = Sim.setDirection(s, 'east');
     const leg = Sim.availableLegs(s).find(l => l.to === 'laventana'); expect(leg).toBeDefined(); s = Sim.travelTo(s, leg!.to).state;
     const r = Sim.cityAction({ ...s, energy: 90 }, 'train'); expect(r.minigame?.key).toBe('Kite');
   });

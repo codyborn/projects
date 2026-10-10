@@ -16,7 +16,7 @@ const basic = (): PackedItem[] => [P('laptopkit', 'checked', 0, 0), P('clothes1'
 /** basic() plus more bundles, shelf-packed so they never overlap. */
 const withExtras = (...ids: string[]): PackedItem[] => shelfPack(['laptopkit', 'clothes1', ...ids])!;
 function packed(items = basic()): RunState { const s = Sim.createRun(42, undefined, 'east'); const v = Sim.setPack(s, items); expect(v.ok, v.errors.join(';')).toBe(true); return Sim.setDirection(v.state!, 'east'); }  // direction fixed here; inference is covered in route.test.ts
-const HEAVY = ['kitegear', 'dronekit', 'books', 'hikingboots', 'adventure', 'protein', 'clothes1', 'clothes2', 'hostgifts', 'laptopkit', 'coffeekit'];
+const HEAVY = ['dronekit', 'books', 'hikingboots', 'adventure', 'protein', 'clothes1', 'clothes2', 'hostgifts', 'laptopkit', 'coffeekit'];
 /** WORK WEEK: the engine hands back the puzzle; apply it with a score (1 = solved: +100/day, 0.6..0.94 = hinted: +25/day, <0.5 = wrong: -75/day) to run the week. Default 0.8. */
 function workWeek(s: RunState, score = 0.8): RunState { const r = Sim.cityAction(s, 'work'); if (r.error) throw new Error(r.error); return Sim.applyMinigameResult(r.state, 'Work', { score, perfect: score >= 0.95, failed: score < 0.5 }).state; }
 /** Travel along the first offered leg, resolving any pending choice. */
@@ -33,7 +33,7 @@ describe('data integrity', () => {
   });
   it('every tag the engine or an event relies on exists on at least one bundle', () => {
     const have = new Set(ITEMS.flatMap(i => i.tags));
-    const used = new Set<ItemTag>(['essential', 'clothing', 'health', 'fitness', 'coffee', 'switch', 'kettle', 'organizer', 'kite', 'climb', 'swim', 'cold', 'trap']);
+    const used = new Set<ItemTag>(['essential', 'clothing', 'health', 'fitness', 'coffee', 'switch', 'kettle', 'organizer', 'climb', 'swim', 'cold', 'trap']);
     for (const e of EVENTS) { if (e.requiresTag) used.add(e.requiresTag); for (const t of e.mitigatedBy ?? []) used.add(t); if (e.effects.loseItemTag) used.add(e.effects.loseItemTag); for (const c of e.choices ?? []) if (c.requiresTag) used.add(c.requiresTag); }
     for (const t of used) expect(have.has(t), `tag ${t}`).toBe(true);
   });
@@ -93,15 +93,15 @@ describe('packing', () => {
     expect(Sim.validatePack([P('clothes1', 'checked')]).errors.join()).toMatch(/essential/);
     expect(Sim.validatePack([P('laptopkit', 'backpack', 0, 0)]).errors.join()).toMatch(/suitcase/);   // the backpack is gone
     expect(Object.keys(GRID)).toEqual(['checked']);
-    // hand-placed so it fits the grid exactly but weighs 50.3 lb: the weight check, not the fit check, must fail it
-    const heavy: PackedItem[] = [P('kitegear', 'checked', 0, 0), P('clothes1', 'checked', 4, 0), P('books', 'checked', 0, 3), P('dronekit', 'checked', 2, 3), P('laptopkit', 'checked', 5, 3), P('adventure', 'checked', 0, 5), P('hikingboots', 'checked', 3, 5), P('protein', 'checked', 6, 5), P('clothes2', 'checked', 0, 7), P('climbkit', 'checked', 3, 7), P('fitnesskit', 'checked', 5, 7), P('watch', 'checked', 7, 7), P('supplements', 'checked', 3, 9), P('skincare', 'checked', 5, 9)];
+    // the densest legal arrangement: it fits the grid but weighs 47.4 lb, so the weight check — not the fit check — must fail it
+    const heavy: PackedItem[] = shelfPack(['books', 'supplements', 'laptopkit', 'dronekit', 'adventure', 'protein', 'climbkit', 'clothes1', 'clothes2', 'clothes3', 'clothes4', 'hikingboots', 'skincare', 'airmonitor', 'switch'])!;
     const v = Sim.validatePack(heavy);
     expect(v.weights.checked).toBeGreaterThan(GRID.checked.maxLb); expect(v.ok).toBe(false); expect(v.errors).toEqual([expect.stringMatching(/Suitcase is/)]);
   });
-  it('a sensible full kit (laptop included) fits in one suitcase at ~30 lb; a greedy kit exceeds 50 lb or the grid', () => {
+  it('a sensible full kit (laptop included) fits in one suitcase at ~30 lb; a greedy kit exceeds the allowance or the grid', () => {
     const sensible = shelfPack(['laptopkit', 'toiletries', 'watch', 'airmonitor', 'clothes1', 'clothes2', 'shell', 'protein', 'supplements', 'skincare', 'sleepkit', 'coffeekit', 'adventure', 'fitnesskit', 'firstaid', 'medkit', 'packingcubes']);
     expect(sensible).not.toBeNull(); const w = Sim.bagWeight(sensible!); expect(w).toBeGreaterThan(27); expect(w).toBeLessThan(35); expect(Sim.validatePack(sensible!).ok).toBe(true);
-    const greedy = ['kitegear', 'dronekit', 'books', 'hikingboots', 'adventure', 'protein', 'clothes1', 'clothes2', 'hostgifts', 'laptopkit', 'coffeekit', 'travelkettle', 'kitchenknife'];
+    const greedy = ['books', 'supplements', 'laptopkit', 'dronekit', 'adventure', 'protein', 'climbkit', 'clothes1', 'clothes2', 'clothes3', 'clothes4', 'hikingboots', 'skincare', 'airmonitor', 'switch'];
     expect(shelfPack(greedy) === null || Sim.idsWeight(greedy) > GRID.checked.maxLb).toBe(true);
   });
   it('accepts a valid pack, computes weight and clothes days, starts with money, moves to the route phase, always at home', () => {
@@ -222,7 +222,8 @@ describe('events', () => {
     for (let seed = 0; seed < 80 && seen < 3; seed++) { const st = Sim.setPack(Sim.createRun(seed, undefined, 'east'), basic()).state!; const r = Sim.travelTo(st, Sim.availableLegs(st)[0].to); const idx = r.events.findIndex(e => e.id === 'airbnbcancel'); if (idx >= 0) { seen++; expect(r.events.slice(0, idx).every(e => EVENT[e.id].when !== 'arrive')).toBe(true); expect(r.events.some(e => LODGING_DEPENDENT.has(e.id))).toBe(false); } }
   });
   it('an overweight bag throws out your back within a few legs; a light one never does', () => {
-    const heavyIds = ['kitegear', 'dronekit', 'books', 'hikingboots', 'adventure', 'protein', 'clothes1', 'clothes2', 'laptopkit', 'hostgifts', 'travelkettle', 'supplements'];
+    /* round 103: the kite bundle was the easy 12 lb. The heaviest bag that is still legal now takes nineteen things. */
+    const heavyIds = ['clothes2', 'swimkit', 'adventure', 'books', 'hikingboots', 'laptopkit', 'supplements', 'skincare', 'protein', 'switch', 'clothes1', 'mosquitokit', 'clothes3', 'dronekit', 'laundrykit', 'watch', 'climbkit', 'firstaid', 'medkit'];
     const heavyPack = shelfPack(heavyIds)!; expect(heavyPack).not.toBeNull();
     const v = Sim.validatePack(heavyPack); expect(v.ok, v.errors.join()).toBe(true); expect(v.ratio).toBeGreaterThan(0.95);
     let injured = 0, light = 0;
@@ -428,7 +429,7 @@ describe('round 3: money, weekends, streaks, weight, outdoors, radon', () => {
     const gone = Sim.cityAction({ ...s, money: -OVERDRAFT + 10 }, 'rest'); expect(gone.state.ending?.kind).toBe('broke');
   });
   it('a full suitcase roughly doubles the travel energy drain of a light one', () => {
-    const light = packed(); const heavy = packed(shelfPack(['kitegear', 'dronekit', 'books', 'hikingboots', 'adventure', 'protein', 'clothes1', 'laptopkit', 'hostgifts', 'kitchenknife', 'coffeekit'])!);
+    const light = packed(); const heavy = packed(shelfPack(['books', 'supplements', 'laptopkit', 'dronekit', 'adventure', 'protein', 'climbkit', 'clothes1', 'clothes2', 'clothes3', 'hikingboots'])!);
     expect(Sim.weightRatio(heavy.items)).toBeGreaterThan(0.85);
     const leg = Sim.availableLegs(light)[0];
     // same seed, same leg events for both; only the weight term differs: 0.8 * leg.energy * (ratioHeavy - ratioLight)

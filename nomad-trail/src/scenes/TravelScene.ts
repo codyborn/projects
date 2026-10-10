@@ -24,7 +24,12 @@ export class TravelScene extends Phaser.Scene {
        so the sprint through the terminal belongs before the flight, not after it */
     this.settle(data.leg);
     const dash = this.pending?.res.minigame;
-    if (dash) this.runDash(dash, () => this.depart(data.leg)); else this.depart(data.leg);
+    /* the taxi dying is why you are sprinting: its card plays first, and comes out of the arrival queue so it is not
+       shown twice. Without this the terminal dash arrived with no explanation at all. */
+    if (dash) { const why = this.takeEvent('taxibreakdown');
+      const run = () => this.runDash(dash, () => this.depart(data.leg));
+      if (why) launchOnTop(this, 'Event', { eventId: why, onDone: () => { this.scene.stop('Event'); run(); } }); else run();
+    } else this.depart(data.leg);
   }
   /** The crossing itself: engine note, one pass out of the frame, then whatever the leg threw up. */
   private depart(leg: Leg) {
@@ -43,6 +48,12 @@ export class TravelScene extends Phaser.Scene {
     launchOnTop(this, dash.key, launch); this.scene.pause();
   }
   update(_t: number, dt: number) { if (!this.moving || !this.scape) return; this.scape.update(dt); const p = (this.time.now - this.t0) / 2500; this.scape.setProgress(0.5 - 0.5 * Math.cos(Math.PI * Math.min(1, p))); }
+  /** Pull one event id out of the arrival queue so it can be shown earlier instead. */
+  private takeEvent(id: string): string | undefined {
+    const evs = this.pending?.res.events; if (!evs) return undefined;
+    const i = evs.indexOf(id); if (i < 0) return undefined;   /* the bridge hands scenes event ids, not the resolved objects */
+    evs.splice(i, 1); return id;
+  }
   /** Run the leg through the sim up front: the gate dash needs its answer before the vehicle moves. */
   private settle(leg: Leg) {
     const run = getRun(this); const before = { locked: run.bagLockedDays, wheel: run.wheelBroken };

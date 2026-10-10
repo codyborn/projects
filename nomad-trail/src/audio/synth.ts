@@ -37,7 +37,7 @@ class FilePlayer {
     if (!p) {
       p = prefetchAudio(file).then(b => this.ctx.decodeAudioData(b.slice(0)));   /* slice: decodeAudioData detaches the buffer */
       this.cache.set(file, p); this.order.push(file);
-      while (this.order.length > 3) { const drop = this.order.shift()!; if (drop !== file) this.cache.delete(drop); }   /* decoded PCM is heavy; keep the last few */
+      while (this.order.length > 6) { const drop = this.order.shift()!; if (drop !== file) this.cache.delete(drop); }   /* decoded PCM is heavy, but 3 was thrashing on a route that hops continents */
     }
     return p;
   }
@@ -89,19 +89,38 @@ class AudioEngine {
     this.warm();
   }
   /** Pull the rest of the soundtrack down in the background so a scene change never waits on the network.
-   *  One at a time, current loop last (it is already loading), and skipped on a metered or slow connection. */
-  private warmed = false;
-  warm() {
-    if (this.warmed) return; this.warmed = true;
+   *  Fetching needs no AudioContext, so this starts at load rather than at the unlocking tap; two at a time, and
+   *  skipped on a metered or slow connection. */
+  private warmed = false; private queue: string[] = []; private inFlight = 0; private foreground = 0;
+  /** A track somebody is waiting to hear: straight out, no queue, and background warming stands aside until it lands
+   *  so the two are not fighting over the same few hundred kbit. */
+  private fetchNow(file: string) {
+    this.foreground++;
+    prefetchAudio(file).catch(() => {}).finally(() => { this.foreground--; this.pump(); });
+  }
+  private pump() {
+    if (this.foreground > 0) return;
     const conn = (navigator as unknown as { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
     if (conn?.saveData || /^(slow-)?2g$/.test(conn?.effectiveType ?? '')) return;
-    const files: string[] = [];
+    while (this.inFlight < 2) {
+      const f = this.queue.shift(); if (!f) return;
+      this.inFlight++;
+      prefetchAudio(f).catch(() => {}).finally(() => { this.inFlight--; this.pump(); });
+    }
+  }
+  /** The loops these cities would play. The route screen knows the short list of places the player can go next, so
+   *  those tracks are fetched at the same priority as the one playing — reordering the background queue was not
+   *  enough: measured at 450 kbps it made no difference at all, because two generic warms already had the pipe. */
+  preloadLoops(names: string[]) {
+    const files = [...new Set(names.map(n => this.candidateFor(n)).filter(c => c?.kind === 'file').map(c => (c as { file: string }).file))];
+    for (const f of files.slice(0, 3)) { this.queue = this.queue.filter(q => q !== f); this.fetchNow(f); }
+  }
+  warm() {
+    if (this.warmed) return; this.warmed = true;
     const cur = this.candidateFor(this.loop); const curFile = cur?.kind === 'file' ? cur.file : undefined;
-    for (const id of Object.values(this.selection.music)) { const c = musicById(id); if (c?.kind === 'file' && c.file !== curFile) files.push(c.file); }
-    for (const id of Object.values(this.selection.sfx)) { const c = sfxCandidateById(id); if (c?.file) files.push(c.file); }
-    let i = 0;
-    const next = () => { const f = files[i++]; if (!f) return; prefetchAudio(f).catch(() => {}).then(() => window.setTimeout(next, 150)); };
-    window.setTimeout(next, 800);   /* let the first track and the scene settle first */
+    for (const id of Object.values(this.selection.sfx)) { const c = sfxCandidateById(id); if (c?.file) this.queue.push(c.file); }
+    for (const id of Object.values(this.selection.music)) { const c = musicById(id); if (c?.kind === 'file' && c.file !== curFile) this.queue.push(c.file); }
+    this.pump();
   }
   /** Fetch + decode a clip once (recorded effects, ambience beds). */
   private clip(file: string) {
@@ -134,9 +153,16 @@ class AudioEngine {
   }
   /** Crossfade to a loop ('none' fades out). Idempotent. */
   playLoop(name: LoopName) {
-    if (name === this.loop) return; this.loop = name; if (!this.ready || !this.ctx) return;
-    const g = this.musicGain!, t = this.ctx.currentTime; g.gain.cancelScheduledValues(t); g.gain.setTargetAtTime(0, t, 0.25);
-    window.setTimeout(() => { if (!this.ctx || this.loop !== name) return; this.startCandidate(name === 'none' ? undefined : this.candidateFor(name)); g.gain.setTargetAtTime(this.ducked ? this.musicLevel * 0.3 : this.musicLevel, this.ctx.currentTime, 0.5); if (this.amb !== 'none' && this.ambGain) this.ambGain.gain.setTargetAtTime(this.ambLevel, this.ctx.currentTime, 0.5); }, 600);
+    if (name === this.loop) return; this.loop = name;
+    /* Kick the download off NOW rather than when the fade-out ends. Measured on a throttled 1.6 Mbps connection, a
+       cold track took 4.2-4.7 s to become audible and a pre-fetched one 0.67 s; 600 ms of that was this method
+       sitting on its hands before it even knew which file it wanted. Safe before the audio context exists. */
+    const want = name === 'none' ? undefined : this.candidateFor(name);
+    if (want?.kind === 'file') this.fetchNow(want.file);
+    if (!this.ready || !this.ctx) return;
+    const g = this.musicGain!, t = this.ctx.currentTime; g.gain.cancelScheduledValues(t); g.gain.setTargetAtTime(0, t, 0.11);
+    /* 600 ms was the whole cost of switching to an already-loaded track. 260 still reads as a crossfade. */
+    window.setTimeout(() => { if (!this.ctx || this.loop !== name) return; this.startCandidate(name === 'none' ? undefined : this.candidateFor(name)); g.gain.setTargetAtTime(this.ducked ? this.musicLevel * 0.3 : this.musicLevel, this.ctx.currentTime, 0.5); if (this.amb !== 'none' && this.ambGain) this.ambGain.gain.setTargetAtTime(this.ambLevel, this.ctx.currentTime, 0.5); }, 260);
   }
   stopLoop() { this.playLoop('none'); }
   /** Play a short stinger once, then return to `then`. */
@@ -178,8 +204,11 @@ export const AUDIO_CREDITS: string[] = [
   'Korobeiniki arranged for this game · melody public domain',
 ];
 export const Audio = new AudioEngine();
+/* Downloads need no gesture, so the soundtrack starts arriving while the player is still reading the title screen. */
+if (typeof window !== 'undefined') window.setTimeout(() => Audio.warm(), 1200);
 export const REGION_LOOP: Record<string, LoopName> = { northamerica: 'americas', mexico: 'mexico', southamerica: 'latam', europe: 'europe', alps: 'alps', africa: 'africa', asia: 'asia', himalaya: 'himalaya' };
 /** Cities that earned their own track. */
-export const CITY_LOOP: Record<string, LoopName> = { miami: 'miami' };
+/* Roatán is Honduran, not Mexican: the island sounds like the rest of Latin America, which is where its loop comes from. */
+export const CITY_LOOP: Record<string, LoopName> = { miami: 'miami', roatan: 'latam' };
 /** The loop a city plays: its own if it has one, otherwise its region's. */
 export const cityLoop = (cityId?: string, region?: string): LoopName => (cityId && CITY_LOOP[cityId]) || REGION_LOOP[region ?? ''] || 'americas';

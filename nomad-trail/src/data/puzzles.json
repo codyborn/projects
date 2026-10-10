@@ -1,344 +1,344 @@
 [
- {
-  "id": "bots-and-swaps",
-  "title": "Bots and swaps",
-  "prompt": "5 trading bots can fill 5 swaps in 5 minutes. How many bots does it take to fill 100 swaps in 100 minutes?",
-  "kind": "number",
-  "answer": 5,
-  "hint": "Work out how many swaps ONE bot fills in 5 minutes, then in 100 minutes.",
-  "explain": "5. One bot fills one swap every 5 minutes, so 20 swaps in 100 minutes. Five bots fill 100. The big numbers were a costume.",
-  "art": "pool"
- },
- {
-  "id": "ten-laptops",
-  "title": "Ten laptops",
-  "prompt": "Ten laptops sit on the office table on battery, all running the test suite. Before leaving you close two of them. Later a colleague closes one more. The rest run all night. In the morning, how many laptops still have battery?",
-  "kind": "number",
-  "answer": 3,
-  "hint": "What happens to a laptop that runs on battery all night?",
-  "explain": "3. The seven that kept running drained flat. Only the three that were closed still have charge.",
-  "art": "code"
- },
- {
-  "id": "port-halves",
-  "title": "Splitting the port",
-  "prompt": "Two engineers must port 10 modules to the new framework. They split the list in half and start at opposite ends. Ana ports 1 module an hour, Ben ports 2. When both are done, what percent of the modules did Ana port?",
-  "kind": "number",
-  "answer": 50,
-  "hint": "Who decided how many pools each person does? Read the second sentence.",
-  "explain": "50 percent. They split the list in half before starting. Speed never came into it; Ben just finished first and went for coffee.",
-  "art": "code"
- },
- {
-  "id": "last-letter",
-  "title": "The last letter",
-  "prompt": "The first letter of Uniswap is U and the second is N. But the letter you should worry about is the last one. What is the last letter of the alphabet?",
-  "kind": "choice",
-  "choices": [
-   "Z",
-   "T",
-   "U",
-   "P"
-  ],
-  "answer": 1,
-  "hint": "Read the question again, very literally.",
-  "explain": "T. The last letter of the word 'alphabet'. Not Z. Reading the whole ticket is most of the job.",
-  "art": "whiteboard"
- },
- {
-  "id": "doubling-log",
-  "title": "The doubling log",
-  "prompt": "A bug makes one log line copy itself every minute: 1 line, then 2, then 4, and so on. After 60 minutes the disk is full. After how many minutes was the disk half full?",
-  "kind": "number",
-  "answer": 59,
-  "hint": "It doubles every minute. Go backwards from full.",
-  "explain": "59. If it doubles each minute, half full is one minute before full. The disk looked fine for nearly an hour and then it did not.",
-  "art": "code"
- },
- {
-  "id": "wallet-and-case",
-  "title": "The wallet and the case",
-  "prompt": "A hardware wallet and its case cost $110 together. The wallet costs $100 more than the case. How much is the case?",
-  "kind": "number",
-  "answer": 5,
-  "hint": "Not $10. Check: is the wallet exactly $100 more than the case?",
-  "explain": "$5. Case 5, wallet 105: together 110, and the difference is exactly 100. Almost everybody says 10 first.",
-  "art": "whiteboard"
- },
- {
-  "id": "three-wallets",
-  "title": "Three wallets",
-  "prompt": "Three traders leave identical hardware wallets on the desk and each grabs one without looking. What is the chance that exactly two of them pick up their own wallet?",
-  "kind": "choice",
-  "choices": [
-   "1 in 6",
-   "0, it cannot happen",
-   "1 in 2",
-   "1 in 3"
-  ],
-  "answer": 1,
-  "hint": "If two have their own, whose wallet is left for the third?",
-  "explain": "Zero. If two people hold their own wallets, the only one left belongs to the third person. Exactly two is impossible.",
-  "art": "whiteboard"
- },
- {
-  "id": "pool-half-itself",
-  "title": "Half of itself",
-  "prompt": "A trader asks how much ETH the pool holds. The answer: 'As much as your wallet, plus half of the pool itself.' Your wallet holds 22 ETH. How much ETH is in the pool?",
-  "kind": "number",
-  "answer": 44,
-  "hint": "Your 22 ETH must be the other half of the pool.",
-  "explain": "44 ETH. If the pool is your 22 plus half of itself, your 22 is the other half. So the pool is 44.",
-  "art": "pool"
- },
- {
-  "id": "chocolate-bar",
-  "title": "Breaking the bar",
-  "prompt": "A chocolate bar from the corner shop is a sheet of 30 squares. Each break splits one piece in two along the lines. How many breaks to get 30 single squares?",
-  "kind": "number",
-  "answer": 29,
-  "hint": "Every break adds exactly one piece. You start with 1 piece and want 30.",
-  "explain": "29. Each break adds one piece, whatever order you choose. From 1 to 30 takes 29 breaks.",
-  "art": "whiteboard"
- },
- {
-  "id": "two-offers",
-  "title": "Two offers",
-  "prompt": "Two protocols want to hire you. A pays $100,000 a year with a $20,000 raise every year. B pays $50,000 every half year with a $5,000 raise every half year. On money alone, which pays more?",
-  "kind": "choice",
-  "choices": [
-   "B",
-   "The same",
-   "Depends on the year",
-   "A"
-  ],
-  "answer": 0,
-  "hint": "Write out year one and year two for each. B gets two raises a year.",
-  "explain": "B. Year one: A 100,000; B 50,000 + 55,000 = 105,000. Year two: A 120,000; B 60,000 + 65,000 = 125,000. B stays ahead.",
-  "art": "whiteboard"
- },
- {
-  "id": "rollout-steps",
-  "title": "Take the stairs",
-  "prompt": "Climbing from floor 1 to floor 4 of the Uniswap office takes 48 seconds. At the same pace, how long does it take to climb from floor 4 to floor 8?",
-  "kind": "number",
-  "answer": 64,
-  "hint": "Count the flights of stairs between floors, not the floor numbers. 1 to 4 is three flights.",
-  "explain": "64 seconds. Floor 1 to 4 is 3 flights at 16 seconds each. Floor 4 to 8 is 4 flights. The classic off-by-one, on the stairs.",
-  "art": "whiteboard"
- },
- {
-  "id": "server-cube",
-  "title": "The server cube",
-  "prompt": "27 servers are stacked in a 3 by 3 by 3 cube. Only faces on the outside get a network cable. How many servers have exactly one cabled face?",
-  "kind": "number",
-  "answer": 6,
-  "hint": "Where does a small cube touch the outside on exactly one side?",
-  "explain": "6: the centre of each face. Corners have 3, edges 2, and the very middle server has none.",
-  "art": "chain"
- },
- {
-  "id": "flaky-third",
-  "title": "Third time",
-  "prompt": "A flaky test fails 1 time in 6. It has just failed twice in a row. What is the chance it fails on the third run?",
-  "kind": "choice",
-  "choices": [
-   "1 in 2",
-   "1 in 216",
-   "1 in 36",
-   "1 in 6"
-  ],
-  "answer": 3,
-  "hint": "The test has no memory of the last two runs.",
-  "explain": "1 in 6. Each run is independent. Two failures already happened; they change nothing about the next one.",
-  "art": "code"
- },
- {
-  "id": "token-cards",
-  "title": "The token cards",
-  "prompt": "Cards on the whiteboard read: O, T, T, F, ?, S, S, E, N. Which letter goes on the blank card?",
-  "kind": "choice",
-  "choices": [
-   "E",
-   "F",
-   "T",
-   "S"
-  ],
-  "answer": 1,
-  "hint": "Say them out loud as if you were counting.",
-  "explain": "F. One, Two, Three, Four, Five, Six, Seven, Eight, Nine: the first letters.",
-  "art": "whiteboard"
- },
- {
-  "id": "validator-square",
-  "title": "The validator square",
-  "prompt": "Nine validators stand in a 3 by 3 grid staking 1 to 9 coins each, every number once. Every row, column and diagonal stakes 15 in total. How many coins does the centre validator stake?",
-  "kind": "number",
-  "answer": 5,
-  "hint": "The centre sits in four lines: a row, a column and both diagonals. Add those four lines up.",
-  "explain": "5. Four lines through the centre total 60. That counts the centre four times and every other cell once. All nine cells sum to 45, so three extra centres make 15: the centre is 5.",
-  "art": "chain"
- },
- {
-  "id": "light-coin",
-  "title": "The light coin",
-  "prompt": "Eight commemorative UNI coins from the merch table look identical, but one is a fake and slightly lighter. A balance scale compares two groups at a time. What is the fewest weighings that always finds the fake?",
-  "kind": "number",
-  "answer": 2,
-  "hint": "Do not weigh 4 against 4. Leave some coins off the scale.",
-  "explain": "2. Weigh 3 against 3. If they balance, weigh the two left over. If not, take the lighter three and weigh 1 against 1; the one left out is the fake if those balance.",
-  "art": "chain"
- },
- {
-  "id": "strange-object",
-  "title": "What is it",
-  "prompt": "Two traders who have never seen an office watch a colleague: 'He punches a bent piece of metal through a stack of paper to pin it together.' What is the object?",
-  "kind": "choice",
-  "choices": [
-   "Pen",
-   "Paper clip",
-   "Hole punch",
-   "Stapler"
-  ],
-  "answer": 3,
-  "hint": "The metal bends after it goes through.",
-  "explain": "A stapler. Described from the outside, every office object sounds like a weapon.",
-  "art": "whiteboard"
- },
- {
-  "id": "ball-in-hole",
-  "title": "Down the hole",
-  "prompt": "The foam unicorn from the merch table rolls into a deep, narrow hole in solid rock with a bend halfway down. Nothing can reach it. What gets it out?",
-  "kind": "choice",
-  "choices": [
-   "Water",
-   "A magnet",
-   "A string",
-   "A vacuum"
-  ],
-  "answer": 0,
-  "hint": "A light foam toy in water does what?",
-  "explain": "Water. Fill the hole and the foam unicorn floats up. Then keep it off the ledge.",
-  "art": "whiteboard"
- },
- {
-  "id": "two-auditors",
-  "title": "Two auditors",
-  "prompt": "Only two people audit code on the team, and each can only be audited by the other. Ana's own code is spotless. Ben's own code is a mess. Whose audits do you want on your code?",
-  "kind": "choice",
-  "choices": [
-   "Ben's",
-   "Either",
-   "Ana's",
-   "Neither"
-  ],
-  "answer": 0,
-  "hint": "Who audited Ana's spotless code?",
-  "explain": "Ben's. Ana's clean code was audited by Ben, and Ben's messy code by Ana. Judge the auditor by the other person's code.",
-  "art": "code"
- },
- {
-  "id": "three-oracles",
-  "title": "Three oracles",
-  "prompt": "Three price oracles update every 2, 3 and 4 minutes. They all update right now. In how many minutes do all three update together again?",
-  "kind": "number",
-  "answer": 12,
-  "hint": "Find the smallest number that 2, 3 and 4 all divide into.",
-  "explain": "12. The least common multiple of 2, 3 and 4.",
-  "art": "chart"
- },
- {
-  "id": "who-broke-it",
-  "title": "Who broke the deploy",
-  "prompt": "Exactly one of three teammates is telling the truth. Ana: 'It was not me.' Ben: 'It was Cai.' Cai: 'Ben is lying.' Who broke the deploy?",
-  "kind": "choice",
-  "choices": [
-   "Ana",
-   "Nobody",
-   "Cai",
-   "Ben"
-  ],
-  "answer": 0,
-  "hint": "Try each suspect and count true statements. Only one gives exactly one.",
-  "explain": "Ana. If Ana did it: Ana lies, Ben lies, Cai tells the truth. One truth. Any other suspect gives two.",
-  "art": "whiteboard"
- },
- {
-  "id": "clock-math",
-  "title": "8 plus 6 is 2",
-  "prompt": "On the whiteboard someone wrote: 8 + 6 = 2, and 11 + 3 = 2. Under one everyday condition both are correct. What are they adding?",
-  "kind": "choice",
-  "choices": [
-   "Fingers",
-   "Block numbers",
-   "Hours on a clock",
-   "Gas fees"
-  ],
-  "answer": 2,
-  "hint": "Think about something that wraps around after 12.",
-  "explain": "Hours on a clock. 8 o'clock plus 6 hours is 2 o'clock; 11 plus 3 is 2. Nobody was wrong, they were just on a clock.",
-  "art": "whiteboard"
- },
- {
-  "id": "dying-server",
-  "title": "The dying server",
-  "prompt": "The old server dies in exactly 20 minutes with 15 services still on it. The migration job carries 5 at a time, but one slot must always hold the operator, who rides back for the next batch. A one-way trip takes 4 minutes. How many services can you save?",
-  "kind": "number",
-  "answer": 13,
-  "hint": "Trips leave at minute 0, 8 and 16. The last one does not need to come back.",
-  "explain": "13. Trips at minutes 0 and 8 each carry 4 services plus the operator; the trip at minute 16 never returns so all 5 slots carry services. 4 + 4 + 5.",
-  "art": "chain"
- },
- {
-  "id": "gas-split",
-  "title": "The alerts split",
-  "prompt": "On the way out you handled the first 180 alerts and your colleague the rest. On the way back your colleague handled the first 100 and you the rest, same total. How many more alerts did you handle than your colleague?",
-  "kind": "number",
-  "answer": 160,
-  "hint": "Call the total per leg T. You did 180 plus (T minus 100). They did (T minus 180) plus 100.",
-  "explain": "160. You handled T + 80, they handled T minus 80. The difference is 160 whatever T was.",
-  "art": "whiteboard"
- },
- {
-  "id": "pool-rule",
-  "title": "The pool rule",
-  "prompt": "A pool holds 10 ETH and 1,000 dollars and follows one rule: ETH times dollars must always equal 10,000. A trader takes out 5 ETH. How many dollars do they have to put in?",
-  "kind": "number",
-  "answer": 1000,
-  "hint": "With 5 ETH left, what dollar amount keeps 5 times dollars equal to 10,000?",
-  "explain": "1,000. With 5 ETH left the pool needs 2,000 dollars. It had 1,000, so the trader pays 1,000. That single rule is the heart of Uniswap.",
-  "art": "pool"
- },
- {
-  "id": "timelock",
-  "title": "Two days later",
-  "prompt": "A vote to change the protocol passes on Friday at 15:00. Every passed change waits exactly 2 days before it can run. When is the earliest it can run?",
-  "kind": "choice",
-  "choices": [
-   "Saturday 15:00",
-   "Sunday 15:00",
-   "Monday 09:00",
-   "Friday 15:00"
-  ],
-  "answer": 1,
-  "hint": "Two days from Friday afternoon. Weekends count.",
-  "explain": "Sunday 15:00. The waiting period does not know about weekends.",
-  "art": "chain"
- },
- {
-  "id": "standup-time",
-  "title": "Standup in Bangkok",
-  "prompt": "Standup is at 09:00 in New York, which is 4 hours behind universal time. Bangkok is 7 hours ahead of universal time. What time is standup in Bangkok?",
-  "kind": "choice",
-  "choices": [
-   "21:00",
-   "22:00",
-   "18:00",
-   "20:00"
-  ],
-  "answer": 3,
-  "hint": "New York to universal time first (add 4), then to Bangkok (add 7).",
-  "explain": "20:00. 09:00 New York is 13:00 universal, which is 20:00 in Bangkok.",
-  "art": "whiteboard"
- }
+  {
+    "id": "bots-and-swaps",
+    "title": "Bots and swaps",
+    "prompt": "5 trading bots can fill 5 swaps in 5 minutes. How many bots does it take to fill 100 swaps in 100 minutes?",
+    "kind": "number",
+    "answer": 5,
+    "hint": "Work out how many swaps ONE bot fills in 5 minutes, then in 100 minutes.",
+    "explain": "5. One bot fills one swap every 5 minutes, so 20 swaps in 100 minutes. Five bots fill 100. The big numbers were a costume.",
+    "art": "pool"
+  },
+  {
+    "id": "ten-laptops",
+    "title": "Ten laptops",
+    "prompt": "Ten laptops sit on the office table on battery, all running the test suite. Before leaving you close two of them. Later a colleague closes one more. The rest run all night. In the morning, how many laptops still have battery?",
+    "kind": "number",
+    "answer": 3,
+    "hint": "What happens to a laptop that runs on battery all night?",
+    "explain": "3. The seven that kept running drained flat. Only the three that were closed still have charge.",
+    "art": "code"
+  },
+  {
+    "id": "port-halves",
+    "title": "Splitting the port",
+    "prompt": "Two engineers must port 10 modules to the new framework. They split the list in half and start at opposite ends. Ana ports 1 module an hour, Ben ports 2. When both are done, what percent of the modules did Ana port?",
+    "kind": "number",
+    "answer": 50,
+    "hint": "Who decided how many pools each person does? Read the second sentence.",
+    "explain": "50 percent. They split the list in half before starting. Speed never came into it; Ben just finished first and went for coffee.",
+    "art": "code"
+  },
+  {
+    "id": "last-letter",
+    "title": "The last letter",
+    "prompt": "The first letter of Uniswap is U and the second is N. But the letter you should worry about is the last one. What is the last letter of the alphabet?",
+    "kind": "choice",
+    "choices": [
+      "Z",
+      "T",
+      "U",
+      "P"
+    ],
+    "answer": 1,
+    "hint": "Read the question again, very literally.",
+    "explain": "T. The last letter of the word 'alphabet'. Not Z. Reading the whole ticket is most of the job.",
+    "art": "whiteboard"
+  },
+  {
+    "id": "doubling-log",
+    "title": "The doubling log",
+    "prompt": "A bug makes one log line copy itself every minute: 1 line, then 2, then 4, and so on. After 60 minutes the disk is full. After how many minutes was the disk half full?",
+    "kind": "number",
+    "answer": 59,
+    "hint": "It doubles every minute. Go backwards from full.",
+    "explain": "59. If it doubles each minute, half full is one minute before full. The disk looked fine for nearly an hour and then it did not.",
+    "art": "code"
+  },
+  {
+    "id": "wallet-and-case",
+    "title": "The wallet and the case",
+    "prompt": "A hardware wallet and its case cost $110 together. The wallet costs $100 more than the case. How much is the case?",
+    "kind": "number",
+    "answer": 5,
+    "hint": "Not $10. Check: is the wallet exactly $100 more than the case?",
+    "explain": "$5. Case 5, wallet 105: together 110, and the difference is exactly 100. Almost everybody says 10 first.",
+    "art": "whiteboard"
+  },
+  {
+    "id": "three-wallets",
+    "title": "Three wallets",
+    "prompt": "Three traders leave identical hardware wallets on the desk and each grabs one without looking. What is the chance that exactly two of them pick up their own wallet?",
+    "kind": "choice",
+    "choices": [
+      "1 in 6",
+      "0, it cannot happen",
+      "1 in 2",
+      "1 in 3"
+    ],
+    "answer": 1,
+    "hint": "If two have their own, whose wallet is left for the third?",
+    "explain": "Zero. If two people hold their own wallets, the only one left belongs to the third person. Exactly two is impossible.",
+    "art": "whiteboard"
+  },
+  {
+    "id": "pool-half-itself",
+    "title": "Half of itself",
+    "prompt": "A trader asks how much ETH the pool holds. The answer: 'As much as your wallet, plus half of the pool itself.' Your wallet holds 22 ETH. How much ETH is in the pool?",
+    "kind": "number",
+    "answer": 44,
+    "hint": "Your 22 ETH must be the other half of the pool.",
+    "explain": "44 ETH. If the pool is your 22 plus half of itself, your 22 is the other half. So the pool is 44.",
+    "art": "pool"
+  },
+  {
+    "id": "chocolate-bar",
+    "title": "Breaking the bar",
+    "prompt": "A chocolate bar from the corner shop is a sheet of 30 squares. Each break splits one piece in two along the lines. How many breaks to get 30 single squares?",
+    "kind": "number",
+    "answer": 29,
+    "hint": "Every break adds exactly one piece. You start with 1 piece and want 30.",
+    "explain": "29. Each break adds one piece, whatever order you choose. From 1 to 30 takes 29 breaks.",
+    "art": "whiteboard"
+  },
+  {
+    "id": "two-offers",
+    "title": "Two offers",
+    "prompt": "Two protocols want to hire you. A pays $100,000 a year with a $20,000 raise every year. B pays $50,000 every half year with a $5,000 raise every half year. On money alone, which pays more?",
+    "kind": "choice",
+    "choices": [
+      "B",
+      "The same",
+      "Depends on the year",
+      "A"
+    ],
+    "answer": 0,
+    "hint": "Write out year one and year two for each. B gets two raises a year.",
+    "explain": "B. Year one: A 100,000; B 50,000 + 55,000 = 105,000. Year two: A 120,000; B 60,000 + 65,000 = 125,000. B stays ahead.",
+    "art": "whiteboard"
+  },
+  {
+    "id": "rollout-steps",
+    "title": "Take the stairs",
+    "prompt": "Climbing from floor 1 to floor 4 of the Uniswap office takes 48 seconds. At the same pace, how long does it take to climb from floor 4 to floor 8?",
+    "kind": "number",
+    "answer": 64,
+    "hint": "Count the flights of stairs between floors, not the floor numbers. 1 to 4 is three flights.",
+    "explain": "64 seconds. Floor 1 to 4 is 3 flights at 16 seconds each. Floor 4 to 8 is 4 flights. The classic off-by-one, on the stairs.",
+    "art": "whiteboard"
+  },
+  {
+    "id": "server-cube",
+    "title": "The server cube",
+    "prompt": "27 servers are stacked in a 3 by 3 by 3 cube. Only faces on the outside get a network cable. How many servers have exactly one cabled face?",
+    "kind": "number",
+    "answer": 6,
+    "hint": "Where does a small cube touch the outside on exactly one side?",
+    "explain": "6: the centre of each face. Corners have 3, edges 2, and the very middle server has none.",
+    "art": "chain"
+  },
+  {
+    "id": "flaky-third",
+    "title": "Third time",
+    "prompt": "A flaky test fails 1 time in 6. It has just failed twice in a row. What is the chance it fails on the third run?",
+    "kind": "choice",
+    "choices": [
+      "1 in 2",
+      "1 in 216",
+      "1 in 36",
+      "1 in 6"
+    ],
+    "answer": 3,
+    "hint": "The test has no memory of the last two runs.",
+    "explain": "1 in 6. Each run is independent. Two failures already happened; they change nothing about the next one.",
+    "art": "code"
+  },
+  {
+    "id": "token-cards",
+    "title": "The token cards",
+    "prompt": "Cards on the whiteboard read: O, T, T, F, ?, S, S, E, N. Which letter goes on the blank card?",
+    "kind": "choice",
+    "choices": [
+      "E",
+      "F",
+      "T",
+      "S"
+    ],
+    "answer": 1,
+    "hint": "Say them out loud as if you were counting.",
+    "explain": "F. One, Two, Three, Four, Five, Six, Seven, Eight, Nine: the first letters.",
+    "art": "whiteboard"
+  },
+  {
+    "id": "validator-square",
+    "title": "The validator square",
+    "prompt": "Nine validators stand in a 3 by 3 grid staking 1 to 9 coins each, every number once. Every row, column and diagonal stakes 15 in total. How many coins does the centre validator stake?",
+    "kind": "number",
+    "answer": 5,
+    "hint": "The centre sits in four lines: a row, a column and both diagonals. Add those four lines up.",
+    "explain": "5. Four lines through the centre total 60. That counts the centre four times and every other cell once. All nine cells sum to 45, so three extra centres make 15: the centre is 5.",
+    "art": "chain"
+  },
+  {
+    "id": "light-coin",
+    "title": "The light coin",
+    "prompt": "Eight commemorative UNI coins from the merch table look identical, but one is a fake and slightly lighter. A balance scale compares two groups at a time. What is the fewest weighings that always finds the fake?",
+    "kind": "number",
+    "answer": 2,
+    "hint": "Do not weigh 4 against 4. Leave some coins off the scale.",
+    "explain": "2. Weigh 3 against 3. If they balance, weigh the two left over. If not, take the lighter three and weigh 1 against 1; the one left out is the fake if those balance.",
+    "art": "chain"
+  },
+  {
+    "id": "strange-object",
+    "title": "What is it",
+    "prompt": "Two traders who have never seen an office watch a colleague: 'He punches a bent piece of metal through a stack of paper to pin it together.' What is the object?",
+    "kind": "choice",
+    "choices": [
+      "Pen",
+      "Paper clip",
+      "Hole punch",
+      "Stapler"
+    ],
+    "answer": 3,
+    "hint": "The metal bends after it goes through.",
+    "explain": "A stapler. Described from the outside, every office object sounds like a weapon.",
+    "art": "whiteboard"
+  },
+  {
+    "id": "ball-in-hole",
+    "title": "Down the hole",
+    "prompt": "The foam unicorn from the merch table rolls into a deep, narrow hole in solid rock with a bend halfway down. Nothing can reach it. What gets it out?",
+    "kind": "choice",
+    "choices": [
+      "Water",
+      "A magnet",
+      "A string",
+      "A vacuum"
+    ],
+    "answer": 0,
+    "hint": "A light foam toy in water does what?",
+    "explain": "Water. Fill the hole and the foam unicorn floats up. Then keep it off the ledge.",
+    "art": "whiteboard"
+  },
+  {
+    "id": "two-auditors",
+    "title": "Two auditors",
+    "prompt": "Only two people audit code on the team, and each can only be audited by the other. Ana's own code is spotless. Ben's own code is a mess. Whose audits do you want on your code?",
+    "kind": "choice",
+    "choices": [
+      "Ben's",
+      "Either",
+      "Ana's",
+      "Neither"
+    ],
+    "answer": 0,
+    "hint": "Who audited Ana's spotless code?",
+    "explain": "Ben's. Ana's clean code was audited by Ben, and Ben's messy code by Ana. Judge the auditor by the other person's code.",
+    "art": "code"
+  },
+  {
+    "id": "three-oracles",
+    "title": "Three oracles",
+    "prompt": "Three price oracles update every 2, 3 and 4 minutes. They all update right now. In how many minutes do all three update together again?",
+    "kind": "number",
+    "answer": 12,
+    "hint": "Find the smallest number that 2, 3 and 4 all divide into.",
+    "explain": "12. The least common multiple of 2, 3 and 4.",
+    "art": "chart"
+  },
+  {
+    "id": "who-broke-it",
+    "title": "Who broke the deploy",
+    "prompt": "Exactly one of three teammates is telling the truth. Ana: 'It was not me.' Ben: 'It was Cai.' Cai: 'Ben is lying.' Who broke the deploy?",
+    "kind": "choice",
+    "choices": [
+      "Ana",
+      "Nobody",
+      "Cai",
+      "Ben"
+    ],
+    "answer": 0,
+    "hint": "Try each suspect and count true statements. Only one gives exactly one.",
+    "explain": "Ana. If Ana did it: Ana lies, Ben lies, Cai tells the truth. One truth. Any other suspect gives two.",
+    "art": "whiteboard"
+  },
+  {
+    "id": "clock-math",
+    "title": "8 plus 6 is 2",
+    "prompt": "On the whiteboard someone wrote: 8 + 6 = 2, and 11 + 3 = 2. Under one everyday condition both are correct. What are they adding?",
+    "kind": "choice",
+    "choices": [
+      "Fingers",
+      "Block numbers",
+      "Hours on a clock",
+      "Gas fees"
+    ],
+    "answer": 2,
+    "hint": "Think about something that wraps around after 12.",
+    "explain": "Hours on a clock. 8 o'clock plus 6 hours is 2 o'clock; 11 plus 3 is 2. Nobody was wrong, they were just on a clock.",
+    "art": "whiteboard"
+  },
+  {
+    "id": "dying-server",
+    "title": "The dying server",
+    "prompt": "The old box dies in 20 minutes with 15 services still on it. The migration tool runs one batch at a time: 6 minutes a batch, 4 services a batch, and a batch still running when the box dies is lost. How many services can you save?",
+    "kind": "number",
+    "answer": 12,
+    "hint": "Count when each batch finishes, not when it starts.",
+    "explain": "12. Batches finish at minute 6, 12 and 18, four services each. A fourth would not land until minute 24, and the box is gone at 20. Three batches is all you get.",
+    "art": "chain"
+  },
+  {
+    "id": "gas-split",
+    "title": "The alerts split",
+    "prompt": "On the way out you handled the first 180 alerts and your colleague the rest. On the way back your colleague handled the first 100 and you the rest, same total. How many more alerts did you handle than your colleague?",
+    "kind": "number",
+    "answer": 160,
+    "hint": "Call the total per leg T. You did 180 plus (T minus 100). They did (T minus 180) plus 100.",
+    "explain": "160. You handled T + 80, they handled T minus 80. The difference is 160 whatever T was.",
+    "art": "whiteboard"
+  },
+  {
+    "id": "pool-rule",
+    "title": "The pool rule",
+    "prompt": "A pool holds 10 ETH and 1,000 dollars and follows one rule: ETH times dollars must always equal 10,000. A trader takes out 5 ETH. How many dollars do they have to put in?",
+    "kind": "number",
+    "answer": 1000,
+    "hint": "With 5 ETH left, what dollar amount keeps 5 times dollars equal to 10,000?",
+    "explain": "1,000. With 5 ETH left the pool needs 2,000 dollars. It had 1,000, so the trader pays 1,000. That single rule is the heart of Uniswap.",
+    "art": "pool"
+  },
+  {
+    "id": "timelock",
+    "title": "Two days later",
+    "prompt": "A vote to change the protocol passes on Friday at 15:00. Every passed change waits exactly 2 days before it can run. When is the earliest it can run?",
+    "kind": "choice",
+    "choices": [
+      "Saturday 15:00",
+      "Sunday 15:00",
+      "Monday 09:00",
+      "Friday 15:00"
+    ],
+    "answer": 1,
+    "hint": "Two days from Friday afternoon. Weekends count.",
+    "explain": "Sunday 15:00. The waiting period does not know about weekends.",
+    "art": "chain"
+  },
+  {
+    "id": "standup-time",
+    "title": "Standup in Bangkok",
+    "prompt": "Standup is at 09:00 in New York, which is 4 hours behind universal time. Bangkok is 7 hours ahead of universal time. What time is standup in Bangkok?",
+    "kind": "choice",
+    "choices": [
+      "21:00",
+      "22:00",
+      "18:00",
+      "20:00"
+    ],
+    "answer": 3,
+    "hint": "New York to universal time first (add 4), then to Bangkok (add 7).",
+    "explain": "20:00. 09:00 New York is 13:00 universal, which is 20:00 in Bangkok.",
+    "art": "whiteboard"
+  }
 ]

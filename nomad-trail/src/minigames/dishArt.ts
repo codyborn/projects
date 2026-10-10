@@ -17,7 +17,7 @@ export const DISH_TEX_W = GW * U, DISH_TEX_H = GH * U;
 // Content anchor per vessel (grid units): where the food sits.
 const ANCHOR: Record<Vessel, { x: number; y: number }> = {
   plate: { x: 24, y: 19 }, bowl: { x: 24, y: 17 }, board: { x: 24, y: 18 }, mat: { x: 24, y: 18 }, stick: { x: 24, y: 17 }, glass: { x: 24, y: 18 }, cone: { x: 24, y: 13 },
-  basket: { x: 24, y: 17 }, boat: { x: 24, y: 16 }, slice: { x: 24, y: 17 }, pan: { x: 22, y: 18 }, grill: { x: 24, y: 17 }, tagine: { x: 24, y: 17 }, thali: { x: 24, y: 18 }, tray: { x: 24, y: 18 }, stonebowl: { x: 24, y: 17 }, paper: { x: 24, y: 19 },
+  basket: { x: 24, y: 17 }, boat: { x: 24, y: 16 }, slice: { x: 24, y: 17 }, pan: { x: 22, y: 18 }, grill: { x: 24, y: 17 }, tagine: { x: 24, y: 19 }, thali: { x: 24, y: 18 }, tray: { x: 24, y: 18 }, stonebowl: { x: 24, y: 17 }, paper: { x: 24, y: 19 },
 };
 
 // deterministic scatter
@@ -169,7 +169,9 @@ export const dishArtSpecs: Record<string, DishArtSpec> = {
   kaiserschmarrn: { vessel: 'plate', layers: [{ s: 'pile', c: 'sun1', c2: 'sun2', n: 10, w: 24, h: 6 }, { s: 'pile', c: 'sun2', c2: 'sun3', n: 5, w: 18, h: 4, y: -2 }, { s: 'sprinkles', c: 'white', n: 9, w: 22, h: 5, y: -2 }, { s: 'sauce', c: 'dusk2', c2: 'dusk3', w: 8, h: 3, x: 13, y: 2 }] },
   kaspressknoedel: { vessel: 'bowl', vc: 'earth2', layers: [{ s: 'sauce', c: 'sun3', w: 26, h: 8 }, { s: 'patty', c: 'earth2', c2: 'earth3', w: 9, h: 4, x: -5, y: -1 }, { s: 'patty', c: 'earth2', c2: 'earth3', w: 9, h: 4, x: 5, y: 1 }, { s: 'sprinkles', c: 'grass2', n: 6, w: 20, h: 4, y: -1 }] },
   // --- Morocco
-  tagine: { vessel: 'tagine', layers: [{ s: 'mound', c: 'earth1', c2: 'earth2', w: 30, h: 12, y: -3 }, { s: 'cubes', c: 'earth0', c2: 'earth1', n: 7, w: 24, h: 7, y: -4 }, { s: 'pile', c: 'sun1', c2: 'sun2', n: 6, w: 22, h: 6, y: -5 }, { s: 'sprinkles', c: 'white', n: 7, w: 22, h: 6, y: -5 }, { s: 'leaves', c: 'grass2', n: 4, w: 18, h: 4, y: -7 }] },
+  /* round 103: the anchor sat two pixels above the rim and every layer then lifted another 3-7, so the stew hung in
+     the air over the dish. Anchor on the rim, layers tucked into the base. */
+  tagine: { vessel: 'tagine', layers: [{ s: 'mound', c: 'earth1', c2: 'earth2', w: 26, h: 9, y: 0 }, { s: 'cubes', c: 'earth0', c2: 'earth1', n: 7, w: 20, h: 6, y: -1 }, { s: 'pile', c: 'sun1', c2: 'sun2', n: 6, w: 19, h: 5, y: -2 }, { s: 'sprinkles', c: 'white', n: 7, w: 18, h: 5, y: -2 }, { s: 'leaves', c: 'grass2', n: 4, w: 15, h: 4, y: -3 }] },
   couscous: { vessel: 'plate', layers: [{ s: 'dome', c: 'sun3', c2: 'white', w: 24, h: 9, y: -1 }, { s: 'sticks', c: 'sun0', n: 2, w: 6, x: -6, y: -3 }, { s: 'cubes', c: 'grass2', n: 3, w: 14, h: 4, y: -2 }, { s: 'sprinkles', c: 'sun2', n: 8, w: 20, h: 5, y: -2 }, { s: 'sauce', c: 'red', w: 5, h: 2, x: 12, y: 2 }] },
   // --- Asia
   bibimbap: { vessel: 'stonebowl', layers: [{ s: 'dome', c: 'white', c2: 'sun3', w: 26, h: 8, y: -1 }, { s: 'medley', c: 'grass2', c2: 'sun0', c3: 'earth1', n: 6, y: -2 }, { s: 'pile', c: 'sun3', c2: 'white', n: 3, w: 14, h: 2, y: 1 }, { s: 'yolk', c2: 'sun2', y: -3 }, { s: 'sauce', c: 'red', w: 4, h: 2, x: 8, y: -4 }] },
