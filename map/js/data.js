@@ -1,5 +1,204 @@
-// Cities data
+// Cities data. Chronological, oldest first. Duration is inclusive days.
 const cities = [
+  {
+    name: 'Vitalia',
+    subtitle: 'Roatan, Honduras',
+    dates: 'Jan 3rd - Feb 10th',
+    duration: '39 days',
+    islandImg: './images/roatan.png',
+    size: 180,
+    year: 2024
+  },
+  {
+    name: 'Tokyo',
+    dates: 'Feb 12th - Mar 2nd',
+    duration: '20 days',
+    islandImg: './images/tokyo.png',
+    islandGif: './images/tokyo.gif',
+    size: 180,
+    year: 2024
+  },
+  {
+    name: 'Orange County',
+    dates: 'Mar 3rd - Mar 10th',
+    duration: '8 days',
+    islandImg: './images/orange_county.png',
+    size: 140,
+    year: 2024
+  },
+  {
+    name: 'New York',
+    dates: 'Mar 10th - Mar 16th',
+    duration: '7 days',
+    islandImg: './images/NY.png',
+    size: 200,
+    year: 2024
+  },
+  {
+    name: 'Lisbon',
+    subtitle: 'Carvoeiro, Sintra',
+    dates: 'Mar 17th - May 25th',
+    duration: '70 days',
+    islandImg: './images/lisbon.png',
+    islandGif: './images/lisbon.gif',
+    size: 150,
+    year: 2024
+  },
+  {
+    name: 'London',
+    dates: 'May 26th - Jul 6th',
+    duration: '42 days',
+    islandImg: './images/london.png',
+    size: 180,
+    year: 2024
+  },
+  {
+    name: 'Brussels',
+    dates: 'Jul 6th - Jul 13th',
+    duration: '8 days',
+    islandImg: './images/brussels.png',
+    size: 160,
+    year: 2024
+  },
+  {
+    name: 'Amsterdam',
+    dates: 'Jul 13th - Jul 20th',
+    duration: '8 days',
+    islandImg: './images/amsterdam.png',
+    size: 160,
+    year: 2024
+  },
+  {
+    name: 'New York',
+    dates: 'Jul 20th - Aug 6th',
+    duration: '18 days',
+    islandImg: './images/NY.png',
+    size: 200,
+    year: 2024
+  },
+  {
+    name: 'Las Vegas',
+    dates: 'Aug 6th - Aug 11th',
+    duration: '6 days',
+    islandImg: './images/vegas.png',
+    size: 180,
+    year: 2024
+  },
+  {
+    name: 'Boulder',
+    dates: 'Aug 11th - Sep 2nd',
+    duration: '23 days',
+    islandImg: './images/boulder.png',
+    size: 180,
+    year: 2024
+  },
+  {
+    name: 'New York',
+    dates: 'Sep 2nd - Sep 8th',
+    duration: '7 days',
+    islandImg: './images/NY.png',
+    size: 200,
+    year: 2024
+  },
+  {
+    name: 'Montreal',
+    dates: 'Sep 8th - Sep 22nd',
+    duration: '15 days',
+    islandImg: './images/montreal.png',
+    size: 160,
+    year: 2024
+  },
+  {
+    name: 'Miami',
+    dates: 'Sep 22nd - Sep 28th',
+    duration: '7 days',
+    islandImg: './images/miami.png',
+    year: 2024
+  },
+  {
+    name: 'Iceland',
+    dates: 'Sep 28th - Oct 6th',
+    duration: '9 days',
+    islandImg: './images/iceland.png',
+    size: 180,
+    year: 2024
+  },
+  {
+    name: 'Lisbon',
+    dates: 'Oct 6th - Oct 19th',
+    duration: '14 days',
+    islandImg: './images/lisbon.png',
+    islandGif: './images/lisbon.gif',
+    size: 150,
+    year: 2024
+  },
+  {
+    name: 'New York',
+    dates: 'Oct 19th - Oct 26th',
+    duration: '8 days',
+    islandImg: './images/NY.png',
+    size: 200,
+    year: 2024
+  },
+  {
+    name: 'Seoul',
+    dates: 'Oct 26th - Nov 2nd',
+    duration: '8 days',
+    islandImg: './images/seoul.png',
+    size: 160,
+    year: 2024
+  },
+  {
+    name: 'Chiang Mai',
+    dates: 'Nov 2nd - Nov 10th',
+    duration: '9 days',
+    islandImg: './images/chiang_mai.png',
+    size: 160,
+    year: 2024
+  },
+  {
+    name: 'Bangkok',
+    dates: 'Nov 10th - Nov 17th',
+    duration: '8 days',
+    islandImg: './images/bangkok.png',
+    size: 160,
+    year: 2024
+  },
+  {
+    name: 'Hong Kong',
+    dates: 'Nov 17th - Nov 24th',
+    duration: '8 days',
+    islandImg: './images/hong_kong.png',
+    size: 180,
+    year: 2024
+  },
+  {
+    name: 'Tokyo',
+    subtitle: 'Minakami, Nikko',
+    dates: 'Nov 24th - Dec 14th',
+    duration: '21 days',
+    islandImg: './images/tokyo.png',
+    islandGif: './images/tokyo.gif',
+    size: 180,
+    year: 2024
+  },
+  {
+    name: 'Orange County',
+    subtitle: 'Yorba Linda',
+    dates: 'Dec 14th - Dec 24th',
+    duration: '11 days',
+    islandImg: './images/orange_county.png',
+    size: 140,
+    year: 2024
+  },
+  {
+    name: 'Boulder',
+    dates: 'Dec 24th - Dec 28th',
+    duration: '5 days',
+    islandImg: './images/denver.png',
+    size: 180,
+    year: 2024
+  },
   { 
     name: 'Miami',
     subtitle: 'Key Largo, New Orleans',
@@ -76,8 +275,8 @@ const cities = [
     year: 2025
   },
   { 
-    name: 'Morocco',
-    subtitle: 'Casablanca, Dakhla',
+    name: 'Dakhla',
+    subtitle: 'Casablanca, Morocco',
     dates: 'Aug 17th - Sep 13th', 
     duration: '26 days',
     islandImg: './images/dakhla.png',
@@ -154,25 +353,26 @@ const cities = [
     year: 2025
   },
   { 
-    name: 'La Ventana', 
-    dates: 'Dec 27th - Jan 4th', 
-    duration: '9 days',
+    name: 'La Ventana',
+    subtitle: 'La Paz, Puerto San Carlos',
+    dates: 'Dec 27th - Jan 5th', 
+    duration: '10 days',
     islandImg: './images/la_ventana.png',
     size: 140,
     year: 2025
   },
   { 
     name: 'New York', 
-    dates: 'Jan 4th - Jan 11th', 
-    duration: '8 days',
+    dates: 'Jan 5th - Jan 13th', 
+    duration: '9 days',
     islandImg: './images/NY.png',
     size: 200,
     year: 2026
   },
   { 
     name: 'Miami', 
-    dates: 'Jan 11th - Feb 15th', 
-    duration: '44 days',
+    dates: 'Jan 13th - Feb 13th', 
+    duration: '32 days',
     islandImg: './images/miami.png',
     year: 2026
   },
@@ -197,19 +397,79 @@ const cities = [
   },
   { 
     name: 'Montana', 
-    dates: 'May 16th - Jun 22nd', 
+    dates: 'May 16th - Jun 21st', 
     duration: '37 days',
     islandImg: './images/montana.png',
     islandGif: './images/montana.gif',
     size: 200,
     year: 2026
   },
-  { 
-    name: '???', 
-    dates: '??? - ???', 
-    duration: '2 months',
-    islandImg: './images/mystery.png',
+  {
+    name: 'New York',
+    dates: 'Jun 21st - Jun 30th',
+    duration: '10 days',
+    islandImg: './images/NY.png',
     size: 200,
+    year: 2026
+  },
+  {
+    name: 'Boulder',
+    dates: 'Jun 30th - Aug 16th',
+    duration: '48 days',
+    islandImg: './images/boulder.png',
+    size: 180,
+    year: 2026
+  },
+  {
+    name: 'Munich',
+    dates: 'Aug 17th - Aug 22nd',
+    duration: '6 days',
+    islandImg: './images/munich.png',
+    size: 160,
+    year: 2026
+  },
+  {
+    name: 'Innsbruck',
+    subtitle: 'Rotholz, Oktoberfest',
+    dates: 'Aug 24th - Sep 26th',
+    duration: '34 days',
+    islandImg: './images/innsbruck.png',
+    size: 180,
+    year: 2026
+  },
+  {
+    name: 'Salzkammergut',
+    subtitle: 'Bad Goisern, Gosau',
+    dates: 'Sep 27th - Oct 4th',
+    duration: '8 days',
+    islandImg: './images/salzkammergut.png',
+    size: 160,
+    year: 2026
+  },
+  {
+    name: 'New York',
+    dates: 'Oct 4th - Oct 17th',
+    duration: '14 days',
+    islandImg: './images/NY.png',
+    size: 200,
+    year: 2026
+  },
+  {
+    name: 'Zermatt',
+    subtitle: 'Switzerland',
+    dates: 'Oct 17th - Oct 31st',
+    duration: '15 days',
+    islandImg: './images/switzerland.png',
+    size: 180,
+    year: 2026
+  },
+  {
+    name: 'Mumbai',
+    subtitle: 'Devcon 8',
+    dates: 'Nov 1st - Nov 7th',
+    duration: '7 days',
+    islandImg: './images/mumbai.png',
+    size: 160,
     year: 2026
   },
 ];

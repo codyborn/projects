@@ -1,0 +1,4 @@
+Kenney game assets (https://kenney.nl), CC0 1.0.
+Nature Kit, City Kit (Commercial and Suburban), Holiday Kit, and Car Kit.
+Textured kits need Textures/colormap.png next to the models.
+https://creativecommons.org/publicdomain/zero/1.0/
