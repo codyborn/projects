@@ -1,8 +1,8 @@
 {
  "miami": {
-  "width": 2.4286,
+  "width": 2.6652,
   "height": 2.1563,
-  "centerX": 0.4124,
+  "centerX": 0.3758,
   "bottom": -0.67
  },
  "NY": {
@@ -24,10 +24,10 @@
   "bottom": -0.6321
  },
  "hyeres": {
-  "width": 2.8125,
-  "height": 1.9196,
-  "centerX": 0.4093,
-  "bottom": -0.7566
+  "width": 2.8393,
+  "height": 1.9152,
+  "centerX": 0.4055,
+  "bottom": -0.7521
  },
  "antibes": {
   "width": 2.0938,
@@ -37,9 +37,9 @@
  },
  "cannes": {
   "width": 2.1429,
-  "height": 2.2589,
+  "height": 2.2545,
   "centerX": 0.5358,
-  "bottom": -0.963
+  "bottom": -0.9585
  },
  "scotland": {
   "width": 2.1071,
@@ -49,9 +49,9 @@
  },
  "dakhla": {
   "width": 2.0491,
-  "height": 2.0848,
+  "height": 1.9643,
   "centerX": 0.4806,
-  "bottom": -0.9681
+  "bottom": -0.8454
  },
  "lisbon": {
   "width": 2.0446,
@@ -91,21 +91,21 @@
  },
  "la_ventana": {
   "width": 2.2321,
-  "height": 2.1696,
+  "height": 2.3259,
   "centerX": 0.4909,
-  "bottom": -0.8314
+  "bottom": -0.9853
  },
  "denver": {
   "width": 2.0848,
   "height": 1.8348,
   "centerX": 0.514,
-  "bottom": -0.6759
+  "bottom": -0.6714
  },
  "denver-snow": {
   "width": 2.0848,
-  "height": 1.8348,
+  "height": 1.8393,
   "centerX": 0.514,
-  "bottom": -0.6714
+  "bottom": -0.6759
  },
  "montana": {
   "width": 2.1563,
@@ -115,7 +115,7 @@
  },
  "mystery": {
   "width": 1.6161,
-  "height": 1.3839,
+  "height": 1.3616,
   "centerX": 0.4832,
   "bottom": -0.5034
  },
@@ -151,7 +151,7 @@
  },
  "vegas": {
   "width": 2.058,
-  "height": 1.6786,
+  "height": 2.1875,
   "centerX": 0.4943,
   "bottom": -0.707
  },
@@ -199,13 +199,13 @@
  },
  "boulder": {
   "width": 2.0714,
-  "height": 1.7277,
+  "height": 1.7232,
   "centerX": 0.4964,
   "bottom": -0.6933
  },
  "boulder-snow": {
   "width": 2.0714,
-  "height": 1.7277,
+  "height": 1.7321,
   "centerX": 0.4964,
   "bottom": -0.6933
  },
