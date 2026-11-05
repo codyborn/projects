@@ -1,15 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=/map/">
-    <link rel="canonical" href="https://cit.earth/map/">
-    <title>Redirecting to Map - Cody Born</title>
-    <script>
-        window.location.replace('/map/' + window.location.search + window.location.hash);
-    </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#4dd0e1">
+  <title>Citizen Earth</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌎</text></svg>">
+  <script>
+    if (localStorage.getItem('night-mode') === 'true') document.documentElement.classList.add('night-preload');
+  </script>
+  <script type="module" crossorigin src="./assets/index-CUmMXNrc.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/shapes-C3zfAoZt.js">
+  <link rel="stylesheet" crossorigin href="./assets/index-DkS7y3Fb.css">
 </head>
 <body>
-    <p>Redirecting to <a href="/map/">/map/</a>…</p>
+  <canvas id="scene"></canvas>
+  <div id="labels"></div>
+  <div id="scroll-spacer"></div>
+  <div id="loading">Setting sail…</div>
+
+  <div class="top-controls">
+    <button class="night-mode-toggle" id="night-toggle" aria-label="Toggle night mode"></button>
+    <button class="latest-blog-toggle" id="latest-blog" title="Latest blog post" aria-label="Latest blog post">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="3" width="16" height="18" rx="2"></rect>
+        <line x1="8" y1="8" x2="16" y2="8"></line>
+        <line x1="8" y1="12" x2="16" y2="12"></line>
+        <line x1="8" y1="16" x2="13" y2="16"></line>
+      </svg>
+    </button>
+    <a class="gear-toggle" href="/map/gear.html" title="What's in my bag" aria-label="What's in my bag">🎒</a>
+  </div>
+
+  <div id="sunk-ships-counter"></div>
+
+  <div class="blog-overlay" id="blog-overlay">
+    <div class="blog-content" id="blog-content">
+      <div class="blog-header">
+        <h2 class="blog-title" id="blog-title"></h2>
+        <div class="blog-actions">
+          <button class="share-button" id="share-button">Share</button>
+          <button class="return-button" id="close-button">Close</button>
+        </div>
+      </div>
+      <div class="blog-hero" id="blog-hero"></div>
+      <div class="blog-text" id="blog-text"></div>
+      <div class="blog-footer">
+        <button class="nav-button" id="prev-button"></button>
+        <button class="nav-button" id="next-button"></button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="version">Version 2.0.0-alpha · <a href="./credits.html">3D model credits</a></footer>
+
 </body>
 </html>
