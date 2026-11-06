@@ -472,6 +472,15 @@ const cities = [
     size: 160,
     year: 2026
   },
+  {
+    name: 'Nepal',
+    subtitle: 'Manaslu Circuit',
+    dates: 'Nov 7th - Nov 22nd',
+    duration: '16 days',
+    islandImg: './images/nepal.png',
+    size: 180,
+    year: 2026
+  },
 ];
 
 const quotes = [
