@@ -167,9 +167,10 @@ async function openBlogPost(blogPath, blogTitle, cityName) {
     
     document.getElementById('blog-title').textContent = blogTitle;
 
-    // Show the island at the top of the post: the new island art (heroImg) if set, else the gif, else the static image
+    // Show the island at the top of the post, using the new 3D island art in /islands
+    // (same basename as islandImg, as .webp). heroImg overrides it if a post ever needs to.
     const cityObj = cities.find(city => city.name === cityName && city.blog);
-    const heroSrc = cityObj ? (cityObj.heroImg || cityObj.islandGif || cityObj.islandImg) : null;
+    const heroSrc = cityObj ? (cityObj.heroImg || cityObj.islandImg.replace('./images/', '../islands/').replace(/\.png$/, '.webp')) : null;
     const hero = document.getElementById('blog-hero');
     if (heroSrc) {
       hero.innerHTML = `<img src="${heroSrc}" alt="${cityName}">`;
