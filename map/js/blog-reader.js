@@ -167,9 +167,9 @@ async function openBlogPost(blogPath, blogTitle, cityName) {
     
     document.getElementById('blog-title').textContent = blogTitle;
 
-    // Show the island image/gif at the top of the post (prefer the gif if present)
+    // Show the island at the top of the post: the new island art (heroImg) if set, else the gif, else the static image
     const cityObj = cities.find(city => city.name === cityName && city.blog);
-    const heroSrc = cityObj ? (cityObj.islandGif || cityObj.islandImg) : null;
+    const heroSrc = cityObj ? (cityObj.heroImg || cityObj.islandGif || cityObj.islandImg) : null;
     const hero = document.getElementById('blog-hero');
     if (heroSrc) {
       hero.innerHTML = `<img src="${heroSrc}" alt="${cityName}">`;

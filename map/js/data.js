@@ -401,6 +401,9 @@ const cities = [
     duration: '37 days',
     islandImg: './images/montana.png',
     islandGif: './images/montana.gif',
+    heroImg: '../islands/montana.webp',
+    blog: './posts/montana.md',
+    blogTitle: 'Minerals',
     size: 200,
     year: 2026
   },
@@ -417,6 +420,9 @@ const cities = [
     dates: 'Jun 30th - Aug 16th',
     duration: '48 days',
     islandImg: './images/boulder.png',
+    heroImg: '../islands/boulder.webp',
+    blog: './posts/boulder.md',
+    blogTitle: 'Bierstadt',
     size: 180,
     year: 2026
   },
@@ -460,6 +466,9 @@ const cities = [
     dates: 'Oct 17th - Oct 31st',
     duration: '15 days',
     islandImg: './images/switzerland.png',
+    heroImg: '../islands/switzerland.webp',
+    blog: './posts/zermatt.md',
+    blogTitle: 'Zermatt',
     size: 180,
     year: 2026
   },
@@ -478,6 +487,9 @@ const cities = [
     dates: 'Nov 7th - Nov 22nd',
     duration: '16 days',
     islandImg: './images/nepal.png',
+    heroImg: '../islands/nepal.webp',
+    blog: './posts/kathmandu.md',
+    blogTitle: 'Kathmandu',
     size: 180,
     year: 2026
   },
