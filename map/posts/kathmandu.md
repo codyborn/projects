@@ -6,4 +6,4 @@ I met my guide, the person I'd be living with for the next two weeks. In his ear
 
 I had been accumulating gear for the past couple of months for the trip, but still needed a handful of small things. The hardest thing was actually securing the cash. To get the 50,000 Nepali rupees, I had to stop by seven different ATMs. Many were not working, closed or had tight daily limits.
 
-My day bag full of cash and a dozen Snickers bars, I was finally ready for the trip. I relaxed and enjoyed a traditional Nepalese thali: a collection of small brass bowls of a variety of foods from pickles to curries surrounding a warm mound of rice.
+With my day bag full of cash and a dozen Snickers bars, I was finally ready for the trip. I relaxed and enjoyed a traditional Nepalese thali: a collection of small brass bowls of a variety of foods from pickles to curries surrounding a warm mound of rice.
