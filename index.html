@@ -52,6 +52,73 @@
     </div>
   </div>
 
+  <script>
+    // Deep links (?city=X, ?blog=latest) render the post right away, before the 3D bundle downloads.
+    // The bundle adopts the open post via window.__pre. Keep POSTS in step with the blog cities in the bundle.
+    (function () {
+      var POSTS = [
+        ['Miami', 'miami', 'Tied down', 'miami'],
+        ['Hyeres', 'hyeres', 'Bread is the answer', 'hyeres'],
+        ['Antibes', 'antibes', "When you can't beat em", 'antibes'],
+        ['Dakhla', 'dakhla', 'The French have watches', 'dakhla'],
+        ['New York', 'new_york', 'The City', 'NY'],
+        ['Montana', 'montana', 'Minerals', 'montana'],
+        ['Boulder', 'boulder', 'Bierstadt', 'boulder'],
+        ['Zermatt', 'zermatt', 'Zermatt', 'switzerland'],
+        ['Nepal', 'kathmandu', 'Kathmandu', 'nepal']
+      ];
+      var q = new URLSearchParams(location.search);
+      if (q.get('preview') !== null) return;
+      var post = null, city = q.get('city');
+      if (q.get('blog') === 'latest') post = POSTS[POSTS.length - 1];
+      else if (city) post = POSTS.filter(function (x) { return x[0].toLowerCase() === city.toLowerCase(); })[0];
+      if (!post) return;
+      var blog = './posts/' + post[1] + '.md';
+      window.__pre = { blog: blog };
+      var path = function (u) { return u.indexOf('./') === 0 ? '/map/' + u.slice(2) : u; };
+      function render(md) {
+        md = md.replace(/!\[([^\]]*)\]\(([^)]+)\)/gm, function (m, a, u) { return '<div class="image-container"><img src="' + path(u) + '" alt="' + a + '"></div>'; });
+        var out = '', i = 0;
+        md.split('\n').forEach(function (line) {
+          if (!line.trim()) return;
+          var t = line;
+          if (t.indexOf('<div class="image-container">') === -1) {
+            t = t.replace(/^### (.*$)/gim, '<h3>$1</h3>').replace(/^## (.*$)/gim, '<h2>$1</h2>').replace(/^# (.*$)/gim, '<h1>$1</h1>')
+              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>')
+              .replace(/__(.*?)__/g, '<strong>$1</strong>').replace(/_(.*?)_/g, '<em>$1</em>')
+              .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+            if (!/^<(h[1-6]|div)/.test(t)) t = '<p>' + t + '</p>';
+          }
+          var tag = (t.match(/^<(\w+)/) || [0, 'p'])[1], inner = t.replace(/^<[^>]+>/, '').replace(/<\/\w+>$/, '');
+          var cls = tag === 'div' ? 'image-container paragraph-fade' : 'paragraph-fade';
+          out += tag === 'div' ? t.replace('class="image-container"', 'class="' + cls + '" style="animation-delay: ' + (i * 0.3) + 's;"')
+                               : '<' + tag + ' class="' + cls + '" style="animation-delay: ' + (i * 0.3) + 's;">' + inner + '</' + tag + '>';
+          i++;
+        });
+        return out;
+      }
+      var $ = function (id) { return document.getElementById(id); };
+      $('prev-button').style.visibility = 'hidden';
+      $('next-button').style.visibility = 'hidden';
+      fetch('/map/posts/' + post[1] + '.md').then(function (r) { if (!r.ok) throw 0; return r.text(); }).then(function (md) {
+        if (!window.__pre || window.__pre.handoff) return;
+        $('blog-title').textContent = post[2];
+        $('blog-hero').innerHTML = '<img src="/islands/' + post[3] + '.webp" alt="' + post[0] + '">';
+        $('blog-text').innerHTML = render(md);
+        $('blog-overlay').classList.add('active');
+        $('blog-content').scrollTop = 0;
+        document.body.classList.add('reading');
+        $('close-button').addEventListener('click', function () {
+          if (window.__pre && window.__pre.handoff) return;
+          window.__pre = null;
+          $('blog-overlay').classList.remove('active');
+          document.body.classList.remove('reading');
+          history.pushState({}, document.title, location.pathname);
+        });
+      }).catch(function () { window.__pre = null; });
+    })();
+  </script>
+
   <footer class="version">Version 2.0.0-alpha · <a href="./credits.html">3D model credits</a></footer>
 
 </body>
