@@ -489,6 +489,15 @@ const cities = [
     size: 180,
     year: 2026
   },
+  {
+    name: 'Tokyo',
+    dates: 'Nov 23rd - Dec 1st',
+    duration: '9 days',
+    islandImg: './images/tokyo.png',
+    islandGif: './images/tokyo.gif',
+    size: 180,
+    year: 2026
+  },
 ];
 
 const quotes = [
